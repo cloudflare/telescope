@@ -39,6 +39,7 @@ Options:
   --auth <object>               Basic HTTP authentication (Expects: {"username": "", "password":""})  (default: false)
   --timeout <int>               Maximum time (in milliseconds) to wait for test to complete. (default: 30000)
   --html                        Generate HTML report
+  --list                        Generate a list of test results as HTML page
   --help                        display help for command
 ```
 

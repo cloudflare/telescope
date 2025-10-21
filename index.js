@@ -96,7 +96,9 @@ export default function browserAgent() {
       ).default(30000),
     )
     .addOption(new Option('--html', 'Generate HTML report').default(false))
-
+    .addOption(
+      new Option('--list', 'Generate list of results in HTML').default(false),
+    )
     .parse(process.argv);
 
   const options = program.opts();
