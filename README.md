@@ -34,12 +34,13 @@ Options:
   --connectionType <string>     Network connection type. (choices: "cable", "dls", "4g", "3g", "3gfast", "3gslow", "2g", "fios", default: "4g")
   --width <int>                 Viewport width, in pixels (default: "1366")
   --height <int>                Viewport height, in pixels (default: "768")
+  --frameRate <int>             Filmstrip frame rate, in frames per second (default: 1)
   --disableJS                   Disable JavaScript (default: false)
   --debug                       Output debug lines (default: false)
   --auth <object>               Basic HTTP authentication (Expects: {"username": "", "password":""})  (default: false)
-  --timeout <int>               Maximum time (in milliseconds) to wait for test to complete. (default: 30000)
-  --html                        Generate HTML report
-  --list                        Generate a list of test results as HTML page
+  --timeout <int>               Maximum time (in milliseconds) to wait for test to complete (default: 30000)
+  --html                        Generate HTML report (default: false)
+  --list                        Generate a list of test results as HTML (default: false)
   --help                        display help for command
 ```
 

@@ -81,6 +81,12 @@ export default function browserAgent() {
     .addOption(
       new Option('--height <int>', 'Viewport height, in pixels').default('768'),
     )
+    .addOption(
+      new Option(
+        '--frameRate <int>',
+        'Filmstrip frame rate, in frames per second',
+      ).default(1),
+    )
     .addOption(new Option('--disableJS', 'Disable JavaScript').default(false))
     .addOption(new Option('--debug', 'Output debug lines').default(false))
     .addOption(
