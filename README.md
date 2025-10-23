@@ -30,7 +30,7 @@ Options:
   --blockDomains <domains...>   A comma separated list of domains to block (default: [])
   --block <substrings...>       A comma-delimited list of urls to block (based on a substring match) (default: [])
   --firefoxPrefs <object>       Any Firefox User Preferences to apply (Firefox only)
-  --cpuThrottle <int>           CPU throttling factor (Note: mobile emulation will provide its own default)
+  --cpuThrottle <int>           CPU throttling factor
   --connectionType <string>     Network connection type. (choices: "cable", "dls", "4g", "3g", "3gfast", "3gslow", "2g", "fios", default: "4g")
   --width <int>                 Viewport width, in pixels (default: "1366")
   --height <int>                Viewport height, in pixels (default: "768")

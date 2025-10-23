@@ -55,12 +55,7 @@ export default function browserAgent() {
         'Any Firefox User Preferences to apply (Firefox only)',
       ),
     )
-    .addOption(
-      new Option(
-        '--cpuThrottle <int>',
-        'CPU throttling factor (Note: mobile emulation will provide its own default)',
-      ),
-    )
+    .addOption(new Option('--cpuThrottle <int>', 'CPU throttling factor'))
     .addOption(
       new Option('--connectionType <string>', 'Network connection type')
         .default('4g')
