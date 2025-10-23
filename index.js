@@ -57,7 +57,10 @@ export default function browserAgent() {
     )
     .addOption(new Option('--cpuThrottle <int>', 'CPU throttling factor'))
     .addOption(
-      new Option('--connectionType <string>', 'Network connection type')
+      new Option(
+        '--connectionType <string>',
+        'Network connection type. By default, no throttling is applied.',
+      )
         .default(false)
         .choices([
           'cable',
