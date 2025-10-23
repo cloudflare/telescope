@@ -31,7 +31,7 @@ Options:
   --block <substrings...>       A comma-delimited list of urls to block (based on a substring match) (default: [])
   --firefoxPrefs <object>       Any Firefox User Preferences to apply (Firefox only)
   --cpuThrottle <int>           CPU throttling factor
-  --connectionType <string>     Network connection type. (choices: "cable", "dls", "4g", "3g", "3gfast", "3gslow", "2g", "fios", default: "4g")
+  --connectionType <string>     Network connection type. By default, no throttling is applied. (choices: "cable", "dls", "4g", "3g", "3gfast", "3gslow", "2g", "fios", default: false)
   --width <int>                 Viewport width, in pixels (default: "1366")
   --height <int>                Viewport height, in pixels (default: "768")
   --frameRate <int>             Filmstrip frame rate, in frames per second (default: 1)
