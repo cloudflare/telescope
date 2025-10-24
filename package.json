@@ -29,6 +29,6 @@
     "ejs": "^3.1.10",
     "ffmpeg": "^0.0.4",
     "playwright": "next",
-    "playwright-webkit": "^1.56.1"
+    "playwright-webkit": "next"
   }
 }
