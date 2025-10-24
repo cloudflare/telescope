@@ -110,14 +110,34 @@ To test sites [protected with HTTP authentication](https://developer.mozilla.org
 npx . -u https://newsletter.timkadlec.com/admin -b safari --auth '{"username": "username", "password": "password"}'
 ```
 
-## Installing browsers
+## Installation
+
+### NPM dependencies
+
+After checking out the code, you need to install all the dependencies:
+
+```
+npm install
+```
+
+### Browsers
 
 ### Chrome, Firefox, Safari and Chrome Canary
 
-We use Playwright to control and manage individual browser engines. Telescope will automatically run `npx playwright install` to install Chrome, Firefox, Chrome Canary and Safari (webkit).
+Telescope uses Playwright to control and manage individual browser engines. Telescope will automatically run `npx playwright install` to install Chrome, Firefox, Chrome Canary and Safari (webkit).
 
 Note: Safari for MacOS Tagoe is now available in `playwrite@next` version so we use that until it is available on the `@latest` channel.
 
 ### Microsoft Edge and Chrome-beta
 
-To install Microsoft Edge or Chrome Beta playwrite requires root privilege and will not automatically install them, all you have to do that is to run `npx playwrite install msedge chrome-beta` from the command line (and provide root passowrd).
+To install Microsoft Edge or Chrome Beta playwrite requires root privileges and will not automatically install them, all you have to do that is to run `npx playwrite install msedge chrome-beta` from the command line (and provide root passowrd).
+
+### ffmpeg
+
+Telescope uses `ffmpeg` to process the video and generate filmstrip images. You will need to have it installed on your machine.
+
+For MacOS you can use `homebrew` to install it:
+
+```
+brew install ffmpeg
+```
