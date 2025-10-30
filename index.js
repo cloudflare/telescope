@@ -1,8 +1,8 @@
 import { Command, Option } from 'commander';
 const program = new Command();
 import { BrowserConfig } from './lib/browsers.js';
-import { TestRunner } from './lib/TestRunner.js';
-import { ChromeRunner } from './lib/ChromeRunner.js';
+import { TestRunner } from './lib/testRunner.js';
+import { ChromeRunner } from './lib/chromeRunner.js';
 import { log } from './lib/helpers.js';
 
 export default function browserAgent() {
