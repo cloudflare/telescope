@@ -2,7 +2,7 @@
   "name": "@cloudflare/telescope",
   "version": "1.0.0",
   "description": "",
-  "main": "cli.js",
+  "main": "index.js",
   "keywords": [],
   "author": "Cloudflare",
   "license": "Apache-2.0",

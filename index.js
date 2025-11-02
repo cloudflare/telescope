@@ -4,6 +4,92 @@ import { BrowserConfig } from './lib/browsers.js';
 import { TestRunner } from './lib/testRunner.js';
 import { ChromeRunner } from './lib/chromeRunner.js';
 import { log } from './lib/helpers.js';
+import { normalizeConfig } from './lib/config.js';
+
+/**
+ * Execute a test with raw options.
+ *
+ * @param {Object} options - Test options (raw from CLI or programmatic use)
+ * @returns {Promise<{success: boolean, testId: string, resultsPath: string}>}
+ * @private
+ */
+async function executeTest(options) {
+  const rawOptions = { ...options };
+
+  if (rawOptions.flags) {
+    const extraArgs = Array.isArray(rawOptions.flags)
+      ? rawOptions.flags
+      : rawOptions.flags.split(',');
+    rawOptions.args = extraArgs.map(flag => flag.trim()).filter(Boolean);
+  }
+
+  const browserConfig = new BrowserConfig().getBrowserConfig(
+    rawOptions.browser || 'chrome',
+    rawOptions,
+  );
+
+  const config = normalizeConfig(rawOptions);
+
+  if (config.debug) {
+    process.env.DEBUG_MODE = true;
+  }
+
+  log(config);
+
+  function getRunner(config, browserConfig) {
+    if (browserConfig.engine === 'chromium') {
+      return new ChromeRunner(config, browserConfig);
+    } else {
+      return new TestRunner(config, browserConfig);
+    }
+  }
+
+  const Runner = getRunner(config, browserConfig);
+
+  try {
+    await Runner.setupTest();
+    await Runner.doNavigation();
+    await Runner.postProcess();
+
+    return {
+      success: true,
+      testId: Runner.TESTID,
+      resultsPath: Runner.paths.results,
+    };
+  } catch (error) {
+    // Ensure cleanup runs even on error
+    try {
+      Runner.cleanup();
+    } catch (cleanupError) {
+      // Ignore cleanup errors
+    }
+    throw error;
+  }
+}
+
+/**
+ * Run a browser performance test.
+ * Returns `{success: true, testId, resultsPath}` on success or `{success: false, error}` on failure.
+ *
+ * @param {Object} options - Test configuration (see CLI --help for available options)
+ * @param {string} options.url - URL to test (required)
+ * @param {string} [options.browser='chrome'] - Browser engine to use
+ * @returns {Promise<Object>} Test result with success status and either test data or error
+ *
+ * @example
+ * const result = await launchTest({ url: 'https://example.com', browser: 'chrome' });
+ * if (result.success) console.log(`Test: ${result.testId}`);
+ */
+export async function launchTest(options) {
+  try {
+    return await executeTest(options);
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
 
 export default function browserAgent() {
   program
@@ -106,33 +192,12 @@ export default function browserAgent() {
     .parse(process.argv);
 
   const options = program.opts();
-  if (options.debug) {
-    process.env.DEBUG_MODE = true;
-  }
-  log(options);
-  //setup flags
-  if (options.flags) {
-    //chrome flags
-    let flags = options.flags;
-    options.args = flags.split(',');
-  }
-  let browserConfig = new BrowserConfig().getBrowserConfig(
-    options.browser,
-    options,
-  );
-
-  function getRunner(options, browserConfig) {
-    if (browserConfig.engine === 'chromium') {
-      return new ChromeRunner(options, browserConfig);
-    } else {
-      return new TestRunner(options, browserConfig);
-    }
-  }
-  const Runner = getRunner(options, browserConfig);
 
   (async () => {
-    await Runner.setupTest();
-    await Runner.doNavigation();
-    await Runner.postProcess();
+    const result = await launchTest(options);
+    if (!result.success) {
+      console.error('Test failed:', result.error);
+      process.exit(1);
+    }
   })();
 }
