@@ -5,12 +5,15 @@ import { TestRunner } from './lib/testRunner.js';
 import { ChromeRunner } from './lib/chromeRunner.js';
 import { log } from './lib/helpers.js';
 import { normalizeConfig } from './lib/config.js';
+import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
 
 /**
  * Execute a test with raw options.
+ * Internal function that handles the core test execution flow.
+ * Normalizes options, creates browser instance, runs test, and ensures cleanup.
  *
  * @param {Object} options - Test options (raw from CLI or programmatic use)
- * @returns {Promise<{success: boolean, testId: string, resultsPath: string}>}
+ * @returns {Promise<{success: boolean, testId: string, resultsPath: string}>} Test result with ID and results path
  * @private
  */
 async function executeTest(options) {
@@ -69,16 +72,18 @@ async function executeTest(options) {
 
 /**
  * Run a browser performance test.
- * Returns `{success: true, testId, resultsPath}` on success or `{success: false, error}` on failure.
+ * Public programmatic API that wraps executeTest with error handling.
+ * Always returns a result object (never throws).
  *
  * @param {Object} options - Test configuration (see CLI --help for available options)
  * @param {string} options.url - URL to test (required)
  * @param {string} [options.browser='chrome'] - Browser engine to use
- * @returns {Promise<Object>} Test result with success status and either test data or error
+ * @returns {Promise<Object>} Result object: {success, testId, resultsPath} or {success, error}
  *
  * @example
  * const result = await launchTest({ url: 'https://example.com', browser: 'chrome' });
  * if (result.success) console.log(`Test: ${result.testId}`);
+ * else console.error(`Failed: ${result.error}`);
  */
 export async function launchTest(options) {
   try {
@@ -98,7 +103,7 @@ export default function browserAgent() {
     .requiredOption('-u, --url <url>', 'URL to run tests against')
     .addOption(
       new Option('-b, --browser <browser_name>', 'Browser to tests against')
-        .default('chrome')
+        .default(DEFAULT_OPTIONS.browser)
         .choices([
           'chrome',
           'chrome-beta',
@@ -127,13 +132,13 @@ export default function browserAgent() {
       new Option(
         '--blockDomains <domains...>',
         'A comma separated list of domains to block',
-      ).default([]),
+      ).default(DEFAULT_OPTIONS.blockDomains),
     )
     .addOption(
       new Option(
         '--block <substrings...>',
         'A comma-delimited list of urls to block (based on a substring match)',
-      ).default([]),
+      ).default(DEFAULT_OPTIONS.block),
     )
     .addOption(
       new Option(
@@ -147,7 +152,7 @@ export default function browserAgent() {
         '--connectionType <string>',
         'Network connection type. By default, no throttling is applied.',
       )
-        .default(false)
+        .default(DEFAULT_OPTIONS.connectionType)
         .choices([
           'cable',
           'dls',
@@ -160,34 +165,52 @@ export default function browserAgent() {
         ]),
     )
     .addOption(
-      new Option('--width <int>', 'Viewport width, in pixels').default('1366'),
+      new Option('--width <int>', 'Viewport width, in pixels').default(
+        String(DEFAULT_OPTIONS.width),
+      ),
     )
     .addOption(
-      new Option('--height <int>', 'Viewport height, in pixels').default('768'),
+      new Option('--height <int>', 'Viewport height, in pixels').default(
+        String(DEFAULT_OPTIONS.height),
+      ),
     )
     .addOption(
       new Option(
         '--frameRate <int>',
         'Filmstrip frame rate, in frames per second',
-      ).default(1),
+      ).default(DEFAULT_OPTIONS.frameRate),
     )
-    .addOption(new Option('--disableJS', 'Disable JavaScript').default(false))
-    .addOption(new Option('--debug', 'Output debug lines').default(false))
+    .addOption(
+      new Option('--disableJS', 'Disable JavaScript').default(
+        DEFAULT_OPTIONS.disableJS,
+      ),
+    )
+    .addOption(
+      new Option('--debug', 'Output debug lines').default(
+        DEFAULT_OPTIONS.debug,
+      ),
+    )
     .addOption(
       new Option(
         '--auth <object>',
         'Basic HTTP authentication (Expects: {"username": "", "password":""}) ',
-      ).default(false),
+      ).default(DEFAULT_OPTIONS.auth),
     )
     .addOption(
       new Option(
         '--timeout <int>',
         'Maximum time (in milliseconds) to wait for test to complete',
-      ).default(30000),
+      ).default(DEFAULT_OPTIONS.timeout),
     )
-    .addOption(new Option('--html', 'Generate HTML report').default(false))
     .addOption(
-      new Option('--list', 'Generate list of results in HTML').default(false),
+      new Option('--html', 'Generate HTML report').default(
+        DEFAULT_OPTIONS.html,
+      ),
+    )
+    .addOption(
+      new Option('--list', 'Generate list of results in HTML').default(
+        DEFAULT_OPTIONS.list,
+      ),
     )
     .parse(process.argv);
 
