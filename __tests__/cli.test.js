@@ -2,6 +2,7 @@ import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
+import { describe, beforeAll, it, expect } from 'vitest';
 
 import { BrowserConfig } from '../lib/browsers.js';
 

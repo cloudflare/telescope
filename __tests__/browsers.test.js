@@ -1,5 +1,6 @@
 import { BrowserConfig } from '../lib/browsers.js';
 import fs from 'fs';
+import { describe, expect, test } from 'vitest';
 
 describe('Basic configuration tests', () => {
   test('Initializing with an invalid browser throws an error', () => {
