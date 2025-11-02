@@ -12,7 +12,7 @@ In side the test folder, the following files are added:
 - a video file showing the page load progression
 - `metrics.json` - A collection of timing metrics collected from the browser during page load
 - `pageload.har` - A har file of the page load
-- `resources.json` - The resource timing API data for the pagea
+- `resources.json` - The resource timing API data for the page
 - `screenshot.png` - A screenshot of the final page load
 - `/filmstrip` - A collection of screenshots during the page load that could be used for a filmstrip
 
@@ -126,11 +126,11 @@ npm install
 
 Telescope uses Playwright to control and manage individual browser engines. Telescope will automatically run `npx playwright install` to install Chrome, Firefox, Chrome Canary and Safari (webkit).
 
-Note: Safari for MacOS Tagoe is now available in `playwrite@next` version so we use that until it is available on the `@latest` channel.
+Note: Safari for MacOS Tahoe is now available in `playwright@next` version so we use that until it is available on the `@latest` channel.
 
 ### Microsoft Edge and Chrome-beta
 
-To install Microsoft Edge or Chrome Beta playwrite requires root privileges and will not automatically install them, all you have to do that is to run `npx playwrite install msedge chrome-beta` from the command line (and provide root passowrd).
+To install Microsoft Edge or Chrome Beta playwright requires root privileges and will not automatically install them, all you have to do that is to run `npx playwright install msedge chrome-beta` from the command line (and provide root password).
 
 ### ffmpeg
 
