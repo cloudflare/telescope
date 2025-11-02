@@ -141,3 +141,28 @@ For MacOS you can use `homebrew` to install it:
 ```
 brew install ffmpeg
 ```
+
+## Programmatic Usage
+
+You can run telescope from within a Node.js script:
+
+```javascript
+import { launchTest } from '@cloudflare/telescope';
+
+const result = await launchTest({
+  url: 'https://example.com',
+  browser: 'chrome',
+  width: 1920,
+  height: 1080,
+  timeout: 60000,
+});
+
+if (result.success) {
+  console.log(`Test completed: ${result.testId}`);
+  console.log(`Results saved to: ${result.resultsPath}`);
+} else {
+  console.error(`Test failed: ${result.error}`);
+}
+```
+
+All CLI options are supported as object properties. See Parameters section for available options.
