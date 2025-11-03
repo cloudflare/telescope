@@ -52,7 +52,7 @@ export default function browserAgent() {
     .addOption(
       new Option(
         '--firefoxPrefs <object>',
-        'Any Firefox User Preferences to apply (Firefox only)',
+        'Any Firefox User Preferences to apply (Firefox only). Example: \'{"network.trr.mode": 2}\'',
       ),
     )
     .addOption(new Option('--cpuThrottle <int>', 'CPU throttling factor'))
