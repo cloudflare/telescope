@@ -18,7 +18,7 @@
     "postinstall": "npx playwright install"
   },
   "devDependencies": {
-    "@playwright/test": "^1.29.2",
+    "@playwright/test": "next",
     "jest": "^29.5.0",
     "prettier": "^3.6.2",
     "prettier-plugin-ejs": "^1.0.3"
