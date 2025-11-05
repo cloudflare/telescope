@@ -49,7 +49,7 @@ Options:
 You can set a custom timeout by passing the desired timeout in milliseconds using the `--timeout` parameter. Defaults to 30000, or 30 seconds.
 
 ```
-npx . -u https://timkadlec.com -b chrome --timeout 50000
+npx . -u https://www.example.com -b chrome --timeout 50000
 ```
 
 ### Setting Custom Cookies
@@ -67,19 +67,19 @@ Cookies must have a name and value passed. Optionally, you can also pass in eith
 #### Set a custom cookie for all requests
 
 ```
-npx . -u https://timkadlec.com -b chrome -c '{"name": "foo", "value": "bar"}'
+npx . -u https://www.example.com -b chrome -c '{"name": "foo", "value": "bar"}'
 ```
 
 #### Set multiple cookies for all requests
 
 ```
-npx . -u https://timkadlec.com -b chrome -c '[{"name": "foo", "value": "bar"}, {"name": "foo2", "value": "bar2"}]'
+npx . -u https://www.example.com -b chrome -c '[{"name": "foo", "value": "bar"}, {"name": "foo2", "value": "bar2"}]'
 ```
 
 #### Set a custom cookie for only a particular path
 
 ```
-npx . -u https://timkadlec.com -b chrome -c '{"name": "foo", "value": "bar", "domain":"timkadlec.com", "path":"/optim"}'
+npx . -u https://www.example.com -b chrome -c '{"name": "foo", "value": "bar", "domain":"www.example.com", "path":"/optim"}'
 ```
 
 ### Disabling JavaScript
@@ -107,7 +107,7 @@ npx . -u https://playwright.dev/ -b firefox --disableJS
 To test sites [protected with HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication), you can pass the `--auth` parameter. It expects an object with a `username` and `password` like so:
 
 ```
-npx . -u https://newsletter.timkadlec.com/admin -b safari --auth '{"username": "username", "password": "password"}'
+npx . -u https://newsletter.www.example.com/admin -b safari --auth '{"username": "username", "password": "password"}'
 ```
 
 ## Installation

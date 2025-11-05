@@ -41,7 +41,7 @@ page.on('response', response => {
 });
 
 // Navigate to a URL and wait for the page to load
-await page.goto('https://timkadlec.com');
+await page.goto('https://www.example.com');
 await page.waitForLoadState();
 
 // ...
