@@ -70,7 +70,7 @@ describe.each(browsers)('Basic Test: %s', browser => {
       'node',
       'cli.js',
       '--url',
-      'https://timkadlec.com',
+      'https://www.example.com',
       '-b',
       safeBrowser,
     ];
