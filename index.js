@@ -12,8 +12,9 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * Internal function that handles the core test execution flow.
  * Normalizes options, creates browser instance, runs test, and ensures cleanup.
  *
- * @param {Object} options - Test options (raw from CLI or programmatic use)
- * @returns {Promise<{success: boolean, testId: string, resultsPath: string}>} Test result with ID and results path
+ * @param {LaunchOptions} options - Test options (raw from CLI or programmatic use)
+ * @returns {SuccessfulTestResult} Test result with ID and results path
+ * @throws {Error} If the test fails
  * @private
  */
 async function executeTest(options) {
