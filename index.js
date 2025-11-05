@@ -101,6 +101,12 @@ export default function browserAgent() {
     )
     .addOption(new Option('--html', 'Generate HTML report').default(false))
     .addOption(
+      new Option(
+        '--open-html',
+        'Open HTML report in browser (requires --html)',
+      ).default(false),
+    )
+    .addOption(
       new Option('--list', 'Generate list of results in HTML').default(false),
     )
     .parse(process.argv);
