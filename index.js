@@ -17,21 +17,19 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @private
  */
 async function executeTest(options) {
-  const rawOptions = { ...options };
+  const config = normalizeConfig(options);
 
-  if (rawOptions.flags) {
-    const extraArgs = Array.isArray(rawOptions.flags)
-      ? rawOptions.flags
-      : rawOptions.flags.split(',');
-    rawOptions.args = extraArgs.map(flag => flag.trim()).filter(Boolean);
+  if (config.flags) {
+    const extraArgs = Array.isArray(config.flags)
+      ? config.flags
+      : config.flags.split(',');
+    config.args = extraArgs.map(flag => flag.trim()).filter(Boolean);
   }
 
   const browserConfig = new BrowserConfig().getBrowserConfig(
-    rawOptions.browser || 'chrome',
-    rawOptions,
+    config.browser || 'chrome',
+    config,
   );
-
-  const config = normalizeConfig(rawOptions);
 
   if (config.debug) {
     process.env.DEBUG_MODE = true;
