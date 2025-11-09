@@ -4,7 +4,7 @@ import fs from 'fs';
 describe('Programmatic API', () => {
   test('launchTest executes and returns result object', async () => {
     const result = await launchTest({
-      url: 'https://timkadlec.com',
+      url: 'https://www.example.com',
       browser: 'chrome',
     });
 
@@ -27,7 +27,7 @@ describe('Programmatic API', () => {
 
   test('launchTest accepts programmatic options', async () => {
     const result = await launchTest({
-      url: 'https://timkadlec.com',
+      url: 'https://www.example.com',
       browser: 'chrome',
       width: 1920,
       height: 1080,
