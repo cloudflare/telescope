@@ -1,3 +1,5 @@
 #!/usr/bin/env node
 
-import './lib/cli.js';
+import browserAgent from './index.js';
+
+browserAgent();
