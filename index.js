@@ -139,7 +139,7 @@ export async function launchTest(options) {
 
 export default function browserAgent() {
   program
-    .name('browser-agent')
+    .name('telescope')
     .description('Cross-browser synthetic testing agent')
     .requiredOption('-u, --url <url>', 'URL to run tests against')
     .addOption(
