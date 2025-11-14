@@ -71,6 +71,7 @@ function getRunner(options, browserConfig) {
  *
  * @param {LaunchOptions} options - Test options (raw from CLI or programmatic use)
  * @returns {SuccessfulTestResult} Test result with ID and results path
+ * @throws {Error} If the test fails
  * @private
  */
 async function executeTest(options) {
