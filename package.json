@@ -8,7 +8,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
-    "telescope": "./cli.js"
+    "telescope": "cli.js"
   },
   "scripts": {
     "start": "node cli.js",

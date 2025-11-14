@@ -4,8 +4,65 @@ import { BrowserConfig } from './lib/browsers.js';
 import { TestRunner } from './lib/testRunner.js';
 import { ChromeRunner } from './lib/chromeRunner.js';
 import { log } from './lib/helpers.js';
-import { normalizeConfig } from './lib/config.js';
+import { normalizeCLIConfig } from './lib/config.js';
 import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
+
+/**
+ * @typedef {Parameters<import('playwright').BrowserContext['addCookies']>[0][number]} Cookie
+ */
+
+/**
+ * @typedef {Object} LaunchOptions
+ * @property {string} url
+ * @property {string} browser
+ * @property {Record<string, string>=} headers
+ * @property {Cookie|Array<Cookie>=} cookies
+ * @property {string[]=} args
+ * @property {string[]=} blockDomains
+ * @property {string[]=} block
+ * @property {Record<string, unknown>=} firefoxPrefs
+ * @property {number=} cpuThrottle
+ * @property {keyof typeof import('./connectivity.js').networkTypes=} connectionType
+ * @property {number=} width
+ * @property {number=} height
+ * @property {number=} frameRate
+ * @property {boolean=} disableJS
+ * @property {boolean=} debug
+ * @property {import('playwright').HTTPCredentials=} auth
+ * @property {number=} timeout
+ * @property {boolean=} html
+ * @property {boolean=} list
+ */
+
+/**
+ * @typedef {Object} SuccessfulTestResult
+ * @property {true} success - Whether the test was successful
+ * @property {string} testId - Unique identifier for the test
+ * @property {string} resultsPath - Path to the test results
+ */
+
+/**
+ * @typedef {Object} FailedTestResult
+ * @property {false} success - Whether the test was successful
+ * @property {string} error - Error message if the test failed
+ */
+
+/**
+ * @typedef {SuccessfulTestResult | FailedTestResult} TestResult
+ */
+
+/**
+ * @param {LaunchOptions} options
+ * @param {BrowserConfig} browserConfig
+ * @returns {TestRunner}
+ */
+function getRunner(options, browserConfig) {
+  if (browserConfig.engine === 'chromium') {
+    return new ChromeRunner(options, browserConfig);
+  } else {
+    return new TestRunner(options, browserConfig);
+  }
+}
 
 /**
  * Execute a test with raw options.
@@ -18,15 +75,10 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @private
  */
 async function executeTest(options) {
-  const config = normalizeConfig(options);
-
-  if (config.flags) {
-    const extraArgs = Array.isArray(config.flags)
-      ? config.flags
-      : config.flags.split(',');
-    config.args = extraArgs.map(flag => flag.trim()).filter(Boolean);
-  }
-
+  const config = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+  };
   const browserConfig = new BrowserConfig().getBrowserConfig(
     config.browser || 'chrome',
     config,
@@ -37,14 +89,6 @@ async function executeTest(options) {
   }
 
   log(config);
-
-  function getRunner(config, browserConfig) {
-    if (browserConfig.engine === 'chromium') {
-      return new ChromeRunner(config, browserConfig);
-    } else {
-      return new TestRunner(config, browserConfig);
-    }
-  }
 
   const Runner = getRunner(config, browserConfig);
 
@@ -74,10 +118,8 @@ async function executeTest(options) {
  * Public programmatic API that wraps executeTest with error handling.
  * Always returns a result object (never throws).
  *
- * @param {Object} options - Test configuration (see CLI --help for available options)
- * @param {string} options.url - URL to test (required)
- * @param {string} [options.browser='chrome'] - Browser engine to use
- * @returns {Promise<Object>} Result object: {success, testId, resultsPath} or {success, error}
+ * @param {LaunchOptions} options - Test configuration (see CLI --help for available options)
+ * @returns {TestResult} Result object: {success, testId, resultsPath} or {success, error}
  *
  * @example
  * const result = await launchTest({ url: 'https://example.com', browser: 'chrome' });
@@ -213,7 +255,8 @@ export default function browserAgent() {
     )
     .parse(process.argv);
 
-  const options = program.opts();
+  const cliOptions = program.opts();
+  const options = normalizeCLIConfig(cliOptions);
 
   (async () => {
     const result = await launchTest(options);
