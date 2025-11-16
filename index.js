@@ -20,6 +20,7 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @property {string[]=} args
  * @property {string[]=} blockDomains
  * @property {string[]=} block
+ * @property {Record<string, number>=} delayRequests
  * @property {Record<string, unknown>=} firefoxPrefs
  * @property {number=} cpuThrottle
  * @property {keyof typeof import('./connectivity.js').networkTypes=} connectionType
@@ -182,6 +183,12 @@ export default function browserAgent() {
         '--block <substrings...>',
         'A comma-delimited list of urls to block (based on a substring match)',
       ).default(DEFAULT_OPTIONS.block),
+    )
+    .addOption(
+      new Option(
+        '--delayRequests <object>',
+        'An object mapping request regexes to delays. Example: \'{".css$": 2000, ".js$": 5000}\'',
+      ).default(DEFAULT_OPTIONS.delayRequests),
     )
     .addOption(
       new Option(
