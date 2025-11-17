@@ -1,7 +1,6 @@
 import { launchTest } from '../index.js';
-import fs from 'fs';
 
-describe('Delaying requests', () => {
+describe('Delaying first byte of the response', () => {
   test('launchTest executes and returns result object', async () => {
     const result = await launchTest({
       url: 'https://www.speedpatterns.com/',
