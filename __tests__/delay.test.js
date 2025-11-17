@@ -5,8 +5,8 @@ describe('Delaying requests', () => {
   test('launchTest executes and returns result object', async () => {
     const result = await launchTest({
       url: 'https://www.speedpatterns.com/',
-      browser: 'firefox',
-      delayRequests: { '.css$': 2000, '.js$': 5000 },
+      browser: 'chrome',
+      delayFirstByte: { '.css$': 2000 },
     });
 
     expect(result).toHaveProperty('success');
@@ -14,18 +14,10 @@ describe('Delaying requests', () => {
     expect(result).toHaveProperty('resultsPath');
     expect(result.success).toBe(true);
 
-    // TODO read resources and check if they were delayed
-    // expect(
-    //   result.resources // !!! this is incorrect !!!
-    //     .filter(r => r.name.match('.css$'))
-    //     .reduce((delayed, r) => {
-    //       if (!delayed && r.duration >= 2000) {
-    //         console.log(r.name, r.duration);
-    //         return true;
-    //       } else {
-    //         return delayed;
-    //       }
-    //     }, false),
-    // ).toBeEqual(true);
+    expect(
+      result.runner.resourceTimings
+        .filter(r => r.name.match('.css$'))
+        .every(r => r.duration >= 2000),
+    ).toBe(true);
   }, 60000);
 });
