@@ -178,19 +178,19 @@ export default function browserAgent() {
       new Option(
         '--blockDomains <domains...>',
         'A comma separated list of domains to block',
-      ).default(DEFAULT_OPTIONS.blockDomains),
+      ).default(JSON.stringify(DEFAULT_OPTIONS.blockDomains)),
     )
     .addOption(
       new Option(
         '--block <substrings...>',
         'A comma-delimited list of urls to block (based on a substring match)',
-      ).default(DEFAULT_OPTIONS.block),
+      ).default(JSON.stringify(DEFAULT_OPTIONS.block)),
     )
     .addOption(
       new Option(
         '--delayFirstByte <object>',
         'An object mapping request regexes to first byte delays. Example: \'{".css$": 2000, ".js$": 5000}\'',
-      ).default(DEFAULT_OPTIONS.delayFirstByte),
+      ).default(JSON.stringify(DEFAULT_OPTIONS.delayFirstByte)),
     )
     .addOption(
       new Option(
