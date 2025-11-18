@@ -1,10 +1,13 @@
 import { launchTest } from '../index.js';
+import { BrowserConfig } from '../lib/browsers.js';
 
-describe('Delaying first byte of the response', () => {
-  test('launchTest executes and returns result object', async () => {
+const browsers = BrowserConfig.getBrowsers();
+
+describe.each(browsers)('Delaying first byte of the response - %s', browser => {
+  test('launchTest executes and delays .CSS responses by 2000ms', async () => {
     const result = await launchTest({
       url: 'https://www.speedpatterns.com/',
-      browser: 'chrome',
+      browser: browser,
       delayFirstByte: { '.css$': 2000 },
     });
 
