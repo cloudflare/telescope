@@ -249,6 +249,11 @@ export default function browserAgent() {
       ),
     )
     .addOption(
+      new Option('--zip', 'Generate Zip file').default(
+        DEFAULT_OPTIONS.zip,
+      )
+    )
+    .addOption(
       new Option('--list', 'Generate list of results in HTML').default(
         DEFAULT_OPTIONS.list,
       ),
