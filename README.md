@@ -41,6 +41,7 @@ Options:
   --timeout <int>               Maximum time (in milliseconds) to wait for test to complete (default: 30000)
   --html                        Generate HTML report (default: false)
   --list                        Generate a list of test results as HTML (default: false)
+  --zip                         Zip the results of the test into the results directory (choices: "keep", "delete", default: false)
   --help                        display help for command
 ```
 
