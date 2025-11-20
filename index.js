@@ -32,6 +32,7 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @property {number=} timeout
  * @property {boolean=} html
  * @property {boolean=} list
+ * @property {Record<string, string>=} overrideHost
  */
 
 /**
@@ -251,6 +252,12 @@ export default function browserAgent() {
     .addOption(
       new Option('--list', 'Generate list of results in HTML').default(
         DEFAULT_OPTIONS.list,
+      ),
+    )
+    .addOption(
+      new Option(
+        '--overrideHost <object>',
+        'Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})'
       ),
     )
     .parse(process.argv);
