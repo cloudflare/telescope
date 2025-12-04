@@ -253,12 +253,14 @@ export default function browserAgent() {
       new Option(
         '--openHtml',
         'Open HTML report in browser (requires --html)',
-      ).default(DEFAULT_OPTIONS.openHtml),
+      ).default(DEFAULT_OPTIONS.openHtml
+      ),
     )
     .addOption(
       new Option('--zip', 'Generate Zip file').default(
         DEFAULT_OPTIONS.zip,
-      )
+      ),
+    )
     .addOption(
       new Option('--list', 'Generate list of results in HTML').default(
         DEFAULT_OPTIONS.list,
