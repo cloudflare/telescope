@@ -40,7 +40,7 @@ Options:
   --auth <object>               Basic HTTP authentication (Expects: {"username": "", "password": ""})  (default: false)
   --timeout <int>               Maximum time (in milliseconds) to wait for test to complete (default: 30000)
   --html                        Generate HTML report (default: false)
-  --open-html                   Open HTML report in browser (requires --html) (default: false)
+  --openHtml                    Open HTML report in browser (requires --html) (default: false)
   --list                        Generate a list of test results as HTML (default: false)
   --help                        display help for command
 ```
@@ -61,18 +61,18 @@ npx . -u https://www.example.com -b chrome --timeout 50000
 ✅ Safari
 ✅ Firefox
 
-You can generate an HTML report of your test results by passing the `--html` parameter. To automatically open the report in your default browser after generation, add the `--open-html` flag.
+You can generate an HTML report of your test results by passing the `--html` parameter. To automatically open the report in your default browser after generation, add the `--openHtml` flag.
 
 #### Generate HTML report
 
 ```
-npx . -u https://timkadlec.com -b chrome --html
+npx . -u https://example.com -b chrome --html
 ```
 
 #### Generate and automatically open HTML report
 
 ```
-npx . -u https://timkadlec.com -b chrome --html --open-html
+npx . -u https://example.com -b chrome --html --openHtml
 ```
 
 ### Setting Custom Cookies
