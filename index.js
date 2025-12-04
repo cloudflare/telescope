@@ -31,6 +31,7 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @property {import('playwright').HTTPCredentials=} auth
  * @property {number=} timeout
  * @property {boolean=} html
+ * @property {boolean=} openHtml
  * @property {boolean=} list
  */
 
@@ -249,10 +250,15 @@ export default function browserAgent() {
       ),
     )
     .addOption(
+      new Option(
+        '--openHtml',
+        'Open HTML report in browser (requires --html)',
+      ).default(DEFAULT_OPTIONS.openHtml),
+    )
+    .addOption(
       new Option('--zip', 'Generate Zip file').default(
         DEFAULT_OPTIONS.zip,
       )
-    )
     .addOption(
       new Option('--list', 'Generate list of results in HTML').default(
         DEFAULT_OPTIONS.list,
