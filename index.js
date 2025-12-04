@@ -33,6 +33,7 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @property {boolean=} html
  * @property {boolean=} openHtml
  * @property {boolean=} list
+ * @property {boolean=} zip
  */
 
 /**
@@ -257,13 +258,13 @@ export default function browserAgent() {
       ),
     )
     .addOption(
-      new Option('--zip', 'Generate Zip file').default(
-        DEFAULT_OPTIONS.zip,
+      new Option('--list', 'Generate list of results in HTML').default(
+        DEFAULT_OPTIONS.list,
       ),
     )
     .addOption(
-      new Option('--list', 'Generate list of results in HTML').default(
-        DEFAULT_OPTIONS.list,
+      new Option('--zip', 'Generate Zip file').default(
+        DEFAULT_OPTIONS.zip,
       ),
     )
     .parse(process.argv);
