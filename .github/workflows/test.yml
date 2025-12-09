@@ -24,9 +24,9 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install xz-utils on Linux
+      - name: Install xz-utils and jq on Linux
         if: runner.os == 'Linux'
-        run: apt-get update && apt-get install -y xz-utils
+        run: apt-get update && apt-get install -y xz-utils jq
 
       - name: Set up FFmpeg
         uses: FedericoCarboni/setup-ffmpeg@v3
