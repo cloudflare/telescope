@@ -55,4 +55,4 @@ jobs:
         run: npx playwright install --list
 
       - name: Run tests
-        run: npx . -u https://example.com -b firefox; echo "--- GENERATED FILES ---"; find results; echo "--- END OF GENERATED FILES ---";
+        run: npm run test artifacts; echo "--- GENERATED FILES ---"; find results; echo "--- END OF GENERATED FILES ---";
