@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      HOME: /root
     container:
       image: mcr.microsoft.com/playwright:v1.57.0-noble
 
