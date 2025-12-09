@@ -17,7 +17,7 @@
     "coverage": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --collect-coverage --verbose --maxWorkers=1",
     "clean": "rm -rf node_modules results",
     "prettier": "npx prettier --write .",
-    "postinstall": "npx playwright install"
+    "postinstall": "npx playwright install --with-deps"
   },
   "devDependencies": {
     "@playwright/test": "next",
