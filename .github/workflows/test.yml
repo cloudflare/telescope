@@ -42,5 +42,8 @@ jobs:
         if: steps.cache-npm.outputs.cache-hit != 'true'
         run: npm install
 
+      - name: Show installed browsers
+        run: npx playwright install --list
+
       - name: Run tests
-        run: npx . -u https://example.com -b chromium; echo "--- GENERATED FILES ---"; find results; echo "--- END OF GENERATED FILES ---";
+        run: npx . -u https://example.com -b firefox; echo "--- GENERATED FILES ---"; find results; echo "--- END OF GENERATED FILES ---";
