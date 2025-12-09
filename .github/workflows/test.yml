@@ -38,3 +38,6 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: List generated files
+        run: find results
