@@ -57,7 +57,7 @@ function retrieveMetrics(testId) {
 
 const browsers = BrowserConfig.getBrowsers();
 
-describe.each(['firefox'])('Basic Test: %s', browser => {
+describe.each(browsers)('Basic Test: %s', browser => {
   beforeAll(() => {
     testId = null;
     outputLogs = null;

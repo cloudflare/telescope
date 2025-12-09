@@ -49,10 +49,10 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache-npm.outputs.cache-hit != 'true'
-        run: npm install
+        run: npm install --ignore-scripts
 
       - name: Show installed browsers
-        run: npx playwright install --list
+        run: npx playwright install chrome firefox webkit chromium chrome-beta msedge --list
 
       - name: Run tests
         run: npm run test artifacts; echo "--- GENERATED FILES ---"; find results; echo "--- END OF GENERATED FILES ---";
