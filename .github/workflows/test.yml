@@ -48,7 +48,7 @@ jobs:
         id: cache-browsers
         uses: actions/cache@v4
         with:
-          path: ~/.cache/ms-playwright
+          path: /ms-playwright/
           key: ${{ runner.os }}-playwright
 
       - name: Install all browsers
