@@ -36,4 +36,4 @@ jobs:
         run: npm install
 
       - name: Run tests
-        run: npm run test artifacts; find results
+        run: npm run test artifacts; echo "--- GENERATED FILES ---"; find results; echo "--- END OF GENERATED FILES ---";
