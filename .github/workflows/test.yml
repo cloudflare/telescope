@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache-npm.outputs.cache-hit != 'true'
-        run: npm install --ignore-scripts
+        run: npm install
 
       - name: Run tests
         run: npm run test artifacts; find results
