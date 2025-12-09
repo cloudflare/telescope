@@ -43,13 +43,17 @@ jobs:
         if: steps.cache-npm.outputs.cache-hit != 'true'
         run: npm install --ignore-scripts
 
+      - name: Get playwright version
+        id: get-playwright-version
+        run: echo "PLAYWRIGHT_VERSION=$(npm ls playwright --json | jq '.dependencies.playwright.version')" >> $GITHUB_OUTPUT
+
       - name: Cache browsers
         id: cache-browsers
         uses: actions/cache@v4
         with:
           path: /ms-playwright/
-          key: ${{ runner.os }}-playwright
-          restore-keys: ${{ runner.os }}-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.get-playwright-version.outputs.PLAYWRIGHT_VERSION }}
+          restore-keys: ${{ runner.os }}-playwright-
 
       - name: Install all browsers
         run: npx playwright install chrome firefox webkit chromium chrome-beta msedge
