@@ -58,7 +58,7 @@ jobs:
         run: npx playwright install --list
 
       - name: Run tests
-        run: npm run test artifacts
+        run: npx . -u https://example.com/ -b firefox
 
       - name: List all results
         if: ${{ always() }}
