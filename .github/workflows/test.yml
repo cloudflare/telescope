@@ -68,7 +68,7 @@ jobs:
         run: find /ms-playwright/
 
       - name: Run tests
-        run: npx . -u https://example.com/ -b firefox
+        run: npm run test cli
 
       - name: List all results
         if: ${{ always() }}
