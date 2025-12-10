@@ -71,7 +71,7 @@ jobs:
         run: find /ms-playwright/
 
       - name: Run tests
-        run: npm run test cli
+        run: npm test
 
       - name: List all results
         if: ${{ always() }}
