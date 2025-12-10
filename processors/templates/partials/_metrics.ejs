@@ -1,110 +1,135 @@
-    <section id="metrics">
-        <div class="metric-group">
-            <h3>Performance Metrics</h3>
-            <div class="metric-cards">
-                <div class="metric-card">
-                    <div class="metric-value"><%= ttfb %> ms</div>
-                    <div class="metric-label">Time to First Byte</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value"><%= fp %> ms</div>
-                    <div class="metric-label">First Paint</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value"><%= fcp %> ms</div>
-                    <div class="metric-label">First Contentful Paint</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value"><%= lcp %> ms</div>
-                    <div class="metric-label">Largest Contentful Paint</div>
-                </div>
-            </div>
+<section id="metrics">
+  <div class="metric-group">
+    <h3>Performance Metrics</h3>
+    <div class="metric-cards">
+      <div class="metric-card">
+        <div class="metric-value"><%= ttfb %> ms</div>
+        <div class="metric-label">Time to First Byte</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value"><%= fp %> ms</div>
+        <div class="metric-label">First Paint</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value"><%= fcp %> ms</div>
+        <div class="metric-label">First Contentful Paint</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value"><%= lcp %> ms</div>
+        <div class="metric-label">Largest Contentful Paint</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="metric-group">
+    <h3>Server Timings</h3>
+    <div class="metric-cards server-timings">
+      <% if (hasServerTimings) { %> <% serverTimingData.forEach(function(timing)
+      { %>
+      <div class="metric-card" title="<%= timing.description %>">
+        <div class="metric-value"><%= timing.timing %> ms</div>
+        <div class="metric-label" style="text-transform: none">
+          <%= timing.name %>
         </div>
+      </div>
+      <% }); %>
+      <% } else { %>
+      <div class="empty">No server timings available</div>
+      <% } %>
+    </div>
+  </div>
 
-        <div class="metric-group">
-            <h3>Server Timings</h3>
-            <div class="metric-cards server-timings">
-                <% if (hasServerTimings) { %>
-                    <% serverTimingData.forEach(function(timing) { %>
-                        <div class="metric-card" title="<%= timing.description %>">
-                            <div class="metric-value"><%= timing.timing %> ms</div>
-                            <div class="metric-label" style="text-transform: none;"><%= timing.name %></div>
-                        </div>
-                    <% }); %>
-                <% } else { %>
-                    <div class="empty">No server timings available</div>
-                <% } %>
-            </div>
+  <div class="metric-group">
+    <h3>Navigation Timing</h3>
+    <div class="timing-legend">
+      <% legendData.forEach(function(item) { %>
+      <div class="legend-item">
+        <div class="legend-color <%= item.colorClass %>"></div>
+        <div class="legend-text">
+          <span class="legend-label"><%= item.label %></span>
+          <span class="legend-timing"><%= item.timing %>ms</span>
         </div>
+      </div>
+      <% }); %>
+    </div>
+    <div class="timing-timeline">
+      <% timelineData.forEach(function(phase) { %>
+      <div
+        class="timing-phase <%= phase.colorClass %>"
+        style="width: <%= phase.widthPct %>%"
+        title="<%= phase.label %>: <%= phase.timing %>ms"
+      ></div>
+      <% }); %>
+    </div>
+  </div>
 
-        <div class="metric-group">
-            <h3>Navigation Timing</h3>
-            <div class="timing-legend">
-                <% legendData.forEach(function(item) { %>
-                    <div class="legend-item">
-                        <div class="legend-color <%= item.colorClass %>"></div>
-                        <div class="legend-text">
-                            <span class="legend-label"><%= item.label %></span>
-                            <span class="legend-timing"><%= item.timing %>ms</span>
-                        </div>
-                    </div>
-                <% }); %>
-            </div>
-            <div class="timing-timeline">
-                <% timelineData.forEach(function(phase) { %>
-                    <div class="timing-phase <%= phase.colorClass %>" style="width: <%= phase.widthPct %>%;"
-                        title="<%= phase.label %>: <%= phase.timing %>ms"></div>
-                <% }); %>
-            </div>
+  <div class="metric-group">
+    <h3>Core Web Vitals</h3>
+    <div class="metric-cards">
+      <div class="metric-card border-<%= lcpRatingClass %>">
+        <div class="metric-value"><%= lcp %> ms</div>
+        <div class="metric-label">Largest Contentful Paint</div>
+        <div class="metric-rating rating-<%= lcpRatingClass %>">
+          <%= lcpRating %>
         </div>
-
-        <div class="metric-group">
-            <h3>Core Web Vitals</h3>
-            <div class="metric-cards">
-                <div class="metric-card border-<%= lcpRatingClass %>">
-                    <div class="metric-value"><%= lcp %> ms</div>
-                    <div class="metric-label">Largest Contentful Paint</div>
-                    <div class="metric-rating rating-<%= lcpRatingClass %>"><%= lcpRating %></div>
-                </div>
-                <div class="metric-card border-<%= clsRatingClass %>">
-                    <div class="metric-value"><%= cls %></div>
-                    <div class="metric-label">Cumulative Layout Shift</div>
-                    <div class="metric-rating rating-<%= clsRatingClass %>"><%= clsRating %></div>
-                </div>
-                <div class="metric-card border-<%= tbtRatingClass %>">
-                    <div class="metric-value"><%= tbt %> ms</div>
-                    <div class="metric-label">Total Blocking Time</div>
-                    <div class="metric-rating rating-<%= tbtRatingClass %>"><%= tbtRating %></div>
-                </div>
-            </div>
+      </div>
+      <div class="metric-card border-<%= clsRatingClass %>">
+        <div class="metric-value"><%= cls %></div>
+        <div class="metric-label">Cumulative Layout Shift</div>
+        <div class="metric-rating rating-<%= clsRatingClass %>">
+          <%= clsRating %>
         </div>
-
-        <div class="metric-group layout-shift-metric-group">
-            <h3>Layout Shifts Visual Timeline</h3>
-            <div class="layout-shift-legend">
-                <span><span class="legend-box previous"></span> Previous Position</span>
-                <span><span class="legend-box current"></span> Current Position</span>
-            </div>
-            <% layoutVisualData.forEach(function(shift) { %>
-                <div class="layout-shift-visual">
-                    <div class="layout-shift-header">
-                        <span class="layout-shift-time"><%= shift.time %>ms</span>
-                        <span class="layout-shift-value">Shift Value: <%= shift.value %></span>
-                        <span class="layout-shift-elements"><%= shift.sources %> element(s) affected</span>
-                    </div>
-                    <div class="layout-shift-viewport">
-                        <% shift.sourceVisualData.forEach(function(source) { %>
-                            <div class="layout-shift-rect previous"
-                                style="left: <%= source.prevLeftPct %>%; top: <%= source.prevTopPct %>%; width: <%= source.prevWidthPct %>%; height: <%= source.prevHeightPct %>%;"
-                                title="Previous: <%= source.prevX %>,<%= source.prevY %> <%= source.prevWidth %>×<%= source.prevHeight %>"></div>
-                            <div class="layout-shift-rect current"
-                                style="left: <%= source.currLeftPct %>%; top: <%= source.currTopPct %>%; width: <%= source.currWidthPct %>%; height: <%= source.currHeightPct %>%;"
-                                title="Current: <%= source.currX %>,<%= source.currY %> <%= source.currWidth %>×<%= source.currHeight %>"></div>
-                        <% }); %>
-                    </div>
-                </div>
-            <% }); %>
+      </div>
+      <div class="metric-card border-<%= tbtRatingClass %>">
+        <div class="metric-value"><%= tbt %> ms</div>
+        <div class="metric-label">Total Blocking Time</div>
+        <div class="metric-rating rating-<%= tbtRatingClass %>">
+          <%= tbtRating %>
         </div>
+      </div>
+    </div>
+  </div>
 
-    </section>
-
+  <div class="metric-group layout-shift-metric-group">
+    <h3>Layout Shifts Visual Timeline</h3>
+    <div class="layout-shift-legend">
+      <span><span class="legend-box previous"></span> Previous Position</span>
+      <span><span class="legend-box current"></span> Current Position</span>
+    </div>
+    <% layoutVisualData.forEach(function(shift) { %>
+    <div class="layout-shift-visual">
+      <div class="layout-shift-header">
+        <span class="layout-shift-time"><%= shift.time %>ms</span>
+        <span class="layout-shift-value">Shift Value: <%= shift.value %></span>
+        <span class="layout-shift-elements"
+          ><%= shift.sources %> element(s) affected</span
+        >
+      </div>
+      <div class="layout-shift-viewport">
+        <% shift.sourceVisualData.forEach(function(source) { %>
+        <div
+          class="layout-shift-rect previous"
+          style="
+            left: <%= source.prevLeftPct %>%;
+            top: <%= source.prevTopPct %>%;
+            width: <%= source.prevWidthPct %>%;
+            height: <%= source.prevHeightPct %>%;
+          "
+          title="Previous: <%= source.prevX %>,<%= source.prevY %> <%= source.prevWidth %>×<%= source.prevHeight %>"
+        ></div>
+        <div
+          class="layout-shift-rect current"
+          style="
+            left: <%= source.currLeftPct %>%;
+            top: <%= source.currTopPct %>%;
+            width: <%= source.currWidthPct %>%;
+            height: <%= source.currHeightPct %>%;
+          "
+          title="Current: <%= source.currX %>,<%= source.currY %> <%= source.currWidth %>×<%= source.currHeight %>"
+        ></div>
+        <% }); %>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+</section>
