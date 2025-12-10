@@ -43,6 +43,9 @@ jobs:
         if: steps.cache-npm.outputs.cache-hit != 'true'
         run: npm install --ignore-scripts
 
+      - name: List playwright browsers BEFORE
+        run: find /ms-playwright/
+
       - name: Get playwright version
         id: get-playwright-version
         run: echo "PLAYWRIGHT_VERSION=$(npm ls playwright --json | jq '.dependencies.playwright.version')" >> $GITHUB_OUTPUT
@@ -61,9 +64,12 @@ jobs:
       - name: Show the list of the browsers
         run: npx playwright install --list
 
+      - name: List playwright browsers AFTER
+        run: find /ms-playwright/
+
       - name: Run tests
         run: npx . -u https://example.com/ -b firefox
 
       - name: List all results
         if: ${{ always() }}
-        run: echo "--- GENERATED FILES ---"; find results; echo "--- END OF GENERATED FILES ---";
+        run: find results

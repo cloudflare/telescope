@@ -55,7 +55,7 @@ function retrieveMetrics(testId) {
   }
 }
 
-const browsers = BrowserConfig.getBrowsers();
+const browsers = process.env.CI ? ['firefox'] : BrowserConfig.getBrowsers();
 
 describe.each(browsers)('Basic Test: %s', browser => {
   beforeAll(() => {
