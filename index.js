@@ -263,7 +263,7 @@ export default function browserAgent() {
       ),
     )
     .addOption(
-      new Option('--zip', 'Generate Zip file').default(
+      new Option('--zip', 'Zip the results of the test into the results directory.').default(
         DEFAULT_OPTIONS.zip,
       ),
     )
