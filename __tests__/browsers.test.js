@@ -38,7 +38,7 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
       browser,
       url: '../tests/sandbox/index.html',
     };
-    let config = new BrowserConfig().getBrowserConfig('chrome', options);
+    let config = new BrowserConfig().getBrowserConfig(browser, options);
     expect(config && typeof config === 'object').toBe(true);
   });
   test('Setting a viewport updates the config', () => {
@@ -48,7 +48,7 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
       height: 700,
       url: '../tests/sandbox/index.html',
     };
-    let config = new BrowserConfig().getBrowserConfig('chrome', options);
+    let config = new BrowserConfig().getBrowserConfig(browser, options);
     expect(config && typeof config === 'object').toBe(true);
     expect(config.viewport.width === 500).toBe(true);
     expect(config.viewport.height === 700).toBe(true);
@@ -60,7 +60,7 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
       height: 700,
       url: '../tests/sandbox/index.html',
     };
-    let config = new BrowserConfig().getBrowserConfig('chrome', options);
+    let config = new BrowserConfig().getBrowserConfig(browser, options);
     expect(config && typeof config === 'object').toBe(true);
     expect(config.recordVideo.size.width === 500).toBe(true);
     expect(config.recordVideo.size.height === 700).toBe(true);
@@ -73,7 +73,7 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
       url: '../tests/sandbox/index.html',
     };
     expect(() =>
-      new BrowserConfig().getBrowserConfig('chrome', options).toThrow(Error),
+      new BrowserConfig().getBrowserConfig(browser, options).toThrow(Error),
     );
   });
 
