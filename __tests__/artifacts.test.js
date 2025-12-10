@@ -23,12 +23,22 @@ function safeResultsPath(testId) {
 function listArtifacts(root) {
   const normalize = relative => {
     const base = path.posix.basename(relative);
-    if (/^[0-9a-f]{32}\.webm$/i.test(base)) {
+    const parent = path.posix.basename(path.posix.dirname(relative));
+
+    // make sure webm (screen recording) file names are ignored when comparing artifacts
+    if (/\.webm$/i.test(base)) {
       const dirName = path.posix.dirname(relative);
       const normalizedDir = dirName === '.' ? '' : dirName;
       return normalizedDir
         ? `${normalizedDir}/__video__.webm`
         : '__video__.webm';
+    }
+
+    // make sure filmstrip screenshots are counted as one to avoid discrepancies because of timing
+    if (parent === 'filmstrip' && /\.jpg$/i.test(base)) {
+      const dirName = path.posix.dirname(relative);
+      const normalizedDir = dirName === '.' ? '' : dirName;
+      return normalizedDir ? `${normalizedDir}/__image__.jpg` : '__image__.jpg';
     }
     return relative;
   };
@@ -49,7 +59,7 @@ function listArtifacts(root) {
       }
     }
   }
-  return items.sort();
+  return [...new Set(items)].sort();
 }
 
 async function runProgrammaticTest(options) {
