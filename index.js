@@ -254,8 +254,7 @@ export default function browserAgent() {
       new Option(
         '--openHtml',
         'Open HTML report in browser (requires --html)',
-      ).default(DEFAULT_OPTIONS.openHtml
-      ),
+      ).default(DEFAULT_OPTIONS.openHtml),
     )
     .addOption(
       new Option('--list', 'Generate list of results in HTML').default(
@@ -263,9 +262,10 @@ export default function browserAgent() {
       ),
     )
     .addOption(
-      new Option('--zip', 'Zip the results of the test into the results directory.').default(
-        DEFAULT_OPTIONS.zip,
-      ),
+      new Option(
+        '--zip',
+        'Zip the results of the test into the results directory.',
+      ).default(DEFAULT_OPTIONS.zip),
     )
     .parse(process.argv);
 
