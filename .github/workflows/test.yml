@@ -24,15 +24,19 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install xz-utils and jq on Linux
+      - name: Install xz-utils on Linux
         if: runner.os == 'Linux'
-        run: apt-get update && apt-get install -y xz-utils jq
+        run: apt-get update && apt-get install -y xz-utils
+
+      # - name: Install jq on Linux
+      #   if: runner.os == 'Linux'
+      #   run: apt-get install -y jq
 
       - name: Set up FFmpeg
         uses: FedericoCarboni/setup-ffmpeg@v3
 
-      - name: List playwright browsers CONTAINER
-        run: find /ms-playwright/
+      # - name: List playwright browsers CONTAINER
+      #   run: find /ms-playwright/
 
       - name: Cache node modules
         id: cache-npm
@@ -46,23 +50,23 @@ jobs:
         if: steps.cache-npm.outputs.cache-hit != 'true'
         run: npm install --ignore-scripts
 
-      - name: List playwright browsers BEFORE
-        run: find /ms-playwright/
+      # - name: List playwright browsers BEFORE
+      #   run: find /ms-playwright/
 
-      - name: Get playwright version
-        id: get-playwright-version
-        run: echo "PLAYWRIGHT_VERSION=$(npm ls playwright --json | jq '.dependencies.playwright.version')" >> $GITHUB_OUTPUT
+      # - name: Get playwright version
+      #   id: get-playwright-version
+      #   run: echo "PLAYWRIGHT_VERSION=$(npm ls playwright --json | jq '.dependencies.playwright.version')" >> $GITHUB_OUTPUT
 
-      - name: Cache browsers
-        id: cache-browsers
-        uses: actions/cache@v4
-        with:
-          path: /ms-playwright/
-          key: ${{ runner.os }}-playwright-${{ steps.get-playwright-version.outputs.PLAYWRIGHT_VERSION }}
-          restore-keys: ${{ runner.os }}-playwright-
+      # - name: Cache browsers
+      #   id: cache-browsers
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: /ms-playwright/
+      #     key: ${{ runner.os }}-playwright-${{ steps.get-playwright-version.outputs.PLAYWRIGHT_VERSION }}
+      #     restore-keys: ${{ runner.os }}-playwright-
 
-      - name: Install all browsers
-        run: npx playwright install chrome firefox webkit chromium chrome-beta msedge
+      # - name: Install all browsers
+      #   run: npx playwright install chrome firefox webkit chromium chrome-beta msedge
 
       - name: Show the list of the browsers
         run: npx playwright install --list
