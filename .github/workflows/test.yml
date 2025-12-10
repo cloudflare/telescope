@@ -24,12 +24,10 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install xz-utils on Linux
-        if: runner.os == 'Linux'
+      - name: Install xz-utils
         run: apt-get update && apt-get install -y xz-utils
 
-      # - name: Install jq on Linux
-      #   if: runner.os == 'Linux'
+      # - name: Install jq
       #   run: apt-get install -y jq
 
       - name: Set up FFmpeg
