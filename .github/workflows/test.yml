@@ -68,11 +68,11 @@ jobs:
       # - name: Install all browsers
       #   run: npx playwright install chrome firefox webkit chromium chrome-beta msedge
 
-      - name: Show the list of the browsers
-        run: npx playwright install --list
+      # - name: Show the list of the browsers
+      #   run: npx playwright install --list
 
-      - name: List playwright browsers AFTER
-        run: find /ms-playwright/
+      # - name: List playwright browsers AFTER
+      #   run: find /ms-playwright/
 
       - name: Run tests
         run: npm test
