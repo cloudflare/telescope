@@ -38,6 +38,7 @@ jobs:
       #   run: find /ms-playwright/
 
       - name: Install dependencies
+        # don't install the browsers since we're using the pre-built container
         run: npm ci --ignore-scripts
 
       # - name: List playwright browsers BEFORE
