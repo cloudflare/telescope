@@ -1,9 +1,9 @@
 import { spawnSync } from 'child_process';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
 
 import { BrowserConfig } from '../lib/browsers.js';
+const browsers = BrowserConfig.getBrowsers();
 
 let testId;
 let outputLogs;
@@ -54,8 +54,6 @@ function retrieveMetrics(testId) {
     return null;
   }
 }
-
-const browsers = BrowserConfig.getBrowsers();
 
 describe.each(browsers)('Basic Test: %s', browser => {
   beforeAll(() => {
