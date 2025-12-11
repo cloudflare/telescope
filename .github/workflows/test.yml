@@ -12,6 +12,7 @@ jobs:
     env:
       HOME: /root
     container:
+      # make sure to match this version with the one in package.json
       image: mcr.microsoft.com/playwright:v1.57.0-noble
 
     steps:
