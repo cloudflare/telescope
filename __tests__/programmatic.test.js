@@ -4,7 +4,7 @@ import fs from 'fs';
 import { BrowserConfig } from '../lib/browsers.js';
 const browsers = BrowserConfig.getBrowsers();
 
-describe.each(browsers)('Programmatic API', browser => {
+describe.each(browsers)('Programmatic API (%s)', browser => {
   test('launchTest executes and returns result object', async () => {
     const result = await launchTest({
       url: 'https://www.example.com',

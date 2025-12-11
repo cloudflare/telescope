@@ -91,7 +91,7 @@ function cleanup(paths) {
   }
 }
 
-describe.each(browsers)('CLI vs Programmatic artifacts', browser => {
+describe.each(browsers)('CLI vs Programmatic artifacts (%s)', browser => {
   test('produces same artifact files for CLI and programmatic API', async () => {
     const url = 'https://example.com';
 
