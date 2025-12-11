@@ -36,17 +36,8 @@ jobs:
       # - name: List playwright browsers CONTAINER
       #   run: find /ms-playwright/
 
-      - name: Cache node modules
-        id: cache-npm
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-node-
-
       - name: Install dependencies
-        if: steps.cache-npm.outputs.cache-hit != 'true'
-        run: npm install --ignore-scripts
+        run: npm ci --ignore-scripts
 
       # - name: List playwright browsers BEFORE
       #   run: find /ms-playwright/
