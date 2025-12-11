@@ -1,4 +1,6 @@
 name: Test PRs
+permissions:
+  contents: read
 
 on:
   push:
