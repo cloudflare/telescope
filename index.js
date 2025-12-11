@@ -33,6 +33,7 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @property {boolean=} html
  * @property {boolean=} openHtml
  * @property {boolean=} list
+ * @property {boolean=} zip
  */
 
 /**
@@ -259,6 +260,12 @@ export default function browserAgent() {
       new Option('--list', 'Generate list of results in HTML').default(
         DEFAULT_OPTIONS.list,
       ),
+    )
+    .addOption(
+      new Option(
+        '--zip',
+        'Zip the results of the test into the results directory.',
+      ).default(DEFAULT_OPTIONS.zip),
     )
     .parse(process.argv);
 

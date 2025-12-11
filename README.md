@@ -42,6 +42,7 @@ Options:
   --html                        Generate HTML report (default: false)
   --openHtml                    Open HTML report in browser (requires --html) (default: false)
   --list                        Generate a list of test results as HTML (default: false)
+  --zip                         Zip the results of the test into the results directory. (default: false)
   --help                        display help for command
 ```
 
