@@ -28,42 +28,12 @@ jobs:
       - name: Install xz-utils
         run: apt-get update && apt-get install -y xz-utils
 
-      # - name: Install jq
-      #   run: apt-get install -y jq
-
       - name: Set up FFmpeg
         uses: FedericoCarboni/setup-ffmpeg@v3
-
-      # - name: List playwright browsers CONTAINER
-      #   run: find /ms-playwright/
 
       - name: Install dependencies
         # don't install the browsers since we're using the pre-built container
         run: npm ci --ignore-scripts
-
-      # - name: List playwright browsers BEFORE
-      #   run: find /ms-playwright/
-
-      # - name: Get playwright version
-      #   id: get-playwright-version
-      #   run: echo "PLAYWRIGHT_VERSION=$(npm ls playwright --json | jq '.dependencies.playwright.version')" >> $GITHUB_OUTPUT
-
-      # - name: Cache browsers
-      #   id: cache-browsers
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: /ms-playwright/
-      #     key: ${{ runner.os }}-playwright-${{ steps.get-playwright-version.outputs.PLAYWRIGHT_VERSION }}
-      #     restore-keys: ${{ runner.os }}-playwright-
-
-      # - name: Install all browsers
-      #   run: npx playwright install chrome firefox webkit chromium chrome-beta msedge
-
-      # - name: Show the list of the browsers
-      #   run: npx playwright install --list
-
-      # - name: List playwright browsers AFTER
-      #   run: find /ms-playwright/
 
       - name: Run tests
         run: npm test
