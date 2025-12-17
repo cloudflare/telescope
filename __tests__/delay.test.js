@@ -1,17 +1,19 @@
 import { launchTest } from '../index.js';
 import { BrowserConfig } from '../lib/browsers.js';
+import { DELAY_IMPLEMENTATIONS } from '../lib/delay.js';
 
 const browsers = BrowserConfig.getBrowsers();
 
-describe.each(['chrome'])(
-  'Delaying first byte of the response - %s',
-  browser => {
-    test('launchTest executes and delays .CSS responses by 2000ms', async () => {
+describe.each(['firefox'])('Delaying response - %s', browser => {
+  test.each(Object.keys(DELAY_IMPLEMENTATIONS))(
+    'launchTest delays .CSS responses by 2000ms (using "%s" method)',
+    async delayImplementationName => {
       const result = await launchTest({
         url: 'https://www.speedpatterns.com/',
         browser: browser,
         debug: true,
-        delayFirstByte: { '**/*.css$': 2000 },
+        delay: { '\.css$': 2000 },
+        delayUsing: delayImplementationName,
       });
 
       expect(result).toHaveProperty('success');
@@ -24,6 +26,7 @@ describe.each(['chrome'])(
           .filter(r => r.name.match('.css$'))
           .every(r => r.duration >= 2000),
       ).toBe(true);
-    }, 60000);
-  },
-);
+    },
+    60000,
+  );
+});
