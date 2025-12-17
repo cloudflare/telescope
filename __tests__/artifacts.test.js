@@ -140,7 +140,7 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
         url: 'https://www.example.com/',
         list: true,
       });
-      
+
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
       const indexPath = path.resolve(result.resultsPath, '..', 'index.html');
