@@ -30,7 +30,7 @@ Options:
   --blockDomains <domains...>   A comma separated list of domains to block (default: [])
   --block <substrings...>       A comma-delimited list of urls to block (based on a substring match) (default: [])
   --delay <object>              An object mapping request regexes to response delays. Example: '{".css$": 2000, ".js$": 5000}' (default: {})
-  --delayUsing <string>         Method to use to delay responses (choices: "fallback", "continue", default: "fallback")
+  --delayUsing <string>         Method to use to delay responses (choices: "fulfill", "continue", default: "fulfill")
   --firefoxPrefs <object>       Any Firefox User Preferences to apply (Firefox only). Example: '{"network.trr.mode": 2}'
   --cpuThrottle <int>           CPU throttling factor
   --connectionType <string>     Network connection type. By default, no throttling is applied. (choices: "cable", "dsl", "4g", "3g", "3gfast", "3gslow", "2g", "fios", default: false)
