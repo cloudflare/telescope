@@ -108,7 +108,9 @@ describe.each(browsers)('CLI vs Programmatic artifacts (%s)', browser => {
       // Compare file structure only (same files exist), not content (non-deterministic)
       expect(apiArtifacts).toEqual(cliArtifacts);
     } finally {
-      cleanup([cliPath, apiPath]);
+      if(!process.env.CI){
+        cleanup([cliPath, apiPath]);
+      }
     }
   }, 120000);
 });
@@ -127,7 +129,9 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
       const indexPath = path.resolve(result.resultsPath, 'index.html');
       expect(fs.existsSync(indexPath)).toBe(true);
     } finally {
-      cleanup([path.resolve(result?.resultsPath)]);
+      if(!process.env.CI){
+        cleanup([path.resolve(result.resultsPath)]);
+      }
     }
   }, 120000);
 });
@@ -146,7 +150,9 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
       indexPath = path.resolve(result.resultsPath, '..', 'index.html');
       expect(fs.existsSync(indexPath)).toBe(true);
     } finally {
-      cleanup([path.resolve(result?.resultsPath), indexPath]);
+      if(!process.env.CI){
+        cleanup([path.resolve(result.resultsPath), indexPath]);
+      }
     }
   }, 120000);
 });
