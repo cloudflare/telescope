@@ -115,7 +115,7 @@ describe.each(browsers)('CLI vs Programmatic artifacts (%s)', browser => {
 
 describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
   test('produces html when --html is specified.', async () => {
-    let result, indexPath;
+    let result;
     try {
       result = await launchTest({
         url: 'https://www.example.com/',
@@ -124,17 +124,17 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
 
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      indexPath = path.resolve(result.resultsPath, 'index.html');
+      const indexPath = path.resolve(result.resultsPath, 'index.html');
       expect(fs.existsSync(indexPath)).toBe(true);
     } finally {
-      cleanup([path.resolve(result?.resultsPath), indexPath]);
+      cleanup([path.resolve(result?.resultsPath)]);
     }
   }, 120000);
 });
 
 describe.each(browsers)('Generated list artifacts (%s)', browser => {
   test('produces the list page when --list is specified.', async () => {
-    let result;
+    let result, indexPath;
     try {
       result = await launchTest({
         url: 'https://www.example.com/',
@@ -143,10 +143,10 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
 
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      const indexPath = path.resolve(result.resultsPath, '..', 'index.html');
+      indexPath = path.resolve(result.resultsPath, '..', 'index.html');
       expect(fs.existsSync(indexPath)).toBe(true);
     } finally {
-      cleanup([path.resolve(result?.resultsPath)]);
+      cleanup([path.resolve(result?.resultsPath), indexPath]);
     }
   }, 120000);
 });
