@@ -12,7 +12,7 @@
   },
   "scripts": {
     "start": "node cli.js",
-    "test": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --verbose",
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --verbose --maxWorkers=1",
     "testAction": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest __tests__/browsers.test.js --verbose",
     "coverage": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --collect-coverage --verbose --maxWorkers=1",
     "clean": "rm -rf node_modules results",
