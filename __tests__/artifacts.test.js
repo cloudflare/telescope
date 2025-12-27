@@ -128,7 +128,9 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
       const indexPath = path.resolve(result.resultsPath, 'index.html');
       expect(fs.existsSync(indexPath)).toBe(true);
     } finally {
-      cleanup([path.resolve(result.resultsPath)]);
+      if (!process.env.CI) {
+        cleanup([path.resolve(result.resultsPath)]);
+      }
     }
   }, 120000);
 });
