@@ -120,6 +120,7 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
       result = await launchTest({
         url: 'https://www.example.com/',
         html: true,
+        browser: browser
       });
 
       expect(result).toBeDefined();
@@ -139,6 +140,7 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
       result = await launchTest({
         url: 'https://www.example.com/',
         list: true,
+        browser: browser
       });
 
       expect(result).toBeDefined();
