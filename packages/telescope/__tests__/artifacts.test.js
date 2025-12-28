@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { BrowserConfig } from '../lib/browsers.js';
+import { expect } from 'playwright/test';
 
 const browsers = BrowserConfig.getBrowsers();
 const resultsRoot = path.resolve('results');
@@ -108,6 +109,50 @@ describe.each(browsers)('CLI vs Programmatic artifacts (%s)', browser => {
       expect(apiArtifacts).toEqual(cliArtifacts);
     } finally {
       cleanup([cliPath, apiPath]);
+    }
+  }, 120000);
+});
+
+describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
+  test('produces html when --html is specified.', async () => {
+    let result;
+    try {
+      result = await launchTest({
+        url: 'https://www.example.com/',
+        html: true,
+        browser: browser
+      });
+
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      const indexPath = path.resolve(result.resultsPath, 'index.html');
+      expect(fs.existsSync(indexPath)).toBe(true);
+    } finally {
+      if (!process.env.CI) {
+        cleanup([path.resolve(result.resultsPath)]);
+      }
+    }
+  }, 120000);
+});
+
+describe.each(browsers)('Generated list artifacts (%s)', browser => {
+  test('produces the list page when --list is specified.', async () => {
+    let result, indexPath;
+    try {
+      result = await launchTest({
+        url: 'https://www.example.com/',
+        list: true,
+        browser: browser
+      });
+
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      indexPath = path.resolve(result.resultsPath, '..', 'index.html');
+      expect(fs.existsSync(indexPath)).toBe(true);
+    } finally {
+      if (!process.env.CI) {
+        cleanup([path.resolve(result.resultsPath), indexPath]);
+      }
     }
   }, 120000);
 });
