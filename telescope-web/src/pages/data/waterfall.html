@@ -7,7 +7,7 @@
 </head>
 
 <body>
-    <top-nav></top-nav>
+    <top-nav inactive="results"></top-nav>
     <data-nav active="waterfall"></data-nav>
     <section class="data-content">
         <h1>Waterfall</h1>
@@ -44,9 +44,9 @@
             <waterfall-chart id="waterfall-chart"></waterfall-chart>
         </div>
     </section>
-    <script type="module" src="../../components/top-nav.ts"></script>
-    <script type="module" src="../../components/data-nav.ts"></script>
-    <script type="module" src="../../components/waterfall.ts"></script>
+    <script type="module" src="/components/top-nav.ts"></script>
+    <script type="module" src="/components/data-nav.ts"></script>
+    <script type="module" src="/components/waterfall.ts"></script>
 
     <script type="module">
         import { isCriticalPathEntry } from '/critical-path.ts';

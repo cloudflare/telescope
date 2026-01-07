@@ -1,8 +1,9 @@
 class TopNav extends HTMLElement {
   private _activeTab: string = '';
+  private _inactiveTab: string = '';
 
   static get observedAttributes() {
-    return ['active'];
+    return ['active', 'inactive'];
   }
 
   get activeTab(): string {
@@ -14,9 +15,22 @@ class TopNav extends HTMLElement {
     this.setAttribute('active', value);
   }
 
+  get inactiveTab(): string {
+    return this._inactiveTab;
+  }
+
+  set inactiveTab(value: string) {
+    this._inactiveTab = value;
+    this.setAttribute('inactive', value);
+  }
+
   attributeChangedCallback(name: string, oldValue: string, newValue: string) {
     if (oldValue !== newValue && name === 'active') {
       this._activeTab = newValue || '';
+      this.render();
+    }
+    if (oldValue !== newValue && name === 'inactive') {
+      this._inactiveTab = newValue || '';
       this.render();
     }
   }
@@ -66,7 +80,7 @@ class TopNav extends HTMLElement {
             .map(
               (item) => {
                 const isActive = this._activeTab === item.name;
-                const isInactive = item.name === 'results' && !isActive;
+                const isInactive = this._inactiveTab === item.name && !isActive;
                 const classes = `tab ${isActive ? 'active' : ''} ${isInactive ? 'inactive' : ''}`;
                 const href = item.name === 'home' ? '/' : item.href;
                 return `
