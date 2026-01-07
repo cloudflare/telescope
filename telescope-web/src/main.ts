@@ -2,6 +2,7 @@ import './style.css';
 import './components/top-nav';
 import './components/test-result';
 import './components/data-menu';
+import './components/metric-item';
 import { initRouter, navigate } from './router';
 
 const app = document.querySelector<HTMLDivElement>('#app');

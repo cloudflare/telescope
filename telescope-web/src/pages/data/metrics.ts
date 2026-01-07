@@ -57,40 +57,14 @@ export async function renderMetrics(outlet: HTMLElement, testId: string) {
       <!-- CWV Values Section -->
       <div class="panel pad" style="background: rgba(255,255,255,0.04); margin-bottom: 24px;">
         <h3 style="margin:0 0 16px; letter-spacing:-0.01em;">Core Web Vitals</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">LCP</div>
-            <div style="font-size: 24px; font-weight: 600;">${formatMs(lcp?.startTime)}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">FCP</div>
-            <div style="font-size: 24px; font-weight: 600;">${formatMs(fcp?.startTime)}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">CLS</div>
-            <div style="font-size: 24px; font-weight: 600;">${clsValue.toFixed(4)}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">TTFB</div>
-            <div style="font-size: 24px; font-weight: 600;">${formatMs(ttfb)}</div>
-          </div>
-        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;" id="cwv-metrics"></div>
       </div>
 
       <!-- Navigation Timings Section -->
       <div class="panel pad" style="background: rgba(255,255,255,0.04); margin-bottom: 24px;">
         <h3 style="margin:0 0 16px; letter-spacing:-0.01em;">Navigation Timings</h3>
         <div style="margin-bottom: 16px;">
-          <div style="display: flex; gap: 16px; margin-bottom: 8px;">
-            <div>
-              <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Total Duration</div>
-              <div style="font-size: 18px; font-weight: 500;">${formatMs(totalDuration)}</div>
-            </div>
-            <div>
-              <div style="font-size: 12px; color: rgba(255,255,255,0.6);">Time to First Byte</div>
-              <div style="font-size: 18px; font-weight: 500;">${formatMs(ttfb)}</div>
-            </div>
-          </div>
+          <div style="display: flex; gap: 16px; margin-bottom: 8px;" id="nav-timings-top"></div>
         </div>
         <div style="position: relative; height: ${phases.length * 40 + 20}px; background: rgba(255,255,255,0.02); border-radius: 8px; padding: 10px;">
           ${phases
@@ -109,32 +83,7 @@ export async function renderMetrics(outlet: HTMLElement, testId: string) {
       <!-- Performance Metrics Section -->
       <div class="panel pad" style="background: rgba(255,255,255,0.04); margin-bottom: 24px;">
         <h3 style="margin:0 0 16px; letter-spacing:-0.01em;">Performance Metrics</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">Total Blocking Time</div>
-            <div style="font-size: 18px; font-weight: 500;">${formatMs(tbt)}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">Time to First Byte</div>
-            <div style="font-size: 18px; font-weight: 500;">${formatMs(ttfb)}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">First Paint</div>
-            <div style="font-size: 18px; font-weight: 500;">${formatMs(metrics?.paintTiming?.find((p: any) => p.name === 'first-paint')?.startTime)}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">First Contentful Paint</div>
-            <div style="font-size: 18px; font-weight: 500;">${formatMs(fcp?.startTime)}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">Largest Contentful Paint</div>
-            <div style="font-size: 18px; font-weight: 500;">${formatMs(lcp?.startTime)}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;"># of Layout Shifts</div>
-            <div style="font-size: 18px; font-weight: 500;">${clsCount}</div>
-          </div>
-        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;" id="performance-metrics"></div>
       </div>
 
       <!-- Server Timings Section -->
@@ -182,6 +131,100 @@ export async function renderMetrics(outlet: HTMLElement, testId: string) {
           : '<p class="sub" style="margin:0">No user timings available.</p>'}
       </div>
     `;
+
+    // Populate CWV metrics
+    const cwvContainer = content.querySelector<HTMLElement>('#cwv-metrics');
+    if (cwvContainer) {
+      const lcpEl = document.createElement('metric-item');
+      lcpEl.setAttribute('label', 'LCP');
+      lcpEl.setAttribute('value', String(lcp?.startTime || 0));
+      lcpEl.setAttribute('unit', 'ms');
+      lcpEl.setAttribute('size', 'large');
+      cwvContainer.appendChild(lcpEl);
+
+      const fcpEl = document.createElement('metric-item');
+      fcpEl.setAttribute('label', 'FCP');
+      fcpEl.setAttribute('value', String(fcp?.startTime || 0));
+      fcpEl.setAttribute('unit', 'ms');
+      fcpEl.setAttribute('size', 'large');
+      cwvContainer.appendChild(fcpEl);
+
+      const clsEl = document.createElement('metric-item');
+      clsEl.setAttribute('label', 'CLS');
+      clsEl.setAttribute('value', String(clsValue));
+      clsEl.setAttribute('size', 'large');
+      cwvContainer.appendChild(clsEl);
+
+      const ttfbEl = document.createElement('metric-item');
+      ttfbEl.setAttribute('label', 'TTFB');
+      ttfbEl.setAttribute('value', String(ttfb || 0));
+      ttfbEl.setAttribute('unit', 'ms');
+      ttfbEl.setAttribute('size', 'large');
+      cwvContainer.appendChild(ttfbEl);
+    }
+
+    // Populate navigation timings top
+    const navTopContainer = content.querySelector<HTMLElement>('#nav-timings-top');
+    if (navTopContainer) {
+      const totalEl = document.createElement('metric-item');
+      totalEl.setAttribute('label', 'Total Duration');
+      totalEl.setAttribute('value', String(totalDuration));
+      totalEl.setAttribute('unit', 'ms');
+      totalEl.setAttribute('size', 'medium');
+      navTopContainer.appendChild(totalEl);
+
+      const ttfb2El = document.createElement('metric-item');
+      ttfb2El.setAttribute('label', 'Time to First Byte');
+      ttfb2El.setAttribute('value', String(ttfb));
+      ttfb2El.setAttribute('unit', 'ms');
+      ttfb2El.setAttribute('size', 'medium');
+      navTopContainer.appendChild(ttfb2El);
+    }
+
+    // Populate performance metrics
+    const perfContainer = content.querySelector<HTMLElement>('#performance-metrics');
+    if (perfContainer) {
+      const tbtEl = document.createElement('metric-item');
+      tbtEl.setAttribute('label', 'Total Blocking Time');
+      tbtEl.setAttribute('value', String(tbt));
+      tbtEl.setAttribute('unit', 'ms');
+      tbtEl.setAttribute('size', 'medium');
+      perfContainer.appendChild(tbtEl);
+
+      const ttfb3El = document.createElement('metric-item');
+      ttfb3El.setAttribute('label', 'Time to First Byte');
+      ttfb3El.setAttribute('value', String(ttfb));
+      ttfb3El.setAttribute('unit', 'ms');
+      ttfb3El.setAttribute('size', 'medium');
+      perfContainer.appendChild(ttfb3El);
+
+      const fpEl = document.createElement('metric-item');
+      fpEl.setAttribute('label', 'First Paint');
+      fpEl.setAttribute('value', String(metrics?.paintTiming?.find((p: any) => p.name === 'first-paint')?.startTime || 0));
+      fpEl.setAttribute('unit', 'ms');
+      fpEl.setAttribute('size', 'medium');
+      perfContainer.appendChild(fpEl);
+
+      const fcp2El = document.createElement('metric-item');
+      fcp2El.setAttribute('label', 'First Contentful Paint');
+      fcp2El.setAttribute('value', String(fcp?.startTime || 0));
+      fcp2El.setAttribute('unit', 'ms');
+      fcp2El.setAttribute('size', 'medium');
+      perfContainer.appendChild(fcp2El);
+
+      const lcp2El = document.createElement('metric-item');
+      lcp2El.setAttribute('label', 'Largest Contentful Paint');
+      lcp2El.setAttribute('value', String(lcp?.startTime || 0));
+      lcp2El.setAttribute('unit', 'ms');
+      lcp2El.setAttribute('size', 'medium');
+      perfContainer.appendChild(lcp2El);
+
+      const clsCountEl = document.createElement('metric-item');
+      clsCountEl.setAttribute('label', '# of Layout Shifts');
+      clsCountEl.setAttribute('value', String(clsCount));
+      clsCountEl.setAttribute('size', 'medium');
+      perfContainer.appendChild(clsCountEl);
+    }
   } catch (e: any) {
     content.innerHTML = `<p class="sub" style="margin:0">Failed to load metrics: ${e?.message ?? e}</p>`;
   }

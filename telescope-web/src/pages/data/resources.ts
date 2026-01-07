@@ -61,24 +61,7 @@ export async function renderResources(outlet: HTMLElement, testId: string) {
       <!-- Summary Section -->
       <div class="panel pad" style="background: rgba(255,255,255,0.04); margin-bottom: 24px;">
         <h3 style="margin:0 0 16px; letter-spacing:-0.01em;">Summary</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">Total Resources</div>
-            <div style="font-size: 24px; font-weight: 600;">${totalResources}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">Total Blocking Resources</div>
-            <div style="font-size: 24px; font-weight: 600;">${totalBlocking}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">Total Transfer Size</div>
-            <div style="font-size: 24px; font-weight: 600;">${formatBytes(totalTransfer)}</div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px;">Total Decoded Size</div>
-            <div style="font-size: 24px; font-weight: 600;">${formatBytes(totalDecoded)}</div>
-          </div>
-        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;" id="summary-metrics"></div>
       </div>
 
       <!-- Resources List Section -->
@@ -154,6 +137,34 @@ export async function renderResources(outlet: HTMLElement, testId: string) {
           : '<p class="sub" style="margin:0">No resources found.</p>'}
       </div>
     `;
+
+    // Populate summary metrics
+    const summaryContainer = content.querySelector<HTMLElement>('#summary-metrics');
+    if (summaryContainer) {
+      const totalResEl = document.createElement('metric-item');
+      totalResEl.setAttribute('label', 'Total Resources');
+      totalResEl.setAttribute('value', String(totalResources));
+      totalResEl.setAttribute('size', 'large');
+      summaryContainer.appendChild(totalResEl);
+
+      const totalBlockingEl = document.createElement('metric-item');
+      totalBlockingEl.setAttribute('label', 'Total Blocking Resources');
+      totalBlockingEl.setAttribute('value', String(totalBlocking));
+      totalBlockingEl.setAttribute('size', 'large');
+      summaryContainer.appendChild(totalBlockingEl);
+
+      const transferEl = document.createElement('metric-item');
+      transferEl.setAttribute('label', 'Total Transfer Size');
+      transferEl.setAttribute('value', formatBytes(totalTransfer));
+      transferEl.setAttribute('size', 'large');
+      summaryContainer.appendChild(transferEl);
+
+      const decodedEl = document.createElement('metric-item');
+      decodedEl.setAttribute('label', 'Total Decoded Size');
+      decodedEl.setAttribute('value', formatBytes(totalDecoded));
+      decodedEl.setAttribute('size', 'large');
+      summaryContainer.appendChild(decodedEl);
+    }
   } catch (e: any) {
     content.innerHTML = `<p class="sub" style="margin:0">Failed to load resources: ${e?.message ?? e}</p>`;
   }
