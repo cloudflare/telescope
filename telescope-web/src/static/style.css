@@ -1280,12 +1280,17 @@ metric-item .description {
     font-weight: 600;
 }
 
+.waterfall-domains-table-container {
+    max-height: 304px; /* Header (~44px) + 5 rows (~260px) */
+    overflow-y: auto;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
 .waterfall-domains-table {
     width: 100%;
     border-collapse: collapse;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 8px;
-    overflow: hidden;
+    background: transparent;
 }
 
 .waterfall-domains-table th,
@@ -1300,6 +1305,9 @@ metric-item .description {
     color: rgba(255, 255, 255, 0.92);
     font-size: 14px;
     background: rgba(255, 255, 255, 0.02);
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
 .waterfall-domains-table td {

@@ -276,24 +276,26 @@
                 </div>
                 <div class="waterfall-summary-domains">
                     <h4>Domains</h4>
-                    <table class="waterfall-domains-table">
-                        <thead>
-                            <tr>
-                                <th>Domain</th>
-                                <th>Requests</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.entries(domainCounts)
-                                .sort((a, b) => b[1] - a[1])
-                                .map(([domain, count]) => `
-                                    <tr>
-                                        <td>${escapeHtml(domain)}</td>
-                                        <td>${count}</td>
-                                    </tr>
-                                `).join('')}
-                        </tbody>
-                    </table>
+                    <div class="waterfall-domains-table-container">
+                        <table class="waterfall-domains-table">
+                            <thead>
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>Requests</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(domainCounts)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .map(([domain, count]) => `
+                                        <tr>
+                                            <td>${escapeHtml(domain)}</td>
+                                            <td>${count}</td>
+                                        </tr>
+                                    `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             `;
 
