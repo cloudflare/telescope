@@ -1,0 +1,141 @@
+/* Global styles for the app shell (components use shadow DOM styles). */
+:root {
+  color-scheme: dark;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter,
+    Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --bg: #070a12;
+  --bg2: #0b1020;
+  --panel: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.12);
+  --text: rgba(255, 255, 255, 0.92);
+  --muted: rgba(255, 255, 255, 0.62);
+  --brand: #7dd3fc;
+  --brand2: #a78bfa;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(
+      1200px 600px at 50% -100px,
+      rgba(125, 211, 252, 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at 80% 0%,
+      rgba(167, 139, 250, 0.14),
+      transparent 55%
+    ),
+    linear-gradient(180deg, var(--bg), var(--bg2));
+  color: var(--text);
+}
+
+.app-shell {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.page {
+  width: min(1100px, calc(100% - 48px));
+  margin: 5px auto 64px 270px;
+  overflow-x: auto; 
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.panel.pad {
+  padding: 18px 18px;
+  margin-left: 8px;
+}
+
+.h1 {
+  font-size: 40px;
+  letter-spacing: -0.03em;
+  margin: 0 0 8px;
+}
+
+.sub {
+  margin: 0 0 18px;
+  color: var(--muted);
+}
+
+.grid-2 {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 860px) {
+  .grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+}
+
+textarea {
+  min-height: 110px;
+}
+
+button {
+  font: inherit;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: linear-gradient(
+    135deg,
+    rgba(125, 211, 252, 0.14),
+    rgba(167, 139, 250, 0.14)
+  );
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: rgba(125, 211, 252, 0.45);
+}
+
+code,
+pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+}
+
+pre {
+  padding: 14px;
+  border-radius: 14px;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--border);
+}
