@@ -1,11 +1,12 @@
 import { defineConfig } from 'vite';
 import { resolve, dirname } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, statSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Connect } from 'vite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const srcDir = resolve(__dirname, 'src');
+const resultsDir = resolve(__dirname, '../results');
 
 // Route mapping: route path -> file path
 const routeMap: Record<string, string> = {
@@ -71,8 +72,88 @@ export default defineConfig({
     {
       name: 'route-mapper',
       configureServer(server) {
+        // API endpoint for listing results
+        server.middlewares.use('/api/results', (req: Connect.IncomingMessage, res, next) => {
+          const url = req.url || '';
+          
+          // Handle listing all result directories
+          if (url === '' || url === '/') {
+            try {
+              if (!existsSync(resultsDir)) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify([]));
+                return;
+              }
+              
+              const dirs = readdirSync(resultsDir).filter((dir) => {
+                const dirPath = resolve(resultsDir, dir);
+                return statSync(dirPath).isDirectory();
+              });
+              
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(dirs));
+              return;
+            } catch (error) {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Failed to read results directory' }));
+              return;
+            }
+          }
+          
+          // Handle fetching specific result files
+          const match = url.match(/^\/([^/]+)\/(.+)$/);
+          if (match) {
+            const [, testId, filePath] = match;
+            const fileFullPath = resolve(resultsDir, testId, filePath);
+            
+            // Security check: ensure file is within results directory
+            if (!fileFullPath.startsWith(resultsDir)) {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Forbidden' }));
+              return;
+            }
+            
+            if (existsSync(fileFullPath) && statSync(fileFullPath).isFile()) {
+              const content = readFileSync(fileFullPath);
+              const ext = filePath.split('.').pop()?.toLowerCase();
+              
+              let contentType = 'application/octet-stream';
+              if (ext === 'json') contentType = 'application/json';
+              else if (ext === 'png') contentType = 'image/png';
+              else if (ext === 'jpg' || ext === 'jpeg') contentType = 'image/jpeg';
+              else if (ext === 'webm') contentType = 'video/webm';
+              else if (ext === 'har') contentType = 'application/json';
+              
+              res.writeHead(200, { 'Content-Type': contentType });
+              res.end(content);
+              return;
+            } else {
+              res.writeHead(404, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'File not found' }));
+              return;
+            }
+          }
+          
+          next();
+        });
+        
+        // Route mapping middleware
         server.middlewares.use((req: Connect.IncomingMessage, res, next) => {
           const url = req.url?.split('?')[0] || '/';
+          
+          // Skip API routes
+          if (url.startsWith('/api/')) {
+            next();
+            return;
+          }
+          
+          // Handle dynamic route: /data/overview/:testId
+          const overviewMatch = url.match(/^\/data\/overview\/(.+)$/);
+          if (overviewMatch) {
+            (req as any).url = '/pages/data/overview.html';
+            next();
+            return;
+          }
           
           // Check if this is a route that needs mapping
           if (routeMap[url] && existsSync(routeMap[url])) {
