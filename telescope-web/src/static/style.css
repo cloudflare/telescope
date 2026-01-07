@@ -9,7 +9,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     --bg: #070a12;
-    --bg2: #0b1020;
     --panel: rgba(255, 255, 255, 0.06);
     --border: rgba(255, 255, 255, 0.12);
     --text: rgba(255, 255, 255, 0.92);
@@ -34,14 +33,10 @@ body {
 
 body {
     margin: 0;
-    background: radial-gradient(1200px 600px at 50% -100px,
-            rgba(125, 211, 252, 0.18),
-            transparent 60%),
-        radial-gradient(900px 500px at 80% 0%,
-            rgba(167, 139, 250, 0.14),
-            transparent 55%),
-        linear-gradient(180deg, var(--bg), var(--bg2));
+    background: var(--bg) sticky;
     color: var(--text);
+    position: sticky;
+    top: 0;
 }
 
 nav {
