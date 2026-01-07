@@ -13,7 +13,7 @@
             <a class="tab" href="/">Home</a>
             <a class="tab" href="/basic">Basic</a>
             <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab active" href="/results">Results</a>
+            <a class="tab inactive" href="/results">Results</a>
             <a class="tab" href="/upload">Upload</a>
         </div>
         <div class="spacer"></div>
@@ -21,24 +21,307 @@
             GitHub ↗
         </a>
     </nav>
-    <nav class="data-nav">
-        <div class="tabs" part="tabs">
-            <a class="tab" href="/data/overview">Overview</a>
-            <a class="tab" href="/data/filmstrip-video">Filmstrip & Video</a>
-            <a class="tab active" href="/data/metrics">Metrics</a>
-            <a class="tab" href="/data/waterfall">Waterfall</a>
-            <a class="tab" href="/data/critical-path">Critical Path</a>
-            <a class="tab" href="/data/console">Console</a>
-            <a class="tab" href="/data/resources">Resources</a>
-            <a class="tab" href="/data/bottlenecks">Bottlenecks</a>
-            <a class="tab" href="/data/config">Config</a>
-        </div>
-    </nav>
-    <section class="content">
+    <data-nav active="metrics"></data-nav>
+    <section class="data-content">
         <h1>Metrics</h1>
         <h2>View the metrics of the test.</h2>
-      </section>
-    </body>
+
+        <!-- Core Web Vitals Section -->
+        <div class="overview-section">
+            <h3>Core Web Vitals</h3>
+            <div class="metrics-grid cvv-section" id="cvv-metrics">
+                <!-- Metrics will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Navigation Timings Section -->
+        <div class="overview-section">
+            <h3>Navigation Timings</h3>
+            <div class="nav-timings-header" id="nav-timings-header">
+                <!-- Total Duration and TTFB will be populated by JavaScript -->
+            </div>
+            <div class="nav-timings-bar-container">
+                <div class="nav-timings-bar" id="nav-timings-bar">
+                    <!-- Navigation phases will be populated by JavaScript -->
+                </div>
+                <div class="nav-timings-legend" id="nav-timings-legend">
+                    <!-- Legend will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics Section -->
+        <div class="overview-section">
+            <h3>Performance Metrics</h3>
+            <div class="metrics-grid" id="performance-metrics">
+                <!-- Metrics will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Server Timings Section -->
+        <div class="overview-section">
+            <h3>Server Timings</h3>
+            <div class="metrics-grid" id="server-timings">
+                <!-- Server timings will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- User Timings Section -->
+        <div class="overview-section">
+            <h3>User Timings</h3>
+            <div id="user-timings-container">
+                <!-- User timings table will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+    <script type="module" src="../../components/data-nav.ts"></script>
+
+    <script type="module">
+        import '../../components/metric-item.ts';
+
+        // Get test ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const testId = pathParts[pathParts.length - 1];
+
+        if (!testId || testId === 'metrics') {
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: rgba(255, 255, 255, 0.72);">No test ID provided</div>';
+        } else {
+            loadMetricsData(testId);
+        }
+
+        async function loadMetricsData(testId) {
+            try {
+                // Load metrics
+                const metricsResponse = await fetch(`/api/results/${testId}/metrics.json`);
+                if (!metricsResponse.ok) throw new Error('Failed to load metrics');
+                const metrics = await metricsResponse.json();
+
+                // Render Core Web Vitals
+                renderCoreWebVitals(metrics);
+
+                // Render Navigation Timings
+                renderNavigationTimings(metrics);
+
+                // Render Performance Metrics
+                renderPerformanceMetrics(metrics);
+
+                // Render Server Timings
+                renderServerTimings(metrics);
+
+                // Render User Timings
+                renderUserTimings(metrics);
+
+            } catch (error) {
+                console.error('Error loading metrics data:', error);
+                document.body.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255, 100, 100, 0.92);">Error loading test data: ${error.message}</div>`;
+            }
+        }
+
+        function renderCoreWebVitals(metrics) {
+            const lcp = metrics.largestContentfulPaint?.[0]?.renderTime || 0;
+            const cls = calculateCLS(metrics.layoutShifts || []);
+            const fid = 0; // FID is not available in navigation timing
+
+            const container = document.getElementById('cvv-metrics');
+            container.innerHTML = `
+                <metric-item label="LCP" value="${formatTime(lcp)}" description="Largest Contentful Paint" status="${getLCPStatus(lcp)}"></metric-item>
+                <metric-item label="FID" value="${fid > 0 ? formatTime(fid) : 'N/A'}" description="First Input Delay" status="${fid > 0 ? getFIDStatus(fid) : ''}"></metric-item>
+                <metric-item label="CLS" value="${cls.toFixed(3)}" description="Cumulative Layout Shift" status="${getCLSStatus(cls)}"></metric-item>
+            `;
+        }
+
+        function renderNavigationTimings(metrics) {
+            const navTiming = metrics.navigationTiming || {};
+            const totalDuration = navTiming.duration || 0;
+            const ttfb = (navTiming.responseStart || 0) - (navTiming.requestStart || 0);
+
+            // Render header with Total Duration and TTFB
+            const header = document.getElementById('nav-timings-header');
+            header.innerHTML = `
+                <metric-item label="Total Duration" value="${formatTime(totalDuration)}" description="Total page load duration"></metric-item>
+                <metric-item label="Time to First Byte" value="${formatTime(ttfb)}" description="TTFB"></metric-item>
+            `;
+
+            // Calculate phase timings relative to navigationStart (0)
+            const navigationStart = 0;
+            const fetchStart = navTiming.fetchStart || 0;
+            const domainLookupStart = navTiming.domainLookupStart || fetchStart;
+            const domainLookupEnd = navTiming.domainLookupEnd || domainLookupStart;
+            const connectStart = navTiming.connectStart || domainLookupEnd;
+            const connectEnd = navTiming.connectEnd || connectStart;
+            const requestStart = navTiming.requestStart || connectEnd;
+            const responseStart = navTiming.responseStart || requestStart;
+            const responseEnd = navTiming.responseEnd || responseStart;
+            const domInteractive = navTiming.domInteractive || responseEnd;
+            const domComplete = navTiming.domComplete || domInteractive;
+            const loadEventEnd = navTiming.loadEventEnd || domComplete;
+
+            // Calculate relative positions (0 to totalDuration)
+            // Each phase shows the time from the start of that phase to the start of the next
+            const phases = [
+                { name: 'First Request', start: navigationStart, end: fetchStart, class: 'first-request' },
+                { name: 'DNS', start: domainLookupStart, end: domainLookupEnd, class: 'dns' },
+                { name: 'Connect', start: connectStart, end: connectEnd, class: 'connect' },
+                { name: 'Request', start: requestStart, end: responseStart, class: 'request' },
+                { name: 'Response', start: responseStart, end: responseEnd, class: 'response' },
+                { name: 'DOM Interactive', start: responseEnd, end: domInteractive, class: 'dom-interactive' },
+                { name: 'DOM Complete', start: domInteractive, end: domComplete, class: 'dom-complete' },
+                { name: 'Load Event', start: domComplete, end: loadEventEnd, class: 'load-event' },
+            ];
+
+            // Render navigation bar
+            const bar = document.getElementById('nav-timings-bar');
+            const maxTime = Math.max(totalDuration, loadEventEnd);
+            
+            bar.innerHTML = phases.map(phase => {
+                const leftPercent = (phase.start / maxTime) * 100;
+                const widthPercent = ((phase.end - phase.start) / maxTime) * 100;
+                const duration = phase.end - phase.start;
+                
+                // Only show phase if it has a meaningful duration
+                if (duration <= 0) return '';
+                
+                return `
+                    <div class="nav-timings-phase ${phase.class}" 
+                         style="left: ${leftPercent}%; width: ${Math.max(widthPercent, 0.5)}%;"
+                         title="${phase.name}: ${formatTime(duration)}">
+                        ${widthPercent > 5 ? phase.name : ''}
+                    </div>
+                `;
+            }).filter(html => html).join('');
+
+            // Render legend
+            const legend = document.getElementById('nav-timings-legend');
+            legend.innerHTML = phases.map(phase => `
+                <div class="nav-timings-legend-item">
+                    <div class="nav-timings-legend-color ${phase.class}"></div>
+                    <span>${phase.name}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderPerformanceMetrics(metrics) {
+            const navTiming = metrics.navigationTiming || {};
+            const paintTiming = metrics.paintTiming || [];
+            const lcp = metrics.largestContentfulPaint?.[0]?.renderTime || 0;
+            const layoutShifts = metrics.layoutShifts || [];
+
+            // Calculate metrics
+            const ttfb = (navTiming.responseStart || 0) - (navTiming.requestStart || 0);
+            const firstPaint = paintTiming.find(p => p.name === 'first-paint')?.startTime || 0;
+            const fcp = paintTiming.find(p => p.name === 'first-contentful-paint')?.startTime || 0;
+            
+            // Total Blocking Time - not directly available, using 0 as placeholder
+            // In a real implementation, this would be calculated from PerformanceObserver entries
+            const totalBlockingTime = 0;
+
+            const container = document.getElementById('performance-metrics');
+            container.innerHTML = `
+                <metric-item label="Total Blocking Time" value="${totalBlockingTime > 0 ? formatTime(totalBlockingTime) : 'N/A'}" description="TBT"></metric-item>
+                <metric-item label="Time to First Byte" value="${formatTime(ttfb)}" description="TTFB"></metric-item>
+                <metric-item label="First Paint" value="${formatTime(firstPaint)}" description="FP"></metric-item>
+                <metric-item label="First Contentful Paint" value="${formatTime(fcp)}" description="FCP"></metric-item>
+                <metric-item label="Largest Contentful Paint" value="${formatTime(lcp)}" description="LCP" status="${getLCPStatus(lcp)}"></metric-item>
+                <metric-item label="Layout Shifts" value="${layoutShifts.length}" description="Number of layout shifts"></metric-item>
+            `;
+        }
+
+        function renderServerTimings(metrics) {
+            const navTiming = metrics.navigationTiming || {};
+            const serverTimings = navTiming.serverTiming || [];
+
+            const container = document.getElementById('server-timings');
+            
+            if (serverTimings.length === 0) {
+                container.innerHTML = '<p style="color: rgba(255, 255, 255, 0.72); grid-column: 1 / -1;">No server timings available.</p>';
+                return;
+            }
+
+            container.innerHTML = serverTimings.map(timing => {
+                const value = timing.duration ? formatTime(timing.duration) : (timing.value || 'N/A');
+                const description = timing.description || timing.name || '';
+                return `
+                    <metric-item label="${escapeHtml(timing.name || 'Unknown')}" value="${value}" description="${escapeHtml(description)}"></metric-item>
+                `;
+            }).join('');
+        }
+
+        function renderUserTimings(metrics) {
+            const userTimings = metrics.userTiming || [];
+            const container = document.getElementById('user-timings-container');
+
+            if (userTimings.length === 0) {
+                container.innerHTML = '<p class="user-timings-empty">No user timings available.</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="user-timings-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Name</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${userTimings.map(timing => {
+                            const value = timing.entryType === 'mark' 
+                                ? `startTime: ${formatTime(timing.startTime)}`
+                                : `duration: ${formatTime(timing.duration || 0)}`;
+                            
+                            return `
+                                <tr>
+                                    <td>${escapeHtml(timing.entryType || 'unknown')}</td>
+                                    <td>${escapeHtml(timing.name || 'Unknown')}</td>
+                                    <td>${value}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Helper functions
+        function formatTime(ms) {
+            if (ms === 0 || !ms) return 'N/A';
+            if (ms < 1000) return `${Math.round(ms)}ms`;
+            return `${(ms / 1000).toFixed(2)}s`;
+        }
+
+        function calculateCLS(layoutShifts) {
+            if (!layoutShifts || layoutShifts.length === 0) return 0;
+            return layoutShifts.reduce((sum, shift) => sum + (shift.value || 0), 0);
+        }
+
+        function getLCPStatus(lcp) {
+            if (lcp === 0) return '';
+            if (lcp < 2500) return 'good';
+            if (lcp < 4000) return 'needs-improvement';
+            return 'poor';
+        }
+
+        function getFIDStatus(fid) {
+            if (fid === 0) return '';
+            if (fid < 100) return 'good';
+            if (fid < 300) return 'needs-improvement';
+            return 'poor';
+        }
+
+        function getCLSStatus(cls) {
+            if (cls === 0) return '';
+            if (cls < 0.1) return 'good';
+            if (cls < 0.25) return 'needs-improvement';
+            return 'poor';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 
 </html>

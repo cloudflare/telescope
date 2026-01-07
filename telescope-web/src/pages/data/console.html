@@ -13,7 +13,7 @@
             <a class="tab" href="/">Home</a>
             <a class="tab" href="/basic">Basic</a>
             <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab active" href="/results">Results</a>
+            <a class="tab inactive" href="/results">Results</a>
             <a class="tab" href="/upload">Upload</a>
         </div>
         <div class="spacer"></div>
@@ -21,24 +21,132 @@
             GitHub ↗
         </a>
     </nav>
-    <nav class="data-nav">
-        <div class="tabs" part="tabs">
-            <a class="tab" href="/data/overview">Overview</a>
-            <a class="tab" href="/data/filmstrip-video">Filmstrip & Video</a>
-            <a class="tab" href="/data/metrics">Metrics</a>
-            <a class="tab" href="/data/waterfall">Waterfall</a>
-            <a class="tab" href="/data/critical-path">Critical Path</a>
-            <a class="tab active" href="/data/console">Console</a>
-            <a class="tab" href="/data/resources">Resources</a>
-            <a class="tab" href="/data/bottlenecks">Bottlenecks</a>
-            <a class="tab" href="/data/config">Config</a>
-        </div>
-    </nav>
-    <section class="content">
+    <data-nav active="console"></data-nav>
+    <section class="data-content">
         <h1>Console</h1>
         <h2>View the console of the test.</h2>
-      </section>
-    </body>
+
+        <!-- Message Counts Section -->
+        <div class="overview-section">
+            <h3 id="console-header">Console Messages</h3>
+            <div class="console-counts" id="console-counts">
+                <!-- Message counts will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Console Messages List -->
+        <div class="overview-section">
+            <h3>Messages</h3>
+            <div class="console-messages" id="console-messages">
+                <!-- Messages will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+    <script type="module" src="../../components/data-nav.ts"></script>
+
+    <script type="module">
+        // Get test ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const testId = pathParts[pathParts.length - 1];
+
+        if (!testId || testId === 'console') {
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: rgba(255, 255, 255, 0.72);">No test ID provided</div>';
+        } else {
+            loadConsoleData(testId);
+        }
+
+        async function loadConsoleData(testId) {
+            try {
+                // Load console data
+                const consoleResponse = await fetch(`/api/results/${testId}/console.json`);
+                if (!consoleResponse.ok) {
+                    if (consoleResponse.status === 404) {
+                        // No console data available
+                        document.getElementById('console-header').textContent = 'Console Messages (0)';
+                        document.getElementById('console-counts').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No console messages recorded.</p>';
+                        document.getElementById('console-messages').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No console messages available.</p>';
+                        return;
+                    }
+                    throw new Error('Failed to load console data');
+                }
+                const consoleMessages = await consoleResponse.json();
+
+                // Render console data
+                renderConsoleData(consoleMessages);
+
+            } catch (error) {
+                console.error('Error loading console data:', error);
+                document.body.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255, 100, 100, 0.92);">Error loading console data: ${error.message}</div>`;
+            }
+        }
+
+        function renderConsoleData(messages) {
+            if (!messages || messages.length === 0) {
+                document.getElementById('console-header').textContent = 'Console Messages (0)';
+                document.getElementById('console-counts').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No console messages recorded.</p>';
+                document.getElementById('console-messages').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No console messages available.</p>';
+                return;
+            }
+
+            // Count messages by type
+            const counts = {};
+            messages.forEach(msg => {
+                const type = msg.type || 'unknown';
+                counts[type] = (counts[type] || 0) + 1;
+            });
+
+            // Update header with total count
+            const totalCount = messages.length;
+            document.getElementById('console-header').textContent = `Console Messages (${totalCount})`;
+
+            // Render counts
+            const countsContainer = document.getElementById('console-counts');
+            const countItems = Object.entries(counts)
+                .sort((a, b) => b[1] - a[1]) // Sort by count descending
+                .map(([type, count]) => {
+                    const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+                    return `
+                        <div class="console-count-item console-type-${type}">
+                            <span class="console-count-type">${escapeHtml(typeLabel)}</span>
+                            <span class="console-count-value">${count}</span>
+                        </div>
+                    `;
+                }).join('');
+
+            countsContainer.innerHTML = `
+                <div class="console-counts-grid">
+                    ${countItems}
+                </div>
+            `;
+
+            // Render messages
+            const messagesContainer = document.getElementById('console-messages');
+            messagesContainer.innerHTML = messages.map((msg, index) => {
+                const type = msg.type || 'unknown';
+                const text = msg.text || '';
+                const location = msg.location || {};
+                const url = location.url || '';
+                const lineNumber = location.lineNumber || 0;
+                const columnNumber = location.columnNumber || 0;
+
+                return `
+                    <div class="console-message console-message-${type}">
+                        <div class="console-message-header">
+                            <span class="console-message-type console-type-${type}">${escapeHtml(type.toUpperCase())}</span>
+                            ${url ? `<span class="console-message-location">${escapeHtml(url)}${lineNumber > 0 ? `:${lineNumber}:${columnNumber}` : ''}</span>` : ''}
+                        </div>
+                        <div class="console-message-text">${escapeHtml(text)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 
 </html>

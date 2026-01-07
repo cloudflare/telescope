@@ -93,7 +93,6 @@ telescope-web/
 │   │       ├── bottlenecks.html
 │   │       ├── config.html
 │   │       ├── console.html
-│   │       ├── critical-path.html
 │   │       ├── filmstrip-video.html
 │   │       ├── metrics.html
 │   │       ├── overview.html

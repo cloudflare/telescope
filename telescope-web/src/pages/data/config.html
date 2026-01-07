@@ -13,7 +13,7 @@
             <a class="tab" href="/">Home</a>
             <a class="tab" href="/basic">Basic</a>
             <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab active" href="/results">Results</a>
+            <a class="tab inactive" href="/results">Results</a>
             <a class="tab" href="/upload">Upload</a>
         </div>
         <div class="spacer"></div>
@@ -21,24 +21,95 @@
             GitHub ↗
         </a>
     </nav>
-    <nav class="data-nav">
-        <div class="tabs" part="tabs">
-            <a class="tab" href="/data/overview">Overview</a>
-            <a class="tab" href="/data/filmstrip-video">Filmstrip & Video</a>
-            <a class="tab" href="/data/metrics">Metrics</a>
-            <a class="tab" href="/data/waterfall">Waterfall</a>
-            <a class="tab" href="/data/critical-path">Critical Path</a>
-            <a class="tab" href="/data/console">Console</a>
-            <a class="tab" href="/data/resources">Resources</a>
-            <a class="tab" href="/data/bottlenecks">Bottlenecks</a>
-            <a class="tab active" href="/data/config">Config</a>
-        </div>
-    </nav>
-    <section class="content">
+    <data-nav active="config"></data-nav>
+    <section class="data-content">
         <h1>Config</h1>
         <h2>View the config of the test.</h2>
-      </section>
-    </body>
+
+        <!-- Action Buttons at Top -->
+        <div class="config-actions">
+            <button class="config-button config-button-primary" id="edit-rerun-button">
+                Edit and Rerun
+            </button>
+            <button class="config-button" id="rerun-button">
+                Rerun Test
+            </button>
+        </div>
+
+        <!-- Config JSON Section -->
+        <div class="overview-section">
+            <h3>Configuration</h3>
+            <pre class="config-json" id="config-json">
+                <!-- Prettified JSON will be populated by JavaScript -->
+            </pre>
+        </div>
+    </section>
+    <script type="module" src="../../components/data-nav.ts"></script>
+
+    <script type="module">
+        // Get test ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const testId = pathParts[pathParts.length - 1];
+
+        if (!testId || testId === 'config') {
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: rgba(255, 255, 255, 0.72);">No test ID provided</div>';
+        } else {
+            loadConfigData(testId);
+        }
+
+        async function loadConfigData(testId) {
+            try {
+                // Load config
+                const configResponse = await fetch(`/api/results/${testId}/config.json`);
+                if (!configResponse.ok) {
+                    if (configResponse.status === 404) {
+                        document.getElementById('config-json').textContent = 'No config data available.';
+                        return;
+                    }
+                    throw new Error('Failed to load config');
+                }
+                const config = await configResponse.json();
+
+                // Store config for rerun buttons
+                window.testConfig = config;
+
+                // Render prettified JSON
+                renderConfig(config);
+
+                // Setup button handlers
+                setupButtons(config);
+
+            } catch (error) {
+                console.error('Error loading config data:', error);
+                document.body.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255, 100, 100, 0.92);">Error loading config data: ${error.message}</div>`;
+            }
+        }
+
+        function renderConfig(config) {
+            const jsonContainer = document.getElementById('config-json');
+            jsonContainer.textContent = JSON.stringify(config, null, 2);
+        }
+
+        function setupButtons(config) {
+            const editRerunButton = document.getElementById('edit-rerun-button');
+            const rerunButton = document.getElementById('rerun-button');
+
+            // Edit and Rerun - Navigate to advanced page with config pre-filled
+            editRerunButton.addEventListener('click', () => {
+                // Store config in sessionStorage for the advanced page to pick up
+                sessionStorage.setItem('telescopeConfig', JSON.stringify(config));
+                window.location.href = '/advanced';
+            });
+
+            // Rerun Test - Navigate to advanced page with config pre-filled and auto-submit
+            rerunButton.addEventListener('click', () => {
+                // Store config in sessionStorage and flag for auto-submit
+                sessionStorage.setItem('telescopeConfig', JSON.stringify(config));
+                sessionStorage.setItem('telescopeAutoSubmit', 'true');
+                window.location.href = '/advanced';
+            });
+        }
+    </script>
 </body>
 
 </html>

@@ -13,7 +13,7 @@
             <a class="tab" href="/">Home</a>
             <a class="tab" href="/basic">Basic</a>
             <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab active" href="/results">Results</a>
+            <a class="tab inactive" href="/results">Results</a>
             <a class="tab" href="/upload">Upload</a>
         </div>
         <div class="spacer"></div>
@@ -21,24 +21,446 @@
             GitHub ↗
         </a>
     </nav>
-    <nav class="data-nav">
-        <div class="tabs" part="tabs">
-            <a class="tab" href="/data/overview">Overview</a>
-            <a class="tab" href="/data/filmstrip-video">Filmstrip & Video</a>
-            <a class="tab" href="/data/metrics">Metrics</a>
-            <a class="tab" href="/data/waterfall">Waterfall</a>
-            <a class="tab" href="/data/critical-path">Critical Path</a>
-            <a class="tab" href="/data/console">Console</a>
-            <a class="tab" href="/data/resources">Resources</a>
-            <a class="tab active" href="/data/bottlenecks">Bottlenecks</a>
-            <a class="tab" href="/data/config">Config</a>
-        </div>
-    </nav>
-    <section class="content">
+    <data-nav active="bottlenecks"></data-nav>
+    <section class="data-content">
         <h1>Bottlenecks</h1>
         <h2>View the bottlenecks of the test.</h2>
-      </section>
-    </body>
+
+        <!-- Top 5 Longest Requests Section -->
+        <div class="overview-section">
+            <h3>Top 5 Longest Requests</h3>
+            <div class="bottlenecks-list" id="longest-requests">
+                <!-- Longest requests will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Top 5 Largest Requests Section -->
+        <div class="overview-section">
+            <h3>Top 5 Largest Requests</h3>
+            <div class="bottlenecks-list" id="largest-requests">
+                <!-- Largest requests will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Blocking Resources Section -->
+        <div class="overview-section">
+            <h3>Blocking Resources</h3>
+            <div class="blocking-resources-header" id="blocking-resources-header">
+                <!-- Count will be populated by JavaScript -->
+            </div>
+            <div class="blocking-resources-list" id="blocking-resources-list">
+                <!-- Blocking resources will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Pie Charts Section -->
+        <div class="overview-section">
+            <h3>Resource Analysis</h3>
+            <div class="pie-charts-container">
+                <div class="pie-chart-section">
+                    <h4>File Types</h4>
+                    <div class="pie-chart-wrapper">
+                        <svg class="pie-chart" id="file-types-chart" viewBox="0 0 200 200">
+                            <!-- Pie chart will be populated by JavaScript -->
+                        </svg>
+                        <div class="pie-chart-legend" id="file-types-legend">
+                            <!-- Legend will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                <div class="pie-chart-section">
+                    <h4>Compression</h4>
+                    <div class="pie-chart-wrapper">
+                        <svg class="pie-chart" id="compression-chart" viewBox="0 0 200 200">
+                            <!-- Pie chart will be populated by JavaScript -->
+                        </svg>
+                        <div class="pie-chart-legend" id="compression-legend">
+                            <!-- Legend will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                <div class="pie-chart-section">
+                    <h4>HTTP Versions</h4>
+                    <div class="pie-chart-wrapper">
+                        <svg class="pie-chart" id="http-versions-chart" viewBox="0 0 200 200">
+                            <!-- Pie chart will be populated by JavaScript -->
+                        </svg>
+                        <div class="pie-chart-legend" id="http-versions-legend">
+                            <!-- Legend will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script type="module" src="../../components/data-nav.ts"></script>
+
+    <script type="module">
+        // Get test ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const testId = pathParts[pathParts.length - 1];
+
+        if (!testId || testId === 'bottlenecks') {
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: rgba(255, 255, 255, 0.72);">No test ID provided</div>';
+        } else {
+            loadBottlenecksData(testId);
+        }
+
+        async function loadBottlenecksData(testId) {
+            try {
+                // Load resources data
+                const resourcesResponse = await fetch(`/api/results/${testId}/resources.json`);
+                if (!resourcesResponse.ok) {
+                    if (resourcesResponse.status === 404) {
+                        document.getElementById('longest-requests').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No resources data available.</p>';
+                        document.getElementById('largest-requests').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No resources data available.</p>';
+                        document.getElementById('blocking-resources-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No resources data available.</p>';
+                        return;
+                    }
+                    throw new Error('Failed to load resources data');
+                }
+                const resources = await resourcesResponse.json();
+
+                // Render bottlenecks data
+                renderBottlenecksData(resources);
+
+            } catch (error) {
+                console.error('Error loading bottlenecks data:', error);
+                document.body.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255, 100, 100, 0.92);">Error loading bottlenecks data: ${error.message}</div>`;
+            }
+        }
+
+        function renderBottlenecksData(resources) {
+            if (!resources || resources.length === 0) {
+                document.getElementById('longest-requests').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No resources available.</p>';
+                document.getElementById('largest-requests').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No resources available.</p>';
+                document.getElementById('blocking-resources-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No resources available.</p>';
+                return;
+            }
+
+            // Render top 5 longest requests
+            renderLongestRequests(resources);
+
+            // Render top 5 largest requests
+            renderLargestRequests(resources);
+
+            // Render blocking resources
+            renderBlockingResources(resources);
+
+            // Render pie charts
+            renderPieCharts(resources);
+        }
+
+        function renderLongestRequests(resources) {
+            const sorted = [...resources]
+                .sort((a, b) => (b.duration || 0) - (a.duration || 0))
+                .slice(0, 5);
+
+            const container = document.getElementById('longest-requests');
+            if (sorted.length === 0) {
+                container.innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No requests available.</p>';
+                return;
+            }
+
+            container.innerHTML = sorted.map((resource, index) => {
+                const url = resource.name || '';
+                const duration = formatTime(resource.duration || 0);
+                const elidedUrl = elideUrl(url, 80);
+
+                return `
+                    <div class="bottleneck-item">
+                        <div class="bottleneck-rank">${index + 1}</div>
+                        <div class="bottleneck-content">
+                            <div class="bottleneck-url">${escapeHtml(elidedUrl)}</div>
+                            <div class="bottleneck-meta">
+                                <span class="bottleneck-duration">Duration: ${duration}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderLargestRequests(resources) {
+            const sorted = [...resources]
+                .sort((a, b) => {
+                    const sizeA = b.decodedBodySize || b.transferSize || 0;
+                    const sizeB = a.decodedBodySize || a.transferSize || 0;
+                    return sizeA - sizeB;
+                })
+                .slice(0, 5);
+
+            const container = document.getElementById('largest-requests');
+            if (sorted.length === 0) {
+                container.innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No requests available.</p>';
+                return;
+            }
+
+            container.innerHTML = sorted.map((resource, index) => {
+                const url = resource.name || '';
+                const size = formatBytes(resource.decodedBodySize || resource.transferSize || 0);
+                const elidedUrl = elideUrl(url, 80);
+
+                return `
+                    <div class="bottleneck-item">
+                        <div class="bottleneck-rank">${index + 1}</div>
+                        <div class="bottleneck-content">
+                            <div class="bottleneck-url">${escapeHtml(elidedUrl)}</div>
+                            <div class="bottleneck-meta">
+                                <span class="bottleneck-size">Size: ${size}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderBlockingResources(resources) {
+            const blocking = resources.filter(r => {
+                return r.renderBlockingStatus === 'blocking' || 
+                       r.initiatorType === 'script' || 
+                       r.initiatorType === 'css' ||
+                       (r.contentType && (r.contentType.includes('javascript') || r.contentType.includes('css')));
+            });
+
+            const header = document.getElementById('blocking-resources-header');
+            header.innerHTML = `<p style="color: rgba(255, 255, 255, 0.72); margin-bottom: 16px;">Total: ${blocking.length} blocking resources</p>`;
+
+            const container = document.getElementById('blocking-resources-list');
+            if (blocking.length === 0) {
+                container.innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No blocking resources found.</p>';
+                return;
+            }
+
+            container.innerHTML = blocking.map((resource) => {
+                const url = resource.name || '';
+                const type = getResourceType(resource);
+                const size = formatBytes(resource.decodedBodySize || resource.transferSize || 0);
+                const duration = formatTime(resource.duration || 0);
+                const elidedUrl = elideUrl(url, 80);
+
+                return `
+                    <div class="bottleneck-item">
+                        <div class="bottleneck-content">
+                            <div class="bottleneck-url">${escapeHtml(elidedUrl)}</div>
+                            <div class="bottleneck-meta">
+                                <span class="bottleneck-type">${escapeHtml(type)}</span>
+                                <span class="bottleneck-size">${size}</span>
+                                <span class="bottleneck-duration">${duration}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderPieCharts(resources) {
+            // File Types Chart
+            renderFileTypesChart(resources);
+
+            // Compression Chart
+            renderCompressionChart(resources);
+
+            // HTTP Versions Chart
+            renderHttpVersionsChart(resources);
+        }
+
+        function renderFileTypesChart(resources) {
+            const typeCounts = {};
+            resources.forEach(r => {
+                const type = getFileTypeCategory(r);
+                typeCounts[type] = (typeCounts[type] || 0) + 1;
+            });
+
+            const data = Object.entries(typeCounts).map(([label, value]) => ({ label, value }));
+            const colors = ['#7dd3fc', '#a78bfa', '#fbbf24', '#34d399', '#f87171', '#60a5fa', '#fb7185', '#a3e635'];
+            
+            renderPieChart('file-types-chart', 'file-types-legend', data, colors);
+        }
+
+        function renderCompressionChart(resources) {
+            let compressedCount = 0;
+            let uncompressedCount = 0;
+            let compressedSize = 0;
+            let uncompressedSize = 0;
+
+            resources.forEach(r => {
+                const encodedSize = r.encodedBodySize || 0;
+                const decodedSize = r.decodedBodySize || 0;
+                
+                // If encoded size is less than decoded size, it's compressed
+                if (decodedSize > encodedSize && encodedSize > 0) {
+                    compressedCount++;
+                    compressedSize += encodedSize;
+                } else {
+                    uncompressedCount++;
+                    uncompressedSize += decodedSize || encodedSize;
+                }
+            });
+
+            const data = [
+                { label: `Compressed (${compressedCount})`, value: compressedSize },
+                { label: `Uncompressed (${uncompressedCount})`, value: uncompressedSize }
+            ];
+            const colors = ['#34d399', '#f87171'];
+            
+            renderPieChart('compression-chart', 'compression-legend', data, colors, true);
+        }
+
+        function renderHttpVersionsChart(resources) {
+            const versionCounts = {};
+            resources.forEach(r => {
+                const protocol = r.nextHopProtocol || 'unknown';
+                versionCounts[protocol] = (versionCounts[protocol] || 0) + 1;
+            });
+
+            const data = Object.entries(versionCounts).map(([label, value]) => ({ label, value }));
+            const colors = ['#7dd3fc', '#a78bfa', '#fbbf24', '#34d399', '#f87171'];
+            
+            renderPieChart('http-versions-chart', 'http-versions-legend', data, colors);
+        }
+
+        function renderPieChart(chartId, legendId, data, colors, showBytes = false) {
+            if (data.length === 0) {
+                document.getElementById(chartId).innerHTML = '<text x="100" y="100" text-anchor="middle" fill="rgba(255,255,255,0.5)">No data</text>';
+                document.getElementById(legendId).innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No data available</p>';
+                return;
+            }
+
+            const total = data.reduce((sum, item) => sum + item.value, 0);
+            const centerX = 100;
+            const centerY = 100;
+            const radius = 80;
+
+            let currentAngle = -Math.PI / 2; // Start at top
+            const svg = document.getElementById(chartId);
+            svg.innerHTML = '';
+
+            data.forEach((item, index) => {
+                const sliceAngle = (item.value / total) * 2 * Math.PI;
+                const endAngle = currentAngle + sliceAngle;
+
+                const x1 = centerX + radius * Math.cos(currentAngle);
+                const y1 = centerY + radius * Math.sin(currentAngle);
+                const x2 = centerX + radius * Math.cos(endAngle);
+                const y2 = centerY + radius * Math.sin(endAngle);
+
+                const largeArcFlag = sliceAngle > Math.PI ? 1 : 0;
+
+                const pathData = [
+                    `M ${centerX} ${centerY}`,
+                    `L ${x1} ${y1}`,
+                    `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                    'Z'
+                ].join(' ');
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('fill', colors[index % colors.length]);
+                path.setAttribute('stroke', 'rgba(7, 10, 18, 0.8)');
+                path.setAttribute('stroke-width', '2');
+                svg.appendChild(path);
+
+                // Add label in the middle of the slice
+                const labelAngle = currentAngle + sliceAngle / 2;
+                const labelRadius = radius * 0.6;
+                const labelX = centerX + labelRadius * Math.cos(labelAngle);
+                const labelY = centerY + labelRadius * Math.sin(labelAngle);
+                
+                const percentage = ((item.value / total) * 100).toFixed(1);
+                if (percentage > 5) { // Only show label if slice is > 5%
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', labelX);
+                    text.setAttribute('y', labelY);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('dominant-baseline', 'middle');
+                    text.setAttribute('fill', 'rgba(255, 255, 255, 0.9)');
+                    text.setAttribute('font-size', '12');
+                    text.setAttribute('font-weight', '600');
+                    text.textContent = `${percentage}%`;
+                    svg.appendChild(text);
+                }
+
+                currentAngle = endAngle;
+            });
+
+            // Render legend
+            const legend = document.getElementById(legendId);
+            legend.innerHTML = data.map((item, index) => {
+                const percentage = ((item.value / total) * 100).toFixed(1);
+                const displayValue = showBytes ? formatBytes(item.value) : item.value;
+                return `
+                    <div class="pie-legend-item">
+                        <div class="pie-legend-color" style="background: ${colors[index % colors.length]}"></div>
+                        <div class="pie-legend-text">
+                            <div class="pie-legend-label">${escapeHtml(item.label)}</div>
+                            <div class="pie-legend-value">${displayValue} (${percentage}%)</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getFileTypeCategory(resource) {
+            if (resource.contentType) {
+                const mimeType = resource.contentType.split(';')[0].trim();
+                if (mimeType.includes('javascript')) return 'JavaScript';
+                if (mimeType.includes('css')) return 'CSS';
+                if (mimeType.includes('image')) return 'Image';
+                if (mimeType.includes('font')) return 'Font';
+                if (mimeType.includes('video')) return 'Video';
+                if (mimeType.includes('audio')) return 'Audio';
+                if (mimeType.includes('json')) return 'JSON';
+                if (mimeType.includes('xml') || mimeType.includes('html')) return 'Document';
+                return 'Other';
+            }
+            return 'Other';
+        }
+
+        function getResourceType(resource) {
+            if (resource.contentType) {
+                const mimeType = resource.contentType.split(';')[0].trim();
+                if (mimeType.includes('javascript')) return 'script';
+                if (mimeType.includes('css')) return 'stylesheet';
+                if (mimeType.includes('image')) return 'image';
+                if (mimeType.includes('font')) return 'font';
+                if (mimeType.includes('video')) return 'video';
+                if (mimeType.includes('audio')) return 'audio';
+                if (mimeType.includes('json')) return 'json';
+                if (mimeType.includes('xml') || mimeType.includes('html')) return 'document';
+                return mimeType.split('/')[1] || 'other';
+            }
+            if (resource.initiatorType) {
+                return resource.initiatorType;
+            }
+            return 'other';
+        }
+
+        function elideUrl(url, maxLength) {
+            if (!url || url.length <= maxLength) return url;
+            return '...' + url.substring(url.length - (maxLength - 3));
+        }
+
+        function formatTime(ms) {
+            if (ms === 0 || !ms) return 'N/A';
+            if (ms < 1000) return `${Math.round(ms)}ms`;
+            return `${(ms / 1000).toFixed(2)}s`;
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 
 </html>

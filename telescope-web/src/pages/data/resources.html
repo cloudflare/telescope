@@ -13,7 +13,7 @@
             <a class="tab" href="/">Home</a>
             <a class="tab" href="/basic">Basic</a>
             <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab active" href="/results">Results</a>
+            <a class="tab inactive" href="/results">Results</a>
             <a class="tab" href="/upload">Upload</a>
         </div>
         <div class="spacer"></div>
@@ -21,24 +21,300 @@
             GitHub ↗
         </a>
     </nav>
-    <nav class="data-nav">
-        <div class="tabs" part="tabs">
-            <a class="tab" href="/data/overview">Overview</a>
-            <a class="tab" href="/data/filmstrip-video">Filmstrip & Video</a>
-            <a class="tab" href="/data/metrics">Metrics</a>
-            <a class="tab" href="/data/waterfall">Waterfall</a>
-            <a class="tab" href="/data/critical-path">Critical Path</a>
-            <a class="tab" href="/data/console">Console</a>
-            <a class="tab active" href="/data/resources">Resources</a>
-            <a class="tab" href="/data/bottlenecks">Bottlenecks</a>
-            <a class="tab" href="/data/config">Config</a>
-        </div>
-    </nav>
-    <section class="content">
+    <data-nav active="resources"></data-nav>
+    <section class="data-content">
         <h1>Resources</h1>
         <h2>View the resources of the test.</h2>
-      </section>
-    </body>
+
+        <!-- Summary Metrics Section -->
+        <div class="overview-section">
+            <h3>Summary</h3>
+            <div class="metrics-grid" id="resources-summary">
+                <!-- Summary metrics will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Resources List Section -->
+        <div class="overview-section">
+            <h3>Resources</h3>
+            <div class="resources-list" id="resources-list">
+                <!-- Resources will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+    <script type="module" src="../../components/data-nav.ts"></script>
+
+    <script type="module">
+        import '../../components/metric-item.ts';
+
+        // Get test ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const testId = pathParts[pathParts.length - 1];
+
+        if (!testId || testId === 'resources') {
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: rgba(255, 255, 255, 0.72);">No test ID provided</div>';
+        } else {
+            loadResourcesData(testId);
+        }
+
+        async function loadResourcesData(testId) {
+            try {
+                // Load resources data
+                const resourcesResponse = await fetch(`/api/results/${testId}/resources.json`);
+                if (!resourcesResponse.ok) {
+                    if (resourcesResponse.status === 404) {
+                        document.getElementById('resources-summary').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72); grid-column: 1 / -1;">No resources data available.</p>';
+                        document.getElementById('resources-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No resources available.</p>';
+                        return;
+                    }
+                    throw new Error('Failed to load resources data');
+                }
+                const resources = await resourcesResponse.json();
+
+                // Render resources data
+                renderResourcesData(resources);
+
+            } catch (error) {
+                console.error('Error loading resources data:', error);
+                document.body.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255, 100, 100, 0.92);">Error loading resources data: ${error.message}</div>`;
+            }
+        }
+
+        function renderResourcesData(resources) {
+            if (!resources || resources.length === 0) {
+                document.getElementById('resources-summary').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72); grid-column: 1 / -1;">No resources data available.</p>';
+                document.getElementById('resources-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No resources available.</p>';
+                return;
+            }
+
+            // Calculate summary metrics
+            const totalResources = resources.length;
+            const blockingResources = resources.filter(r => {
+                // Consider resources blocking if they are scripts, stylesheets, or have renderBlockingStatus
+                return r.renderBlockingStatus === 'blocking' || 
+                       r.initiatorType === 'script' || 
+                       r.initiatorType === 'css' ||
+                       (r.contentType && (r.contentType.includes('javascript') || r.contentType.includes('css')));
+            }).length;
+            
+            const totalTransferSize = resources.reduce((sum, r) => sum + (r.transferSize || 0), 0);
+            const totalDecodedSize = resources.reduce((sum, r) => sum + (r.decodedBodySize || 0), 0);
+
+            // Render summary
+            const summaryContainer = document.getElementById('resources-summary');
+            summaryContainer.innerHTML = `
+                <metric-item label="Total Resources" value="${totalResources}" description="Total number of resources"></metric-item>
+                <metric-item label="Blocking Resources" value="${blockingResources}" description="Render-blocking resources"></metric-item>
+                <metric-item label="Total Transfer Size" value="${formatBytes(totalTransferSize)}" description="Total transfer size"></metric-item>
+                <metric-item label="Total Decoded Size" value="${formatBytes(totalDecodedSize)}" description="Total decoded size"></metric-item>
+            `;
+
+            // Render resources list
+            const resourcesContainer = document.getElementById('resources-list');
+            resourcesContainer.innerHTML = resources.map((resource, index) => {
+                const url = resource.name || '';
+                const type = getResourceType(resource);
+                const size = formatBytes(resource.decodedBodySize || resource.transferSize || 0);
+                const duration = formatTime(resource.duration || 0);
+                const statusCode = resource.responseStatus || 0;
+                const elidedUrl = elideUrl(url, 64);
+                const isExpanded = '';
+
+                return `
+                    <div class="resource-item ${isExpanded}" data-index="${index}">
+                        <div class="resource-header" onclick="toggleResource(${index})">
+                            <div class="resource-header-content">
+                                <span class="resource-url">${escapeHtml(elidedUrl)}</span>
+                                <span class="resource-status status-${getStatusClass(statusCode)}">${statusCode || 'N/A'}</span>
+                                <span class="resource-type">${escapeHtml(type)}</span>
+                                <span class="resource-size">${size}</span>
+                                <span class="resource-duration">${duration}</span>
+                            </div>
+                            <span class="resource-toggle">${isExpanded ? '▼' : '▶'}</span>
+                        </div>
+                        <div class="resource-details">
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">URL:</span>
+                                <span class="resource-detail-value">${escapeHtml(url)}</span>
+                            </div>
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">Duration:</span>
+                                <span class="resource-detail-value">${duration}</span>
+                            </div>
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">Start Time:</span>
+                                <span class="resource-detail-value">${formatTime(resource.startTime || 0)}</span>
+                            </div>
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">Protocol:</span>
+                                <span class="resource-detail-value">${escapeHtml(resource.nextHopProtocol || 'unknown')}</span>
+                            </div>
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">Transfer Size:</span>
+                                <span class="resource-detail-value">${formatBytes(resource.transferSize || 0)}</span>
+                            </div>
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">Decoded Size:</span>
+                                <span class="resource-detail-value">${formatBytes(resource.decodedBodySize || 0)}</span>
+                            </div>
+                            <div class="resource-detail-row resource-timing-bar-row">
+                                <span class="resource-detail-label">Timing:</span>
+                                <div class="resource-timing-container">
+                                    ${renderResourceTimingBar(resource)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderResourceTimingBar(resource) {
+            // Calculate phase timings relative to fetchStart
+            const fetchStart = resource.fetchStart || 0;
+            const domainLookupStart = resource.domainLookupStart || fetchStart;
+            const domainLookupEnd = resource.domainLookupEnd || domainLookupStart;
+            const connectStart = resource.connectStart || domainLookupEnd;
+            const connectEnd = resource.connectEnd || connectStart;
+            const requestStart = resource.requestStart || connectEnd;
+            const responseStart = resource.responseStart || requestStart;
+            const responseEnd = resource.responseEnd || responseStart;
+            const duration = resource.duration || (responseEnd - fetchStart);
+
+            // Note: Resources typically don't have DOM timing, but we'll include the structure
+            // These will be 0/empty if not available
+            const domInteractive = 0; // Resources don't have DOM timing
+            const domComplete = 0;
+            const loadEventEnd = 0;
+
+            // Calculate phases relative to fetchStart
+            const phases = [
+                { name: 'First Request', start: 0, end: domainLookupStart - fetchStart, class: 'first-request' },
+                { name: 'DNS', start: domainLookupStart - fetchStart, end: domainLookupEnd - fetchStart, class: 'dns' },
+                { name: 'Connect', start: connectStart - fetchStart, end: connectEnd - fetchStart, class: 'connect' },
+                { name: 'Request', start: requestStart - fetchStart, end: responseStart - fetchStart, class: 'request' },
+                { name: 'Response', start: responseStart - fetchStart, end: responseEnd - fetchStart, class: 'response' },
+                { name: 'DOM Interactive', start: responseEnd - fetchStart, end: domInteractive - fetchStart, class: 'dom-interactive' },
+                { name: 'DOM Complete', start: domInteractive - fetchStart, end: domComplete - fetchStart, class: 'dom-complete' },
+                { name: 'Load Event', start: domComplete - fetchStart, end: loadEventEnd - fetchStart, class: 'load-event' },
+            ];
+
+            // Use duration or responseEnd as max time
+            const maxTime = Math.max(duration, responseEnd - fetchStart);
+            
+            if (maxTime <= 0) {
+                return '<div class="resource-timing-empty">No timing data available</div>';
+            }
+
+            const barHtml = phases.map(phase => {
+                const leftPercent = (phase.start / maxTime) * 100;
+                const widthPercent = ((phase.end - phase.start) / maxTime) * 100;
+                const phaseDuration = phase.end - phase.start;
+                
+                // Only show phase if it has a meaningful duration
+                if (phaseDuration <= 0) return '';
+                
+                return `
+                    <div class="resource-timing-phase ${phase.class}" 
+                         style="left: ${leftPercent}%; width: ${Math.max(widthPercent, 0.5)}%;"
+                         title="${phase.name}: ${formatTime(phaseDuration)}">
+                        ${widthPercent > 8 ? phase.name : ''}
+                    </div>
+                `;
+            }).filter(html => html).join('');
+
+            return `
+                <div class="resource-timing-bar">
+                    ${barHtml}
+                </div>
+                <div class="resource-timing-legend">
+                    ${phases.filter(p => p.end > p.start).map(phase => `
+                        <div class="resource-timing-legend-item">
+                            <div class="resource-timing-legend-color ${phase.class}"></div>
+                            <span>${phase.name}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function toggleResource(index) {
+            const resourceItem = document.querySelector(`.resource-item[data-index="${index}"]`);
+            if (!resourceItem) return;
+
+            const isExpanded = resourceItem.classList.contains('expanded');
+            const toggle = resourceItem.querySelector('.resource-toggle');
+            
+            if (isExpanded) {
+                resourceItem.classList.remove('expanded');
+                if (toggle) toggle.textContent = '▶';
+            } else {
+                resourceItem.classList.add('expanded');
+                if (toggle) toggle.textContent = '▼';
+            }
+        }
+
+        // Make toggleResource available globally
+        window.toggleResource = toggleResource;
+
+        function getResourceType(resource) {
+            // Try contentType first
+            if (resource.contentType) {
+                const mimeType = resource.contentType.split(';')[0].trim();
+                if (mimeType.includes('javascript')) return 'script';
+                if (mimeType.includes('css')) return 'stylesheet';
+                if (mimeType.includes('image')) return 'image';
+                if (mimeType.includes('font')) return 'font';
+                if (mimeType.includes('video')) return 'video';
+                if (mimeType.includes('audio')) return 'audio';
+                if (mimeType.includes('json')) return 'json';
+                if (mimeType.includes('xml') || mimeType.includes('html')) return 'document';
+                return mimeType.split('/')[1] || 'other';
+            }
+            
+            // Fallback to initiatorType
+            if (resource.initiatorType) {
+                return resource.initiatorType;
+            }
+            
+            return 'other';
+        }
+
+        function getStatusClass(statusCode) {
+            if (!statusCode || statusCode === 0) return 'unknown';
+            if (statusCode >= 200 && statusCode < 300) return 'success';
+            if (statusCode >= 300 && statusCode < 400) return 'redirect';
+            if (statusCode >= 400 && statusCode < 500) return 'client-error';
+            if (statusCode >= 500) return 'server-error';
+            return 'unknown';
+        }
+
+        function elideUrl(url, maxLength) {
+            if (!url || url.length <= maxLength) return url;
+            // Show the end of the URL, elide from the beginning
+            return '...' + url.substring(url.length - (maxLength - 3));
+        }
+
+        function formatTime(ms) {
+            if (ms === 0 || !ms) return 'N/A';
+            if (ms < 1000) return `${Math.round(ms)}ms`;
+            return `${(ms / 1000).toFixed(2)}s`;
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 
 </html>

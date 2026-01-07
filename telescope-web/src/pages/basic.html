@@ -1,61 +1,62 @@
 <html>
 
 <head>
-  <title>Telescope Basic Test</title>
-  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css">
+    <title>Telescope Advanced Test</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
-  <nav>
-    <a class="brand" href="/">Telescope</a>
-    <div class="tabs" part="tabs">
-      <a class="tab" href="/">Home</a>
-      <a class="tab active" href="/basic">Basic</a>
-      <a class="tab" href="/advanced">Advanced</a>
-      <a class="tab" href="/results">Results</a>
-      <a class="tab" href="/upload">Upload</a>
-    </div>
-    <div class="spacer"></div>
-    <a class="gh" href="https://github.com/cloudflare/telescope" target="_blank" rel="noreferrer">
-      GitHub ↗
-    </a>
-  </nav>
-  <section class="content">
-    <h1>Basic</h1>
-    <h2>Provide a URL and select a browser.</h2>
-    <form id="basic-form">
-      <div class="form-section">
-        <h3>Basic Settings</h3>
-        <div class="form-grid">
-          <label>
-            URL
-            <input name="url" type="url" placeholder="https://example.com" required />
-          </label>
-          <label>
-            Browser
-            <select name="browser" id="browserSelect" required>
-              <option value="">Select a browser...</option>
-              <option value="chrome">Chrome</option>
-              <option value="chrome-beta">Chrome Beta</option>
-              <option value="canary">Chrome Canary</option>
-              <option value="edge">Microsoft Edge</option>
-              <option value="safari">Safari</option>
-              <option value="firefox">Firefox</option>
-            </select>
-          </label>
+    <nav>
+        <a class="brand" href="/">Telescope</a>
+        <div class="tabs" part="tabs">
+            <a class="tab" href="/">Home</a>
+            <a class="tab active" href="/basic">Basic</a>
+            <a class="tab" href="/advanced">Advanced</a>
+            <a class="tab" href="/results">Results</a>
+            <a class="tab" href="/upload">Upload</a>
         </div>
-      </div>
+        <div class="spacer"></div>
+        <a class="gh" href="https://github.com/cloudflare/telescope" target="_blank" rel="noreferrer">
+            GitHub ↗
+        </a>
+    </nav>
+    <section class="content">
+        <h1>Basic</h1>
+        <h2>Configure all test parameters with basic options.</h2>
+        <form id="basic-form">
+            <!-- Basic Settings -->
+            <div class="form-section">
+                <h3>Basic Settings</h3>
+                <div class="form-grid">
+                    <label>
+                        URL
+                        <input name="url" type="url" placeholder="https://example.com" required />
+                    </label>
+                    <label>
+                        Browser
+                        <select name="browser" id="browserSelect" required>
+                            <option value="">Select a browser...</option>
+                            <option value="chrome">Chrome</option>
+                            <option value="chrome-beta">Chrome Beta</option>
+                            <option value="canary">Chrome Canary</option>
+                            <option value="edge">Microsoft Edge</option>
+                            <option value="safari">Safari</option>
+                            <option value="firefox">Firefox</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
 
-      <!-- Form Actions -->
-      <div class="form-actions">
-        <button type="submit">Run Test</button>
-        <span id="status"></span>
-      </div>
-    </form>
-    <div></div>
-    <pre id="preview" style="margin:0; display:none;"></pre>
-  </section>
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="submit">Run Test</button>
+                <span id="status"></span>
+            </div>
+        </form>
+        <div></div>
+        <pre id="preview" style="margin:0; display:none;"></pre>
+    </section>
 </body>
 
 </html>

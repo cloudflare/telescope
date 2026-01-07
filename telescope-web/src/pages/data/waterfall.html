@@ -13,7 +13,7 @@
             <a class="tab" href="/">Home</a>
             <a class="tab" href="/basic">Basic</a>
             <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab active" href="/results">Results</a>
+            <a class="tab inactive" href="/results">Results</a>
             <a class="tab" href="/upload">Upload</a>
         </div>
         <div class="spacer"></div>
@@ -21,24 +21,488 @@
             GitHub ↗
         </a>
     </nav>
-    <nav class="data-nav">
-        <div class="tabs" part="tabs">
-            <a class="tab" href="/data/overview">Overview</a>
-            <a class="tab" href="/data/filmstrip-video">Filmstrip & Video</a>
-            <a class="tab" href="/metrics">Metrics</a>
-            <a class="tab active" href="/data/waterfall">Waterfall</a>
-            <a class="tab" href="/data/critical-path">Critical Path</a>
-            <a class="tab" href="/data/console">Console</a>
-            <a class="tab" href="/data/resources">Resources</a>
-            <a class="tab" href="/data/bottlenecks">Bottlenecks</a>
-            <a class="tab" href="/data/config">Config</a>
-        </div>
-    </nav>
-    <section class="content">
+    <data-nav active="waterfall"></data-nav>
+    <section class="data-content">
         <h1>Waterfall</h1>
         <h2>View the waterfall of the test.</h2>
-      </section>
-    </body>
+
+        <!-- Expandable Summary Section -->
+        <div class="overview-section">
+            <div class="waterfall-summary-header" onclick="toggleWaterfallSummary()">
+                <h3 id="waterfall-summary-title">Summary</h3>
+                <span class="waterfall-summary-toggle" id="waterfall-summary-toggle">▼</span>
+            </div>
+            <div class="waterfall-summary-content" id="waterfall-summary-content">
+                <!-- Summary content will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Filters and Column Selection -->
+        <div class="overview-section">
+            <h3>Filters & Columns</h3>
+            <div class="waterfall-filters">
+                <label class="waterfall-filter-checkbox">
+                    <input type="checkbox" id="critical-path-filter" onchange="toggleCriticalPathFilter()">
+                    <span>Show only critical path</span>
+                </label>
+            </div>
+            <div class="waterfall-columns-selector" id="waterfall-columns-selector">
+                <!-- Column checkboxes will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Waterfall Chart -->
+        <div class="overview-section">
+            <h3>Waterfall</h3>
+            <waterfall-chart id="waterfall-chart"></waterfall-chart>
+        </div>
+    </section>
+    <script type="module" src="../../components/data-nav.ts"></script>
+    <script type="module" src="../../components/waterfall.ts"></script>
+
+    <script type="module">
+        import { isCriticalPathEntry } from '../../critical-path.ts';
+        // Get test ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const testId = pathParts[pathParts.length - 1];
+
+        if (!testId || testId === 'waterfall') {
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: rgba(255, 255, 255, 0.72);">No test ID provided</div>';
+        } else {
+            loadWaterfallData(testId);
+        }
+
+        async function loadWaterfallData(testId) {
+            try {
+                // Load HAR file
+                const harResponse = await fetch(`/api/results/${testId}/pageload.har`);
+                if (!harResponse.ok) {
+                    if (harResponse.status === 404) {
+                        document.getElementById('waterfall-chart').innerHTML = '<div style="padding: 20px; text-align: center; color: rgba(255, 255, 255, 0.72);">No HAR data available.</div>';
+                        return;
+                    }
+                    throw new Error('Failed to load HAR data');
+                }
+                const harData = await harResponse.json();
+
+                // Load metrics for DOM timing
+                let metrics = null;
+                try {
+                    const metricsResponse = await fetch(`/api/results/${testId}/metrics.json`);
+                    if (metricsResponse.ok) {
+                        metrics = await metricsResponse.json();
+                    }
+                } catch (e) {
+                    console.warn('Could not load metrics:', e);
+                }
+
+                // Load config for URL
+                let config = null;
+                try {
+                    const configResponse = await fetch(`/api/results/${testId}/config.json`);
+                    if (configResponse.ok) {
+                        config = await configResponse.json();
+                    }
+                } catch (e) {
+                    console.warn('Could not load config:', e);
+                }
+
+                // Load resources to identify critical path
+                let resources = null;
+                try {
+                    const resourcesResponse = await fetch(`/api/results/${testId}/resources.json`);
+                    if (resourcesResponse.ok) {
+                        resources = await resourcesResponse.json();
+                    }
+                } catch (e) {
+                    console.warn('Could not load resources:', e);
+                }
+
+                // Parse HAR and render
+                const waterfallData = parseHarData(harData, resources);
+                renderWaterfall(waterfallData, config);
+                renderSummary(harData, waterfallData, metrics, config);
+                setupColumnSelector();
+
+            } catch (error) {
+                console.error('Error loading waterfall data:', error);
+                document.body.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255, 100, 100, 0.92);">Error loading waterfall data: ${error.message}</div>`;
+            }
+        }
+
+        function parseHarData(harData, resourcesData) {
+            const entries = harData.log?.entries || [];
+            const pageStart = entries.length > 0 ? new Date(entries[0].startedDateTime).getTime() : 0;
+
+            // Create a map of URLs to resource data for quick lookup
+            const resourceMap = new Map();
+            if (resourcesData && Array.isArray(resourcesData)) {
+                resourcesData.forEach(resource => {
+                    if (resource.name) {
+                        resourceMap.set(resource.name, resource);
+                    }
+                });
+            }
+
+            const resources = entries.map((entry, index) => {
+                const request = entry.request || {};
+                const response = entry.response || {};
+                const timings = entry.timings || {};
+                const url = request.url || '';
+
+                // Calculate timing phases
+                const startedDateTime = new Date(entry.startedDateTime).getTime();
+                const relativeStart = startedDateTime - pageStart;
+
+                // Check if this is a critical path resource using critical-path.ts
+                const resourceData = resourceMap.get(url);
+                const harEntry = {
+                    request: request,
+                    response: response,
+                };
+                const isCriticalPath = isCriticalPathEntry(harEntry, resourceData);
+
+                return {
+                    index: index + 1,
+                    name: getUrlFilename(url),
+                    url: url,
+                    startTime: relativeStart,
+                    duration: entry.time || 0,
+                    method: request.method || 'GET',
+                    status: response.status || 0,
+                    size: response.bodySize || response.content?.size || 0,
+                    type: getResourceTypeFromMime(response.content?.mimeType || ''),
+                    nextHopProtocol: request.httpVersion || '',
+                    transferSize: response.bodySize || 0,
+                    decodedBodySize: response.content?.size || 0,
+                    fetchStart: relativeStart,
+                    domainLookupStart: relativeStart + (timings.dns || 0),
+                    domainLookupEnd: relativeStart + (timings.dns || 0),
+                    connectStart: relativeStart + (timings.dns || 0),
+                    connectEnd: relativeStart + (timings.dns || 0) + (timings.connect || 0),
+                    requestStart: relativeStart + (timings.dns || 0) + (timings.connect || 0),
+                    responseStart: relativeStart + (timings.dns || 0) + (timings.connect || 0) + (timings.send || 0) + (timings.wait || 0),
+                    responseEnd: relativeStart + entry.time,
+                    isCriticalPath: isCriticalPath,
+                };
+            });
+
+            const startTime = resources.length > 0 ? Math.min(...resources.map(r => r.startTime)) : 0;
+            const endTime = resources.length > 0 ? Math.max(...resources.map(r => r.startTime + r.duration)) : 0;
+            const totalDuration = endTime - startTime;
+
+            return { resources, startTime, totalDuration };
+        }
+
+        function renderWaterfall(waterfallData, config) {
+            const chart = document.getElementById('waterfall-chart');
+            chart.setAttribute('data', JSON.stringify(waterfallData));
+            // Set all columns as visible by default
+            chart.visibleColumns = ['index', 'url', 'method', 'status', 'size', 'duration', 'type', 'protocol', 'timeline'];
+        }
+
+        function renderSummary(harData, waterfallData, metrics, config) {
+            const entries = harData.log?.entries || [];
+            const page = harData.log?.pages?.[0];
+            const pageTitle = page?.title || config?.url || 'Unknown';
+
+            // Calculate metrics
+            const totalRequests = entries.length;
+            const domains = new Set();
+            let totalSize = 0;
+            entries.forEach(entry => {
+                try {
+                    const url = new URL(entry.request?.url || '');
+                    domains.add(url.hostname);
+                } catch (e) {}
+                totalSize += entry.response?.bodySize || entry.response?.content?.size || 0;
+            });
+            const distinctDomains = domains.size;
+
+            const domContentLoaded = page?.pageTimings?.onContentLoad || 0;
+            const loadTime = page?.pageTimings?.onLoad || 0;
+
+            // HTTP Methods
+            const methodCounts = {};
+            entries.forEach(entry => {
+                const method = entry.request?.method || 'GET';
+                methodCounts[method] = (methodCounts[method] || 0) + 1;
+            });
+
+            // Status Codes
+            const statusCounts = {};
+            entries.forEach(entry => {
+                const status = entry.response?.status || 0;
+                const statusGroup = Math.floor(status / 100) * 100;
+                statusCounts[statusGroup] = (statusCounts[statusGroup] || 0) + 1;
+            });
+
+            // Domain counts
+            const domainCounts = {};
+            entries.forEach(entry => {
+                try {
+                    const url = new URL(entry.request?.url || '');
+                    domainCounts[url.hostname] = (domainCounts[url.hostname] || 0) + 1;
+                } catch (e) {}
+            });
+
+            const summaryContent = document.getElementById('waterfall-summary-content');
+            summaryContent.innerHTML = `
+                <div class="waterfall-summary-metrics">
+                    <div class="waterfall-summary-metric">
+                        <div class="waterfall-summary-metric-label">Total Requests</div>
+                        <div class="waterfall-summary-metric-value">${totalRequests}</div>
+                    </div>
+                    <div class="waterfall-summary-metric">
+                        <div class="waterfall-summary-metric-label">Distinct Domains</div>
+                        <div class="waterfall-summary-metric-value">${distinctDomains}</div>
+                    </div>
+                    <div class="waterfall-summary-metric">
+                        <div class="waterfall-summary-metric-label">Total Size</div>
+                        <div class="waterfall-summary-metric-value">${formatBytes(totalSize)}</div>
+                    </div>
+                    <div class="waterfall-summary-metric">
+                        <div class="waterfall-summary-metric-label">DOM Content Loaded</div>
+                        <div class="waterfall-summary-metric-value">${formatTime(domContentLoaded)}</div>
+                    </div>
+                    <div class="waterfall-summary-metric">
+                        <div class="waterfall-summary-metric-label">Load Time</div>
+                        <div class="waterfall-summary-metric-value">${formatTime(loadTime)}</div>
+                    </div>
+                </div>
+                <div class="waterfall-summary-charts">
+                    <div class="waterfall-summary-chart">
+                        <h4>HTTP Methods</h4>
+                        <div class="pie-chart-wrapper">
+                            <svg class="pie-chart" id="methods-chart" viewBox="0 0 200 200"></svg>
+                            <div class="pie-chart-legend" id="methods-legend"></div>
+                        </div>
+                    </div>
+                    <div class="waterfall-summary-chart">
+                        <h4>Status Codes</h4>
+                        <div class="pie-chart-wrapper">
+                            <svg class="pie-chart" id="status-chart" viewBox="0 0 200 200"></svg>
+                            <div class="pie-chart-legend" id="status-legend"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="waterfall-summary-domains">
+                    <h4>Domains</h4>
+                    <table class="waterfall-domains-table">
+                        <thead>
+                            <tr>
+                                <th>Domain</th>
+                                <th>Requests</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(domainCounts)
+                                .sort((a, b) => b[1] - a[1])
+                                .map(([domain, count]) => `
+                                    <tr>
+                                        <td>${escapeHtml(domain)}</td>
+                                        <td>${count}</td>
+                                    </tr>
+                                `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // Update title
+            document.getElementById('waterfall-summary-title').textContent = pageTitle;
+
+            // Render pie charts
+            renderPieChart('methods-chart', 'methods-legend', Object.entries(methodCounts).map(([label, value]) => ({ label, value })), ['#7dd3fc', '#a78bfa', '#fbbf24', '#34d399']);
+            renderPieChart('status-chart', 'status-legend', Object.entries(statusCounts).map(([label, value]) => ({ label: `${label}xx`, value })), ['#34d399', '#fbbf24', '#f87171', '#ef4444']);
+        }
+
+        function renderPieChart(chartId, legendId, data, colors) {
+            if (data.length === 0) {
+                document.getElementById(chartId).innerHTML = '<text x="100" y="100" text-anchor="middle" fill="rgba(255,255,255,0.5)">No data</text>';
+                document.getElementById(legendId).innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No data available</p>';
+                return;
+            }
+
+            const total = data.reduce((sum, item) => sum + item.value, 0);
+            const centerX = 100;
+            const centerY = 100;
+            const radius = 80;
+
+            let currentAngle = -Math.PI / 2;
+            const svg = document.getElementById(chartId);
+            svg.innerHTML = '';
+
+            data.forEach((item, index) => {
+                const sliceAngle = (item.value / total) * 2 * Math.PI;
+                const endAngle = currentAngle + sliceAngle;
+
+                const x1 = centerX + radius * Math.cos(currentAngle);
+                const y1 = centerY + radius * Math.sin(currentAngle);
+                const x2 = centerX + radius * Math.cos(endAngle);
+                const y2 = centerY + radius * Math.sin(endAngle);
+
+                const largeArcFlag = sliceAngle > Math.PI ? 1 : 0;
+
+                const pathData = [
+                    `M ${centerX} ${centerY}`,
+                    `L ${x1} ${y1}`,
+                    `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                    'Z'
+                ].join(' ');
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('fill', colors[index % colors.length]);
+                path.setAttribute('stroke', 'rgba(7, 10, 18, 0.8)');
+                path.setAttribute('stroke-width', '2');
+                svg.appendChild(path);
+
+                const labelAngle = currentAngle + sliceAngle / 2;
+                const labelRadius = radius * 0.6;
+                const labelX = centerX + labelRadius * Math.cos(labelAngle);
+                const labelY = centerY + labelRadius * Math.sin(labelAngle);
+                
+                const percentage = ((item.value / total) * 100).toFixed(1);
+                if (percentage > 5) {
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', labelX);
+                    text.setAttribute('y', labelY);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('dominant-baseline', 'middle');
+                    text.setAttribute('fill', 'rgba(255, 255, 255, 0.9)');
+                    text.setAttribute('font-size', '12');
+                    text.setAttribute('font-weight', '600');
+                    text.textContent = `${percentage}%`;
+                    svg.appendChild(text);
+                }
+
+                currentAngle = endAngle;
+            });
+
+            const legend = document.getElementById(legendId);
+            legend.innerHTML = data.map((item, index) => {
+                const percentage = ((item.value / total) * 100).toFixed(1);
+                return `
+                    <div class="pie-legend-item">
+                        <div class="pie-legend-color" style="background: ${colors[index % colors.length]}"></div>
+                        <div class="pie-legend-text">
+                            <div class="pie-legend-label">${escapeHtml(item.label)}</div>
+                            <div class="pie-legend-value">${item.value} (${percentage}%)</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setupColumnSelector() {
+            const columns = [
+                { key: 'method', label: 'Method' },
+                { key: 'status', label: 'Status' },
+                { key: 'size', label: 'Size' },
+                { key: 'duration', label: 'Duration' },
+                { key: 'type', label: 'Type' },
+                { key: 'protocol', label: 'Protocol' },
+                { key: 'timeline', label: 'Timeline' },
+            ];
+
+            const selector = document.getElementById('waterfall-columns-selector');
+            selector.innerHTML = columns.map(col => `
+                <label class="waterfall-column-checkbox">
+                    <input type="checkbox" value="${col.key}" checked onchange="updateWaterfallColumns()">
+                    <span>${escapeHtml(col.label)}</span>
+                </label>
+            `).join('');
+            
+            // Initialize with all columns visible
+            updateWaterfallColumns();
+        }
+
+        function updateWaterfallColumns() {
+            const checkboxes = document.querySelectorAll('#waterfall-columns-selector input[type="checkbox"]:checked');
+            const visibleColumns = Array.from(checkboxes).map(cb => cb.value);
+            const chart = document.getElementById('waterfall-chart');
+            chart.visibleColumns = ['index', 'url', ...visibleColumns];
+        }
+
+        function toggleCriticalPathFilter() {
+            const checkbox = document.getElementById('critical-path-filter');
+            const chart = document.getElementById('waterfall-chart');
+            chart.showOnlyCriticalPath = checkbox.checked;
+        }
+
+        window.toggleCriticalPathFilter = toggleCriticalPathFilter;
+
+        function toggleWaterfallSummary() {
+            const content = document.getElementById('waterfall-summary-content');
+            const toggle = document.getElementById('waterfall-summary-toggle');
+            const isExpanded = content.style.display !== 'none';
+            
+            if (isExpanded) {
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            } else {
+                content.style.display = 'block';
+                toggle.textContent = '▼';
+            }
+        }
+
+        // Initialize summary as expanded
+        document.addEventListener('DOMContentLoaded', () => {
+            const content = document.getElementById('waterfall-summary-content');
+            if (content) {
+                content.style.display = 'block';
+            }
+        });
+
+        window.toggleWaterfallSummary = toggleWaterfallSummary;
+        window.updateWaterfallColumns = updateWaterfallColumns;
+
+        function getUrlFilename(url) {
+            try {
+                const urlObj = new URL(url);
+                const pathParts = urlObj.pathname.split('/');
+                return pathParts[pathParts.length - 1] || urlObj.hostname;
+            } catch {
+                return url.split('/').pop() || url;
+            }
+        }
+
+
+        function getResourceTypeFromMime(mimeType) {
+            if (!mimeType) return 'other';
+            const mime = mimeType.split(';')[0].trim();
+            if (mime.includes('javascript')) return 'script';
+            if (mime.includes('css')) return 'stylesheet';
+            if (mime.includes('image')) return 'image';
+            if (mime.includes('font')) return 'font';
+            if (mime.includes('video')) return 'video';
+            if (mime.includes('audio')) return 'audio';
+            if (mime.includes('json')) return 'json';
+            if (mime.includes('xml') || mime.includes('html')) return 'document';
+            return mime.split('/')[1] || 'other';
+        }
+
+        function formatTime(ms) {
+            if (ms === 0 || !ms) return 'N/A';
+            if (ms < 1000) return `${Math.round(ms)}ms`;
+            return `${(ms / 1000).toFixed(2)}s`;
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 
 </html>

@@ -221,6 +221,118 @@
         <div></div>
         <pre id="preview" style="margin:0; display:none;"></pre>
     </section>
+
+    <script type="module">
+        // Check for stored config from config page
+        const storedConfig = sessionStorage.getItem('telescopeConfig');
+        const autoSubmit = sessionStorage.getItem('telescopeAutoSubmit') === 'true';
+        
+        if (storedConfig) {
+            try {
+                const config = JSON.parse(storedConfig);
+                prefillForm(config);
+                
+                // Clear sessionStorage
+                sessionStorage.removeItem('telescopeConfig');
+                sessionStorage.removeItem('telescopeAutoSubmit');
+                
+                // Auto-submit if flag is set
+                if (autoSubmit) {
+                    // Small delay to ensure form is filled
+                    setTimeout(() => {
+                        document.getElementById('advanced-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error parsing stored config:', error);
+            }
+        }
+
+        function prefillForm(config) {
+            const form = document.getElementById('advanced-form');
+            const options = config.options || {};
+            const browserConfig = config.browserConfig || {};
+
+            // Basic Settings
+            if (config.url) setFieldValue(form, 'url', config.url);
+            if (options.browser) setFieldValue(form, 'browser', options.browser);
+
+            // Viewport Settings
+            if (options.width) setFieldValue(form, 'width', options.width);
+            if (options.height) setFieldValue(form, 'height', options.height);
+
+            // Network & Throttling
+            if (options.connectionType) setFieldValue(form, 'connectionType', options.connectionType);
+            if (options.cpuThrottle) setFieldValue(form, 'cpuThrottle', options.cpuThrottle);
+
+            // Request Blocking
+            if (options.blockDomains && Array.isArray(options.blockDomains)) {
+                setFieldValue(form, 'blockDomains', options.blockDomains.join(', '));
+            }
+            if (options.block && Array.isArray(options.block)) {
+                setFieldValue(form, 'block', options.block.join(', '));
+            }
+
+            // Custom Headers & Cookies
+            if (options.headers) {
+                setFieldValue(form, 'headers', typeof options.headers === 'string' 
+                    ? options.headers 
+                    : JSON.stringify(options.headers, null, 2));
+            }
+            if (options.cookies) {
+                setFieldValue(form, 'cookies', typeof options.cookies === 'string' 
+                    ? options.cookies 
+                    : JSON.stringify(options.cookies, null, 2));
+            }
+
+            // Authentication
+            if (options.auth) {
+                if (typeof options.auth === 'object') {
+                    if (options.auth.username) setFieldValue(form, 'authUsername', options.auth.username);
+                    if (options.auth.password) setFieldValue(form, 'authPassword', options.auth.password);
+                    setFieldValue(form, 'auth', JSON.stringify(options.auth, null, 2));
+                } else if (typeof options.auth === 'string') {
+                    setFieldValue(form, 'auth', options.auth);
+                }
+            }
+
+            // Browser-Specific Options
+            if (options.flags) {
+                setFieldValue(form, 'flags', Array.isArray(options.flags) 
+                    ? options.flags.join(', ') 
+                    : options.flags);
+            }
+            if (browserConfig.firefoxUserPrefs) {
+                setFieldValue(form, 'firefoxPrefs', JSON.stringify(browserConfig.firefoxUserPrefs, null, 2));
+            }
+
+            // Advanced Options
+            if (options.timeout) setFieldValue(form, 'timeout', options.timeout);
+            if (options.frameRate) setFieldValue(form, 'frameRate', options.frameRate);
+            if (options.disableJS) setCheckbox(form, 'disableJS', true);
+            if (options.debug) setCheckbox(form, 'debug', true);
+
+            // Output Options
+            if (options.html) setCheckbox(form, 'html', true);
+            if (options.openHtml) setCheckbox(form, 'openHtml', true);
+            if (options.list) setCheckbox(form, 'list', true);
+            if (options.zip) setCheckbox(form, 'zip', true);
+        }
+
+        function setFieldValue(form, name, value) {
+            const field = form.querySelector(`[name="${name}"]`);
+            if (field) {
+                field.value = value;
+            }
+        }
+
+        function setCheckbox(form, name, checked) {
+            const checkbox = form.querySelector(`[name="${name}"]`);
+            if (checkbox) {
+                checkbox.checked = checked;
+            }
+        }
+    </script>
 </body>
 
 </html>

@@ -3,7 +3,73 @@
 <head>
     <title>Telescope Overview</title>
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../../style.css">
+    <style>
+        .overview-section {
+            margin: 24px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .overview-section h3 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.92);
+            font-weight: 600;
+        }
+
+        .test-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 24px;
+        }
+
+        .test-info-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .test-info-row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .test-info-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            min-width: 100px;
+        }
+
+        .test-info-value {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.92);
+            font-weight: 500;
+        }
+
+        .test-screenshot {
+            width: 200px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+        }
+
+        .cvv-section {
+            margin-top: 16px;
+        }
+    </style>
 </head>
 
 <body>
@@ -13,7 +79,7 @@
             <a class="tab" href="/">Home</a>
             <a class="tab" href="/basic">Basic</a>
             <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab active" href="/results">Results</a>
+            <a class="tab inactive" href="/results">Results</a>
             <a class="tab" href="/upload">Upload</a>
         </div>
         <div class="spacer"></div>
@@ -21,24 +87,191 @@
             GitHub ↗
         </a>
     </nav>
-    <nav class="data-nav">
-        <div class="tabs" part="tabs">
-            <a class="tab active" href="/data/overview">Overview</a>
-            <a class="tab" href="/data/filmstrip-video">Filmstrip & Video</a>
-            <a class="tab" href="/data/metrics">Metrics</a>
-            <a class="tab" href="/data/waterfall">Waterfall</a>
-            <a class="tab" href="/data/critical-path">Critical Path</a>
-            <a class="tab" href="/data/console">Console</a>
-            <a class="tab" href="/data/resources">Resources</a>
-            <a class="tab" href="/data/bottlenecks">Bottlenecks</a>
-            <a class="tab" href="/data/config">Config</a>
-        </div>
-    </nav>
-    <section class="content">
+    <data-nav active="overview"></data-nav>
+    <section class="data-content">
         <h1>Overview</h1>
         <h2>View the overview of the test.</h2>
-      </section>
-    </body>
+
+        <!-- Test Information Section -->
+        <div class="overview-section">
+            <h3>Test Information</h3>
+            <div class="test-info">
+                <div class="test-info-content">
+                    <div class="test-info-row">
+                        <span class="test-info-label">URL:</span>
+                        <span class="test-info-value" id="test-url">Loading...</span>
+                    </div>
+                    <div class="test-info-row">
+                        <span class="test-info-label">Page Title:</span>
+                        <span class="test-info-value" id="test-title">Loading...</span>
+                    </div>
+                    <div class="test-info-row">
+                        <span class="test-info-label">Date:</span>
+                        <span class="test-info-value" id="test-date">Loading...</span>
+                    </div>
+                    <div class="test-info-row">
+                        <span class="test-info-label">Browser:</span>
+                        <span class="test-info-value" id="test-browser">Loading...</span>
+                    </div>
+                    <div class="test-info-row">
+                        <span class="test-info-label">Captured By:</span>
+                        <span class="test-info-value" id="test-captured-by">Telescope</span>
+                    </div>
+                </div>
+                <img class="test-screenshot" id="test-screenshot" alt="Screenshot" />
+            </div>
+        </div>
+
+        <!-- Core Web Vitals Section -->
+        <div class="overview-section">
+            <h3>Core Web Vitals</h3>
+            <div class="metrics-grid cvv-section" id="cvv-metrics">
+                <!-- Metrics will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Additional Metrics Section -->
+        <div class="overview-section">
+            <h3>Additional Metrics</h3>
+            <div class="metrics-grid" id="additional-metrics">
+                <!-- Metrics will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+    <script type="module" src="../../components/data-nav.ts"></script>
+
+    <script type="module">
+        // Get test ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const testId = pathParts[pathParts.length - 1];
+
+        if (!testId || testId === 'overview') {
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: rgba(255, 255, 255, 0.72);">No test ID provided</div>';
+        } else {
+            loadOverviewData(testId);
+        }
+
+        async function loadOverviewData(testId) {
+            try {
+                // Load config
+                const configResponse = await fetch(`/api/results/${testId}/config.json`);
+                if (!configResponse.ok) throw new Error('Failed to load config');
+                const config = await configResponse.json();
+
+                // Load metrics
+                const metricsResponse = await fetch(`/api/results/${testId}/metrics.json`);
+                if (!metricsResponse.ok) throw new Error('Failed to load metrics');
+                const metrics = await metricsResponse.json();
+
+                // Populate test information
+                const testUrl = config.url || 'Unknown';
+                document.getElementById('test-url').textContent = testUrl;
+                // Extract page title from URL (hostname) or use URL
+                try {
+                    const urlObj = new URL(testUrl);
+                    document.getElementById('test-title').textContent = urlObj.hostname || testUrl;
+                } catch {
+                    document.getElementById('test-title').textContent = testUrl;
+                }
+                document.getElementById('test-date').textContent = formatDate(config.date);
+                document.getElementById('test-browser').textContent = formatBrowser(config.options?.browser || 'unknown');
+                document.getElementById('test-screenshot').src = `/api/results/${testId}/screenshot.png`;
+
+                // Calculate Core Web Vitals
+                const lcp = metrics.largestContentfulPaint?.[0]?.renderTime || 0;
+                const cls = calculateCLS(metrics.layoutShifts || []);
+                // FID is not available in navigation timing, using 0 as placeholder
+                const fid = 0;
+
+                // Render Core Web Vitals
+                const cvvContainer = document.getElementById('cvv-metrics');
+                cvvContainer.innerHTML = `
+                    <metric-item label="LCP" value="${formatTime(lcp)}" description="Largest Contentful Paint" status="${getLCPStatus(lcp)}"></metric-item>
+                    <metric-item label="FID" value="${fid > 0 ? formatTime(fid) : 'N/A'}" description="First Input Delay" status="${fid > 0 ? getFIDStatus(fid) : ''}"></metric-item>
+                    <metric-item label="CLS" value="${cls.toFixed(3)}" description="Cumulative Layout Shift" status="${getCLSStatus(cls)}"></metric-item>
+                `;
+
+                // Calculate additional metrics
+                const navTiming = metrics.navigationTiming || {};
+                const ttfb = navTiming.responseStart - navTiming.requestStart || 0;
+                const transferSize = navTiming.transferSize || 0;
+                const responseTime = navTiming.responseEnd - navTiming.responseStart || 0;
+
+                // Render additional metrics
+                const additionalContainer = document.getElementById('additional-metrics');
+                additionalContainer.innerHTML = `
+                    <metric-item label="TTFB" value="${formatTime(ttfb)}" description="Time to First Byte"></metric-item>
+                    <metric-item label="Transfer Size" value="${formatBytes(transferSize)}" description="Total transfer size"></metric-item>
+                    <metric-item label="Response Time" value="${formatTime(responseTime)}" description="Response duration"></metric-item>
+                `;
+            } catch (error) {
+                console.error('Error loading overview data:', error);
+                document.body.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255, 100, 100, 0.92);">Error loading test data: ${error.message}</div>`;
+            }
+        }
+
+        function formatDate(dateString) {
+            try {
+                return new Date(dateString).toLocaleString();
+            } catch {
+                return dateString;
+            }
+        }
+
+        function formatBrowser(browser) {
+            const browserMap = {
+                chrome: 'Chrome',
+                'chrome-beta': 'Chrome Beta',
+                canary: 'Chrome Canary',
+                edge: 'Microsoft Edge',
+                safari: 'Safari',
+                firefox: 'Firefox',
+            };
+            return browserMap[browser] || browser;
+        }
+
+        function formatTime(ms) {
+            if (ms === 0 || !ms) return 'N/A';
+            if (ms < 1000) return `${Math.round(ms)}ms`;
+            return `${(ms / 1000).toFixed(2)}s`;
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+        }
+
+        function calculateCLS(layoutShifts) {
+            if (!layoutShifts || layoutShifts.length === 0) return 0;
+            return layoutShifts.reduce((sum, shift) => sum + (shift.value || 0), 0);
+        }
+
+        function getLCPStatus(lcp) {
+            if (lcp === 0) return '';
+            if (lcp < 2500) return 'good';
+            if (lcp < 4000) return 'needs-improvement';
+            return 'poor';
+        }
+
+        function getFIDStatus(fid) {
+            if (fid === 0) return '';
+            if (fid < 100) return 'good';
+            if (fid < 300) return 'needs-improvement';
+            return 'poor';
+        }
+
+        function getCLSStatus(cls) {
+            if (cls === 0) return '';
+            if (cls < 0.1) return 'good';
+            if (cls < 0.25) return 'needs-improvement';
+            return 'poor';
+        }
+    </script>
+    <script type="module" src="../../components/data-nav.ts"></script>
+    <script type="module" src="../../components/metric-item.ts"></script>
 </body>
 
 </html>

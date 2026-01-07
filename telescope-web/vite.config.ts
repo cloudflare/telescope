@@ -21,7 +21,6 @@ const routeMap: Record<string, string> = {
   '/data/filmstrip-video': resolve(srcDir, 'pages/data/filmstrip-video.html'),
   '/data/metrics': resolve(srcDir, 'pages/data/metrics.html'),
   '/data/waterfall': resolve(srcDir, 'pages/data/waterfall.html'),
-  '/data/critical-path': resolve(srcDir, 'pages/data/critical-path.html'),
   '/data/console': resolve(srcDir, 'pages/data/console.html'),
   '/data/resources': resolve(srcDir, 'pages/data/resources.html'),
   '/data/bottlenecks': resolve(srcDir, 'pages/data/bottlenecks.html'),
@@ -100,6 +99,34 @@ export default defineConfig({
             }
           }
           
+          // Handle listing files in a result directory
+          const listMatch = url.match(/^\/([^/]+)\/list$/);
+          if (listMatch) {
+            const [, testId] = listMatch;
+            const testDir = resolve(resultsDir, testId);
+            
+            try {
+              if (!existsSync(testDir) || !statSync(testDir).isDirectory()) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Test directory not found' }));
+                return;
+              }
+              
+              const files = readdirSync(testDir).filter((file) => {
+                const filePath = resolve(testDir, file);
+                return statSync(filePath).isFile();
+              });
+              
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(files));
+              return;
+            } catch (error) {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Failed to read directory' }));
+              return;
+            }
+          }
+          
           // Handle fetching specific result files
           const match = url.match(/^\/([^/]+)\/(.+)$/);
           if (match) {
@@ -147,12 +174,24 @@ export default defineConfig({
             return;
           }
           
-          // Handle dynamic route: /data/overview/:testId
-          const overviewMatch = url.match(/^\/data\/overview\/(.+)$/);
-          if (overviewMatch) {
-            (req as any).url = '/pages/data/overview.html';
-            next();
-            return;
+          // Handle dynamic routes: /data/{page}/{testId}
+          const dataPageMatch = url.match(/^\/data\/([^/]+)\/(.+)$/);
+          if (dataPageMatch) {
+            const [, pageName, testId] = dataPageMatch;
+            const pageNames = ['overview', 'filmstrip-video', 'metrics', 'waterfall', 'console', 'resources', 'bottlenecks', 'config'];
+            
+            // Verify it's a valid page name
+            if (pageNames.includes(pageName)) {
+              // Map page name to file path (filmstrip-video -> filmstrip-video.html)
+              const htmlFile = `${pageName}.html`;
+              const filePath = resolve(srcDir, 'pages/data', htmlFile);
+              
+              if (existsSync(filePath)) {
+                (req as any).url = `/pages/data/${htmlFile}`;
+                next();
+                return;
+              }
+            }
           }
           
           // Check if this is a route that needs mapping

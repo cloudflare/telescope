@@ -4,6 +4,127 @@
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     <title>Telescope Filmstrip & Video</title>
     <link rel="stylesheet" href="../../style.css">
+    <style>
+        .overview-section {
+            margin: 24px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .overview-section h3 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.92);
+            font-weight: 600;
+        }
+
+        .filmstrip-scroll {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+
+        .filmstrip-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .filmstrip-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .filmstrip-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .filmstrip-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: auto;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .layout-shifts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .layout-shift-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 6px;
+            border-left: 4px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .layout-shift-item h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        .layout-shift-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.92);
+            margin: 4px 0;
+        }
+
+        .layout-shift-time {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .shift-legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            border: 2px solid;
+        }
+
+        .legend-color.old {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .legend-color.new {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.2);
+        }
+    </style>
 </head>
 
 <body>
@@ -13,7 +134,7 @@
             <a class="tab" href="/">Home</a>
             <a class="tab" href="/basic">Basic</a>
             <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab active" href="/results">Results</a>
+            <a class="tab inactive" href="/results">Results</a>
             <a class="tab" href="/upload">Upload</a>
         </div>
         <div class="spacer"></div>
@@ -21,24 +142,300 @@
             GitHub ↗
         </a>
     </nav>
-    <nav class="data-nav">
-        <div class="tabs" part="tabs">
-            <a class="tab" href="/data/overview">Overview</a>
-            <a class="tab active" href="/data/filmstrip-video">Filmstrip & Video</a>
-            <a class="tab" href="/data/metrics">Metrics</a>
-            <a class="tab" href="/data/waterfall">Waterfall</a>
-            <a class="tab" href="/data/critical-path">Critical Path</a>
-            <a class="tab" href="/data/console">Console</a>
-            <a class="tab" href="/data/resources">Resources</a>
-            <a class="tab" href="/data/bottlenecks">Bottlenecks</a>
-            <a class="tab" href="/data/config">Config</a>
-        </div>
-    </nav>
-    <section class="content">
+    <data-nav active="filmstrip-video"></data-nav>
+    <section class="data-content">
         <h1>Filmstrip & Video</h1>
         <h2>View the filmstrip and video of the test.</h2>
-      </section>
-    </body>
+
+        <!-- Filmstrip Section -->
+        <div class="overview-section">
+            <h3>Filmstrip</h3>
+            <div class="filmstrip-scroll" id="filmstrip-container">
+                <!-- Filmstrip images will be populated by JavaScript -->
+            </div>
+            <div class="shift-legend" style="margin-top: 16px;">
+                <div class="legend-item">
+                    <div class="legend-color old"></div>
+                    <span>Old Position</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color new"></div>
+                    <span>New Position</span>
+                </div>
+                <div class="legend-item">
+                    <span style="border-left: 3px solid #60a5fa; padding-left: 8px;">FCP</span>
+                </div>
+                <div class="legend-item">
+                    <span style="border-left: 3px solid #34d399; padding-left: 8px;">LCP</span>
+                </div>
+                <div class="legend-item">
+                    <span style="border-left: 3px solid #fbbf24; padding-left: 8px;">DOM Complete</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Section -->
+        <div class="overview-section">
+            <h3>Video</h3>
+            <div class="video-container">
+                <video id="test-video" controls>
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        </div>
+
+        <!-- Layout Shifts Section -->
+        <div class="overview-section">
+            <h3>Layout Shifts</h3>
+            <div class="layout-shifts-container" id="layout-shifts-container">
+                <!-- Layout shifts will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+    <script type="module" src="../../components/data-nav.ts"></script>
+
+    <script type="module">
+        // Get test ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const testId = pathParts[pathParts.length - 1];
+        console.log('[Filmstrip] Page loaded, path parts:', pathParts);
+        console.log('[Filmstrip] Extracted test ID:', testId);
+
+        if (!testId || testId === 'filmstrip-video') {
+            console.error('[Filmstrip] No test ID provided or invalid test ID');
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: rgba(255, 255, 255, 0.72);">No test ID provided</div>';
+        } else {
+            console.log('[Filmstrip] Starting to load filmstrip data for test ID:', testId);
+            loadFilmstripData(testId);
+        }
+
+        async function loadFilmstripData(testId) {
+            console.log('[Filmstrip] Starting to load filmstrip data for test:', testId);
+            try {
+                // Load config
+                console.log('[Filmstrip] Loading config...');
+                const configResponse = await fetch(`/api/results/${testId}/config.json`);
+                if (!configResponse.ok) throw new Error('Failed to load config');
+                const config = await configResponse.json();
+                console.log('[Filmstrip] Config loaded:', config);
+
+                // Load metrics
+                console.log('[Filmstrip] Loading metrics...');
+                const metricsResponse = await fetch(`/api/results/${testId}/metrics.json`);
+                if (!metricsResponse.ok) throw new Error('Failed to load metrics');
+                const metrics = await metricsResponse.json();
+                console.log('[Filmstrip] Metrics loaded:', metrics);
+
+                // Get frame rate from config
+                const frameRate = config.options?.frameRate || 1;
+                const frameInterval = 1 / frameRate; // seconds per frame
+                console.log('[Filmstrip] Frame rate:', frameRate, 'fps, Interval:', frameInterval, 'seconds per frame');
+
+                // Get timings
+                const fcp = (metrics.paintTiming?.find((p: any) => p.name === 'first-contentful-paint')?.startTime || 0) / 1000;
+                const lcp = (metrics.largestContentfulPaint?.[0]?.renderTime || 0) / 1000;
+                const domComplete = (metrics.navigationTiming?.domComplete || 0) / 1000;
+                console.log('[Filmstrip] Timings - FCP:', fcp, 's, LCP:', lcp, 's, DOM Complete:', domComplete, 's');
+
+                // Get layout shifts
+                const layoutShifts = metrics.layoutShifts || [];
+                console.log('[Filmstrip] Found', layoutShifts.length, 'layout shifts');
+
+                // Load filmstrip images
+                console.log('[Filmstrip] Loading filmstrip files...');
+                const filmstripContainer = document.getElementById('filmstrip-container');
+                const filmstripFiles = await getFilmstripFiles(testId);
+                console.log('[Filmstrip] Found', filmstripFiles.length, 'filmstrip files:', filmstripFiles);
+                
+                let previousShifts: any[] = [];
+                
+                filmstripFiles.forEach((filename, index) => {
+                    const frameNumber = index + 1;
+                    const frameTime = frameNumber * frameInterval;
+                    
+                    // Find layout shifts that occurred at or before this frame time
+                    const frameTimeMs = frameTime * 1000;
+                    const shiftsForFrame = layoutShifts.filter((shift: any) => {
+                        const shiftTime = shift.startTime || 0;
+                        return shiftTime <= frameTimeMs && shiftTime > (frameTimeMs - frameInterval * 1000);
+                    });
+                    
+                    if (shiftsForFrame.length > 0) {
+                        console.log(`[Filmstrip] Frame ${frameNumber} (${frameTime.toFixed(2)}s) has ${shiftsForFrame.length} layout shift(s)`);
+                    }
+                    
+                    // Create filmstrip image component
+                    const filmstripImage = document.createElement('filmstrip-image');
+                    filmstripImage.setAttribute('src', `/api/results/${testId}/filmstrip/${filename}`);
+                    filmstripImage.setAttribute('frame-number', frameNumber.toString());
+                    filmstripImage.setAttribute('time', frameTime.toFixed(2));
+                    filmstripImage.setAttribute('fcp', fcp.toString());
+                    filmstripImage.setAttribute('lcp', lcp.toString());
+                    filmstripImage.setAttribute('dom-complete', domComplete.toString());
+                    filmstripImage.setAttribute('layout-shifts', JSON.stringify(shiftsForFrame));
+                    filmstripImage.setAttribute('previous-shifts', JSON.stringify(previousShifts));
+                    
+                    filmstripContainer.appendChild(filmstripImage);
+                    
+                    // Update previous shifts for next frame
+                    previousShifts = [...previousShifts, ...shiftsForFrame];
+                });
+
+                console.log('[Filmstrip] Rendered', filmstripFiles.length, 'filmstrip images');
+
+                // Load video
+                console.log('[Filmstrip] Loading video files...');
+                const videoElement = document.getElementById('test-video') as HTMLVideoElement;
+                const videoFiles = await getVideoFiles(testId);
+                console.log('[Filmstrip] Found', videoFiles.length, 'video file(s):', videoFiles);
+                if (videoFiles.length > 0) {
+                    const videoSrc = `/api/results/${testId}/${videoFiles[0]}`;
+                    console.log('[Filmstrip] Setting video source to:', videoSrc);
+                    videoElement.src = videoSrc;
+                } else {
+                    console.warn('[Filmstrip] No video files found');
+                }
+
+                // Render layout shifts
+                console.log('[Filmstrip] Rendering layout shifts section...');
+                renderLayoutShifts(layoutShifts);
+                console.log('[Filmstrip] Filmstrip data loading complete');
+            } catch (error) {
+                console.error('[Filmstrip] Error loading filmstrip data:', error);
+                console.error('[Filmstrip] Error stack:', error.stack);
+                document.body.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255, 100, 100, 0.92);">Error loading test data: ${error.message}</div>`;
+            }
+        }
+
+        async function getFilmstripFiles(testId: string): Promise<string[]> {
+            console.log('[Filmstrip] Getting filmstrip files for test:', testId);
+            // Try to fetch frames sequentially until we hit a 404
+            const files: string[] = [];
+            let frameNum = 1;
+            const maxFrames = 100; // Safety limit
+            
+            while (frameNum <= maxFrames) {
+                const filename = `frame_1366x768_${frameNum}.jpg`;
+                const fileUrl = `/api/results/${testId}/filmstrip/${filename}`;
+                try {
+                    const response = await fetch(fileUrl, { method: 'HEAD' });
+                    if (response.ok) {
+                        files.push(filename);
+                        console.log(`[Filmstrip] Found frame ${frameNum}: ${filename}`);
+                        frameNum++;
+                    } else {
+                        console.log(`[Filmstrip] Frame ${frameNum} not found (${response.status}), stopping search`);
+                        break;
+                    }
+                } catch (error) {
+                    console.error(`[Filmstrip] Error checking frame ${frameNum}:`, error);
+                    break;
+                }
+            }
+            
+            console.log(`[Filmstrip] Total frames found: ${files.length}`);
+            return files;
+        }
+
+        async function getVideoFiles(testId: string): Promise<string[]> {
+            console.log('[Filmstrip] Getting video files for test:', testId);
+            try {
+                // Try to list files in the test directory
+                const listUrl = `/api/results/${testId}/list`;
+                console.log('[Filmstrip] Attempting to list files from:', listUrl);
+                const listResponse = await fetch(listUrl);
+                if (listResponse.ok) {
+                    const files: string[] = await listResponse.json();
+                    console.log('[Filmstrip] Listed files:', files);
+                    // Find video files
+                    const videoFiles = files.filter((file) => {
+                        const ext = file.split('.').pop()?.toLowerCase();
+                        const isVideo = ext === 'webm' || ext === 'mp4' || ext === 'mov';
+                        if (isVideo) {
+                            console.log('[Filmstrip] Found video file:', file);
+                        }
+                        return isVideo;
+                    });
+                    console.log('[Filmstrip] Filtered video files:', videoFiles);
+                    return videoFiles;
+                } else {
+                    console.warn('[Filmstrip] Could not list files, status:', listResponse.status);
+                }
+            } catch (error) {
+                console.warn('[Filmstrip] Could not list files, trying common patterns:', error);
+            }
+            
+            // Fallback: try common video file patterns
+            console.log('[Filmstrip] Trying common video file patterns...');
+            const extensions = ['.webm', '.mp4', '.mov'];
+            
+            for (const ext of extensions) {
+                const commonNames = [
+                    `video${ext}`,
+                    `recording${ext}`,
+                    `page${ext}`,
+                ];
+                
+                for (const name of commonNames) {
+                    const videoUrl = `/api/results/${testId}/${name}`;
+                    try {
+                        console.log('[Filmstrip] Checking:', videoUrl);
+                        const response = await fetch(videoUrl, { method: 'HEAD' });
+                        if (response.ok) {
+                            console.log('[Filmstrip] Found video file:', name);
+                            return [name];
+                        } else {
+                            console.log('[Filmstrip] File not found:', name, 'Status:', response.status);
+                        }
+                    } catch (error) {
+                        console.warn('[Filmstrip] Error checking', name, ':', error);
+                    }
+                }
+            }
+            
+            console.warn('[Filmstrip] No video files found');
+            return [];
+        }
+
+        function renderLayoutShifts(shifts: any[]) {
+            console.log('[Filmstrip] Rendering layout shifts, count:', shifts.length);
+            const container = document.getElementById('layout-shifts-container');
+            
+            if (shifts.length === 0) {
+                console.log('[Filmstrip] No layout shifts to render');
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: rgba(255, 255, 255, 0.6);">No layout shifts detected</div>';
+                return;
+            }
+            
+            shifts.forEach((shift, index) => {
+                const time = (shift.startTime || 0) / 1000;
+                const value = shift.value || 0;
+                const sourceCount = shift.sources?.length || 0;
+                console.log(`[Filmstrip] Layout shift #${index + 1}: value=${value.toFixed(4)}, time=${time.toFixed(2)}s, sources=${sourceCount}`);
+            });
+            
+            container.innerHTML = shifts.map((shift, index) => {
+                const time = (shift.startTime || 0) / 1000;
+                const value = shift.value || 0;
+                
+                return `
+                    <div class="layout-shift-item">
+                        <h4>Layout Shift #${index + 1}</h4>
+                        <div class="layout-shift-value">${value.toFixed(4)}</div>
+                        <div class="layout-shift-time">Time: ${time.toFixed(2)}s</div>
+                        ${shift.sources && shift.sources.length > 0 ? 
+                            `<div style="margin-top: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.5);">
+                                ${shift.sources.length} source(s)
+                            </div>` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            console.log('[Filmstrip] Layout shifts rendered');
+        }
+    </script>
+    <script type="module" src="../../components/data-nav.ts"></script>
+    <script type="module" src="../../components/filmstrip-image.ts"></script>
 </body>
 
 </html>
