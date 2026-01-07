@@ -2,7 +2,8 @@
 
 <head>
     <title>Telescope Advanced Test</title>
-    <link rel="stylesheet" href="../style.css">
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
@@ -20,26 +21,206 @@
             GitHub ↗
         </a>
     </nav>
-    <section class="panel">
+    <section class="content">
         <h1>Advanced</h1>
-        <h2>Provide advanced options for the test.</h2>
+        <h2>Configure all test parameters with advanced options.</h2>
         <form id="advanced-form">
-            <label>
-                URL
-                <input name="url" type="url" placeholder="https://example.com" required />
-            </label>
-            <label>
-                Browser
-                <select name="browser" id="browserSelect" required></select>
-            </label>
-            <div>
+            <!-- Basic Settings -->
+            <div class="form-section">
+                <h3>Basic Settings</h3>
+                <div class="form-grid">
+                    <label>
+                        URL
+                        <input name="url" type="url" placeholder="https://example.com" required />
+                    </label>
+                    <label>
+                        Browser
+                        <select name="browser" id="browserSelect" required>
+                            <option value="">Select a browser...</option>
+                            <option value="chrome">Chrome</option>
+                            <option value="chrome-beta">Chrome Beta</option>
+                            <option value="canary">Chrome Canary</option>
+                            <option value="edge">Microsoft Edge</option>
+                            <option value="safari">Safari</option>
+                            <option value="firefox">Firefox</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Viewport Settings -->
+            <div class="form-section">
+                <h3>Viewport Settings</h3>
+                <div class="form-grid">
+                    <label>
+                        Width (pixels)
+                        <input name="width" type="number" placeholder="1366" value="1366" min="1" />
+                        <span>Default: 1366</span>
+                    </label>
+                    <label>
+                        Height (pixels)
+                        <input name="height" type="number" placeholder="768" value="768" min="1" />
+                        <span>Default: 768</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Network & Throttling -->
+            <div class="form-section">
+                <h3>Network & Throttling</h3>
+                <div class="form-grid">
+                    <label>
+                        Connection Type
+                        <select name="connectionType">
+                            <option value="">No throttling (default)</option>
+                            <option value="cable">Cable</option>
+                            <option value="dsl">DSL</option>
+                            <option value="4g">4G</option>
+                            <option value="3g">3G</option>
+                            <option value="3gfast">3G Fast</option>
+                            <option value="3gslow">3G Slow</option>
+                            <option value="2g">2G</option>
+                            <option value="fios">FiOS</option>
+                        </select>
+                    </label>
+                    <label>
+                        CPU Throttle Factor
+                        <input name="cpuThrottle" type="number" placeholder="e.g., 4" min="1" />
+                        <span>Higher values = more throttling</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Request Blocking -->
+            <div class="form-section">
+                <h3>Request Blocking</h3>
+                <div class="form-grid">
+                    <label class="form-full-width">
+                        Block Domains
+                        <input name="blockDomains" type="text" placeholder="ads.example.com, tracker.example.com" />
+                        <span>Comma-separated list of domains to block</span>
+                    </label>
+                    <label class="form-full-width">
+                        Block URLs (substring match)
+                        <input name="block" type="text" placeholder="analytics.js, tracking.js" />
+                        <span>Comma-separated list of URL substrings to block</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Custom Headers & Cookies -->
+            <div class="form-section">
+                <h3>Custom Headers & Cookies</h3>
+                <div class="form-grid">
+                    <label class="form-full-width">
+                        Headers (JSON)
+                        <textarea name="headers" placeholder='{"Authorization": "Bearer token123", "X-Custom-Header": "value"}'></textarea>
+                        <span>JSON object with custom headers</span>
+                    </label>
+                    <label class="form-full-width">
+                        Cookies (JSON)
+                        <textarea name="cookies" placeholder='{"name": "session", "value": "abc123"}'></textarea>
+                        <span>JSON object or array for cookies. Example: {"name": "foo", "value": "bar"}</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Authentication -->
+            <div class="form-section">
+                <h3>Authentication</h3>
+                <div class="form-grid">
+                    <label>
+                        Username
+                        <input name="authUsername" type="text" placeholder="username" />
+                    </label>
+                    <label>
+                        Password
+                        <input name="authPassword" type="password" placeholder="password" />
+                    </label>
+                    <label class="form-full-width">
+                        Auth (JSON - alternative)
+                        <textarea name="auth" placeholder='{"username": "user", "password": "pass"}'></textarea>
+                        <span>Alternative: JSON object with username and password</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Browser-Specific Options -->
+            <div class="form-section">
+                <h3>Browser-Specific Options</h3>
+                <div class="form-grid">
+                    <label class="form-full-width">
+                        Chromium Flags
+                        <input name="flags" type="text" placeholder="--disable-gpu, --disable-dev-shm-usage" />
+                        <span>Comma-separated list of Chromium flags. See: <a href="https://peter.sh/experiments/chromium-command-line-switches/" target="_blank">Chromium flags reference</a></span>
+                    </label>
+                    <label class="form-full-width">
+                        Firefox Preferences (JSON)
+                        <textarea name="firefoxPrefs" placeholder='{"network.trr.mode": 2}'></textarea>
+                        <span>Firefox only. JSON object with Firefox user preferences</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Advanced Options -->
+            <div class="form-section">
+                <h3>Advanced Options</h3>
+                <div class="form-grid">
+                    <label>
+                        Timeout (milliseconds)
+                        <input name="timeout" type="number" placeholder="30000" value="30000" min="1000" />
+                        <span>Default: 30000 (30 seconds)</span>
+                    </label>
+                    <label>
+                        Frame Rate (FPS)
+                        <input name="frameRate" type="number" placeholder="1" value="1" min="1" />
+                        <span>Filmstrip frame rate. Default: 1</span>
+                    </label>
+                </div>
+                <div class="form-grid" style="margin-top: 16px;">
+                    <label class="checkbox-label">
+                        <input name="disableJS" type="checkbox" />
+                        Disable JavaScript
+                    </label>
+                    <label class="checkbox-label">
+                        <input name="debug" type="checkbox" />
+                        Debug Mode
+                    </label>
+                </div>
+            </div>
+
+            <!-- Output Options -->
+            <div class="form-section">
+                <h3>Output Options</h3>
+                <div class="form-grid">
+                    <label class="checkbox-label">
+                        <input name="html" type="checkbox" />
+                        Generate HTML Report
+                    </label>
+                    <label class="checkbox-label">
+                        <input name="openHtml" type="checkbox" />
+                        Open HTML Report (requires HTML option)
+                    </label>
+                    <label class="checkbox-label">
+                        <input name="list" type="checkbox" />
+                        Generate Results List
+                    </label>
+                    <label class="checkbox-label">
+                        <input name="zip" type="checkbox" />
+                        Zip Results
+                    </label>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
                 <button type="submit">Run Test</button>
                 <span id="status"></span>
             </div>
         </form>
         <div></div>
         <pre id="preview" style="margin:0; display:none;"></pre>
-      </section>
+    </section>
 </body>
 
 </html>

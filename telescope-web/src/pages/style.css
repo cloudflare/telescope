@@ -37,11 +37,30 @@ body {
     color: var(--text);
     position: sticky;
     top: 0;
+    left: 0;
+    min-height: 100%;
+    padding-left: 20px;
+    padding-right: 20px;
+    display: grid;
+    grid-template-rows: auto 1fr;
+}
+
+label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+label span {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
 }
 
 nav {
-    width: min(1100px, calc(100% - 48px));
-    margin: 0 auto;
+    width: max(500px, calc(100% - 48px));
     padding: 14px 0;
     display: flex;
     align-items: center;
@@ -119,6 +138,10 @@ h2 {
     color: var(--muted);
 }
 
+form {
+    max-width: 1000px;
+}
+
 input,
 select,
 textarea {
@@ -164,23 +187,69 @@ pre {
     border: 1px solid var(--border);
 }
 
-.app-shell {
-    min-height: 100%;
-    display: grid;
-    grid-template-rows: auto 1fr;
-}
-
 .content {
-    width: min(1100px, calc(100% - 48px));
-    margin: 5px auto 64px 270px;
+    width: max(500px, calc(100% - 48px));
+    margin: 5px auto 64px;
     overflow-x: auto;
+    padding: 20px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
 }
 
 .panel {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     backdrop-filter: blur(10px);
+}
+
+.form-section {
+    margin: 24px 0;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.form-section h3 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.92);
+    font-weight: 600;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.form-full-width {
+    grid-column: 1 / -1;
+}
+
+input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+.checkbox-label {
+    flex-direction: row;
+    align-items: center;
+}
+
+.form-actions {
+    margin-top: 32px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+#status {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 14px;
 }
 
 /* Metric Item Component */
