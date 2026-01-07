@@ -270,7 +270,6 @@ metric-item {
     background: rgba(255, 255, 255, 0.04);
     border-radius: 8px;
     border-left: 4px solid var(--metric-border-color, transparent);
-    max-width: 150px;
     text-overflow: ellipsis;
     text-wrap: nowrap;
 }

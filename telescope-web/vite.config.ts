@@ -25,14 +25,15 @@ const routeMap: Record<string, string> = {
   '/data/resources': resolve(srcDir, 'pages/data/resources.html'),
   '/data/bottlenecks': resolve(srcDir, 'pages/data/bottlenecks.html'),
   '/data/config': resolve(srcDir, 'pages/data/config.html'),
-  '/img/chrome.png': resolve(srcDir, 'pages/img/chrome.png'),
-  '/img/chrome-beta.png': resolve(srcDir, 'pages/img/chrome-beta.png'),
-  '/img/chrome-canary.png': resolve(srcDir, 'pages/img/chrome-canary.png'),
-  '/img/msedge.png': resolve(srcDir, 'pages/img/msedge.png'),
-  '/img/webkit.png': resolve(srcDir, 'pages/img/webkit.png'),
-  '/img/firefox.png': resolve(srcDir, 'pages/img/firefox.png'),
-  '/style.css': resolve(srcDir, 'pages/style.css'),
-  '/favicon.svg': resolve(srcDir, 'pages/favicon.svg'),
+  '/img/chrome.png': resolve(srcDir, 'static/img/chrome.png'),
+  '/img/chrome-beta.png': resolve(srcDir, 'static/img/chrome-beta.png'),
+  '/img/chrome-canary.png': resolve(srcDir, 'static/img/chrome-canary.png'),
+  '/img/msedge.png': resolve(srcDir, 'static/img/msedge.png'),
+  '/img/webkit.png': resolve(srcDir, 'static/img/webkit.png'),
+  '/img/firefox.png': resolve(srcDir, 'static/img/firefox.png'),
+  '/style.css': resolve(srcDir, 'static/style.css'),
+  '/favicon.svg': resolve(srcDir, 'static/favicon.svg'),
+  '/critical-path.ts': resolve(srcDir, 'static/critical-path.ts'),
 };
 
 // Build input: use route paths as entry names

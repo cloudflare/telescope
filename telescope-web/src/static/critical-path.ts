@@ -1,25 +1,3 @@
-// src/visualizations/criticalPathChart.ts
-// Note: D3 imports commented out - only using calculation functions
-// import * as d3 from "d3";
-// import { HarEntry, HarLog } from "./types/har-types";
-
-interface EventMarker {
-  name: string;
-  time: number;
-  color: string;
-}
-
-/** Classify resource type from MIME type */
-function getResourceType(entry: any): string {
-  const mime = entry?.response?.content?.mimeType || "";
-  if (mime.includes("text/html")) return "HTML";
-  if (mime.includes("text/css")) return "CSS";
-  if (mime.includes("javascript")) return "JS";
-  if (mime.includes("font")) return "Font";
-  if (mime.includes("image")) return "Image";
-  return "Other";
-}
-
 /**
  * Calculate if a HAR entry is part of the critical path
  * Critical path includes: HTML documents, CSS, and blocking JavaScript
