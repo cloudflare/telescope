@@ -1,171 +1,239 @@
 /* Global styles for the app shell (components use shadow DOM styles). */
 :root {
-  color-scheme: dark;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter,
-    Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  --bg: #070a12;
-  --bg2: #0b1020;
-  --panel: rgba(255, 255, 255, 0.06);
-  --border: rgba(255, 255, 255, 0.12);
-  --text: rgba(255, 255, 255, 0.92);
-  --muted: rgba(255, 255, 255, 0.62);
-  --brand: #7dd3fc;
-  --brand2: #a78bfa;
+    color-scheme: dark;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter,
+        Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    --bg: #070a12;
+    --bg2: #0b1020;
+    --panel: rgba(255, 255, 255, 0.06);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: rgba(255, 255, 255, 0.92);
+    --muted: rgba(255, 255, 255, 0.62);
+    --brand: #7dd3fc;
+}
+
+:host {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+    background: rgba(7, 10, 18, 0.65);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
 }
 
 html,
 body {
-  height: 100%;
+    height: 100%;
 }
 
 body {
-  margin: 0;
-  background: radial-gradient(1200px 600px at 50% -100px,
-      rgba(125, 211, 252, 0.18),
-      transparent 60%),
-    radial-gradient(900px 500px at 80% 0%,
-      rgba(167, 139, 250, 0.14),
-      transparent 55%),
-    linear-gradient(180deg, var(--bg), var(--bg2));
-  color: var(--text);
+    margin: 0;
+    background: radial-gradient(1200px 600px at 50% -100px,
+            rgba(125, 211, 252, 0.18),
+            transparent 60%),
+        radial-gradient(900px 500px at 80% 0%,
+            rgba(167, 139, 250, 0.14),
+            transparent 55%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+    color: var(--text);
 }
 
-.app-shell {
-  min-height: 100%;
-  display: grid;
-  grid-template-rows: auto 1fr;
+nav {
+    width: min(1100px, calc(100% - 48px));
+    margin: 0 auto;
+    padding: 14px 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
 }
 
-.page {
-  width: min(1100px, calc(100% - 48px));
-  margin: 5px auto 64px 270px;
-  overflow-x: auto;
+nav .brand {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: rgba(255, 255, 255, 0.92);
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 12px;
 }
 
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
+nav .tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
-.panel.pad {
-  padding: 18px 18px;
-  margin-left: 8px;
+nav a.tab {
+    color: rgba(255, 255, 255, 0.72);
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    font-size: 14px;
 }
 
-.h1 {
-  font-size: 40px;
-  letter-spacing: -0.03em;
-  margin: 0 0 8px;
+nav a.tab:hover {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.92);
 }
 
-.sub {
-  margin: 0 0 18px;
-  color: var(--muted);
+nav a.tab[data-active="true"] {
+    color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(125, 211, 252, 0.35);
+    background: linear-gradient(135deg,
+            rgba(125, 211, 252, 0.10),
+            rgba(167, 139, 250, 0.10));
 }
 
-.grid-2 {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: 1fr;
+nav .spacer {
+    flex: 1;
 }
 
-@media (min-width: 860px) {
-  .grid-2 {
-    grid-template-columns: 1fr 1fr;
-  }
+nav .gh {
+    color: rgba(255, 255, 255, 0.72);
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    font-size: 14px;
+    white-space: nowrap;
 }
 
-label {
-  display: grid;
-  gap: 6px;
-  font-size: 14px;
-  color: var(--muted);
+nav .gh:hover {
+    color: rgba(255, 255, 255, 0.92);
+    border-color: rgba(125, 211, 252, 0.35);
+}
+
+h1 {
+    font-size: 32px;
+    letter-spacing: -0.03em;
+    margin: 0 0 8px;
+}
+
+h2 {
+    display: grid;
+    gap: 6px;
+    font-size: 16px;
+    color: var(--muted);
 }
 
 input,
 select,
 textarea {
-  font: inherit;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.25);
-  color: var(--text);
+    font: inherit;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--text);
 }
 
 textarea {
-  min-height: 110px;
+    min-height: 110px;
 }
 
 button {
-  font: inherit;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: linear-gradient(135deg,
-      rgba(125, 211, 252, 0.14),
-      rgba(167, 139, 250, 0.14));
-  color: var(--text);
-  cursor: pointer;
+    font: inherit;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: linear-gradient(135deg,
+            rgba(125, 211, 252, 0.14),
+            rgba(167, 139, 250, 0.14));
+    color: var(--text);
+    cursor: pointer;
 }
 
 button:hover {
-  border-color: rgba(125, 211, 252, 0.45);
+    border-color: rgba(125, 211, 252, 0.45);
 }
 
 code,
 pre {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        'Liberation Mono', 'Courier New', monospace;
 }
 
 pre {
-  padding: 14px;
-  border-radius: 14px;
-  overflow: auto;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid var(--border);
+    padding: 14px;
+    border-radius: 14px;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--border);
+}
+
+.app-shell {
+    min-height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr;
+}
+
+.content {
+    width: min(1100px, calc(100% - 48px));
+    margin: 5px auto 64px 270px;
+    overflow-x: auto;
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
 }
 
 /* Metric Item Component */
 metric-item {
-  display: block;
+    display: grid;
+    gap: 4px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    border-left: 4px solid var(--metric-border-color, transparent);
+    height: 30px;
+    max-width: 150px;
+    text-overflow: ellipsis;
+    text-wrap: nowrap;
 }
 
-.metric-item {
-  display: grid;
-  gap: 4px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  border-left: 4px solid var(--metric-border-color, transparent);
-  height: 30px;
-  max-width: 150px;
-  text-overflow: ellipsis;
-  text-wrap: nowrap;
+metric-item:hover {
+    background: rgba(255, 255, 255, 0.08);
 }
 
-.metric-item .label {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 12px;
-  margin-bottom: 4px;
+metric-item.metric-item-good {
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 4px solid var(--color-success);
 }
 
-.metric-item .value {
-  font-weight: 500;
-  font-size: 16px;
+metric-item.metric-item-needs-improvement {
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 4px var(--color-warning);
 }
 
-.metric-item .subtitle,
-.metric-item .description {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 4px;
+metric-item.metric-item-poor {
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 4px var(--color-danger);
+}
+
+metric-item .label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+metric-item .value {
+    font-weight: 500;
+    font-size: 16px;
+}
+
+metric-item .description {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 4px;
 }

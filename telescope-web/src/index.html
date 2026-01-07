@@ -1,0 +1,562 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Browser Support - Telescope</title>
+  <link rel="stylesheet" href="./style.css">
+  <style>
+    .md h2 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+      letter-spacing: -0.01em;
+    }
+
+    .md h3 {
+      margin: 22px 0 8px;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .md p,
+    .md li {
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .md a {
+      color: rgba(125, 211, 252, 0.92);
+      text-decoration: none;
+    }
+
+    .md a:hover {
+      text-decoration: underline;
+    }
+
+    .md code {
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .md pre code {
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .md pre {
+      margin: 14px 0;
+    }
+
+    .md ul {
+      padding-left: 18px;
+    }
+
+    .md strong {
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .panel {
+      padding: 32px;
+      margin: 32px auto;
+      width: min(1100px, calc(100% - 48px));
+    }
+
+    .parameters-grid {
+      display: grid;
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .parameter-item {
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .parameter-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .parameter-name {
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .parameter-name code {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(125, 211, 252, 0.92);
+    }
+
+    .parameter-description {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .parameter-default {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 12px;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      text-align: center;
+      padding: 12px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    tr th:first-child {
+      text-align: left;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    thead th {
+      background: rgba(255, 255, 255, 0.06);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+      vertical-align: baseline;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    tbody tr:last-child th,
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    thead img {
+      width: 3em;
+      display: block;
+      margin: 0.3em auto;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .section-title {
+      margin-top: 48px;
+      margin-bottom: 16px;
+    }
+
+    .section-title:first-of-type {
+      margin-top: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <nav>
+    <a class="brand" href="/">Telescope</a>
+    <div class="tabs" part="tabs">
+      <a class="tab" href="/">Home</a>
+      <a class="tab" href="/basic">Basic</a>
+      <a class="tab" href="/advanced">Advanced</a>
+      <a class="tab" href="/results">Results</a>
+      <a class="tab" href="/upload">Upload</a>
+    </div>
+    <div class="spacer"></div>
+    <a class="gh" href="https://github.com/cloudflare/telescope" target="_blank" rel="noreferrer">
+      GitHub ↗
+    </a>
+  </nav>
+  <section class="panel">
+    <h1>Browser Support & Parameters</h1>
+    <h2>Cross-browser capabilities and available options for the testing agent.</h2>
+
+    <h2 class="section-title">Parameters</h2>
+    <p style="color: rgba(255, 255, 255, 0.78); margin-bottom: 24px;">
+      A full list of parameters can be printed to the terminal by running <code>npx . --help</code>. Here's what's currently supported:
+    </p>
+
+    <div class="parameters-grid">
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>-u, --url &lt;url&gt;</code>
+        </div>
+        <div class="parameter-description">URL to run tests against</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>-b, --browser &lt;browser_name&gt;</code>
+        </div>
+        <div class="parameter-description">Browser to run tests with (choices: "chrome", "chrome-beta", "canary", "edge", "safari", "firefox", default: "chrome")</div>
+        <div class="parameter-default">Default: "chrome"</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>-h, --headers &lt;object&gt;</code>
+        </div>
+        <div class="parameter-description">Any custom headers to apply to requests</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>-c, --cookies &lt;object&gt;</code>
+        </div>
+        <div class="parameter-description">Any custom cookies to apply</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>-f, --flags &lt;string&gt;</code>
+        </div>
+        <div class="parameter-description">A comma separated list of Chromium flags to launch Chrome with. See: <a href="https://peter.sh/experiments/chromium-command-line-switches/" target="_blank">https://peter.sh/experiments/chromium-command-line-switches/</a></div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--blockDomains &lt;domains...&gt;</code>
+        </div>
+        <div class="parameter-description">A comma separated list of domains to block</div>
+        <div class="parameter-default">Default: []</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--block &lt;substrings...&gt;</code>
+        </div>
+        <div class="parameter-description">A comma-delimited list of urls to block (based on a substring match)</div>
+        <div class="parameter-default">Default: []</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--firefoxPrefs &lt;object&gt;</code>
+        </div>
+        <div class="parameter-description">Any Firefox User Preferences to apply (Firefox only). Example: '{"network.trr.mode": 2}'</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--cpuThrottle &lt;int&gt;</code>
+        </div>
+        <div class="parameter-description">CPU throttling factor</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--connectionType &lt;string&gt;</code>
+        </div>
+        <div class="parameter-description">Network connection type. By default, no throttling is applied. (choices: "cable", "dsl", "4g", "3g", "3gfast", "3gslow", "2g", "fios")</div>
+        <div class="parameter-default">Default: false</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--width &lt;int&gt;</code>
+        </div>
+        <div class="parameter-description">Viewport width, in pixels</div>
+        <div class="parameter-default">Default: "1366"</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--height &lt;int&gt;</code>
+        </div>
+        <div class="parameter-description">Viewport height, in pixels</div>
+        <div class="parameter-default">Default: "768"</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--frameRate &lt;int&gt;</code>
+        </div>
+        <div class="parameter-description">Filmstrip frame rate, in frames per second</div>
+        <div class="parameter-default">Default: 1</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--disableJS</code>
+        </div>
+        <div class="parameter-description">Disable JavaScript</div>
+        <div class="parameter-default">Default: false</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--debug</code>
+        </div>
+        <div class="parameter-description">Output debug lines</div>
+        <div class="parameter-default">Default: false</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--auth &lt;object&gt;</code>
+        </div>
+        <div class="parameter-description">Basic HTTP authentication (Expects: {"username": "", "password": ""})</div>
+        <div class="parameter-default">Default: false</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--timeout &lt;int&gt;</code>
+        </div>
+        <div class="parameter-description">Maximum time (in milliseconds) to wait for test to complete</div>
+        <div class="parameter-default">Default: 30000</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--html</code>
+        </div>
+        <div class="parameter-description">Generate HTML report</div>
+        <div class="parameter-default">Default: false</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--openHtml</code>
+        </div>
+        <div class="parameter-description">Open HTML report in browser (requires --html)</div>
+        <div class="parameter-default">Default: false</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--list</code>
+        </div>
+        <div class="parameter-description">Generate a list of test results as HTML</div>
+        <div class="parameter-default">Default: false</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--zip</code>
+        </div>
+        <div class="parameter-description">Zip the results of the test into the results directory</div>
+        <div class="parameter-default">Default: false</div>
+      </div>
+
+      <div class="parameter-item">
+        <div class="parameter-name">
+          <code>--help</code>
+        </div>
+        <div class="parameter-description">Display help for command</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Capabilities</h2>
+    <p style="color: rgba(255, 255, 255, 0.78); margin-bottom: 24px;">
+      These are capabilities of the testing agent itself.
+    </p>
+    <table cellspacing="0">
+      <thead>
+        <th></th>
+        <th>
+          <img src="./img/chrome.png" />
+        </th>
+        <th>
+          <img src="./img/chrome-beta.png" />
+        </th>
+        <th>
+          <img src="./img/chrome-canary.png" />
+        </th>
+        <th>
+          <img src="./img/msedge.png" />
+        </th>
+        <th>
+          <img src="./img/webkit.png" />
+        </th>
+        <th>
+          <img src="./img/firefox.png" />
+        </th>
+      </thead>
+      <tbody>
+        <tr>
+          <th>HAR data</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <th>Video recording</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <th>Screenshot</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <th>Filmstrip</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <th>Packet-level network throttling</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <th>Headful</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <th>Request Blocking</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <th>CPU Throttling</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>⛔️</td>
+          <td>⛔️</td>
+        </tr>
+        <tr>
+          <th>Custom Headers</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <th>Custom Viewport</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <th>Mobile Emulation</th>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <th>Real Devices</th>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <th>Chromium Command Line Flags</th>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>⛔️</td>
+          <td>⛔️</td>
+        </tr>
+        <tr>
+          <th>Firefox Preferences</th>
+          <td>⛔️</td>
+          <td>⛔️</td>
+          <td>⛔️</td>
+          <td>⛔️</td>
+          <td>⛔️</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <th>Custom Metrics</th>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <th>Append to UA</th>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <th>Custom Cookies</th>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <th>Repeat View</th>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <th>Scripting</th>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</body>
+
+</html>

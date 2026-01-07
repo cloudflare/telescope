@@ -1,0 +1,45 @@
+<html>
+
+<head>
+    <title>Telescope Advanced Test</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+    <nav>
+        <a class="brand" href="/" data-link>Telescope</a>
+        <div class="tabs" part="tabs">
+            <a class="tab" href="/" data-link data-page="Home">Home</a>
+            <a class="tab" href="/basic" data-link data-page="Basic">Basic</a>
+            <a class="tab active" href="/advanced" data-link data-page="Advanced">Advanced</a>
+            <a class="tab" href="/results" data-link data-page="Results">Results</a>
+            <a class="tab" href="/upload" data-link data-page="Upload">Upload</a>
+        </div>
+        <div class="spacer"></div>
+        <a class="gh" href="https://github.com/cloudflare/telescope" target="_blank" rel="noreferrer">
+            GitHub ↗
+        </a>
+    </nav>
+    <section class="panel">
+        <h1>Advanced</h1>
+        <h2>Provide advanced options for the test.</h2>
+        <form id="advanced-form">
+            <label>
+                URL
+                <input name="url" type="url" placeholder="https://example.com" required />
+            </label>
+            <label>
+                Browser
+                <select name="browser" id="browserSelect" required></select>
+            </label>
+            <div>
+                <button type="submit">Run Test</button>
+                <span id="status"></span>
+            </div>
+        </form>
+        <div></div>
+        <pre id="preview" style="margin:0; display:none;"></pre>
+      </section>
+</body>
+
+</html>
