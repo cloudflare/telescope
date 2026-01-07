@@ -25,16 +25,12 @@ body {
 
 body {
   margin: 0;
-  background: radial-gradient(
-      1200px 600px at 50% -100px,
+  background: radial-gradient(1200px 600px at 50% -100px,
       rgba(125, 211, 252, 0.18),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 500px at 80% 0%,
+      transparent 60%),
+    radial-gradient(900px 500px at 80% 0%,
       rgba(167, 139, 250, 0.14),
-      transparent 55%
-    ),
+      transparent 55%),
     linear-gradient(180deg, var(--bg), var(--bg2));
   color: var(--text);
 }
@@ -48,7 +44,7 @@ body {
 .page {
   width: min(1100px, calc(100% - 48px));
   margin: 5px auto 64px 270px;
-  overflow-x: auto; 
+  overflow-x: auto;
 }
 
 .panel {
@@ -113,11 +109,9 @@ button {
   padding: 10px 14px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: linear-gradient(
-    135deg,
-    rgba(125, 211, 252, 0.14),
-    rgba(167, 139, 250, 0.14)
-  );
+  background: linear-gradient(135deg,
+      rgba(125, 211, 252, 0.14),
+      rgba(167, 139, 250, 0.14));
   color: var(--text);
   cursor: pointer;
 }
@@ -138,4 +132,40 @@ pre {
   overflow: auto;
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid var(--border);
+}
+
+/* Metric Item Component */
+metric-item {
+  display: block;
+}
+
+.metric-item {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  border-left: 4px solid var(--metric-border-color, transparent);
+  height: 30px;
+  max-width: 150px;
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
+}
+
+.metric-item .label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.metric-item .value {
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.metric-item .subtitle,
+.metric-item .description {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
 }

@@ -4,7 +4,6 @@ export class MetricItem extends HTMLElement {
   private _value: string | number | null = null;
   private _unit = '';
   private _description = '';
-  private _size: 'small' | 'medium' | 'large' = 'medium';
   private _borderColor = '';
   private _subtitle = '';
 
@@ -34,43 +33,17 @@ export class MetricItem extends HTMLElement {
   }
 
   render() {
-    const valueSize = {
-      small: '16px',
-      medium: '18px',
-      large: '24px',
-    }[this._size];
-
-    const labelSize = {
-      small: '11px',
-      medium: '12px',
-      large: '12px',
-    }[this._size];
-
     const hasBorder = this._borderColor !== '';
     const hasSubtitle = this._subtitle !== '';
     const hasDescription = this._description !== '';
 
+    const borderStyle = hasBorder ? `--metric-border-color: ${this._borderColor};` : '';
     this.innerHTML = `
-      <div style="
-        ${hasBorder ? `padding: 16px; background: rgba(255,255,255,0.04); border-radius: 8px; border-left: 4px solid ${this._borderColor};` : ''}
-        ${!hasBorder && !hasSubtitle && !hasDescription ? 'display: grid; gap: 4px;' : ''}
-      ">
-        <div style="font-size: ${labelSize}; color: rgba(255,255,255,0.6); margin-bottom: ${hasSubtitle || hasDescription ? '8px' : '4px'};">
-          ${this._label}
-        </div>
-        <div style="font-size: ${valueSize}; font-weight: ${this._size === 'large' ? '600' : '500'}; ${hasSubtitle || hasDescription ? 'margin-bottom: 4px;' : ''}">
-          ${this.formatValue()}
-        </div>
-        ${hasSubtitle ? `
-          <div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px;">
-            ${this._subtitle}
-          </div>
-        ` : ''}
-        ${hasDescription ? `
-          <div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px;">
-            ${this._description}
-          </div>
-        ` : ''}
+      <div class="metric-item" style="${borderStyle}">
+        <div class="label">${this._label}</div>
+        <div class="value">${this.formatValue()}</div>
+        ${hasSubtitle ? `<div class="subtitle">${this._subtitle}</div>` : ''}
+        ${hasDescription ? `<div class="description">${this._description}</div>` : ''}
       </div>
     `;
   }

@@ -38,12 +38,12 @@ export async function renderMetrics(outlet: HTMLElement, testId: string) {
 
     const phases = [
       { name: 'First Request DNS', start: nav.domainLookupStart || 0, end: nav.domainLookupEnd || 0 },
-      { name: 'Connect', start: nav.connectStart || 0, end: nav.connectEnd || 0 },
-      { name: 'Request', start: nav.requestStart || 0, end: nav.responseStart || 0 },
-      { name: 'Response', start: nav.responseStart || 0, end: nav.responseEnd || 0 },
+      { name: 'Connect', start: nav.connectStart || 0, end: nav.connectEnd || nav.connectStart },
+      { name: 'Request', start: nav.requestStart || 0, end: nav.responseStart || nav.requestStart },
+      { name: 'Response', start: nav.responseStart || 0, end: nav.responseEnd || nav.responseStart },
       { name: 'DOM Interactive', start: nav.domInteractive || 0, end: nav.domInteractive || 0 },
       { name: 'DOM Complete', start: nav.domComplete || 0, end: nav.domComplete || 0 },
-      { name: 'Load Event End', start: nav.loadEventStart || 0, end: nav.loadEventEnd || 0 },
+      { name: 'Load Event End', start: nav.loadEventStart || 0, end: nav.loadEventEnd || nav.loadEventStart },
     ].filter(p => p.start > 0 && p.end > 0);
 
     const lcp = metrics?.largestContentfulPaint?.[0];
@@ -139,27 +139,23 @@ export async function renderMetrics(outlet: HTMLElement, testId: string) {
       lcpEl.setAttribute('label', 'LCP');
       lcpEl.setAttribute('value', String(lcp?.startTime || 0));
       lcpEl.setAttribute('unit', 'ms');
-      lcpEl.setAttribute('size', 'large');
       cwvContainer.appendChild(lcpEl);
 
       const fcpEl = document.createElement('metric-item');
       fcpEl.setAttribute('label', 'FCP');
       fcpEl.setAttribute('value', String(fcp?.startTime || 0));
       fcpEl.setAttribute('unit', 'ms');
-      fcpEl.setAttribute('size', 'large');
       cwvContainer.appendChild(fcpEl);
 
       const clsEl = document.createElement('metric-item');
       clsEl.setAttribute('label', 'CLS');
       clsEl.setAttribute('value', String(clsValue));
-      clsEl.setAttribute('size', 'large');
       cwvContainer.appendChild(clsEl);
 
       const ttfbEl = document.createElement('metric-item');
       ttfbEl.setAttribute('label', 'TTFB');
       ttfbEl.setAttribute('value', String(ttfb || 0));
       ttfbEl.setAttribute('unit', 'ms');
-      ttfbEl.setAttribute('size', 'large');
       cwvContainer.appendChild(ttfbEl);
     }
 
@@ -170,14 +166,12 @@ export async function renderMetrics(outlet: HTMLElement, testId: string) {
       totalEl.setAttribute('label', 'Total Duration');
       totalEl.setAttribute('value', String(totalDuration));
       totalEl.setAttribute('unit', 'ms');
-      totalEl.setAttribute('size', 'medium');
       navTopContainer.appendChild(totalEl);
 
       const ttfb2El = document.createElement('metric-item');
       ttfb2El.setAttribute('label', 'Time to First Byte');
       ttfb2El.setAttribute('value', String(ttfb));
       ttfb2El.setAttribute('unit', 'ms');
-      ttfb2El.setAttribute('size', 'medium');
       navTopContainer.appendChild(ttfb2El);
     }
 
@@ -188,41 +182,35 @@ export async function renderMetrics(outlet: HTMLElement, testId: string) {
       tbtEl.setAttribute('label', 'Total Blocking Time');
       tbtEl.setAttribute('value', String(tbt));
       tbtEl.setAttribute('unit', 'ms');
-      tbtEl.setAttribute('size', 'medium');
       perfContainer.appendChild(tbtEl);
 
       const ttfb3El = document.createElement('metric-item');
       ttfb3El.setAttribute('label', 'Time to First Byte');
       ttfb3El.setAttribute('value', String(ttfb));
       ttfb3El.setAttribute('unit', 'ms');
-      ttfb3El.setAttribute('size', 'medium');
       perfContainer.appendChild(ttfb3El);
 
       const fpEl = document.createElement('metric-item');
       fpEl.setAttribute('label', 'First Paint');
       fpEl.setAttribute('value', String(metrics?.paintTiming?.find((p: any) => p.name === 'first-paint')?.startTime || 0));
       fpEl.setAttribute('unit', 'ms');
-      fpEl.setAttribute('size', 'medium');
       perfContainer.appendChild(fpEl);
 
       const fcp2El = document.createElement('metric-item');
       fcp2El.setAttribute('label', 'First Contentful Paint');
       fcp2El.setAttribute('value', String(fcp?.startTime || 0));
       fcp2El.setAttribute('unit', 'ms');
-      fcp2El.setAttribute('size', 'medium');
       perfContainer.appendChild(fcp2El);
 
       const lcp2El = document.createElement('metric-item');
       lcp2El.setAttribute('label', 'Largest Contentful Paint');
       lcp2El.setAttribute('value', String(lcp?.startTime || 0));
       lcp2El.setAttribute('unit', 'ms');
-      lcp2El.setAttribute('size', 'medium');
       perfContainer.appendChild(lcp2El);
 
       const clsCountEl = document.createElement('metric-item');
       clsCountEl.setAttribute('label', '# of Layout Shifts');
       clsCountEl.setAttribute('value', String(clsCount));
-      clsCountEl.setAttribute('size', 'medium');
       perfContainer.appendChild(clsCountEl);
     }
   } catch (e: any) {
