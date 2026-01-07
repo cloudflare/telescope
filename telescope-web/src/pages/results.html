@@ -7,25 +7,13 @@
 </head>
 
 <body>
-    <nav>
-        <a class="brand" href="/">Telescope</a>
-        <div class="tabs" part="tabs">
-            <a class="tab" href="/">Home</a>
-            <a class="tab" href="/basic">Basic</a>
-            <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab active" href="/results">Results</a>
-            <a class="tab" href="/upload">Upload</a>
-        </div>
-        <div class="spacer"></div>
-        <a class="gh" href="https://github.com/cloudflare/telescope" target="_blank" rel="noreferrer">
-            GitHub ↗
-        </a>
-    </nav>
+    <top-nav active="results"></top-nav>
     <section class="content">
         <h1>Results</h1>
         <h2>View the results of the test.</h2>
         <results-list></results-list>
     </section>
+    <script type="module" src="../components/top-nav.ts"></script>
     <script type="module" src="../components/result-item.ts"></script>
     <script type="module" src="../components/results.ts"></script>
 </body>

@@ -7,20 +7,7 @@
 </head>
 
 <body>
-    <nav class="top-nav">
-        <a class="brand" href="/">Telescope</a>
-        <div class="tabs" part="tabs">
-            <a class="tab" href="/">Home</a>
-            <a class="tab" href="/basic">Basic</a>
-            <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab inactive" href="/results">Results</a>
-            <a class="tab" href="/upload">Upload</a>
-        </div>
-        <div class="spacer"></div>
-        <a class="gh" href="https://github.com/cloudflare/telescope" target="_blank" rel="noreferrer">
-            GitHub ↗
-        </a>
-    </nav>
+    <top-nav></top-nav>
     <data-nav active="bottlenecks"></data-nav>
     <section class="data-content">
         <h1>Bottlenecks</h1>
@@ -93,6 +80,7 @@
             </div>
         </div>
     </section>
+    <script type="module" src="../../components/top-nav.ts"></script>
     <script type="module" src="../../components/data-nav.ts"></script>
 
     <script type="module">

@@ -163,20 +163,7 @@
 </head>
 
 <body>
-  <nav>
-    <a class="brand" href="/">Telescope</a>
-    <div class="tabs" part="tabs">
-      <a class="tab active" href="">Home</a>
-      <a class="tab" href="/basic">Basic</a>
-      <a class="tab" href="/advanced">Advanced</a>
-      <a class="tab" href="/results">Results</a>
-      <a class="tab" href="/upload">Upload</a>
-    </div>
-    <div class="spacer"></div>
-    <a class="gh" href="https://github.com/cloudflare/telescope" target="_blank" rel="noreferrer">
-      GitHub ↗
-    </a>
-  </nav>
+  <top-nav active="home"></top-nav>
   <section class="content">
     <h1>Browser Support & Parameters</h1>
     <h2>Cross-browser capabilities and available options for the testing agent.</h2>
@@ -558,6 +545,7 @@
       </tbody>
     </table>
   </section>
+  <script type="module" src="../components/top-nav.ts"></script>
 </body>
 
 </html>

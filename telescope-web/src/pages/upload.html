@@ -7,20 +7,7 @@
 </head>
 
 <body>
-    <nav>
-        <a class="brand" href="/">Telescope</a>
-        <div class="tabs" part="tabs">
-            <a class="tab" href="/">Home</a>
-            <a class="tab" href="/basic">Basic</a>
-            <a class="tab" href="/advanced">Advanced</a>
-            <a class="tab" href="/results">Results</a>
-            <a class="tab active" href="/upload">Upload</a>
-        </div>
-        <div class="spacer"></div>
-        <a class="gh" href="https://github.com/cloudflare/telescope" target="_blank" rel="noreferrer">
-            GitHub ↗
-        </a>
-    </nav>
+    <top-nav active="upload"></top-nav>
     <section class="content">
         <h1>Upload</h1>
         <h2>Upload a file to the server.</h2>
@@ -32,6 +19,7 @@
             <button type="submit">Upload</button>
         </form> 
       </section>
+    <script type="module" src="../components/top-nav.ts"></script>
 </body>
 
 </html>
