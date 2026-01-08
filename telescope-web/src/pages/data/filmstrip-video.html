@@ -61,68 +61,139 @@
             background: rgba(0, 0, 0, 0.2);
         }
 
+        .layout-shifts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .layout-shifts-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.92);
+            font-weight: 600;
+        }
+
+        .cls-badge {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .cls-badge.good {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+
+        .cls-badge.needs-improvement {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffc107;
+        }
+
+        .cls-badge.poor {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+
+        .cls-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .cls-value {
+            font-size: 16px;
+        }
+
+        .layout-shifts-description {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.72);
+            margin-bottom: 20px;
+        }
+
+        .legend-prev {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        .legend-curr {
+            color: #34d399;
+            font-weight: 600;
+        }
+
         .layout-shifts-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
 
         .layout-shift-item {
-            padding: 12px;
+            padding: 16px;
             background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 6px;
-            border-left: 4px solid rgba(255, 255, 255, 0.12);
         }
 
-        .layout-shift-item h4 {
-            margin: 0 0 8px 0;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.92);
+        .shift-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 13px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
-        .layout-shift-value {
-            font-size: 18px;
+        .shift-time {
             font-weight: 600;
             color: rgba(255, 255, 255, 0.92);
-            margin: 4px 0;
         }
 
-        .layout-shift-time {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .shift-legend {
-            display: flex;
-            gap: 16px;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid rgba(255, 255, 255, 0.12);
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
+        .shift-value {
             color: rgba(255, 255, 255, 0.72);
         }
 
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 2px;
+        .value-number {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        .shift-sources {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+        }
+
+        .shift-viewport {
+            position: relative;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .shift-rect {
+            position: absolute;
             border: 2px solid;
+            border-radius: 2px;
+            opacity: 0.4;
         }
 
-        .legend-color.old {
-            border-color: #3b82f6;
-            background: rgba(59, 130, 246, 0.2);
+        .prev-rect {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.2);
         }
 
-        .legend-color.new {
-            border-color: #10b981;
-            background: rgba(16, 185, 129, 0.2);
+        .curr-rect {
+            border-color: #34d399;
+            background: rgba(52, 211, 153, 0.2);
         }
     </style>
 </head>
@@ -172,8 +243,19 @@
         </div>
 
         <!-- Layout Shifts Section -->
-        <div class="overview-section">
-            <h3>Layout Shifts</h3>
+        <div class="overview-section" id="layout-shifts-section" style="display: none;">
+            <div class="layout-shifts-header">
+                <h3>Layout Shifts</h3>
+                <div class="cls-badge" id="cls-badge">
+                    <span class="cls-label">CLS</span>
+                    <span class="cls-value" id="cls-value">0.000</span>
+                </div>
+            </div>
+            <p class="layout-shifts-description">
+                Visual representation of Cumulative Layout Shift (CLS).
+                <span class="legend-prev">Blue</span> shows previous position,
+                <span class="legend-curr">green</span> shows current position.
+            </p>
             <div class="layout-shifts-container" id="layout-shifts-container">
                 <!-- Layout shifts will be populated by JavaScript -->
             </div>
@@ -286,7 +368,10 @@
 
                 // Render layout shifts
                 console.log('[Filmstrip] Rendering layout shifts section...');
-                renderLayoutShifts(layoutShifts);
+                if (layoutShifts.length > 0) {
+                    renderLayoutShifts(layoutShifts);
+                    document.getElementById('layout-shifts-section').style.display = 'block';
+                }
                 console.log('[Filmstrip] Filmstrip data loading complete');
             } catch (error) {
                 console.error('[Filmstrip] Error loading filmstrip data:', error);
@@ -395,26 +480,107 @@
                 return;
             }
             
-            shifts.forEach((shift, index) => {
-                const time = (shift.startTime || 0) / 1000;
-                const value = shift.value || 0;
-                const sourceCount = shift.sources?.length || 0;
-                console.log(`[Filmstrip] Layout shift #${index + 1}: value=${value.toFixed(4)}, time=${time.toFixed(2)}s, sources=${sourceCount}`);
-            });
+            // Calculate CLS total
+            const clsTotal = shifts.reduce((sum, shift) => sum + (shift.value || 0), 0);
+            console.log('[Filmstrip] CLS Total:', clsTotal);
             
-            container.innerHTML = shifts.map((shift, index) => {
-                const time = (shift.startTime || 0) / 1000;
-                const value = shift.value || 0;
+            // Update CLS badge
+            const clsValueEl = document.getElementById('cls-value');
+            const clsBadge = document.getElementById('cls-badge');
+            clsValueEl.textContent = clsTotal.toFixed(3);
+            
+            // Set badge class based on CLS value
+            clsBadge.classList.remove('good', 'needs-improvement', 'poor');
+            if (clsTotal <= 0.1) {
+                clsBadge.classList.add('good');
+            } else if (clsTotal <= 0.25) {
+                clsBadge.classList.add('needs-improvement');
+            } else {
+                clsBadge.classList.add('poor');
+            }
+            
+            // Process shifts to add visual data
+            const processedShifts = shifts.map((shift) => {
+                const sources = shift.sources || [];
+                let viewportWidth = 1920;
+                let viewportHeight = 1536;
+                
+                // Determine viewport from rect data
+                for (const source of sources) {
+                    const prevRect = source.previousRect || {};
+                    const currRect = source.currentRect || {};
+                    viewportWidth = Math.max(
+                        viewportWidth,
+                        prevRect.right || 0,
+                        currRect.right || 0
+                    );
+                    viewportHeight = Math.max(
+                        viewportHeight,
+                        prevRect.bottom || 0,
+                        currRect.bottom || 0
+                    );
+                }
+                
+                const sourceVisuals = sources
+                    .filter(source => {
+                        const currRect = source.currentRect || {};
+                        return (currRect.width || 0) > 0 && (currRect.height || 0) > 0;
+                    })
+                    .map(source => {
+                        const prevRect = source.previousRect || {};
+                        const currRect = source.currentRect || {};
+                        
+                        return {
+                            prevLeft: ((prevRect.left || 0) / viewportWidth) * 100,
+                            prevTop: ((prevRect.top || 0) / viewportHeight) * 100,
+                            prevWidth: ((prevRect.width || 0) / viewportWidth) * 100,
+                            prevHeight: ((prevRect.height || 0) / viewportHeight) * 100,
+                            currLeft: ((currRect.left || 0) / viewportWidth) * 100,
+                            currTop: ((currRect.top || 0) / viewportHeight) * 100,
+                            currWidth: ((currRect.width || 0) / viewportWidth) * 100,
+                            currHeight: ((currRect.height || 0) / viewportHeight) * 100,
+                        };
+                    });
+                
+                return {
+                    time: shift.startTime || 0,
+                    value: shift.value || 0,
+                    sourcesCount: sourceVisuals.length,
+                    viewportWidth,
+                    viewportHeight,
+                    aspectRatio: viewportHeight / viewportWidth,
+                    sourceVisuals
+                };
+            }).filter(shift => shift.sourceVisuals.length > 0);
+            
+            console.log('[Filmstrip] Processed shifts:', processedShifts.length);
+            
+            container.innerHTML = processedShifts.map((shift, index) => {
+                const aspectRatioPercent = (shift.aspectRatio * 100).toFixed(2);
                 
                 return `
                     <div class="layout-shift-item">
-                        <h4>Layout Shift #${index + 1}</h4>
-                        <div class="layout-shift-value">${value.toFixed(4)}</div>
-                        <div class="layout-shift-time">Time: ${time.toFixed(2)}s</div>
-                        ${shift.sources && shift.sources.length > 0 ? 
-                            `<div style="margin-top: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.5);">
-                                ${shift.sources.length} source(s)
-                            </div>` : ''}
+                        <div class="shift-header">
+                            <div class="shift-time">${shift.time.toFixed(1)} ms</div>
+                            <div class="shift-value">
+                                Score: <span class="value-number">${shift.value.toFixed(6)}</span>
+                            </div>
+                            <div class="shift-sources">
+                                ${shift.sourcesCount} element${shift.sourcesCount !== 1 ? 's' : ''}
+                            </div>
+                        </div>
+                        <div class="shift-viewport" style="padding-bottom: ${aspectRatioPercent}%;">
+                            ${shift.sourceVisuals.map(source => `
+                                <div 
+                                    class="shift-rect prev-rect" 
+                                    style="left: ${source.prevLeft}%; top: ${source.prevTop}%; width: ${source.prevWidth}%; height: ${source.prevHeight}%;"
+                                ></div>
+                                <div 
+                                    class="shift-rect curr-rect" 
+                                    style="left: ${source.currLeft}%; top: ${source.currTop}%; width: ${source.currWidth}%; height: ${source.currHeight}%;"
+                                ></div>
+                            `).join('')}
+                        </div>
                     </div>
                 `;
             }).join('');
