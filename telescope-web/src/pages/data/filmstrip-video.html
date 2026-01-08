@@ -220,7 +220,7 @@
                 console.log('[Filmstrip] Frame rate:', frameRate, 'fps, Interval:', frameInterval, 'seconds per frame');
 
                 // Get timings
-                const fcp = (metrics.paintTiming?.find((p: any) => p.name === 'first-contentful-paint')?.startTime || 0) / 1000;
+                const fcp = (metrics.paintTiming?.find((p) => p.name === 'first-contentful-paint')?.startTime || 0) / 1000;
                 const lcp = (metrics.largestContentfulPaint?.[0]?.renderTime || 0) / 1000;
                 const domComplete = (metrics.navigationTiming?.domComplete || 0) / 1000;
                 console.log('[Filmstrip] Timings - FCP:', fcp, 's, LCP:', lcp, 's, DOM Complete:', domComplete, 's');
@@ -235,7 +235,7 @@
                 const filmstripFiles = await getFilmstripFiles(testId);
                 console.log('[Filmstrip] Found', filmstripFiles.length, 'filmstrip files:', filmstripFiles);
                 
-                let previousShifts: any[] = [];
+                let previousShifts = [];
                 
                 filmstripFiles.forEach((filename, index) => {
                     const frameNumber = index + 1;
@@ -243,7 +243,7 @@
                     
                     // Find layout shifts that occurred at or before this frame time
                     const frameTimeMs = frameTime * 1000;
-                    const shiftsForFrame = layoutShifts.filter((shift: any) => {
+                    const shiftsForFrame = layoutShifts.filter((shift) => {
                         const shiftTime = shift.startTime || 0;
                         return shiftTime <= frameTimeMs && shiftTime > (frameTimeMs - frameInterval * 1000);
                     });
@@ -273,7 +273,7 @@
 
                 // Load video
                 console.log('[Filmstrip] Loading video files...');
-                const videoElement = document.getElementById('test-video') as HTMLVideoElement;
+                const videoElement = document.getElementById('test-video');
                 const videoFiles = await getVideoFiles(testId);
                 console.log('[Filmstrip] Found', videoFiles.length, 'video file(s):', videoFiles);
                 if (videoFiles.length > 0) {
@@ -295,10 +295,10 @@
             }
         }
 
-        async function getFilmstripFiles(testId: string): Promise<string[]> {
+        async function getFilmstripFiles(testId) {
             console.log('[Filmstrip] Getting filmstrip files for test:', testId);
             // Try to fetch frames sequentially until we hit a 404
-            const files: string[] = [];
+            const files = [];
             let frameNum = 1;
             const maxFrames = 100; // Safety limit
             
@@ -325,7 +325,7 @@
             return files;
         }
 
-        async function getVideoFiles(testId: string): Promise<string[]> {
+        async function getVideoFiles(testId) {
             console.log('[Filmstrip] Getting video files for test:', testId);
             try {
                 // Try to list files in the test directory
@@ -333,7 +333,7 @@
                 console.log('[Filmstrip] Attempting to list files from:', listUrl);
                 const listResponse = await fetch(listUrl);
                 if (listResponse.ok) {
-                    const files: string[] = await listResponse.json();
+                    const files = await listResponse.json();
                     console.log('[Filmstrip] Listed files:', files);
                     // Find video files
                     const videoFiles = files.filter((file) => {
@@ -385,7 +385,7 @@
             return [];
         }
 
-        function renderLayoutShifts(shifts: any[]) {
+        function renderLayoutShifts(shifts) {
             console.log('[Filmstrip] Rendering layout shifts, count:', shifts.length);
             const container = document.getElementById('layout-shifts-container');
             
