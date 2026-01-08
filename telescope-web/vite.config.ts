@@ -72,6 +72,13 @@ export default defineConfig({
     {
       name: 'route-mapper',
       configureServer(server) {
+        // Log all requests
+        server.middlewares.use((req: Connect.IncomingMessage, res, next) => {
+          const url = req.url || '/';
+          console.log(url);
+          next();
+        });
+        
         // API endpoint for listing results
         server.middlewares.use('/api/results', (req: Connect.IncomingMessage, res, next) => {
           const url = req.url || '';
