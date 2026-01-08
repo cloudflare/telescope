@@ -975,7 +975,7 @@
             
             panel.innerHTML = `
                 <div class="waterfall-panel-header">
-                    <div class="waterfall-panel-title" title="${escapeHtml(resource.url)}">Resource #${resource.index}</div>
+                    <div class="waterfall-panel-title" title="${escapeHtml(resource.url)}">${escapeHtml(resource.name || `Resource #${resource.index}`)}</div>
                     <button class="waterfall-panel-close" onclick="window.closeWaterfallPanel('${panelId}')">×</button>
                 </div>
                 <div class="waterfall-panel-content">
