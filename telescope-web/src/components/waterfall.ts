@@ -32,14 +32,23 @@ interface WaterfallData {
   totalDuration: number;
 }
 
+interface Filters {
+  fileTypes?: string[];
+  statusCodes?: string[];
+  methods?: string[];
+  domains?: string[];
+  protocols?: string[];
+}
+
 class WaterfallChart extends HTMLElement {
   private _data: WaterfallData | null = null;
   private _visibleColumns: Set<string> = new Set(['index', 'url']);
   private _timeScale: number = 1;
   private _showOnlyCriticalPath: boolean = false;
+  private _filters: Filters = {};
 
   static get observedAttributes() {
-    return ['data', 'columns'];
+    return ['data', 'columns', 'filters'];
   }
 
   set data(value: WaterfallData | null) {
@@ -69,6 +78,15 @@ class WaterfallChart extends HTMLElement {
     return this._showOnlyCriticalPath;
   }
 
+  set filters(value: Filters) {
+    this._filters = value || {};
+    this.render();
+  }
+
+  get filters(): Filters {
+    return this._filters;
+  }
+
   attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
     if (name === 'data' && newValue) {
       try {
@@ -83,6 +101,13 @@ class WaterfallChart extends HTMLElement {
         this.render();
       } catch (e) {
         console.error('Error parsing columns:', e);
+      }
+    } else if (name === 'filters' && newValue) {
+      try {
+        this._filters = JSON.parse(newValue);
+        this.render();
+      } catch (e) {
+        console.error('Error parsing filters:', e);
       }
     }
   }
@@ -234,10 +259,59 @@ class WaterfallChart extends HTMLElement {
   }
 
   private getFilteredResources(resources: Resource[]): Resource[] {
+    let filtered = resources;
+
+    // Apply critical path filter
     if (this._showOnlyCriticalPath) {
-      return resources.filter(resource => resource.isCriticalPath === true);
+      filtered = filtered.filter(resource => resource.isCriticalPath === true);
     }
-    return resources;
+
+    // Apply file type filter
+    if (this._filters.fileTypes && this._filters.fileTypes.length > 0) {
+      filtered = filtered.filter(resource => 
+        this._filters.fileTypes!.includes(resource.type)
+      );
+    }
+
+    // Apply status code filter
+    if (this._filters.statusCodes && this._filters.statusCodes.length > 0) {
+      filtered = filtered.filter(resource => 
+        this._filters.statusCodes!.includes(String(resource.status))
+      );
+    }
+
+    // Apply method filter
+    if (this._filters.methods && this._filters.methods.length > 0) {
+      filtered = filtered.filter(resource => 
+        this._filters.methods!.includes(resource.method)
+      );
+    }
+
+    // Apply domain filter
+    if (this._filters.domains && this._filters.domains.length > 0) {
+      filtered = filtered.filter(resource => {
+        try {
+          const url = new URL(resource.url);
+          return this._filters.domains!.includes(url.hostname);
+        } catch {
+          return false;
+        }
+      });
+    }
+
+    // Apply protocol filter
+    if (this._filters.protocols && this._filters.protocols.length > 0) {
+      filtered = filtered.filter(resource => {
+        try {
+          const url = new URL(resource.url);
+          return this._filters.protocols!.includes(url.protocol.replace(':', ''));
+        } catch {
+          return this._filters.protocols!.includes(resource.nextHopProtocol || '');
+        }
+      });
+    }
+
+    return filtered;
   }
 
   private calculateColumnWidths(): Record<string, number> {

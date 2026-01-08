@@ -1344,6 +1344,13 @@ metric-item .description {
     cursor: pointer;
 }
 
+.waterfall-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
 .waterfall-columns-selector {
     display: flex;
     flex-wrap: wrap;

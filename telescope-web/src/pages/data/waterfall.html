@@ -33,6 +33,9 @@
                     <span>Show only critical path</span>
                 </label>
             </div>
+            <div class="waterfall-filter-grid" id="waterfall-filter-grid">
+                <!-- Filter dropdowns will be populated by JavaScript -->
+            </div>
             <div class="waterfall-columns-selector" id="waterfall-columns-selector">
                 <!-- Column checkboxes will be populated by JavaScript -->
             </div>
@@ -108,7 +111,17 @@
 
                 // Parse HAR and render
                 const waterfallData = parseHarData(harData, resources);
+                
+                // Render waterfall first (this is critical)
                 renderWaterfall(waterfallData, config);
+                
+                // Then setup filters (non-critical, can fail without breaking the page)
+                try {
+                    setupFilters(waterfallData);
+                } catch (filterError) {
+                    console.error('Error setting up filters (non-critical):', filterError);
+                }
+                
                 renderSummary(harData, waterfallData, metrics, config);
                 setupColumnSelector();
 
@@ -183,10 +196,181 @@
         }
 
         function renderWaterfall(waterfallData, config) {
-            const chart = document.getElementById('waterfall-chart');
-            chart.setAttribute('data', JSON.stringify(waterfallData));
-            // Set all columns as visible by default
-            chart.visibleColumns = ['index', 'url', 'method', 'status', 'size', 'duration', 'type', 'protocol', 'timeline'];
+            try {
+                const chart = document.getElementById('waterfall-chart');
+                if (!chart) {
+                    console.error('Waterfall chart element not found');
+                    return;
+                }
+                
+                chart.setAttribute('data', JSON.stringify(waterfallData));
+                // Set all columns as visible by default
+                chart.visibleColumns = ['index', 'url', 'method', 'status', 'size', 'duration', 'type', 'protocol', 'timeline'];
+                
+                // Initialize filters as empty (important - must be set before any filtering)
+                chart.filters = {};
+            } catch (error) {
+                console.error('Error rendering waterfall:', error);
+            }
+        }
+        
+        function setupFilters(waterfallData) {
+            try {
+                const resources = waterfallData.resources || [];
+                
+                if (resources.length === 0) {
+                    console.warn('No resources found for filters');
+                    return;
+                }
+            
+            // Extract unique values for each filter category
+            const fileTypes = new Set();
+            const statusCodes = new Set();
+            const methods = new Set();
+            const domains = new Set();
+            const protocols = new Set();
+            
+            resources.forEach(resource => {
+                if (resource.type) fileTypes.add(resource.type);
+                if (resource.status && resource.status > 0) statusCodes.add(String(resource.status));
+                if (resource.method) methods.add(resource.method);
+                if (resource.url) {
+                    try {
+                        const url = new URL(resource.url);
+                        domains.add(url.hostname);
+                    } catch (e) {
+                    }
+                }
+                if (resource.nextHopProtocol) {
+                    protocols.add(resource.nextHopProtocol);
+                }
+            });
+            
+            // Convert Sets to sorted arrays with options format
+            const fileTypeOptions = Array.from(fileTypes).sort().map(type => ({
+                value: type,
+                label: type || 'Unknown'
+            }));
+            
+            const statusCodeOptions = Array.from(statusCodes).sort((a, b) => {
+                const numA = parseInt(a);
+                const numB = parseInt(b);
+                return numA - numB;
+            }).map(code => ({
+                value: code,
+                label: code
+            }));
+            
+            const methodOptions = Array.from(methods).sort().map(method => ({
+                value: method,
+                label: method
+            }));
+            
+            const domainOptions = Array.from(domains).sort().map(domain => ({
+                value: domain,
+                label: domain
+            }));
+            
+            const protocolOptions = Array.from(protocols).sort().map(protocol => ({
+                value: protocol,
+                label: protocol
+            }));
+            
+            // Render filter dropdowns using createElement to avoid HTML injection issues
+            const filterGrid = document.getElementById('waterfall-filter-grid');
+            if (!filterGrid) return;
+            
+            filterGrid.innerHTML = '';
+            
+            const createSelect = (id, label, placeholder, options) => {
+                const container = document.createElement('label');
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.gap = '6px';
+                
+                const labelElement = document.createElement('span');
+                labelElement.textContent = label;
+                labelElement.style.fontSize = '14px';
+                labelElement.style.color = 'rgba(255, 255, 255, 0.78)';
+                
+                const select = document.createElement('select');
+                select.id = id;
+                select.style.font = 'inherit';
+                select.style.padding = '10px 12px';
+                select.style.borderRadius = '12px';
+                select.style.border = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
+                select.style.background = 'rgba(0, 0, 0, 0.25)';
+                select.style.color = 'var(--text, rgba(255, 255, 255, 0.92))';
+                
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = placeholder;
+                select.appendChild(defaultOption);
+                
+                options.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.value;
+                    optionElement.textContent = option.label;
+                    select.appendChild(optionElement);
+                });
+                
+                select.addEventListener('change', () => {
+                    updateFilters();
+                });
+                
+                container.appendChild(labelElement);
+                container.appendChild(select);
+                
+                return container;
+            };
+            
+            filterGrid.appendChild(createSelect('file-type-filter', 'File Types', 'All file types', fileTypeOptions));
+            filterGrid.appendChild(createSelect('status-code-filter', 'Status Codes', 'All status codes', statusCodeOptions));
+            filterGrid.appendChild(createSelect('method-filter', 'Methods', 'All methods', methodOptions));
+            filterGrid.appendChild(createSelect('domain-filter', 'Domains', 'All domains', domainOptions));
+            filterGrid.appendChild(createSelect('protocol-filter', 'Protocols', 'All protocols', protocolOptions));
+            } catch (error) {
+                console.error('Error setting up filters:', error);
+            }
+        }
+        
+        function updateFilters() {
+            try {
+                const chart = document.getElementById('waterfall-chart');
+                if (!chart) return;
+                
+                const filters = {};
+                
+                const fileTypeFilter = document.getElementById('file-type-filter');
+                const statusCodeFilter = document.getElementById('status-code-filter');
+                const methodFilter = document.getElementById('method-filter');
+                const domainFilter = document.getElementById('domain-filter');
+                const protocolFilter = document.getElementById('protocol-filter');
+                
+                if (fileTypeFilter && fileTypeFilter.value) {
+                    filters.fileTypes = [fileTypeFilter.value];
+                }
+                
+                if (statusCodeFilter && statusCodeFilter.value) {
+                    filters.statusCodes = [statusCodeFilter.value];
+                }
+                
+                if (methodFilter && methodFilter.value) {
+                    filters.methods = [methodFilter.value];
+                }
+                
+                if (domainFilter && domainFilter.value) {
+                    filters.domains = [domainFilter.value];
+                }
+                
+                if (protocolFilter && protocolFilter.value) {
+                    filters.protocols = [protocolFilter.value];
+                }
+                
+                chart.filters = filters;
+            } catch (error) {
+                console.error('Error updating filters:', error);
+            }
         }
 
         function renderSummary(harData, waterfallData, metrics, config) {
