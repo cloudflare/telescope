@@ -17,27 +17,32 @@
         <div class="overview-section">
             <div class="waterfall-summary-header" onclick="toggleWaterfallSummary()">
                 <h3 id="waterfall-summary-title">Summary</h3>
-                <span class="waterfall-summary-toggle" id="waterfall-summary-toggle">▼</span>
+                <span class="waterfall-summary-toggle" id="waterfall-summary-toggle">▶</span>
             </div>
-            <div class="waterfall-summary-content" id="waterfall-summary-content">
+            <div class="waterfall-summary-content" id="waterfall-summary-content" style="display: none;">
                 <!-- Summary content will be populated by JavaScript -->
             </div>
         </div>
 
-        <!-- Filters and Column Selection -->
+        <!-- Expandable Filters and Column Selection -->
         <div class="overview-section">
-            <h3>Filters & Columns</h3>
-            <div class="waterfall-filters">
-                <label class="waterfall-filter-checkbox">
-                    <input type="checkbox" id="critical-path-filter" onchange="toggleCriticalPathFilter()">
-                    <span>Show only critical path</span>
-                </label>
+            <div class="waterfall-filters-header" onclick="toggleWaterfallFilters()">
+                <h3>Filters & Columns</h3>
+                <span class="waterfall-filters-toggle" id="waterfall-filters-toggle">▶</span>
             </div>
-            <div class="waterfall-filter-grid" id="waterfall-filter-grid">
-                <!-- Filter dropdowns will be populated by JavaScript -->
-            </div>
-            <div class="waterfall-columns-selector" id="waterfall-columns-selector">
-                <!-- Column checkboxes will be populated by JavaScript -->
+            <div class="waterfall-filters-content" id="waterfall-filters-content" style="display: none;">
+                <div class="waterfall-filters">
+                    <label class="waterfall-filter-checkbox">
+                        <input type="checkbox" id="critical-path-filter" onchange="toggleCriticalPathFilter()">
+                        <span>Show only critical path</span>
+                    </label>
+                </div>
+                <div class="waterfall-filter-grid" id="waterfall-filter-grid">
+                    <!-- Filter dropdowns will be populated by JavaScript -->
+                </div>
+                <div class="waterfall-columns-selector" id="waterfall-columns-selector">
+                    <!-- Column checkboxes will be populated by JavaScript -->
+                </div>
             </div>
         </div>
 
@@ -288,24 +293,57 @@
                 container.style.flexDirection = 'column';
                 container.style.gap = '6px';
                 
+                // Label wrapper with clear button
+                const labelWrapper = document.createElement('div');
+                labelWrapper.style.display = 'flex';
+                labelWrapper.style.justifyContent = 'space-between';
+                labelWrapper.style.alignItems = 'center';
+                labelWrapper.style.gap = '8px';
+                
                 const labelElement = document.createElement('span');
                 labelElement.textContent = label;
                 labelElement.style.fontSize = '14px';
                 labelElement.style.color = 'rgba(255, 255, 255, 0.78)';
                 
+                const clearButton = document.createElement('button');
+                clearButton.textContent = 'Clear';
+                clearButton.type = 'button';
+                clearButton.style.fontSize = '12px';
+                clearButton.style.padding = '4px 8px';
+                clearButton.style.borderRadius = '6px';
+                clearButton.style.border = '1px solid rgba(255, 255, 255, 0.12)';
+                clearButton.style.background = 'rgba(255, 255, 255, 0.05)';
+                clearButton.style.color = 'rgba(255, 255, 255, 0.62)';
+                clearButton.style.cursor = 'pointer';
+                clearButton.style.font = 'inherit';
+                clearButton.style.transition = 'all 0.15s ease';
+                clearButton.title = 'Clear filter';
+                
+                clearButton.addEventListener('mouseenter', () => {
+                    clearButton.style.background = 'rgba(255, 255, 255, 0.1)';
+                    clearButton.style.color = 'rgba(255, 255, 255, 0.82)';
+                    clearButton.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                });
+                
+                clearButton.addEventListener('mouseleave', () => {
+                    clearButton.style.background = 'rgba(255, 255, 255, 0.05)';
+                    clearButton.style.color = 'rgba(255, 255, 255, 0.62)';
+                    clearButton.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                });
+                
                 const select = document.createElement('select');
                 select.id = id;
+                select.multiple = true;
+                select.size = Math.min(6, Math.max(3, options.length + 1)); // Show 3-6 items, adjust based on options
                 select.style.font = 'inherit';
-                select.style.padding = '10px 12px';
+                select.style.padding = '8px';
                 select.style.borderRadius = '12px';
                 select.style.border = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
                 select.style.background = 'rgba(0, 0, 0, 0.25)';
                 select.style.color = 'var(--text, rgba(255, 255, 255, 0.92))';
-                
-                const defaultOption = document.createElement('option');
-                defaultOption.value = '';
-                defaultOption.textContent = placeholder;
-                select.appendChild(defaultOption);
+                select.style.minHeight = '120px';
+                select.style.width = '100%';
+                select.title = placeholder;
                 
                 options.forEach(option => {
                     const optionElement = document.createElement('option');
@@ -314,11 +352,24 @@
                     select.appendChild(optionElement);
                 });
                 
+                // Clear button functionality
+                clearButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    // Deselect all options
+                    Array.from(select.options).forEach(option => {
+                        option.selected = false;
+                    });
+                    updateFilters();
+                });
+                
                 select.addEventListener('change', () => {
                     updateFilters();
                 });
                 
-                container.appendChild(labelElement);
+                labelWrapper.appendChild(labelElement);
+                labelWrapper.appendChild(clearButton);
+                container.appendChild(labelWrapper);
                 container.appendChild(select);
                 
                 return container;
@@ -347,24 +398,37 @@
                 const domainFilter = document.getElementById('domain-filter');
                 const protocolFilter = document.getElementById('protocol-filter');
                 
-                if (fileTypeFilter && fileTypeFilter.value) {
-                    filters.fileTypes = [fileTypeFilter.value];
+                // Get selected values from multi-select (excluding disabled placeholder options)
+                const getSelectedValues = (selectElement) => {
+                    if (!selectElement) return [];
+                    return Array.from(selectElement.selectedOptions)
+                        .filter(option => !option.disabled && option.value)
+                        .map(option => option.value);
+                };
+                
+                const fileTypes = getSelectedValues(fileTypeFilter);
+                if (fileTypes.length > 0) {
+                    filters.fileTypes = fileTypes;
                 }
                 
-                if (statusCodeFilter && statusCodeFilter.value) {
-                    filters.statusCodes = [statusCodeFilter.value];
+                const statusCodes = getSelectedValues(statusCodeFilter);
+                if (statusCodes.length > 0) {
+                    filters.statusCodes = statusCodes;
                 }
                 
-                if (methodFilter && methodFilter.value) {
-                    filters.methods = [methodFilter.value];
+                const methods = getSelectedValues(methodFilter);
+                if (methods.length > 0) {
+                    filters.methods = methods;
                 }
                 
-                if (domainFilter && domainFilter.value) {
-                    filters.domains = [domainFilter.value];
+                const domains = getSelectedValues(domainFilter);
+                if (domains.length > 0) {
+                    filters.domains = domains;
                 }
                 
-                if (protocolFilter && protocolFilter.value) {
-                    filters.protocols = [protocolFilter.value];
+                const protocols = getSelectedValues(protocolFilter);
+                if (protocols.length > 0) {
+                    filters.protocols = protocols;
                 }
                 
                 chart.filters = filters;
@@ -407,6 +471,46 @@
                 const status = entry.response?.status || 0;
                 const statusGroup = Math.floor(status / 100) * 100;
                 statusCounts[statusGroup] = (statusCounts[statusGroup] || 0) + 1;
+            });
+
+            // File Types
+            const fileTypeCounts = {};
+            entries.forEach(entry => {
+                const mimeType = entry.response?.content?.mimeType || '';
+                const fileType = getResourceTypeFromMime(mimeType);
+                fileTypeCounts[fileType] = (fileTypeCounts[fileType] || 0) + 1;
+            });
+
+            // Compression
+            const compressionCounts = {
+                'gzip': 0,
+                'br': 0,
+                'deflate': 0,
+                'none': 0,
+                'other': 0
+            };
+            entries.forEach(entry => {
+                const contentEncoding = entry.response?.headers?.find(h => 
+                    h.name?.toLowerCase() === 'content-encoding'
+                )?.value?.toLowerCase() || '';
+                
+                if (contentEncoding.includes('gzip')) {
+                    compressionCounts['gzip']++;
+                } else if (contentEncoding.includes('br') || contentEncoding.includes('brotli')) {
+                    compressionCounts['br']++;
+                } else if (contentEncoding.includes('deflate')) {
+                    compressionCounts['deflate']++;
+                } else if (!contentEncoding || contentEncoding.trim() === '') {
+                    compressionCounts['none']++;
+                } else {
+                    compressionCounts['other']++;
+                }
+            });
+            // Remove empty compression types
+            Object.keys(compressionCounts).forEach(key => {
+                if (compressionCounts[key] === 0) {
+                    delete compressionCounts[key];
+                }
             });
 
             // Domain counts
@@ -457,6 +561,20 @@
                             <div class="pie-chart-legend" id="status-legend"></div>
                         </div>
                     </div>
+                    <div class="waterfall-summary-chart">
+                        <h4>File Types</h4>
+                        <div class="pie-chart-wrapper">
+                            <svg class="pie-chart" id="filetypes-chart" viewBox="0 0 200 200"></svg>
+                            <div class="pie-chart-legend" id="filetypes-legend"></div>
+                        </div>
+                    </div>
+                    <div class="waterfall-summary-chart">
+                        <h4>Compression</h4>
+                        <div class="pie-chart-wrapper">
+                            <svg class="pie-chart" id="compression-chart" viewBox="0 0 200 200"></svg>
+                            <div class="pie-chart-legend" id="compression-legend"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="waterfall-summary-domains">
                     <h4>Domains</h4>
@@ -487,8 +605,10 @@
             document.getElementById('waterfall-summary-title').textContent = pageTitle;
 
             // Render pie charts
-            renderPieChart('methods-chart', 'methods-legend', Object.entries(methodCounts).map(([label, value]) => ({ label, value })), ['#7dd3fc', '#a78bfa', '#fbbf24', '#34d399']);
+            renderPieChart('methods-chart', 'methods-legend', Object.entries(methodCounts).map(([label, value]) => ({ label, value })), ['#7dd3fc', '#a78bfa', '#fbbf24', '#34d399', '#fb7185']);
             renderPieChart('status-chart', 'status-legend', Object.entries(statusCounts).map(([label, value]) => ({ label: `${label}xx`, value })), ['#34d399', '#fbbf24', '#f87171', '#ef4444']);
+            renderPieChart('filetypes-chart', 'filetypes-legend', Object.entries(fileTypeCounts).map(([label, value]) => ({ label, value })), ['#7dd3fc', '#a78bfa', '#fbbf24', '#34d399', '#fb7185', '#f59e0b', '#8b5cf6', '#ec4899']);
+            renderPieChart('compression-chart', 'compression-legend', Object.entries(compressionCounts).map(([label, value]) => ({ label: label === 'none' ? 'None' : label.toUpperCase(), value })), ['#34d399', '#7dd3fc', '#a78bfa', '#f87171', '#f59e0b']);
         }
 
         function renderPieChart(chartId, legendId, data, colors) {
@@ -621,15 +741,35 @@
             }
         }
 
-        // Initialize summary as expanded
-        document.addEventListener('DOMContentLoaded', () => {
-            const content = document.getElementById('waterfall-summary-content');
-            if (content) {
+        function toggleWaterfallFilters() {
+            const content = document.getElementById('waterfall-filters-content');
+            const toggle = document.getElementById('waterfall-filters-toggle');
+            const isExpanded = content.style.display !== 'none';
+            
+            if (isExpanded) {
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            } else {
                 content.style.display = 'block';
+                toggle.textContent = '▼';
+            }
+        }
+
+        // Initialize summary and filters as collapsed
+        document.addEventListener('DOMContentLoaded', () => {
+            const summaryContent = document.getElementById('waterfall-summary-content');
+            if (summaryContent) {
+                summaryContent.style.display = 'none';
+            }
+            
+            const filtersContent = document.getElementById('waterfall-filters-content');
+            if (filtersContent) {
+                filtersContent.style.display = 'none';
             }
         });
 
         window.toggleWaterfallSummary = toggleWaterfallSummary;
+        window.toggleWaterfallFilters = toggleWaterfallFilters;
         window.updateWaterfallColumns = updateWaterfallColumns;
 
         function getUrlFilename(url) {

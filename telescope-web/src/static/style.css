@@ -1203,7 +1203,9 @@ metric-item .description {
 }
 
 /* Waterfall Page Styles */
-.waterfall-summary-header {
+.waterfall-summary-header,
+.waterfall-filters-header,
+.resources-filters-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1212,17 +1214,23 @@ metric-item .description {
     padding: 12px 0;
 }
 
-.waterfall-summary-header:hover {
+.waterfall-summary-header:hover,
+.waterfall-filters-header:hover,
+.resources-filters-header:hover {
     opacity: 0.8;
 }
 
-.waterfall-summary-toggle {
+.waterfall-summary-toggle,
+.waterfall-filters-toggle,
+.resources-filters-toggle {
     font-size: 14px;
     color: rgba(255, 255, 255, 0.6);
     transition: transform 0.2s ease;
 }
 
-.waterfall-summary-content {
+.waterfall-summary-content,
+.waterfall-filters-content,
+.resources-filters-content {
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -1344,11 +1352,50 @@ metric-item .description {
     cursor: pointer;
 }
 
-.waterfall-filter-grid {
+.waterfall-filter-grid,
+.resources-filter-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 16px;
     margin-bottom: 24px;
+}
+
+.resources-filetypes-summary {
+    margin-top: 16px;
+}
+
+.filetypes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.filetype-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s ease;
+}
+
+.filetype-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.filetype-name {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+}
+
+.filetype-count {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
 .waterfall-columns-selector {
