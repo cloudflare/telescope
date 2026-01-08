@@ -4,6 +4,28 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/style.css">
     <title>Telescope Metrics</title>
+    <style>
+        .user-timing-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .user-timing-type.mark {
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.4);
+        }
+
+        .user-timing-type.measure {
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 250, 127, 0.4);
+        }
+    </style>
 </head>
 
 <body>
@@ -247,7 +269,7 @@
                 <table class="user-timings-table">
                     <thead>
                         <tr>
-                            <th>Type</th>
+                            <th style="text-align: center; width: 100px;">Type</th>
                             <th>Name</th>
                             <th>Value</th>
                         </tr>
@@ -258,9 +280,14 @@
                                 ? `startTime: ${formatTime(timing.startTime)}`
                                 : `duration: ${formatTime(timing.duration || 0)}`;
                             
+                            const typeClass = timing.entryType === 'mark' ? 'mark' : 'measure';
+                            const typeDisplay = timing.entryType === 'mark' 
+                                ? `<span class="user-timing-type mark">${escapeHtml(timing.entryType || 'unknown')}</span>`
+                                : `<span class="user-timing-type measure">${escapeHtml(timing.entryType || 'unknown')}</span>`;
+                            
                             return `
                                 <tr>
-                                    <td>${escapeHtml(timing.entryType || 'unknown')}</td>
+                                    <td style="text-align: center; width: 100px;">${typeDisplay}</td>
                                     <td>${escapeHtml(timing.name || 'Unknown')}</td>
                                     <td>${value}</td>
                                 </tr>
