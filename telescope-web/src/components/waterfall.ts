@@ -369,8 +369,9 @@ class WaterfallChart extends HTMLElement {
     );
 
     const criticalPathClass = resource.isCriticalPath ? 'critical-path' : '';
+    const resourceIndex = resource.index - 1; // Convert from 1-based to 0-based
     return `
-      <div class="waterfall-row ${criticalPathClass}">
+      <div class="waterfall-row ${criticalPathClass}" data-resource-index="${resourceIndex}" onclick="if(window.openWaterfallPanel) { event.stopPropagation(); window.openWaterfallPanel(${resourceIndex}); }">
         ${visibleCells.map(cell => `
           <div class="waterfall-cell ${cell.class || ''}" style="width: ${columnWidths[cell.key] || 100}px;">
             ${cell.isHtml ? cell.value : this.escapeHtml(cell.value)}

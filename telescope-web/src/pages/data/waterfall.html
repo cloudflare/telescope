@@ -4,11 +4,160 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/style.css">
     <title>Telescope Waterfall</title>
+    <style>
+        .waterfall-panel-container {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 1000;
+            pointer-events: none;
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 0;
+        }
+
+        .waterfall-panel {
+            width: 300px;
+            height: 100vh;
+            background: rgba(7, 10, 18, 0.98);
+            border-left: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.3);
+            pointer-events: all;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .waterfall-panel-header {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .waterfall-panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.92);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .waterfall-panel-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.72);
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 18px;
+            line-height: 1;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .waterfall-panel-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        .waterfall-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .waterfall-panel-section {
+            margin-bottom: 24px;
+        }
+
+        .waterfall-panel-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.92);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .waterfall-panel-row {
+            display: flex;
+            padding: 8px 0;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .waterfall-panel-row-label {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.72);
+            min-width: 120px;
+            flex-shrink: 0;
+        }
+
+        .waterfall-panel-row-value {
+            color: rgba(255, 255, 255, 0.85);
+            word-break: break-word;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        }
+
+        .waterfall-panel-header-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 12px;
+        }
+
+        .waterfall-panel-header-item {
+            display: flex;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .waterfall-panel-header-name {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.72);
+            min-width: 100px;
+            flex-shrink: 0;
+        }
+
+        .waterfall-panel-header-value {
+            color: rgba(255, 255, 255, 0.85);
+            word-break: break-word;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        }
+
+        .waterfall-panel-body {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            padding: 12px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.85);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .waterfall-row {
+            cursor: pointer;
+        }
+
+        .waterfall-row:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+    </style>
 </head>
 
 <body>
     <top-nav inactive="results"></top-nav>
     <data-nav active="waterfall"></data-nav>
+    <div id="waterfall-panel-container" class="waterfall-panel-container"></div>
     <section class="data-content">
         <h1>Waterfall</h1>
         <h2>View the waterfall of the test.</h2>
@@ -117,6 +266,9 @@
                 // Parse HAR and render
                 const waterfallData = parseHarData(harData, resources);
                 
+                // Store harData globally for panel access
+                window.waterfallHarData = harData;
+                
                 // Render waterfall first (this is critical)
                 renderWaterfall(waterfallData, config);
                 
@@ -190,6 +342,7 @@
                     responseStart: relativeStart + (timings.dns || 0) + (timings.connect || 0) + (timings.send || 0) + (timings.wait || 0),
                     responseEnd: relativeStart + entry.time,
                     isCriticalPath: isCriticalPath,
+                    harEntry: entry, // Store full HAR entry for panel details
                 };
             });
 
@@ -207,6 +360,9 @@
                     console.error('Waterfall chart element not found');
                     return;
                 }
+                
+                // Store globally for panel access
+                window.waterfallData = waterfallData;
                 
                 chart.setAttribute('data', JSON.stringify(waterfallData));
                 // Set all columns as visible by default
@@ -768,9 +924,197 @@
             }
         });
 
-        window.toggleWaterfallSummary = toggleWaterfallSummary;
+                window.toggleWaterfallSummary = toggleWaterfallSummary;
         window.toggleWaterfallFilters = toggleWaterfallFilters;
         window.updateWaterfallColumns = updateWaterfallColumns;
+        
+        // Panel management
+        let openPanels = [];
+        
+        window.openWaterfallPanel = function(resourceIndex) {
+            if (!window.waterfallData || !window.waterfallData.resources) {
+                console.error('Waterfall data not available');
+                return;
+            }
+            
+            const resource = window.waterfallData.resources[resourceIndex];
+            if (!resource || !resource.harEntry) {
+                console.error('Resource or HAR entry not found');
+                return;
+            }
+            
+            const entry = resource.harEntry;
+            const request = entry.request || {};
+            const response = entry.response || {};
+            const timings = entry.timings || {};
+            
+            // Calculate timings
+            const dnsTime = timings.dns || 0;
+            const connectTime = timings.connect || 0;
+            const sslTime = (timings.ssl || 0) > 0 ? timings.ssl : 0;
+            const sendTime = timings.send || 0;
+            const waitTime = timings.wait || 0;
+            const receiveTime = timings.receive || 0;
+            const totalTime = entry.time || 0;
+            
+            // Get request/response data
+            const requestHeaders = request.headers || [];
+            const requestPostData = request.postData || null;
+            const responseHeaders = response.headers || [];
+            const responseContent = response.content || {};
+            const responseStatusText = response.statusText || '';
+            const responseMimeType = responseContent.mimeType || '';
+            const responseSize = response.bodySize || responseContent.size || 0;
+            
+            const panelId = `panel-${Date.now()}-${resourceIndex}`;
+            const panelContainer = document.getElementById('waterfall-panel-container');
+            
+            const panel = document.createElement('div');
+            panel.className = 'waterfall-panel';
+            panel.id = panelId;
+            
+            panel.innerHTML = `
+                <div class="waterfall-panel-header">
+                    <div class="waterfall-panel-title" title="${escapeHtml(resource.url)}">Resource #${resource.index}</div>
+                    <button class="waterfall-panel-close" onclick="window.closeWaterfallPanel('${panelId}')">×</button>
+                </div>
+                <div class="waterfall-panel-content">
+                    <!-- Timing Information -->
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Timing Information</div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">DNS Lookup</div>
+                            <div class="waterfall-panel-row-value">${formatTime(dnsTime)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">TCP Connect</div>
+                            <div class="waterfall-panel-row-value">${formatTime(connectTime)}</div>
+                        </div>
+                        ${sslTime > 0 ? `
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">SSL Handshake</div>
+                            <div class="waterfall-panel-row-value">${formatTime(sslTime)}</div>
+                        </div>
+                        ` : ''}
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Send</div>
+                            <div class="waterfall-panel-row-value">${formatTime(sendTime)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Wait</div>
+                            <div class="waterfall-panel-row-value">${formatTime(waitTime)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Receive</div>
+                            <div class="waterfall-panel-row-value">${formatTime(receiveTime)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Total Time</div>
+                            <div class="waterfall-panel-row-value">${formatTime(totalTime)}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Request Information -->
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Request Information</div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Method</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(request.method || 'GET')}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">URL</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(resource.url)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">HTTP Version</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(request.httpVersion || '')}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Request Headers -->
+                    ${requestHeaders.length > 0 ? `
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Request Headers</div>
+                        <div class="waterfall-panel-header-list">
+                            ${requestHeaders.map(header => `
+                                <div class="waterfall-panel-header-item">
+                                    <div class="waterfall-panel-header-name">${escapeHtml(header.name || '')}</div>
+                                    <div class="waterfall-panel-header-value">${escapeHtml(header.value || '')}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Request Body (Post Data) -->
+                    ${requestPostData ? `
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Post Data</div>
+                        <div class="waterfall-panel-body">${escapeHtml(requestPostData.text || '')}</div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Response Information -->
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Response Information</div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Status</div>
+                            <div class="waterfall-panel-row-value">${response.status || 0}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Status Text</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(responseStatusText)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">HTTP Version</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(request.httpVersion || '')}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">MIME Type</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(responseMimeType)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Size</div>
+                            <div class="waterfall-panel-row-value">${formatBytes(responseSize)}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Response Headers -->
+                    ${responseHeaders.length > 0 ? `
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Response Headers</div>
+                        <div class="waterfall-panel-header-list">
+                            ${responseHeaders.map(header => `
+                                <div class="waterfall-panel-header-item">
+                                    <div class="waterfall-panel-header-name">${escapeHtml(header.name || '')}</div>
+                                    <div class="waterfall-panel-header-value">${escapeHtml(header.value || '')}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Response Content -->
+                    ${responseContent.text ? `
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Response Content</div>
+                        <div class="waterfall-panel-body">${escapeHtml(responseContent.text)}</div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            panelContainer.appendChild(panel);
+            openPanels.push(panelId);
+        };
+        
+        window.closeWaterfallPanel = function(panelId) {
+            const panel = document.getElementById(panelId);
+            if (panel) {
+                panel.remove();
+                openPanels = openPanels.filter(id => id !== panelId);
+            }
+        };
 
         function getUrlFilename(url) {
             try {
