@@ -4,6 +4,20 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/style.css">
     <title>Telescope Console</title>
+    <style>
+        .console-message {
+            max-height: 150px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .console-message-text {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+    </style>
 </head>
 
 <body>
@@ -49,10 +63,8 @@
                 const consoleResponse = await fetch(`/api/results/${testId}/console.json`);
                 if (!consoleResponse.ok) {
                     if (consoleResponse.status === 404) {
-                        // No console data available
-                        document.getElementById('console-header').textContent = 'Console Messages (0)';
-                        document.getElementById('console-counts').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No console messages recorded.</p>';
-                        document.getElementById('console-messages').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No console messages available.</p>';
+                        // No console data available - still show counts with zeros
+                        renderConsoleData([]);
                         return;
                     }
                     throw new Error('Failed to load console data');
@@ -69,29 +81,54 @@
         }
 
         function renderConsoleData(messages) {
-            if (!messages || messages.length === 0) {
-                document.getElementById('console-header').textContent = 'Console Messages (0)';
-                document.getElementById('console-counts').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No console messages recorded.</p>';
-                document.getElementById('console-messages').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No console messages available.</p>';
-                return;
-            }
-
-            // Count messages by type
+            // Always show these message types, even if count is 0
+            const requiredTypes = ['error', 'warning', 'debug', 'info', 'log'];
+            
+            // Initialize counts for all required types
             const counts = {};
-            messages.forEach(msg => {
-                const type = msg.type || 'unknown';
-                counts[type] = (counts[type] || 0) + 1;
+            requiredTypes.forEach(type => {
+                counts[type] = 0;
             });
 
+            // Count messages by type
+            if (messages && messages.length > 0) {
+                messages.forEach(msg => {
+                    const type = msg.type || 'unknown';
+                    // Only count types that are in our required list
+                    if (requiredTypes.includes(type)) {
+                        counts[type] = (counts[type] || 0) + 1;
+                    } else if (!requiredTypes.includes(type) && !counts[type]) {
+                        // Include other types but don't require them to always show
+                        counts[type] = 1;
+                    } else {
+                        counts[type] = (counts[type] || 0) + 1;
+                    }
+                });
+            }
+
             // Update header with total count
-            const totalCount = messages.length;
+            const totalCount = messages ? messages.length : 0;
             document.getElementById('console-header').textContent = `Console Messages (${totalCount})`;
 
-            // Render counts
+            // Render counts - always show required types first, then others
             const countsContainer = document.getElementById('console-counts');
-            const countItems = Object.entries(counts)
-                .sort((a, b) => b[1] - a[1]) // Sort by count descending
-                .map(([type, count]) => {
+            const requiredCountItems = requiredTypes.map(type => {
+                const count = counts[type] || 0;
+                const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+                return `
+                    <div class="console-count-item console-type-${type}">
+                        <span class="console-count-type">${escapeHtml(typeLabel)}</span>
+                        <span class="console-count-value">${count}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Get other types that aren't required
+            const otherTypes = Object.keys(counts).filter(type => !requiredTypes.includes(type));
+            const otherCountItems = otherTypes
+                .sort((a, b) => counts[b] - counts[a]) // Sort by count descending
+                .map(type => {
+                    const count = counts[type] || 0;
                     const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
                     return `
                         <div class="console-count-item console-type-${type}">
@@ -103,12 +140,18 @@
 
             countsContainer.innerHTML = `
                 <div class="console-counts-grid">
-                    ${countItems}
+                    ${requiredCountItems}
+                    ${otherCountItems}
                 </div>
             `;
 
             // Render messages
             const messagesContainer = document.getElementById('console-messages');
+            if (!messages || messages.length === 0) {
+                messagesContainer.innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No console messages available.</p>';
+                return;
+            }
+
             messagesContainer.innerHTML = messages.map((msg, index) => {
                 const type = msg.type || 'unknown';
                 const text = msg.text || '';
