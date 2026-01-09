@@ -12,6 +12,7 @@ describe.each(browsers)('Delaying response - %s', browser => {
         url: 'https://www.speedpatterns.com/',
         browser: browser,
         // debug: true,
+        list: true,
         delay: { '\.css$': 2000 },
         delayUsing: delayImplementationName,
       });
