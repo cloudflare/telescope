@@ -207,12 +207,8 @@ export default function browserAgent() {
           'fios',
         ]),
     )
-    .addOption(
-      new Option('--width <int>', 'Viewport width, in pixels')
-    )
-    .addOption(
-      new Option('--height <int>', 'Viewport height, in pixels')
-    )
+    .addOption(new Option('--width <int>', 'Viewport width, in pixels'))
+    .addOption(new Option('--height <int>', 'Viewport height, in pixels'))
     .addOption(
       new Option(
         '--frameRate <int>',
