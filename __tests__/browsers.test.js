@@ -1,4 +1,5 @@
 import { BrowserConfig } from '../lib/browsers.js';
+import { devices } from 'playwright/test';
 import fs from 'fs';
 
 const browsers = BrowserConfig.getBrowsers();
@@ -78,4 +79,20 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
   });
 
   //test for other options
+
+  // test mobile emulation for each browser type
+  test('Setting mobile emulation updates the config', () => {
+    for (const device of Object.keys(devices)) {
+      let options = {
+        browser,
+        mobile: device,
+        url: '../tests/sandbox/index.html',
+      };
+      let config = new BrowserConfig().getBrowserConfig(browser, options);
+      expect(config && typeof config === 'object').toBe(true);
+      expect(config.isMobile === true).toBe(true);
+      expect(config.hasTouch === true).toBe(true);
+      expect(config.deviceScaleFactor).toBeDefined();
+    }
+  });
 });
