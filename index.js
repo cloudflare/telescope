@@ -292,7 +292,11 @@ export default function browserAgent() {
       new Option(
         '--dry',
         'Dry run (do not run test, just save config and cleanup)',
-      ).default(DEFAULT_OPTIONS.dry),
+      )
+    )
+    .addOption(
+      '-m, --mobile <string>',
+      'Mobile device to emulate ; overrides --width and --height',
     )
     .parse(process.argv);
 
