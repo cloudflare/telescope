@@ -39,4 +39,24 @@ describe.each(browsers)('Programmatic API (%s)', browser => {
 
     expect(result.success).toBe(true);
   }, 60000);
+
+  test('launchTest executes and returns result object when emulating devices', async () => {
+    const result = await launchTest({
+      url: 'https://www.example.com',
+      device: {
+        userAgent: 'sample-user-agent',
+        viewport: { width: 375, height: 667 },
+        deviceScaleFactor: 2,
+        isMobile: true,
+        hasTouch: true,
+      },
+      browser,
+    });
+
+    expect(result).toHaveProperty('success');
+    expect(result).toHaveProperty('testId');
+    expect(result).toHaveProperty('resultsPath');
+    expect(result.success).toBe(true);
+    expect(fs.existsSync(result.resultsPath)).toBe(true);
+  }, 60000);
 });

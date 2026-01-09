@@ -79,8 +79,8 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
     );
   });
 
-  // test mobile emulation for each browser type
-  test('Setting mobile emulation updates the config', () => {
+  // test device emulation for each browser type
+  test('Setting device emulation updates the config', () => {
     for (const device of Object.keys(devices)) {
       let options = {
         browser,
@@ -92,13 +92,13 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
       expect(config && typeof config === 'object').toBe(true);
       // test collecting device data for desktop devices
       if (device.toLowerCase().includes('desktop')) {
-        expect(config.isMobile === false).toBe(true);
-        expect(config.hasTouch === false).toBe(true);
+        expect(config.isMobile).toBe(false);
+        expect(config.hasTouch).toBe(false);
       }
       // test collecting device data for non-desktop devices
       else {
-        expect(config.isMobile === true).toBe(true);
-        expect(config.hasTouch === true).toBe(true);
+        expect(config.isMobile).toBe(true);
+        expect(config.hasTouch).toBe(true);
         expect(config.deviceScaleFactor).toBeDefined();
       }
     }
