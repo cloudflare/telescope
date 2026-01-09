@@ -267,6 +267,12 @@ export default function browserAgent() {
         'Zip the results of the test into the results directory.',
       ).default(DEFAULT_OPTIONS.zip),
     )
+    .addOption(
+      new Option(
+        '-m, --mobile <string>',
+        'Mobile device to emulate ; overrides --width and --height',
+      ),
+    )
     .parse(process.argv);
 
   const cliOptions = program.opts();
