@@ -223,14 +223,10 @@ export default function browserAgent() {
         ]),
     )
     .addOption(
-      new Option('--width <int>', 'Viewport width, in pixels').default(
-        String(DEFAULT_OPTIONS.width),
-      ),
+      new Option('--width <int>', 'Viewport width, in pixels')
     )
     .addOption(
-      new Option('--height <int>', 'Viewport height, in pixels').default(
-        String(DEFAULT_OPTIONS.height),
-      ),
+      new Option('--height <int>', 'Viewport height, in pixels')
     )
     .addOption(
       new Option(
@@ -295,8 +291,8 @@ export default function browserAgent() {
       )
     )
     .addOption(
-      '-m, --mobile <string>',
-      'Mobile device to emulate ; overrides --width and --height',
+      '-d, --device <string>',
+      'Device to emulate; devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
     )
     .parse(process.argv);
 
