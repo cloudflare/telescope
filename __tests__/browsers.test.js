@@ -79,9 +79,8 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
     );
   });
 
-  // test device emulation for each browser type
-  test('Setting device emulation updates the config', () => {
-    for (const device of Object.keys(devices)) {
+  describe.each(Object.keys(devices))('Setting device emulation updates the config for device: %s', device => {
+    test('Setting device emulation updates the config', () => {
       let options = {
         browser,
         device: device,
@@ -101,6 +100,6 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
         expect(config.hasTouch).toBe(true);
         expect(config.deviceScaleFactor).toBeDefined();
       }
-    }
+    });
   });
 });
