@@ -1,4 +1,5 @@
 import { BrowserConfig } from '../lib/browsers.js';
+import { normalizeCLIConfig } from '../lib/config.js';
 import { devices } from 'playwright/test';
 import fs from 'fs';
 
@@ -78,21 +79,28 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
     );
   });
 
-  //test for other options
-
   // test mobile emulation for each browser type
   test('Setting mobile emulation updates the config', () => {
     for (const device of Object.keys(devices)) {
       let options = {
         browser,
-        mobile: device,
+        device: device,
         url: '../tests/sandbox/index.html',
       };
+      options = normalizeCLIConfig(options);
       let config = new BrowserConfig().getBrowserConfig(browser, options);
       expect(config && typeof config === 'object').toBe(true);
-      expect(config.isMobile === true).toBe(true);
-      expect(config.hasTouch === true).toBe(true);
-      expect(config.deviceScaleFactor).toBeDefined();
+      // test collecting device data for desktop devices
+      if (device.toLowerCase().includes('desktop')) {
+        expect(config.isMobile === false).toBe(true);
+        expect(config.hasTouch === false).toBe(true);
+      }
+      // test collecting device data for non-desktop devices
+      else {
+        expect(config.isMobile === true).toBe(true);
+        expect(config.hasTouch === true).toBe(true);
+        expect(config.deviceScaleFactor).toBeDefined();
+      }
     }
   });
 });
