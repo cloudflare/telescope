@@ -2,6 +2,7 @@ import { Command, Option } from 'commander';
 const program = new Command();
 import { BrowserConfig } from './lib/browsers.js';
 import { TestRunner } from './lib/testRunner.js';
+import { DELAY_IMPLEMENTATIONS } from './lib/delay.js';
 import { ChromeRunner } from './lib/chromeRunner.js';
 import { log } from './lib/helpers.js';
 import { normalizeCLIConfig } from './lib/config.js';
@@ -20,6 +21,7 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @property {string[]=} args
  * @property {string[]=} blockDomains
  * @property {string[]=} block
+ * @property {Record<string, number>=} delay
  * @property {Record<string, unknown>=} firefoxPrefs
  * @property {number=} cpuThrottle
  * @property {keyof typeof import('./connectivity.js').networkTypes=} connectionType
@@ -41,6 +43,7 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @property {true} success - Whether the test was successful
  * @property {string} testId - Unique identifier for the test
  * @property {string} resultsPath - Path to the test results
+ * @property {TestRunner} runner - The test runner instance
  */
 
 /**
@@ -103,6 +106,7 @@ async function executeTest(options) {
       success: true,
       testId: Runner.TESTID,
       resultsPath: Runner.paths.results,
+      runner: Runner,
     };
   } catch (error) {
     // Ensure cleanup runs even on error
@@ -175,13 +179,24 @@ export default function browserAgent() {
       new Option(
         '--blockDomains <domains...>',
         'A comma separated list of domains to block',
-      ).default(DEFAULT_OPTIONS.blockDomains),
+      ).default(JSON.stringify(DEFAULT_OPTIONS.blockDomains)),
     )
     .addOption(
       new Option(
         '--block <substrings...>',
         'A comma-delimited list of urls to block (based on a substring match)',
-      ).default(DEFAULT_OPTIONS.block),
+      ).default(JSON.stringify(DEFAULT_OPTIONS.block)),
+    )
+    .addOption(
+      new Option(
+        '--delay <object>',
+        'An object mapping request regexes to response delays. Example: \'{".css$": 2000, ".js$": 5000}\'',
+      ).default(JSON.stringify(DEFAULT_OPTIONS.delay)),
+    )
+    .addOption(
+      new Option('--delayUsing <string>', 'Method to use to delay responses')
+        .default(DEFAULT_OPTIONS.delayUsing)
+        .choices(Object.keys(DELAY_IMPLEMENTATIONS)),
     )
     .addOption(
       new Option(
