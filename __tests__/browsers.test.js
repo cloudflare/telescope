@@ -79,27 +79,30 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
     );
   });
 
-  describe.each(Object.keys(devices))('Setting device emulation updates the config for device: %s', device => {
-    test('Setting device emulation updates the config', () => {
-      let options = {
-        browser,
-        device: device,
-        url: '../tests/sandbox/index.html',
-      };
-      options = normalizeCLIConfig(options);
-      let config = new BrowserConfig().getBrowserConfig(browser, options);
-      expect(config && typeof config === 'object').toBe(true);
-      // test collecting device data for desktop devices
-      if (device.toLowerCase().includes('desktop')) {
-        expect(config.isMobile).toBe(false);
-        expect(config.hasTouch).toBe(false);
-      }
-      // test collecting device data for non-desktop devices
-      else {
-        expect(config.isMobile).toBe(true);
-        expect(config.hasTouch).toBe(true);
-        expect(config.deviceScaleFactor).toBeDefined();
-      }
-    });
-  });
+  describe.each(Object.keys(devices))(
+    'Setting device emulation updates the config for device: %s',
+    device => {
+      test('Setting device emulation updates the config', () => {
+        let options = {
+          browser,
+          device: device,
+          url: '../tests/sandbox/index.html',
+        };
+        options = normalizeCLIConfig(options);
+        let config = new BrowserConfig().getBrowserConfig(browser, options);
+        expect(config && typeof config === 'object').toBe(true);
+        // test collecting device data for desktop devices
+        if (device.toLowerCase().includes('desktop')) {
+          expect(config.isMobile).toBe(false);
+          expect(config.hasTouch).toBe(false);
+        }
+        // test collecting device data for non-desktop devices
+        else {
+          expect(config.isMobile).toBe(true);
+          expect(config.hasTouch).toBe(true);
+          expect(config.deviceScaleFactor).toBeDefined();
+        }
+      });
+    },
+  );
 });
