@@ -103,6 +103,11 @@ class ResultItem extends HTMLElement {
           display: flex;
           align-items: center;
           gap: 16px;
+          background: rgba(255, 255, 255, 0.35);
+          border-color: rgba(125, 211, 252, 0.7);
+          border-radius: 4px;
+          cursor: arrow;
+          padding:10px;
         }
 
         .result-info {
