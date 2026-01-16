@@ -1,0 +1,609 @@
+<html>
+
+<head>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/style.css">   
+    <title>Telescope Resources</title>
+</head>
+
+<body>
+    <top-nav inactive="results"></top-nav>
+    <data-nav active="resources"></data-nav>
+    <section class="data-content">
+        <h1>Resources</h1>
+        <h2>View the resources of the test.</h2>
+
+        <!-- Summary Metrics Section -->
+        <div class="overview-section">
+            <h3>Summary</h3>
+            <div class="metrics-grid" id="resources-summary">
+                <!-- Summary metrics will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- File Types Summary Section -->
+        <div class="overview-section">
+            <h3>File Types Breakdown</h3>
+            <div class="resources-filetypes-summary" id="resources-filetypes-summary">
+                <!-- File types summary will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="overview-section">
+            <div class="resources-filters-header" onclick="toggleResourcesFilters()">
+                <h3>Filters</h3>
+                <span class="resources-filters-toggle" id="resources-filters-toggle">▶</span>
+            </div>
+            <div class="resources-filters-content" id="resources-filters-content" style="display: none;">
+                <div class="resources-filter-grid" id="resources-filter-grid">
+                    <!-- Filter dropdowns will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Resources List Section -->
+        <div class="overview-section">
+            <h3>Resources</h3>
+            <div class="resources-list" id="resources-list">
+                <!-- Resources will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+    <script type="module" src="/components/top-nav.ts"></script>
+    <script type="module" src="/components/data-nav.ts"></script>
+
+    <script type="module">
+        import '/components/metric-item.ts';
+
+        // Get test ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const testId = pathParts[pathParts.length - 1];
+
+        if (!testId || testId === 'resources') {
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: rgba(255, 255, 255, 0.72);">No test ID provided</div>';
+        } else {
+            loadResourcesData(testId);
+        }
+
+        // Store original resources data for filtering
+        let allResources = [];
+
+        async function loadResourcesData(testId) {
+            try {
+                // Load resources data
+                const resourcesResponse = await fetch(`/api/results/${testId}/resources.json`);
+                if (!resourcesResponse.ok) {
+                    if (resourcesResponse.status === 404) {
+                        document.getElementById('resources-summary').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72); grid-column: 1 / -1;">No resources data available.</p>';
+                        document.getElementById('resources-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No resources available.</p>';
+                        return;
+                    }
+                    throw new Error('Failed to load resources data');
+                }
+                allResources = await resourcesResponse.json();
+
+                // Render resources data
+                renderResourcesData(allResources);
+                
+                // Setup filters
+                setupFilters(allResources);
+
+            } catch (error) {
+                console.error('Error loading resources data:', error);
+                document.body.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255, 100, 100, 0.92);">Error loading resources data: ${error.message}</div>`;
+            }
+        }
+
+        function renderResourcesData(resources) {
+            if (!resources || resources.length === 0) {
+                document.getElementById('resources-summary').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72); grid-column: 1 / -1;">No resources data available.</p>';
+                document.getElementById('resources-list').innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No resources available.</p>';
+                return;
+            }
+
+            // Calculate summary metrics
+            const totalResources = resources.length;
+            const blockingResources = resources.filter(r => {
+                // Consider resources blocking if they are scripts, stylesheets, or have renderBlockingStatus
+                return r.renderBlockingStatus === 'blocking' || 
+                       r.initiatorType === 'script' || 
+                       r.initiatorType === 'css' ||
+                       (r.contentType && (r.contentType.includes('javascript') || r.contentType.includes('css')));
+            }).length;
+            
+            const totalTransferSize = resources.reduce((sum, r) => sum + (r.transferSize || 0), 0);
+            const totalDecodedSize = resources.reduce((sum, r) => sum + (r.decodedBodySize || 0), 0);
+
+            // Render summary
+            const summaryContainer = document.getElementById('resources-summary');
+            summaryContainer.innerHTML = `
+                <metric-item label="Total Resources" value="${totalResources}" description="Total number of resources"></metric-item>
+                <metric-item label="Blocking Resources" value="${blockingResources}" description="Render-blocking resources"></metric-item>
+                <metric-item label="Total Transfer Size" value="${formatBytes(totalTransferSize)}" description="Total transfer size"></metric-item>
+                <metric-item label="Total Decoded Size" value="${formatBytes(totalDecodedSize)}" description="Total decoded size"></metric-item>
+            `;
+
+            // Calculate and render file types summary
+            const fileTypeCounts = {};
+            resources.forEach(resource => {
+                const type = getResourceType(resource);
+                fileTypeCounts[type] = (fileTypeCounts[type] || 0) + 1;
+            });
+
+            const fileTypesSummaryContainer = document.getElementById('resources-filetypes-summary');
+            fileTypesSummaryContainer.innerHTML = `
+                <div class="filetypes-grid">
+                    ${Object.entries(fileTypeCounts)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([type, count]) => `
+                            <div class="filetype-item">
+                                <span class="filetype-name">${escapeHtml(type)}</span>
+                                <span class="filetype-count">${count}</span>
+                            </div>
+                        `).join('')}
+                </div>
+            `;
+
+            // Render resources list
+            const resourcesContainer = document.getElementById('resources-list');
+            resourcesContainer.innerHTML = resources.map((resource, index) => {
+                const url = resource.name || '';
+                const type = getResourceType(resource);
+                const size = formatBytes(resource.decodedBodySize || resource.transferSize || 0);
+                const duration = formatTime(resource.duration || 0);
+                const statusCode = resource.responseStatus || 0;
+                const elidedUrl = elideUrl(url, 64);
+                const isExpanded = '';
+
+                return `
+                    <div class="resource-item ${isExpanded}" data-index="${index}">
+                        <div class="resource-header" onclick="toggleResource(${index})">
+                            <div class="resource-header-content">
+                                <span class="resource-url">${escapeHtml(elidedUrl)}</span>
+                                <span class="resource-status status-${getStatusClass(statusCode)}">${statusCode || 'N/A'}</span>
+                                <span class="resource-type">${escapeHtml(type)}</span>
+                                <span class="resource-size">${size}</span>
+                                <span class="resource-duration">${duration}</span>
+                            </div>
+                            <span class="resource-toggle">${isExpanded ? '▼' : '▶'}</span>
+                        </div>
+                        <div class="resource-details">
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">URL:</span>
+                                <span class="resource-detail-value">${escapeHtml(url)}</span>
+                            </div>
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">Duration:</span>
+                                <span class="resource-detail-value">${duration}</span>
+                            </div>
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">Start Time:</span>
+                                <span class="resource-detail-value">${formatTime(resource.startTime || 0)}</span>
+                            </div>
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">Protocol:</span>
+                                <span class="resource-detail-value">${escapeHtml(resource.nextHopProtocol || 'unknown')}</span>
+                            </div>
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">Transfer Size:</span>
+                                <span class="resource-detail-value">${formatBytes(resource.transferSize || 0)}</span>
+                            </div>
+                            <div class="resource-detail-row">
+                                <span class="resource-detail-label">Decoded Size:</span>
+                                <span class="resource-detail-value">${formatBytes(resource.decodedBodySize || 0)}</span>
+                            </div>
+                            <div class="resource-detail-row resource-timing-bar-row">
+                                <span class="resource-detail-label">Timing:</span>
+                                <div class="resource-timing-container">
+                                    ${renderResourceTimingBar(resource)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setupFilters(resources) {
+            try {
+                if (!resources || resources.length === 0) {
+                    return;
+                }
+
+                // Extract unique values for each filter category
+                const fileTypes = new Set();
+                const statusCodes = new Set();
+                const methods = new Set();
+                const domains = new Set();
+                const protocols = new Set();
+
+                resources.forEach(resource => {
+                    const type = getResourceType(resource);
+                    if (type) fileTypes.add(type);
+                    if (resource.responseStatus && resource.responseStatus > 0) statusCodes.add(String(resource.responseStatus));
+                    if (resource.name) {
+                        try {
+                            const url = new URL(resource.name);
+                            domains.add(url.hostname);
+                        } catch (e) {
+                            // Invalid URL, skip
+                        }
+                    }
+                    if (resource.nextHopProtocol) {
+                        protocols.add(resource.nextHopProtocol);
+                    }
+                });
+
+                // Convert Sets to sorted arrays with options format
+                const fileTypeOptions = Array.from(fileTypes).sort().map(type => ({
+                    value: type,
+                    label: type || 'Unknown'
+                }));
+
+                const statusCodeOptions = Array.from(statusCodes).sort((a, b) => {
+                    const numA = parseInt(a);
+                    const numB = parseInt(b);
+                    return numA - numB;
+                }).map(code => ({
+                    value: code,
+                    label: code
+                }));
+
+                const methodOptions = [
+                    { value: 'GET', label: 'GET' },
+                    { value: 'POST', label: 'POST' },
+                    { value: 'PUT', label: 'PUT' },
+                    { value: 'DELETE', label: 'DELETE' },
+                    { value: 'PATCH', label: 'PATCH' },
+                    { value: 'HEAD', label: 'HEAD' },
+                    { value: 'OPTIONS', label: 'OPTIONS' }
+                ].filter(opt => methods.has(opt.value));
+
+                const domainOptions = Array.from(domains).sort().map(domain => ({
+                    value: domain,
+                    label: domain
+                }));
+
+                const protocolOptions = Array.from(protocols).sort().map(protocol => ({
+                    value: protocol,
+                    label: protocol
+                }));
+
+                // Render filter dropdowns
+                const filterGrid = document.getElementById('resources-filter-grid');
+                if (!filterGrid) return;
+
+                filterGrid.innerHTML = '';
+
+                const createSelect = (id, label, placeholder, options) => {
+                    const container = document.createElement('label');
+                    container.style.display = 'flex';
+                    container.style.flexDirection = 'column';
+                    container.style.gap = '6px';
+
+                    // Label wrapper with clear button
+                    const labelWrapper = document.createElement('div');
+                    labelWrapper.style.display = 'flex';
+                    labelWrapper.style.justifyContent = 'space-between';
+                    labelWrapper.style.alignItems = 'center';
+                    labelWrapper.style.gap = '8px';
+
+                    const labelElement = document.createElement('span');
+                    labelElement.textContent = label;
+                    labelElement.style.fontSize = '14px';
+                    labelElement.style.color = 'rgba(255, 255, 255, 0.78)';
+
+                    const clearButton = document.createElement('button');
+                    clearButton.textContent = 'Clear';
+                    clearButton.type = 'button';
+                    clearButton.style.fontSize = '12px';
+                    clearButton.style.padding = '4px 8px';
+                    clearButton.style.borderRadius = '6px';
+                    clearButton.style.border = '1px solid rgba(255, 255, 255, 0.12)';
+                    clearButton.style.background = 'rgba(255, 255, 255, 0.05)';
+                    clearButton.style.color = 'rgba(255, 255, 255, 0.62)';
+                    clearButton.style.cursor = 'pointer';
+                    clearButton.style.font = 'inherit';
+                    clearButton.style.transition = 'all 0.15s ease';
+                    clearButton.title = 'Clear filter';
+
+                    clearButton.addEventListener('mouseenter', () => {
+                        clearButton.style.background = 'rgba(255, 255, 255, 0.1)';
+                        clearButton.style.color = 'rgba(255, 255, 255, 0.82)';
+                        clearButton.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    });
+
+                    clearButton.addEventListener('mouseleave', () => {
+                        clearButton.style.background = 'rgba(255, 255, 255, 0.05)';
+                        clearButton.style.color = 'rgba(255, 255, 255, 0.62)';
+                        clearButton.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                    });
+
+                    const select = document.createElement('select');
+                    select.id = id;
+                    select.multiple = true;
+                    select.size = Math.min(6, Math.max(3, options.length + 1));
+                    select.style.font = 'inherit';
+                    select.style.padding = '8px';
+                    select.style.borderRadius = '12px';
+                    select.style.border = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
+                    select.style.background = 'rgba(0, 0, 0, 0.25)';
+                    select.style.color = 'var(--text, rgba(255, 255, 255, 0.92))';
+                    select.style.minHeight = '120px';
+                    select.style.width = '100%';
+                    select.title = placeholder;
+
+                    options.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option.value;
+                        optionElement.textContent = option.label;
+                        select.appendChild(optionElement);
+                    });
+
+                    // Clear button functionality
+                    clearButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        Array.from(select.options).forEach(option => {
+                            option.selected = false;
+                        });
+                        updateFilters();
+                    });
+
+                    select.addEventListener('change', () => {
+                        updateFilters();
+                    });
+
+                    labelWrapper.appendChild(labelElement);
+                    labelWrapper.appendChild(clearButton);
+                    container.appendChild(labelWrapper);
+                    container.appendChild(select);
+
+                    return container;
+                };
+
+                filterGrid.appendChild(createSelect('resources-file-type-filter', 'File Types', 'All file types', fileTypeOptions));
+                filterGrid.appendChild(createSelect('resources-status-code-filter', 'Status Codes', 'All status codes', statusCodeOptions));
+                filterGrid.appendChild(createSelect('resources-domain-filter', 'Domains', 'All domains', domainOptions));
+                filterGrid.appendChild(createSelect('resources-protocol-filter', 'Protocols', 'All protocols', protocolOptions));
+            } catch (error) {
+                console.error('Error setting up filters:', error);
+            }
+        }
+
+        function updateFilters() {
+            try {
+                if (!allResources || allResources.length === 0) return;
+
+                // Get selected values from multi-select
+                const getSelectedValues = (selectElement) => {
+                    if (!selectElement) return [];
+                    return Array.from(selectElement.selectedOptions)
+                        .filter(option => !option.disabled && option.value)
+                        .map(option => option.value);
+                };
+
+                const fileTypeFilter = document.getElementById('resources-file-type-filter');
+                const statusCodeFilter = document.getElementById('resources-status-code-filter');
+                const domainFilter = document.getElementById('resources-domain-filter');
+                const protocolFilter = document.getElementById('resources-protocol-filter');
+
+                const selectedFileTypes = getSelectedValues(fileTypeFilter);
+                const selectedStatusCodes = getSelectedValues(statusCodeFilter);
+                const selectedDomains = getSelectedValues(domainFilter);
+                const selectedProtocols = getSelectedValues(protocolFilter);
+
+                // Filter resources
+                const filteredResources = allResources.filter(resource => {
+                    // File type filter
+                    if (selectedFileTypes.length > 0) {
+                        const type = getResourceType(resource);
+                        if (!selectedFileTypes.includes(type)) return false;
+                    }
+
+                    // Status code filter
+                    if (selectedStatusCodes.length > 0) {
+                        const status = String(resource.responseStatus || '');
+                        if (!selectedStatusCodes.includes(status)) return false;
+                    }
+
+                    // Domain filter
+                    if (selectedDomains.length > 0) {
+                        try {
+                            const url = new URL(resource.name || '');
+                            if (!selectedDomains.includes(url.hostname)) return false;
+                        } catch (e) {
+                            return false; // Invalid URL, exclude
+                        }
+                    }
+
+                    // Protocol filter
+                    if (selectedProtocols.length > 0) {
+                        const protocol = resource.nextHopProtocol || '';
+                        if (!selectedProtocols.includes(protocol)) return false;
+                    }
+
+                    return true;
+                });
+
+                // Re-render filtered resources
+                renderResourcesData(filteredResources);
+            } catch (error) {
+                console.error('Error updating filters:', error);
+            }
+        }
+
+        function toggleResourcesFilters() {
+            const content = document.getElementById('resources-filters-content');
+            const toggle = document.getElementById('resources-filters-toggle');
+            const isExpanded = content.style.display !== 'none';
+
+            if (isExpanded) {
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            } else {
+                content.style.display = 'block';
+                toggle.textContent = '▼';
+            }
+        }
+
+        // Initialize filters as collapsed
+        document.addEventListener('DOMContentLoaded', () => {
+            const filtersContent = document.getElementById('resources-filters-content');
+            if (filtersContent) {
+                filtersContent.style.display = 'none';
+            }
+        });
+
+        window.toggleResourcesFilters = toggleResourcesFilters;
+
+        function renderResourceTimingBar(resource) {
+            // Calculate phase timings relative to fetchStart
+            const fetchStart = resource.fetchStart || 0;
+            const domainLookupStart = resource.domainLookupStart || fetchStart;
+            const domainLookupEnd = resource.domainLookupEnd || domainLookupStart;
+            const connectStart = resource.connectStart || domainLookupEnd;
+            const connectEnd = resource.connectEnd || connectStart;
+            const requestStart = resource.requestStart || connectEnd;
+            const responseStart = resource.responseStart || requestStart;
+            const responseEnd = resource.responseEnd || responseStart;
+            const duration = resource.duration || (responseEnd - fetchStart);
+
+            // Note: Resources typically don't have DOM timing, but we'll include the structure
+            // These will be 0/empty if not available
+            const domInteractive = 0; // Resources don't have DOM timing
+            const domComplete = 0;
+            const loadEventEnd = 0;
+
+            // Calculate phases relative to fetchStart
+            const phases = [
+                { name: 'First Request', start: 0, end: domainLookupStart - fetchStart, class: 'first-request' },
+                { name: 'DNS', start: domainLookupStart - fetchStart, end: domainLookupEnd - fetchStart, class: 'dns' },
+                { name: 'Connect', start: connectStart - fetchStart, end: connectEnd - fetchStart, class: 'connect' },
+                { name: 'Request', start: requestStart - fetchStart, end: responseStart - fetchStart, class: 'request' },
+                { name: 'Response', start: responseStart - fetchStart, end: responseEnd - fetchStart, class: 'response' },
+                { name: 'DOM Interactive', start: responseEnd - fetchStart, end: domInteractive - fetchStart, class: 'dom-interactive' },
+                { name: 'DOM Complete', start: domInteractive - fetchStart, end: domComplete - fetchStart, class: 'dom-complete' },
+                { name: 'Load Event', start: domComplete - fetchStart, end: loadEventEnd - fetchStart, class: 'load-event' },
+            ];
+
+            // Use duration or responseEnd as max time
+            const maxTime = Math.max(duration, responseEnd - fetchStart);
+            
+            if (maxTime <= 0) {
+                return '<div class="resource-timing-empty">No timing data available</div>';
+            }
+
+            const barHtml = phases.map(phase => {
+                const leftPercent = (phase.start / maxTime) * 100;
+                const widthPercent = ((phase.end - phase.start) / maxTime) * 100;
+                const phaseDuration = phase.end - phase.start;
+                
+                // Only show phase if it has a meaningful duration
+                if (phaseDuration <= 0) return '';
+                
+                return `
+                    <div class="resource-timing-phase ${phase.class}" 
+                         style="left: ${leftPercent}%; width: ${Math.max(widthPercent, 0.5)}%;"
+                         title="${phase.name}: ${formatTime(phaseDuration)}">
+                        ${widthPercent > 8 ? phase.name : ''}
+                    </div>
+                `;
+            }).filter(html => html).join('');
+
+            return `
+                <div class="resource-timing-bar">
+                    ${barHtml}
+                </div>
+                <div class="resource-timing-legend">
+                    ${phases.filter(p => p.end > p.start).map(phase => `
+                        <div class="resource-timing-legend-item">
+                            <div class="resource-timing-legend-color ${phase.class}"></div>
+                            <span>${phase.name}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function toggleResource(index) {
+            const resourceItem = document.querySelector(`.resource-item[data-index="${index}"]`);
+            if (!resourceItem) return;
+
+            const isExpanded = resourceItem.classList.contains('expanded');
+            const toggle = resourceItem.querySelector('.resource-toggle');
+            
+            if (isExpanded) {
+                resourceItem.classList.remove('expanded');
+                if (toggle) toggle.textContent = '▶';
+            } else {
+                resourceItem.classList.add('expanded');
+                if (toggle) toggle.textContent = '▼';
+            }
+        }
+
+        // Make toggleResource available globally
+        window.toggleResource = toggleResource;
+
+        function getResourceType(resource) {
+            // Try contentType first
+            if (resource.contentType) {
+                const mimeType = resource.contentType.split(';')[0].trim();
+                if (mimeType.includes('javascript')) return 'script';
+                if (mimeType.includes('css')) return 'stylesheet';
+                if (mimeType.includes('image')) return 'image';
+                if (mimeType.includes('font')) return 'font';
+                if (mimeType.includes('video')) return 'video';
+                if (mimeType.includes('audio')) return 'audio';
+                if (mimeType.includes('json')) return 'json';
+                if (mimeType.includes('xml') || mimeType.includes('html')) return 'document';
+                return mimeType.split('/')[1] || 'other';
+            }
+            
+            // Fallback to initiatorType
+            if (resource.initiatorType) {
+                return resource.initiatorType;
+            }
+            
+            return 'other';
+        }
+
+        function getStatusClass(statusCode) {
+            if (!statusCode || statusCode === 0) return 'unknown';
+            if (statusCode >= 200 && statusCode < 300) return 'success';
+            if (statusCode >= 300 && statusCode < 400) return 'redirect';
+            if (statusCode >= 400 && statusCode < 500) return 'client-error';
+            if (statusCode >= 500) return 'server-error';
+            return 'unknown';
+        }
+
+        function elideUrl(url, maxLength) {
+            if (!url || url.length <= maxLength) return url;
+            // Show the end of the URL, elide from the beginning
+            return '...' + url.substring(url.length - (maxLength - 3));
+        }
+
+        function formatTime(ms) {
+            if (ms === 0 || !ms) return 'N/A';
+            if (ms < 1000) return `${Math.round(ms)}ms`;
+            return `${(ms / 1000).toFixed(2)}s`;
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>

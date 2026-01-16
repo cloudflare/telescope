@@ -1,0 +1,1166 @@
+<html>
+
+<head>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/style.css">
+    <title>Telescope Waterfall</title>
+    <style>
+        .waterfall-panel-container {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 1000;
+            pointer-events: none;
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 0;
+        }
+
+        .waterfall-panel {
+            width: 300px;
+            height: 100vh;
+            background: rgba(7, 10, 18, 0.98);
+            border-left: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.3);
+            pointer-events: all;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .waterfall-panel-header {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .waterfall-panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.92);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .waterfall-panel-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.72);
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 18px;
+            line-height: 1;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .waterfall-panel-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        .waterfall-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .waterfall-panel-section {
+            margin-bottom: 24px;
+        }
+
+        .waterfall-panel-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.92);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .waterfall-panel-row {
+            display: flex;
+            padding: 8px 0;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .waterfall-panel-row-label {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.72);
+            min-width: 120px;
+            flex-shrink: 0;
+        }
+
+        .waterfall-panel-row-value {
+            color: rgba(255, 255, 255, 0.85);
+            word-break: break-word;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        }
+
+        .waterfall-panel-header-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 12px;
+        }
+
+        .waterfall-panel-header-item {
+            display: flex;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .waterfall-panel-header-name {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.72);
+            min-width: 100px;
+            flex-shrink: 0;
+        }
+
+        .waterfall-panel-header-value {
+            color: rgba(255, 255, 255, 0.85);
+            word-break: break-word;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        }
+
+        .waterfall-panel-body {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            padding: 12px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.85);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .waterfall-row {
+            cursor: pointer;
+        }
+
+        .waterfall-row:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+    </style>
+</head>
+
+<body>
+    <top-nav inactive="results"></top-nav>
+    <data-nav active="waterfall"></data-nav>
+    <div id="waterfall-panel-container" class="waterfall-panel-container"></div>
+    <section class="data-content">
+        <h1>Waterfall</h1>
+        <h2>View the waterfall of the test.</h2>
+
+        <!-- Expandable Summary Section -->
+        <div class="overview-section">
+            <div class="waterfall-summary-header" onclick="toggleWaterfallSummary()">
+                <h3 id="waterfall-summary-title">Summary</h3>
+                <span class="waterfall-summary-toggle" id="waterfall-summary-toggle">▶</span>
+            </div>
+            <div class="waterfall-summary-content" id="waterfall-summary-content" style="display: none;">
+                <!-- Summary content will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Expandable Filters and Column Selection -->
+        <div class="overview-section">
+            <div class="waterfall-filters-header" onclick="toggleWaterfallFilters()">
+                <h3>Filters & Columns</h3>
+                <span class="waterfall-filters-toggle" id="waterfall-filters-toggle">▶</span>
+            </div>
+            <div class="waterfall-filters-content" id="waterfall-filters-content" style="display: none;">
+                <div class="waterfall-filters">
+                    <label class="waterfall-filter-checkbox">
+                        <input type="checkbox" id="critical-path-filter" onchange="toggleCriticalPathFilter()">
+                        <span>Show only critical path</span>
+                    </label>
+                </div>
+                <div class="waterfall-filter-grid" id="waterfall-filter-grid">
+                    <!-- Filter dropdowns will be populated by JavaScript -->
+                </div>
+                <div class="waterfall-columns-selector" id="waterfall-columns-selector">
+                    <!-- Column checkboxes will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Waterfall Chart -->
+        <div class="overview-section">
+            <h3>Waterfall</h3>
+            <waterfall-chart id="waterfall-chart"></waterfall-chart>
+        </div>
+    </section>
+    <script type="module" src="/components/top-nav.ts"></script>
+    <script type="module" src="/components/data-nav.ts"></script>
+    <script type="module" src="/components/waterfall.ts"></script>
+
+    <script type="module">
+        import { isCriticalPathEntry } from '../../static/critical-path.ts';
+        // Get test ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const testId = pathParts[pathParts.length - 1];
+
+        if (!testId || testId === 'waterfall') {
+            document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: rgba(255, 255, 255, 0.72);">No test ID provided</div>';
+        } else {
+            loadWaterfallData(testId);
+        }
+
+        async function loadWaterfallData(testId) {
+            try {
+                // Load HAR file
+                const harResponse = await fetch(`/api/results/${testId}/pageload.har`);
+                if (!harResponse.ok) {
+                    if (harResponse.status === 404) {
+                        document.getElementById('waterfall-chart').innerHTML = '<div style="padding: 20px; text-align: center; color: rgba(255, 255, 255, 0.72);">No HAR data available.</div>';
+                        return;
+                    }
+                    throw new Error('Failed to load HAR data');
+                }
+                const harData = await harResponse.json();
+
+                // Load metrics for DOM timing
+                let metrics = null;
+                try {
+                    const metricsResponse = await fetch(`/api/results/${testId}/metrics.json`);
+                    if (metricsResponse.ok) {
+                        metrics = await metricsResponse.json();
+                    }
+                } catch (e) {
+                    console.warn('Could not load metrics:', e);
+                }
+
+                // Load config for URL
+                let config = null;
+                try {
+                    const configResponse = await fetch(`/api/results/${testId}/config.json`);
+                    if (configResponse.ok) {
+                        config = await configResponse.json();
+                    }
+                } catch (e) {
+                    console.warn('Could not load config:', e);
+                }
+
+                // Load resources to identify critical path
+                let resources = null;
+                try {
+                    const resourcesResponse = await fetch(`/api/results/${testId}/resources.json`);
+                    if (resourcesResponse.ok) {
+                        resources = await resourcesResponse.json();
+                    }
+                } catch (e) {
+                    console.warn('Could not load resources:', e);
+                }
+
+                // Parse HAR and render
+                const waterfallData = parseHarData(harData, resources);
+                
+                // Store harData globally for panel access
+                window.waterfallHarData = harData;
+                
+                // Render waterfall first (this is critical)
+                renderWaterfall(waterfallData, config);
+                
+                // Then setup filters (non-critical, can fail without breaking the page)
+                try {
+                    setupFilters(waterfallData);
+                } catch (filterError) {
+                    console.error('Error setting up filters (non-critical):', filterError);
+                }
+                
+                renderSummary(harData, waterfallData, metrics, config);
+                setupColumnSelector();
+
+            } catch (error) {
+                console.error('Error loading waterfall data:', error);
+                document.body.innerHTML = `<div style="padding: 40px; text-align: center; color: rgba(255, 100, 100, 0.92);">Error loading waterfall data: ${error.message}</div>`;
+            }
+        }
+
+        function parseHarData(harData, resourcesData) {
+            const entries = harData.log?.entries || [];
+            const pageStart = entries.length > 0 ? new Date(entries[0].startedDateTime).getTime() : 0;
+
+            // Create a map of URLs to resource data for quick lookup
+            const resourceMap = new Map();
+            if (resourcesData && Array.isArray(resourcesData)) {
+                resourcesData.forEach(resource => {
+                    if (resource.name) {
+                        resourceMap.set(resource.name, resource);
+                    }
+                });
+            }
+
+            const resources = entries.map((entry, index) => {
+                const request = entry.request || {};
+                const response = entry.response || {};
+                const timings = entry.timings || {};
+                const url = request.url || '';
+
+                // Calculate timing phases
+                const startedDateTime = new Date(entry.startedDateTime).getTime();
+                const relativeStart = startedDateTime - pageStart;
+
+                // Check if this is a critical path resource using critical-path.ts
+                const resourceData = resourceMap.get(url);
+                const harEntry = {
+                    request: request,
+                    response: response,
+                };
+                const isCriticalPath = isCriticalPathEntry(harEntry, resourceData);
+
+                return {
+                    index: index + 1,
+                    name: getUrlFilename(url),
+                    url: url,
+                    startTime: relativeStart,
+                    duration: entry.time || 0,
+                    method: request.method || 'GET',
+                    status: response.status || 0,
+                    size: response.bodySize || response.content?.size || 0,
+                    type: getResourceTypeFromMime(response.content?.mimeType || ''),
+                    nextHopProtocol: request.httpVersion || '',
+                    transferSize: response.bodySize || 0,
+                    decodedBodySize: response.content?.size || 0,
+                    fetchStart: relativeStart,
+                    domainLookupStart: relativeStart + (timings.dns || 0),
+                    domainLookupEnd: relativeStart + (timings.dns || 0),
+                    connectStart: relativeStart + (timings.dns || 0),
+                    connectEnd: relativeStart + (timings.dns || 0) + (timings.connect || 0),
+                    requestStart: relativeStart + (timings.dns || 0) + (timings.connect || 0),
+                    responseStart: relativeStart + (timings.dns || 0) + (timings.connect || 0) + (timings.send || 0) + (timings.wait || 0),
+                    responseEnd: relativeStart + entry.time,
+                    isCriticalPath: isCriticalPath,
+                    harEntry: entry, // Store full HAR entry for panel details
+                };
+            });
+
+            const startTime = resources.length > 0 ? Math.min(...resources.map(r => r.startTime)) : 0;
+            const endTime = resources.length > 0 ? Math.max(...resources.map(r => r.startTime + r.duration)) : 0;
+            const totalDuration = endTime - startTime;
+
+            return { resources, startTime, totalDuration };
+        }
+
+        function renderWaterfall(waterfallData, config) {
+            try {
+                const chart = document.getElementById('waterfall-chart');
+                if (!chart) {
+                    console.error('Waterfall chart element not found');
+                    return;
+                }
+                
+                // Store globally for panel access
+                window.waterfallData = waterfallData;
+                
+                chart.setAttribute('data', JSON.stringify(waterfallData));
+                // Set all columns as visible by default
+                chart.visibleColumns = ['index', 'url', 'method', 'status', 'size', 'duration', 'type', 'protocol', 'timeline'];
+                
+                // Initialize filters as empty (important - must be set before any filtering)
+                chart.filters = {};
+            } catch (error) {
+                console.error('Error rendering waterfall:', error);
+            }
+        }
+        
+        function setupFilters(waterfallData) {
+            try {
+                const resources = waterfallData.resources || [];
+                
+                if (resources.length === 0) {
+                    console.warn('No resources found for filters');
+                    return;
+                }
+            
+            // Extract unique values for each filter category
+            const fileTypes = new Set();
+            const statusCodes = new Set();
+            const methods = new Set();
+            const domains = new Set();
+            const protocols = new Set();
+            
+            resources.forEach(resource => {
+                if (resource.type) fileTypes.add(resource.type);
+                if (resource.status && resource.status > 0) statusCodes.add(String(resource.status));
+                if (resource.method) methods.add(resource.method);
+                if (resource.url) {
+                    try {
+                        const url = new URL(resource.url);
+                        domains.add(url.hostname);
+                    } catch (e) {
+                    }
+                }
+                if (resource.nextHopProtocol) {
+                    protocols.add(resource.nextHopProtocol);
+                }
+            });
+            
+            // Convert Sets to sorted arrays with options format
+            const fileTypeOptions = Array.from(fileTypes).sort().map(type => ({
+                value: type,
+                label: type || 'Unknown'
+            }));
+            
+            const statusCodeOptions = Array.from(statusCodes).sort((a, b) => {
+                const numA = parseInt(a);
+                const numB = parseInt(b);
+                return numA - numB;
+            }).map(code => ({
+                value: code,
+                label: code
+            }));
+            
+            const methodOptions = Array.from(methods).sort().map(method => ({
+                value: method,
+                label: method
+            }));
+            
+            const domainOptions = Array.from(domains).sort().map(domain => ({
+                value: domain,
+                label: domain
+            }));
+            
+            const protocolOptions = Array.from(protocols).sort().map(protocol => ({
+                value: protocol,
+                label: protocol
+            }));
+            
+            // Render filter dropdowns using createElement to avoid HTML injection issues
+            const filterGrid = document.getElementById('waterfall-filter-grid');
+            if (!filterGrid) return;
+            
+            filterGrid.innerHTML = '';
+            
+            const createSelect = (id, label, placeholder, options) => {
+                const container = document.createElement('label');
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.gap = '6px';
+                
+                // Label wrapper with clear button
+                const labelWrapper = document.createElement('div');
+                labelWrapper.style.display = 'flex';
+                labelWrapper.style.justifyContent = 'space-between';
+                labelWrapper.style.alignItems = 'center';
+                labelWrapper.style.gap = '8px';
+                
+                const labelElement = document.createElement('span');
+                labelElement.textContent = label;
+                labelElement.style.fontSize = '14px';
+                labelElement.style.color = 'rgba(255, 255, 255, 0.78)';
+                
+                const clearButton = document.createElement('button');
+                clearButton.textContent = 'Clear';
+                clearButton.type = 'button';
+                clearButton.style.fontSize = '12px';
+                clearButton.style.padding = '4px 8px';
+                clearButton.style.borderRadius = '6px';
+                clearButton.style.border = '1px solid rgba(255, 255, 255, 0.12)';
+                clearButton.style.background = 'rgba(255, 255, 255, 0.05)';
+                clearButton.style.color = 'rgba(255, 255, 255, 0.62)';
+                clearButton.style.cursor = 'pointer';
+                clearButton.style.font = 'inherit';
+                clearButton.style.transition = 'all 0.15s ease';
+                clearButton.title = 'Clear filter';
+                
+                clearButton.addEventListener('mouseenter', () => {
+                    clearButton.style.background = 'rgba(255, 255, 255, 0.1)';
+                    clearButton.style.color = 'rgba(255, 255, 255, 0.82)';
+                    clearButton.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                });
+                
+                clearButton.addEventListener('mouseleave', () => {
+                    clearButton.style.background = 'rgba(255, 255, 255, 0.05)';
+                    clearButton.style.color = 'rgba(255, 255, 255, 0.62)';
+                    clearButton.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                });
+                
+                const select = document.createElement('select');
+                select.id = id;
+                select.multiple = true;
+                select.size = Math.min(6, Math.max(3, options.length + 1)); // Show 3-6 items, adjust based on options
+                select.style.font = 'inherit';
+                select.style.padding = '8px';
+                select.style.borderRadius = '12px';
+                select.style.border = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
+                select.style.background = 'rgba(0, 0, 0, 0.25)';
+                select.style.color = 'var(--text, rgba(255, 255, 255, 0.92))';
+                select.style.minHeight = '120px';
+                select.style.width = '100%';
+                select.title = placeholder;
+                
+                options.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.value;
+                    optionElement.textContent = option.label;
+                    select.appendChild(optionElement);
+                });
+                
+                // Clear button functionality
+                clearButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    // Deselect all options
+                    Array.from(select.options).forEach(option => {
+                        option.selected = false;
+                    });
+                    updateFilters();
+                });
+                
+                select.addEventListener('change', () => {
+                    updateFilters();
+                });
+                
+                labelWrapper.appendChild(labelElement);
+                labelWrapper.appendChild(clearButton);
+                container.appendChild(labelWrapper);
+                container.appendChild(select);
+                
+                return container;
+            };
+            
+            filterGrid.appendChild(createSelect('file-type-filter', 'File Types', 'All file types', fileTypeOptions));
+            filterGrid.appendChild(createSelect('status-code-filter', 'Status Codes', 'All status codes', statusCodeOptions));
+            filterGrid.appendChild(createSelect('method-filter', 'Methods', 'All methods', methodOptions));
+            filterGrid.appendChild(createSelect('domain-filter', 'Domains', 'All domains', domainOptions));
+            filterGrid.appendChild(createSelect('protocol-filter', 'Protocols', 'All protocols', protocolOptions));
+            } catch (error) {
+                console.error('Error setting up filters:', error);
+            }
+        }
+        
+        function updateFilters() {
+            try {
+                const chart = document.getElementById('waterfall-chart');
+                if (!chart) return;
+                
+                const filters = {};
+                
+                const fileTypeFilter = document.getElementById('file-type-filter');
+                const statusCodeFilter = document.getElementById('status-code-filter');
+                const methodFilter = document.getElementById('method-filter');
+                const domainFilter = document.getElementById('domain-filter');
+                const protocolFilter = document.getElementById('protocol-filter');
+                
+                // Get selected values from multi-select (excluding disabled placeholder options)
+                const getSelectedValues = (selectElement) => {
+                    if (!selectElement) return [];
+                    return Array.from(selectElement.selectedOptions)
+                        .filter(option => !option.disabled && option.value)
+                        .map(option => option.value);
+                };
+                
+                const fileTypes = getSelectedValues(fileTypeFilter);
+                if (fileTypes.length > 0) {
+                    filters.fileTypes = fileTypes;
+                }
+                
+                const statusCodes = getSelectedValues(statusCodeFilter);
+                if (statusCodes.length > 0) {
+                    filters.statusCodes = statusCodes;
+                }
+                
+                const methods = getSelectedValues(methodFilter);
+                if (methods.length > 0) {
+                    filters.methods = methods;
+                }
+                
+                const domains = getSelectedValues(domainFilter);
+                if (domains.length > 0) {
+                    filters.domains = domains;
+                }
+                
+                const protocols = getSelectedValues(protocolFilter);
+                if (protocols.length > 0) {
+                    filters.protocols = protocols;
+                }
+                
+                chart.filters = filters;
+            } catch (error) {
+                console.error('Error updating filters:', error);
+            }
+        }
+
+        function renderSummary(harData, waterfallData, metrics, config) {
+            const entries = harData.log?.entries || [];
+            const page = harData.log?.pages?.[0];
+            const pageTitle = page?.title || config?.url || 'Unknown';
+
+            // Calculate metrics
+            const totalRequests = entries.length;
+            const domains = new Set();
+            let totalSize = 0;
+            entries.forEach(entry => {
+                try {
+                    const url = new URL(entry.request?.url || '');
+                    domains.add(url.hostname);
+                } catch (e) {}
+                totalSize += entry.response?.bodySize || entry.response?.content?.size || 0;
+            });
+            const distinctDomains = domains.size;
+
+            const domContentLoaded = page?.pageTimings?.onContentLoad || 0;
+            const loadTime = page?.pageTimings?.onLoad || 0;
+
+            // HTTP Methods
+            const methodCounts = {};
+            entries.forEach(entry => {
+                const method = entry.request?.method || 'GET';
+                methodCounts[method] = (methodCounts[method] || 0) + 1;
+            });
+
+            // Status Codes
+            const statusCounts = {};
+            entries.forEach(entry => {
+                const status = entry.response?.status || 0;
+                const statusGroup = Math.floor(status / 100) * 100;
+                statusCounts[statusGroup] = (statusCounts[statusGroup] || 0) + 1;
+            });
+
+            // File Types
+            const fileTypeCounts = {};
+            entries.forEach(entry => {
+                const mimeType = entry.response?.content?.mimeType || '';
+                const fileType = getResourceTypeFromMime(mimeType);
+                fileTypeCounts[fileType] = (fileTypeCounts[fileType] || 0) + 1;
+            });
+
+            // Compression
+            const compressionCounts = {
+                'gzip': 0,
+                'br': 0,
+                'deflate': 0,
+                'none': 0,
+                'other': 0
+            };
+            entries.forEach(entry => {
+                const contentEncoding = entry.response?.headers?.find(h => 
+                    h.name?.toLowerCase() === 'content-encoding'
+                )?.value?.toLowerCase() || '';
+                
+                if (contentEncoding.includes('gzip')) {
+                    compressionCounts['gzip']++;
+                } else if (contentEncoding.includes('br') || contentEncoding.includes('brotli')) {
+                    compressionCounts['br']++;
+                } else if (contentEncoding.includes('deflate')) {
+                    compressionCounts['deflate']++;
+                } else if (!contentEncoding || contentEncoding.trim() === '') {
+                    compressionCounts['none']++;
+                } else {
+                    compressionCounts['other']++;
+                }
+            });
+            // Remove empty compression types
+            Object.keys(compressionCounts).forEach(key => {
+                if (compressionCounts[key] === 0) {
+                    delete compressionCounts[key];
+                }
+            });
+
+            // Domain counts
+            const domainCounts = {};
+            entries.forEach(entry => {
+                try {
+                    const url = new URL(entry.request?.url || '');
+                    domainCounts[url.hostname] = (domainCounts[url.hostname] || 0) + 1;
+                } catch (e) {}
+            });
+
+            const summaryContent = document.getElementById('waterfall-summary-content');
+            summaryContent.innerHTML = `
+                <div class="waterfall-summary-metrics">
+                    <div class="waterfall-summary-metric">
+                        <div class="waterfall-summary-metric-label">Total Requests</div>
+                        <div class="waterfall-summary-metric-value">${totalRequests}</div>
+                    </div>
+                    <div class="waterfall-summary-metric">
+                        <div class="waterfall-summary-metric-label">Distinct Domains</div>
+                        <div class="waterfall-summary-metric-value">${distinctDomains}</div>
+                    </div>
+                    <div class="waterfall-summary-metric">
+                        <div class="waterfall-summary-metric-label">Total Size</div>
+                        <div class="waterfall-summary-metric-value">${formatBytes(totalSize)}</div>
+                    </div>
+                    <div class="waterfall-summary-metric">
+                        <div class="waterfall-summary-metric-label">DOM Content Loaded</div>
+                        <div class="waterfall-summary-metric-value">${formatTime(domContentLoaded)}</div>
+                    </div>
+                    <div class="waterfall-summary-metric">
+                        <div class="waterfall-summary-metric-label">Load Time</div>
+                        <div class="waterfall-summary-metric-value">${formatTime(loadTime)}</div>
+                    </div>
+                </div>
+                <div class="waterfall-summary-charts">
+                    <div class="waterfall-summary-chart">
+                        <h4>HTTP Methods</h4>
+                        <div class="pie-chart-wrapper">
+                            <svg class="pie-chart" id="methods-chart" viewBox="0 0 200 200"></svg>
+                            <div class="pie-chart-legend" id="methods-legend"></div>
+                        </div>
+                    </div>
+                    <div class="waterfall-summary-chart">
+                        <h4>Status Codes</h4>
+                        <div class="pie-chart-wrapper">
+                            <svg class="pie-chart" id="status-chart" viewBox="0 0 200 200"></svg>
+                            <div class="pie-chart-legend" id="status-legend"></div>
+                        </div>
+                    </div>
+                    <div class="waterfall-summary-chart">
+                        <h4>File Types</h4>
+                        <div class="pie-chart-wrapper">
+                            <svg class="pie-chart" id="filetypes-chart" viewBox="0 0 200 200"></svg>
+                            <div class="pie-chart-legend" id="filetypes-legend"></div>
+                        </div>
+                    </div>
+                    <div class="waterfall-summary-chart">
+                        <h4>Compression</h4>
+                        <div class="pie-chart-wrapper">
+                            <svg class="pie-chart" id="compression-chart" viewBox="0 0 200 200"></svg>
+                            <div class="pie-chart-legend" id="compression-legend"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="waterfall-summary-domains">
+                    <h4>Domains</h4>
+                    <div class="waterfall-domains-table-container">
+                        <table class="waterfall-domains-table">
+                            <thead>
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>Requests</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(domainCounts)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .map(([domain, count]) => `
+                                        <tr>
+                                            <td>${escapeHtml(domain)}</td>
+                                            <td>${count}</td>
+                                        </tr>
+                                    `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            // Update title
+            document.getElementById('waterfall-summary-title').textContent = pageTitle;
+
+            // Render pie charts
+            renderPieChart('methods-chart', 'methods-legend', Object.entries(methodCounts).map(([label, value]) => ({ label, value })), ['#7dd3fc', '#a78bfa', '#fbbf24', '#34d399', '#fb7185']);
+            renderPieChart('status-chart', 'status-legend', Object.entries(statusCounts).map(([label, value]) => ({ label: `${label}xx`, value })), ['#34d399', '#fbbf24', '#f87171', '#ef4444']);
+            renderPieChart('filetypes-chart', 'filetypes-legend', Object.entries(fileTypeCounts).map(([label, value]) => ({ label, value })), ['#7dd3fc', '#a78bfa', '#fbbf24', '#34d399', '#fb7185', '#f59e0b', '#8b5cf6', '#ec4899']);
+            renderPieChart('compression-chart', 'compression-legend', Object.entries(compressionCounts).map(([label, value]) => ({ label: label === 'none' ? 'None' : label.toUpperCase(), value })), ['#34d399', '#7dd3fc', '#a78bfa', '#f87171', '#f59e0b']);
+        }
+
+        function renderPieChart(chartId, legendId, data, colors) {
+            if (data.length === 0) {
+                document.getElementById(chartId).innerHTML = '<text x="100" y="100" text-anchor="middle" fill="rgba(255,255,255,0.5)">No data</text>';
+                document.getElementById(legendId).innerHTML = '<p style="color: rgba(255, 255, 255, 0.72);">No data available</p>';
+                return;
+            }
+
+            const total = data.reduce((sum, item) => sum + item.value, 0);
+            const centerX = 100;
+            const centerY = 100;
+            const radius = 80;
+
+            let currentAngle = -Math.PI / 2;
+            const svg = document.getElementById(chartId);
+            svg.innerHTML = '';
+
+            data.forEach((item, index) => {
+                const sliceAngle = (item.value / total) * 2 * Math.PI;
+                const endAngle = currentAngle + sliceAngle;
+
+                const x1 = centerX + radius * Math.cos(currentAngle);
+                const y1 = centerY + radius * Math.sin(currentAngle);
+                const x2 = centerX + radius * Math.cos(endAngle);
+                const y2 = centerY + radius * Math.sin(endAngle);
+
+                const largeArcFlag = sliceAngle > Math.PI ? 1 : 0;
+
+                const pathData = [
+                    `M ${centerX} ${centerY}`,
+                    `L ${x1} ${y1}`,
+                    `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                    'Z'
+                ].join(' ');
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('fill', colors[index % colors.length]);
+                path.setAttribute('stroke', 'rgba(7, 10, 18, 0.8)');
+                path.setAttribute('stroke-width', '2');
+                svg.appendChild(path);
+
+                const labelAngle = currentAngle + sliceAngle / 2;
+                const labelRadius = radius * 0.6;
+                const labelX = centerX + labelRadius * Math.cos(labelAngle);
+                const labelY = centerY + labelRadius * Math.sin(labelAngle);
+                
+                const percentage = ((item.value / total) * 100).toFixed(1);
+                if (percentage > 5) {
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', labelX);
+                    text.setAttribute('y', labelY);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('dominant-baseline', 'middle');
+                    text.setAttribute('fill', 'rgba(255, 255, 255, 0.9)');
+                    text.setAttribute('font-size', '12');
+                    text.setAttribute('font-weight', '600');
+                    text.textContent = `${percentage}%`;
+                    svg.appendChild(text);
+                }
+
+                currentAngle = endAngle;
+            });
+
+            const legend = document.getElementById(legendId);
+            legend.innerHTML = data.map((item, index) => {
+                const percentage = ((item.value / total) * 100).toFixed(1);
+                return `
+                    <div class="pie-legend-item">
+                        <div class="pie-legend-color" style="background: ${colors[index % colors.length]}"></div>
+                        <div class="pie-legend-text">
+                            <div class="pie-legend-label">${escapeHtml(item.label)}</div>
+                            <div class="pie-legend-value">${item.value} (${percentage}%)</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setupColumnSelector() {
+            const columns = [
+                { key: 'method', label: 'Method' },
+                { key: 'status', label: 'Status' },
+                { key: 'size', label: 'Size' },
+                { key: 'duration', label: 'Duration' },
+                { key: 'type', label: 'Type' },
+                { key: 'protocol', label: 'Protocol' },
+                { key: 'timeline', label: 'Timeline' },
+            ];
+
+            const selector = document.getElementById('waterfall-columns-selector');
+            selector.innerHTML = columns.map(col => `
+                <label class="waterfall-column-checkbox">
+                    <input type="checkbox" value="${col.key}" checked onchange="updateWaterfallColumns()">
+                    <span>${escapeHtml(col.label)}</span>
+                </label>
+            `).join('');
+            
+            // Initialize with all columns visible
+            updateWaterfallColumns();
+        }
+
+        function updateWaterfallColumns() {
+            const checkboxes = document.querySelectorAll('#waterfall-columns-selector input[type="checkbox"]:checked');
+            const visibleColumns = Array.from(checkboxes).map(cb => cb.value);
+            const chart = document.getElementById('waterfall-chart');
+            chart.visibleColumns = ['index', 'url', ...visibleColumns];
+        }
+
+        function toggleCriticalPathFilter() {
+            const checkbox = document.getElementById('critical-path-filter');
+            const chart = document.getElementById('waterfall-chart');
+            chart.showOnlyCriticalPath = checkbox.checked;
+        }
+
+        window.toggleCriticalPathFilter = toggleCriticalPathFilter;
+
+        function toggleWaterfallSummary() {
+            const content = document.getElementById('waterfall-summary-content');
+            const toggle = document.getElementById('waterfall-summary-toggle');
+            const isExpanded = content.style.display !== 'none';
+            
+            if (isExpanded) {
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            } else {
+                content.style.display = 'block';
+                toggle.textContent = '▼';
+            }
+        }
+
+        function toggleWaterfallFilters() {
+            const content = document.getElementById('waterfall-filters-content');
+            const toggle = document.getElementById('waterfall-filters-toggle');
+            const isExpanded = content.style.display !== 'none';
+            
+            if (isExpanded) {
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            } else {
+                content.style.display = 'block';
+                toggle.textContent = '▼';
+            }
+        }
+
+        // Initialize summary and filters as collapsed
+        document.addEventListener('DOMContentLoaded', () => {
+            const summaryContent = document.getElementById('waterfall-summary-content');
+            if (summaryContent) {
+                summaryContent.style.display = 'none';
+            }
+            
+            const filtersContent = document.getElementById('waterfall-filters-content');
+            if (filtersContent) {
+                filtersContent.style.display = 'none';
+            }
+        });
+
+                window.toggleWaterfallSummary = toggleWaterfallSummary;
+        window.toggleWaterfallFilters = toggleWaterfallFilters;
+        window.updateWaterfallColumns = updateWaterfallColumns;
+        
+        // Panel management
+        let openPanels = [];
+        
+        window.openWaterfallPanel = function(resourceIndex) {
+            if (!window.waterfallData || !window.waterfallData.resources) {
+                console.error('Waterfall data not available');
+                return;
+            }
+            
+            const resource = window.waterfallData.resources[resourceIndex];
+            if (!resource || !resource.harEntry) {
+                console.error('Resource or HAR entry not found');
+                return;
+            }
+            
+            const entry = resource.harEntry;
+            const request = entry.request || {};
+            const response = entry.response || {};
+            const timings = entry.timings || {};
+            
+            // Calculate timings
+            const dnsTime = timings.dns || 0;
+            const connectTime = timings.connect || 0;
+            const sslTime = (timings.ssl || 0) > 0 ? timings.ssl : 0;
+            const sendTime = timings.send || 0;
+            const waitTime = timings.wait || 0;
+            const receiveTime = timings.receive || 0;
+            const totalTime = entry.time || 0;
+            
+            // Get request/response data
+            const requestHeaders = request.headers || [];
+            const requestPostData = request.postData || null;
+            const responseHeaders = response.headers || [];
+            const responseContent = response.content || {};
+            const responseStatusText = response.statusText || '';
+            const responseMimeType = responseContent.mimeType || '';
+            const responseSize = response.bodySize || responseContent.size || 0;
+            
+            const panelId = `panel-${Date.now()}-${resourceIndex}`;
+            const panelContainer = document.getElementById('waterfall-panel-container');
+            
+            const panel = document.createElement('div');
+            panel.className = 'waterfall-panel';
+            panel.id = panelId;
+            
+            panel.innerHTML = `
+                <div class="waterfall-panel-header">
+                    <div class="waterfall-panel-title" title="${escapeHtml(resource.url)}">${escapeHtml(resource.name || `Resource #${resource.index}`)}</div>
+                    <button class="waterfall-panel-close" onclick="window.closeWaterfallPanel('${panelId}')">×</button>
+                </div>
+                <div class="waterfall-panel-content">
+                    <!-- Timing Information -->
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Timing Information</div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">DNS Lookup</div>
+                            <div class="waterfall-panel-row-value">${formatTime(dnsTime)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">TCP Connect</div>
+                            <div class="waterfall-panel-row-value">${formatTime(connectTime)}</div>
+                        </div>
+                        ${sslTime > 0 ? `
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">SSL Handshake</div>
+                            <div class="waterfall-panel-row-value">${formatTime(sslTime)}</div>
+                        </div>
+                        ` : ''}
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Send</div>
+                            <div class="waterfall-panel-row-value">${formatTime(sendTime)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Wait</div>
+                            <div class="waterfall-panel-row-value">${formatTime(waitTime)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Receive</div>
+                            <div class="waterfall-panel-row-value">${formatTime(receiveTime)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Total Time</div>
+                            <div class="waterfall-panel-row-value">${formatTime(totalTime)}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Request Information -->
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Request Information</div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Method</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(request.method || 'GET')}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">URL</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(resource.url)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">HTTP Version</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(request.httpVersion || '')}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Request Headers -->
+                    ${requestHeaders.length > 0 ? `
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Request Headers</div>
+                        <div class="waterfall-panel-header-list">
+                            ${requestHeaders.map(header => `
+                                <div class="waterfall-panel-header-item">
+                                    <div class="waterfall-panel-header-name">${escapeHtml(header.name || '')}</div>
+                                    <div class="waterfall-panel-header-value">${escapeHtml(header.value || '')}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Request Body (Post Data) -->
+                    ${requestPostData ? `
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Post Data</div>
+                        <div class="waterfall-panel-body">${escapeHtml(requestPostData.text || '')}</div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Response Information -->
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Response Information</div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Status</div>
+                            <div class="waterfall-panel-row-value">${response.status || 0}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Status Text</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(responseStatusText)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">HTTP Version</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(request.httpVersion || '')}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">MIME Type</div>
+                            <div class="waterfall-panel-row-value">${escapeHtml(responseMimeType)}</div>
+                        </div>
+                        <div class="waterfall-panel-row">
+                            <div class="waterfall-panel-row-label">Size</div>
+                            <div class="waterfall-panel-row-value">${formatBytes(responseSize)}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Response Headers -->
+                    ${responseHeaders.length > 0 ? `
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Response Headers</div>
+                        <div class="waterfall-panel-header-list">
+                            ${responseHeaders.map(header => `
+                                <div class="waterfall-panel-header-item">
+                                    <div class="waterfall-panel-header-name">${escapeHtml(header.name || '')}</div>
+                                    <div class="waterfall-panel-header-value">${escapeHtml(header.value || '')}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Response Content -->
+                    ${responseContent.text ? `
+                    <div class="waterfall-panel-section">
+                        <div class="waterfall-panel-section-title">Response Content</div>
+                        <div class="waterfall-panel-body">${escapeHtml(responseContent.text)}</div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            panelContainer.appendChild(panel);
+            openPanels.push(panelId);
+        };
+        
+        window.closeWaterfallPanel = function(panelId) {
+            const panel = document.getElementById(panelId);
+            if (panel) {
+                panel.remove();
+                openPanels = openPanels.filter(id => id !== panelId);
+            }
+        };
+
+        function getUrlFilename(url) {
+            try {
+                const urlObj = new URL(url);
+                const pathParts = urlObj.pathname.split('/');
+                return pathParts[pathParts.length - 1] || urlObj.hostname;
+            } catch {
+                return url.split('/').pop() || url;
+            }
+        }
+
+
+        function getResourceTypeFromMime(mimeType) {
+            if (!mimeType) return 'other';
+            const mime = mimeType.split(';')[0].trim();
+            if (mime.includes('javascript')) return 'script';
+            if (mime.includes('css')) return 'stylesheet';
+            if (mime.includes('image')) return 'image';
+            if (mime.includes('font')) return 'font';
+            if (mime.includes('video')) return 'video';
+            if (mime.includes('audio')) return 'audio';
+            if (mime.includes('json')) return 'json';
+            if (mime.includes('xml') || mime.includes('html')) return 'document';
+            return mime.split('/')[1] || 'other';
+        }
+
+        function formatTime(ms) {
+            if (ms === 0 || !ms) return 'N/A';
+            if (ms < 1000) return `${Math.round(ms)}ms`;
+            return `${(ms / 1000).toFixed(2)}s`;
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>
