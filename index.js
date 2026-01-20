@@ -284,7 +284,7 @@ export default function browserAgent() {
     .addOption(
       new Option(
         '--dry',
-        'Dry run (do not run test, just setup and cleanup)',
+        'Dry run (do not run test, just save config and cleanup)',
       ).default(DEFAULT_OPTIONS.dry),
     )
     .parse(process.argv);
