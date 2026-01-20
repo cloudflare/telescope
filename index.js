@@ -95,6 +95,20 @@ async function executeTest(options) {
   const Runner = getRunner(config, browserConfig);
 
   try {
+    await Runner.saveConfig();
+
+    // Bail out early if we're just doing a dry run
+    if (config.dry) {
+      Runner.cleanup();
+
+      return {
+        success: true,
+        dry: true,
+        testId: Runner.TESTID,
+        resultsPath: Runner.paths.results,
+      };
+    }
+
     await Runner.setupTest();
     await Runner.doNavigation();
     await Runner.postProcess();
@@ -266,6 +280,12 @@ export default function browserAgent() {
         '--zip',
         'Zip the results of the test into the results directory.',
       ).default(DEFAULT_OPTIONS.zip),
+    )
+    .addOption(
+      new Option(
+        '--dry',
+        'Dry run (do not run test, just setup and cleanup)',
+      ).default(DEFAULT_OPTIONS.dry),
     )
     .parse(process.argv);
 

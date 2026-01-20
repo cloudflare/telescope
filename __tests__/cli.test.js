@@ -34,7 +34,16 @@ function retrieveResults(testId, fileName, resultType, safeBrowser) {
     const json = JSON.parse(fileData);
     return json;
   } catch (error) {
-    console.error('Error retrieving', resultType, 'using', safeBrowser, 'for test', testId, ':', error);
+    console.error(
+      'Error retrieving',
+      resultType,
+      'using',
+      safeBrowser,
+      'for test',
+      testId,
+      ':',
+      error,
+    );
     return null;
   }
 }
@@ -121,261 +130,270 @@ describe.each(browsers)('Basic Test: %s', browser => {
   });
 });
 
-describe('Basic block', () => {
-  beforeAll(() => {
-    testId = null;
-    outputLogs = null;
-    config = null;
+describe('CLI parameter array collapsing', () => {
+  describe('Single string', () => {
+    beforeAll(() => {
+      testId = null;
+      outputLogs = null;
+      config = null;
 
-    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
+      const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
-    const args = [
-      'node',
-      'cli.js',
-      '--block',
-      'one',
-      '--url',
-      'https://www.example.com',
-      '-b',
-      safeBrowser,
-    ];
+      const args = [
+        'node',
+        'cli.js',
+        '--dry',
+        '--block',
+        'one',
+        '--url',
+        'https://www.example.com',
+        '-b',
+        safeBrowser,
+      ];
 
-    const output = spawnSync(args[0], args.slice(1));
-    outputLogs = output.stdout.toString();
-    const match = outputLogs.match(/Test ID:(.*)/);
-    if (match && match.length > 1) {
-      testId = match[1].trim();
-    }
-    config = retrieveConfig(testId, safeBrowser);
+      const output = spawnSync(args[0], args.slice(1));
+      outputLogs = output.stdout.toString();
+      const match = outputLogs.match(/Test ID:(.*)/);
+      if (match && match.length > 1) {
+        testId = match[1].trim();
+      }
+      config = retrieveConfig(testId, safeBrowser);
+    });
+
+    it('generates a Configuration file', async () => {
+      expect(config).toBeTruthy();
+    });
+
+    it('Block one', async () => {
+      expect(config.options.block).toEqual(['one']);
+    });
   });
 
-  it('generates a Configuration file', async () => {
-    expect(config).toBeTruthy();
+  describe('Two string options', () => {
+    beforeAll(() => {
+      testId = null;
+      outputLogs = null;
+      config = null;
+
+      const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
+
+      const args = [
+        'node',
+        'cli.js',
+        '--dry',
+        '--block',
+        'one',
+        '--block',
+        'two',
+        '--url',
+        'https://www.example.com',
+        '-b',
+        safeBrowser,
+      ];
+
+      const output = spawnSync(args[0], args.slice(1));
+      outputLogs = output.stdout.toString();
+      const match = outputLogs.match(/Test ID:(.*)/);
+      if (match && match.length > 1) {
+        testId = match[1].trim();
+      }
+      config = retrieveConfig(testId, safeBrowser);
+    });
+
+    it('generates a Configuration file', async () => {
+      expect(config).toBeTruthy();
+    });
+
+    it('Block one and two', async () => {
+      expect(config.options.block).toEqual(['one', 'two']);
+    });
   });
 
-  it('Block one', async () => {
-    expect(config.options.block).toEqual(["one"]);
-  });
-});
+  describe('Two comma separated strings', () => {
+    beforeAll(() => {
+      testId = null;
+      outputLogs = null;
+      config = null;
 
-describe('Two block options', () => {
-  beforeAll(() => {
-    testId = null;
-    outputLogs = null;
-    config = null;
+      const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
-    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
+      const args = [
+        'node',
+        'cli.js',
+        '--dry',
+        '--block',
+        'one,two',
+        '--url',
+        'https://www.example.com',
+        '-b',
+        safeBrowser,
+      ];
 
-    const args = [
-      'node',
-      'cli.js',
-      '--block',
-      'one',
-      '--block',
-      'two',
-      '--url',
-      'https://www.example.com',
-      '-b',
-      safeBrowser,
-    ];
+      const output = spawnSync(args[0], args.slice(1));
+      outputLogs = output.stdout.toString();
+      const match = outputLogs.match(/Test ID:(.*)/);
+      if (match && match.length > 1) {
+        testId = match[1].trim();
+      }
+      config = retrieveConfig(testId, safeBrowser);
+    });
 
-    const output = spawnSync(args[0], args.slice(1));
-    outputLogs = output.stdout.toString();
-    const match = outputLogs.match(/Test ID:(.*)/);
-    if (match && match.length > 1) {
-      testId = match[1].trim();
-    }
-    config = retrieveConfig(testId, safeBrowser);
-  });
+    it('generates a Configuration file', async () => {
+      expect(config).toBeTruthy();
+    });
 
-  it('generates a Configuration file', async () => {
-    expect(config).toBeTruthy();
-  });
-
-  it('Block one and two', async () => {
-    expect(config.options.block).toEqual(["one", "two"]);
-  });
-});
-
-describe('Two comma separated block options', () => {
-  beforeAll(() => {
-    testId = null;
-    outputLogs = null;
-    config = null;
-
-    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
-
-    const args = [
-      'node',
-      'cli.js',
-      '--block',
-      'one,two',
-      '--url',
-      'https://www.example.com',
-      '-b',
-      safeBrowser,
-    ];
-
-    const output = spawnSync(args[0], args.slice(1));
-    outputLogs = output.stdout.toString();
-    const match = outputLogs.match(/Test ID:(.*)/);
-    if (match && match.length > 1) {
-      testId = match[1].trim();
-    }
-    config = retrieveConfig(testId, safeBrowser);
+    it('Block one and two', async () => {
+      expect(config.options.block).toEqual(['one', 'two']);
+    });
   });
 
-  it('generates a Configuration file', async () => {
-    expect(config).toBeTruthy();
+  describe('JSON array', () => {
+    beforeAll(() => {
+      testId = null;
+      outputLogs = null;
+      config = null;
+
+      const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
+
+      const args = [
+        'node',
+        'cli.js',
+        '--dry',
+        '--block',
+        '[ "one", "two" ]',
+        '--url',
+        'https://www.example.com',
+        '-b',
+        safeBrowser,
+      ];
+
+      const output = spawnSync(args[0], args.slice(1));
+      outputLogs = output.stdout.toString();
+      const match = outputLogs.match(/Test ID:(.*)/);
+      if (match && match.length > 1) {
+        testId = match[1].trim();
+      }
+      config = retrieveConfig(testId, safeBrowser);
+    });
+
+    it('generates a Configuration file', async () => {
+      expect(config).toBeTruthy();
+    });
+
+    it('Block one and two', async () => {
+      expect(config.options.block).toEqual(['one', 'two']);
+    });
   });
 
-  it('Block one and two', async () => {
-    expect(config.options.block).toEqual(["one", "two"]);
-  });
-});
+  describe('Two JSON arrays', () => {
+    beforeAll(() => {
+      testId = null;
+      outputLogs = null;
+      config = null;
 
-describe('JSON block options', () => {
-  beforeAll(() => {
-    testId = null;
-    outputLogs = null;
-    config = null;
+      const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
-    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
+      const args = [
+        'node',
+        'cli.js',
+        '--dry',
+        '--block',
+        '[ "one" ]',
+        '--block',
+        '[ "two" ]',
+        '--url',
+        'https://www.example.com',
+        '-b',
+        safeBrowser,
+      ];
 
-    const args = [
-      'node',
-      'cli.js',
-      '--block',
-      '[ "one", "two" ]',
-      '--url',
-      'https://www.example.com',
-      '-b',
-      safeBrowser,
-    ];
+      const output = spawnSync(args[0], args.slice(1));
+      outputLogs = output.stdout.toString();
+      const match = outputLogs.match(/Test ID:(.*)/);
+      if (match && match.length > 1) {
+        testId = match[1].trim();
+      }
+      config = retrieveConfig(testId, safeBrowser);
+    });
 
-    const output = spawnSync(args[0], args.slice(1));
-    outputLogs = output.stdout.toString();
-    const match = outputLogs.match(/Test ID:(.*)/);
-    if (match && match.length > 1) {
-      testId = match[1].trim();
-    }
-    config = retrieveConfig(testId, safeBrowser);
-  });
+    it('generates a Configuration file', async () => {
+      expect(config).toBeTruthy();
+    });
 
-  it('generates a Configuration file', async () => {
-    expect(config).toBeTruthy();
-  });
-
-  it('Block one and two', async () => {
-    expect(config.options.block).toEqual(["one", "two"]);
-  });
-});
-
-describe('Two JSON block options', () => {
-  beforeAll(() => {
-    testId = null;
-    outputLogs = null;
-    config = null;
-
-    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
-
-    const args = [
-      'node',
-      'cli.js',
-      '--block',
-      '[ "one" ]',
-      '--block',
-      '[ "two" ]',
-      '--url',
-      'https://www.example.com',
-      '-b',
-      safeBrowser,
-    ];
-
-    const output = spawnSync(args[0], args.slice(1));
-    outputLogs = output.stdout.toString();
-    const match = outputLogs.match(/Test ID:(.*)/);
-    if (match && match.length > 1) {
-      testId = match[1].trim();
-    }
-    config = retrieveConfig(testId, safeBrowser);
+    it('Block one and two', async () => {
+      expect(config.options.block).toEqual(['one', 'two']);
+    });
   });
 
-  it('generates a Configuration file', async () => {
-    expect(config).toBeTruthy();
+  describe('Two options with JSON arrays', () => {
+    beforeAll(() => {
+      testId = null;
+      outputLogs = null;
+      config = null;
+
+      const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
+
+      const args = [
+        'node',
+        'cli.js',
+        '--dry',
+        '--block',
+        '[ "one", "two" ]',
+        '--block',
+        '[ "three", "four" ]',
+        '--url',
+        'https://www.example.com',
+        '-b',
+        safeBrowser,
+      ];
+
+      const output = spawnSync(args[0], args.slice(1));
+      outputLogs = output.stdout.toString();
+      const match = outputLogs.match(/Test ID:(.*)/);
+      if (match && match.length > 1) {
+        testId = match[1].trim();
+      }
+      config = retrieveConfig(testId, safeBrowser);
+    });
+
+    it('Generates a Configuration file', async () => {
+      expect(config).toBeTruthy();
+    });
+
+    it('Block one, two, three and four', async () => {
+      expect(config.options.block).toEqual(['one', 'two', 'three', 'four']);
+    });
   });
 
-  it('Block one and two', async () => {
-    expect(config.options.block).toEqual(["one", "two"]);
-  });
-});
+  describe('Bad JSON option should fail', () => {
+    beforeAll(() => {
+      testId = null;
+      outputLogs = null;
+      config = null;
 
-describe('Two by 2 JSON block options', () => {
-  beforeAll(() => {
-    testId = null;
-    outputLogs = null;
-    config = null;
+      const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
-    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
+      const args = [
+        'node',
+        'cli.js',
+        '--dry',
+        '--block',
+        "[ 'one', 'two' ]",
+        '--url',
+        'https://www.example.com',
+        '-b',
+        safeBrowser,
+      ];
 
-    const args = [
-      'node',
-      'cli.js',
-      '--block',
-      '[ "one", "two" ]',
-      '--block',
-      '[ "three", "four" ]',
-      '--url',
-      'https://www.example.com',
-      '-b',
-      safeBrowser,
-    ];
+      const output = spawnSync(args[0], args.slice(1));
+      outputLogs = output.stdout.toString();
+      errLogs = output.stderr.toString();
+      console.error(errLogs);
+    });
 
-    const output = spawnSync(args[0], args.slice(1));
-    outputLogs = output.stdout.toString();
-    const match = outputLogs.match(/Test ID:(.*)/);
-    if (match && match.length > 1) {
-      testId = match[1].trim();
-    }
-    config = retrieveConfig(testId, safeBrowser);
-  });
-
-  it('Generates a Configuration file', async () => {
-    expect(config).toBeTruthy();
-  });
-
-  it('Block one, two, three and four', async () => {
-    expect(config.options.block).toEqual(["one", "two", "three", "four"]);
-  });
-});
-
-describe('Bad JSON block options', () => {
-  beforeAll(() => {
-    testId = null;
-    outputLogs = null;
-    config = null;
-
-    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
-
-    const args = [
-      'node',
-      'cli.js',
-      '--block',
-      "[ 'one', 'two' ]",
-      '--url',
-      'https://www.example.com',
-      '-b',
-      safeBrowser,
-    ];
-
-    const output = spawnSync(args[0], args.slice(1));
-    outputLogs = output.stdout.toString();
-    errLogs = output.stderr.toString();
-    console.error(errLogs);
-  });
-
-  it('Problem parsing block command line option', async () => {
-    const match = errLogs.match(/Error: Problem parsing (.*)/);
-    expect(match.length).toBeGreaterThan(1);
+    it('Problem parsing block command line option', async () => {
+      const match = errLogs.match(/Error: Problem parsing (.*)/);
+      expect(match.length).toBeGreaterThan(1);
+    });
   });
 });
