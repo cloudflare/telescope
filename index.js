@@ -263,7 +263,14 @@ export default function browserAgent() {
     .parse(process.argv);
 
   const cliOptions = program.opts();
-  const options = normalizeCLIConfig(cliOptions);
+  let options;
+
+  try {
+    options = normalizeCLIConfig(cliOptions);
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
 
   (async () => {
     const result = await launchTest(options);

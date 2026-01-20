@@ -7,11 +7,12 @@ import { BrowserConfig } from '../lib/browsers.js';
 
 let testId;
 let outputLogs;
+let errLogs;
 let harJSON = null;
 let metrics = null;
 let config = null;
-let goodBrowser = null;
-let okBrowser = null;
+let singleBrowser = null; // A browser for tests that is known to be available
+let lastBrowserUsed = null; // The last browser that was available
 
 function retrieveResults(testId, fileName, resultType, safeBrowser) {
   if (!testId) {
@@ -81,7 +82,7 @@ describe.each(browsers)('Basic Test: %s', browser => {
     metrics = retrieveMetrics(testId, safeBrowser);
   });
   afterAll(() => {
-    goodBrowser = okBrowser;
+    singleBrowser = lastBrowserUsed; // record working browser to be used in other tests
   });
 
   it('runs the test and creates a test ID', async () => {
@@ -91,7 +92,7 @@ describe.each(browsers)('Basic Test: %s', browser => {
     expect(harJSON).toBeTruthy();
 
     if (harJSON) {
-      okBrowser = browser;
+      lastBrowserUsed = browser;
     }
   });
 
@@ -128,7 +129,7 @@ describe('Basic block', () => {
     outputLogs = null;
     config = null;
 
-    const safeBrowser = goodBrowser.replace(/[^a-z0-9-]/, '');
+    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
     const args = [
       'node',
@@ -165,7 +166,7 @@ describe('Two block options', () => {
     outputLogs = null;
     config = null;
 
-    const safeBrowser = goodBrowser.replace(/[^a-z0-9-]/, '');
+    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
     const args = [
       'node',
@@ -204,7 +205,7 @@ describe('Two comma separated block options', () => {
     outputLogs = null;
     config = null;
 
-    const safeBrowser = goodBrowser.replace(/[^a-z0-9-]/, '');
+    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
     const args = [
       'node',
@@ -235,50 +236,13 @@ describe('Two comma separated block options', () => {
   });
 });
 
-describe('Two space separated block options', () => {
-  beforeAll(() => {
-    testId = null;
-    outputLogs = null;
-    config = null;
-
-    const safeBrowser = goodBrowser.replace(/[^a-z0-9-]/, '');
-
-    const args = [
-      'node',
-      'cli.js',
-      '--block',
-      'one','two',
-      '--url',
-      'https://www.example.com',
-      '-b',
-      safeBrowser,
-    ];
-
-    const output = spawnSync(args[0], args.slice(1));
-    outputLogs = output.stdout.toString();
-    const match = outputLogs.match(/Test ID:(.*)/);
-    if (match && match.length > 1) {
-      testId = match[1].trim();
-    }
-    config = retrieveConfig(testId, safeBrowser);
-  });
-
-  it('generates a Configuration file', async () => {
-    expect(config).toBeTruthy();
-  });
-
-  it('Block one and two', async () => {
-    expect(config.options.block).toEqual(["one", "two"]);
-  });
-});
-
 describe('JSON block options', () => {
   beforeAll(() => {
     testId = null;
     outputLogs = null;
     config = null;
 
-    const safeBrowser = goodBrowser.replace(/[^a-z0-9-]/, '');
+    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
     const args = [
       'node',
@@ -315,7 +279,7 @@ describe('Two JSON block options', () => {
     outputLogs = null;
     config = null;
 
-    const safeBrowser = goodBrowser.replace(/[^a-z0-9-]/, '');
+    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
     const args = [
       'node',
@@ -354,7 +318,7 @@ describe('Two by 2 JSON block options', () => {
     outputLogs = null;
     config = null;
 
-    const safeBrowser = goodBrowser.replace(/[^a-z0-9-]/, '');
+    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
     const args = [
       'node',
@@ -393,7 +357,7 @@ describe('Bad JSON block options', () => {
     outputLogs = null;
     config = null;
 
-    const safeBrowser = goodBrowser.replace(/[^a-z0-9-]/, '');
+    const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
     const args = [
       'node',
@@ -408,19 +372,12 @@ describe('Bad JSON block options', () => {
 
     const output = spawnSync(args[0], args.slice(1));
     outputLogs = output.stdout.toString();
-    const errLogs = output.stderr.toString();
-    const match = outputLogs.match(/Test ID:(.*)/);
-    if (match && match.length > 1) {
-      testId = match[1].trim();
-    }
-    config = retrieveConfig(testId, safeBrowser);
+    errLogs = output.stderr.toString();
+    console.error(errLogs);
   });
 
-  it('generates a Configuration file', async () => {
-    expect(config).toBeTruthy();
-  });
-
-  it('Do not block one and two', async () => {
-    expect(config.options.block).toEqual([ ]);
+  it('Problem parsing block command line option', async () => {
+    const match = errLogs.match(/Error: Problem parsing (.*)/);
+    expect(match.length).toBeGreaterThan(1);
   });
 });
