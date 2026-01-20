@@ -159,7 +159,7 @@ export default function browserAgent() {
     .description('Cross-browser synthetic testing agent')
     .requiredOption('-u, --url <url>', 'URL to run tests against')
     .addOption(
-      new Option('-b, --browser <browser_name>', 'Browser to tests against')
+      new Option('-b, --browser <browser_name>', 'Browser to run tests with')
         .default(DEFAULT_OPTIONS.browser)
         .choices([
           'chrome',
@@ -212,7 +212,7 @@ export default function browserAgent() {
         .default(DEFAULT_OPTIONS.connectionType)
         .choices([
           'cable',
-          'dls',
+          'dsl',
           '4g',
           '3g',
           '3gfast',
@@ -250,7 +250,7 @@ export default function browserAgent() {
     .addOption(
       new Option(
         '--auth <object>',
-        'Basic HTTP authentication (Expects: {"username": "", "password":""}) ',
+        'Basic HTTP authentication (Expects: {"username": "", "password": ""})',
       ).default(DEFAULT_OPTIONS.auth),
     )
     .addOption(

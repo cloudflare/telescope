@@ -37,12 +37,13 @@ Options:
   --frameRate <int>             Filmstrip frame rate, in frames per second (default: 1)
   --disableJS                   Disable JavaScript (default: false)
   --debug                       Output debug lines (default: false)
-  --auth <object>               Basic HTTP authentication (Expects: {"username": "", "password": ""})  (default: false)
+  --auth <object>               Basic HTTP authentication (Expects: {"username": "", "password": ""}) (default: false)
   --timeout <int>               Maximum time (in milliseconds) to wait for test to complete (default: 30000)
   --html                        Generate HTML report (default: false)
   --openHtml                    Open HTML report in browser (requires --html) (default: false)
-  --list                        Generate a list of test results as HTML (default: false)
+  --list                        Generate list of results in HTML (default: false)
   --zip                         Zip the results of the test into the results directory. (default: false)
+  --dry                         Dry run (do not run test, just save config and cleanup) (default: false)
   --help                        display help for command
 ```
 
