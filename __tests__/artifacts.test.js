@@ -95,70 +95,70 @@ function cleanup(paths) {
   }
 }
 
-// describe.each(browsers)('CLI vs Programmatic artifacts (%s)', browser => {
-//   test('produces same artifact files for CLI and programmatic API', async () => {
-//     const url = 'https://example.com';
+describe.each(browsers)('CLI vs Programmatic artifacts (%s)', browser => {
+  test('produces same artifact files for CLI and programmatic API', async () => {
+    const url = 'https://example.com';
 
-//     let cliPath;
-//     let apiPath;
-//     try {
-//       cliPath = runCliTest(url, browser);
-//       apiPath = await runProgrammaticTest({ url, browser });
+    let cliPath;
+    let apiPath;
+    try {
+      cliPath = runCliTest(url, browser);
+      apiPath = await runProgrammaticTest({ url, browser });
 
-//       const cliArtifacts = listArtifacts(cliPath);
-//       const apiArtifacts = listArtifacts(apiPath);
+      const cliArtifacts = listArtifacts(cliPath);
+      const apiArtifacts = listArtifacts(apiPath);
 
-//       // Compare file structure only (same files exist), not content (non-deterministic)
-//       expect(apiArtifacts).toEqual(cliArtifacts);
-//     } finally {
-//       cleanup([cliPath, apiPath]);
-//     }
-//   }, 120000);
-// });
+      // Compare file structure only (same files exist), not content (non-deterministic)
+      expect(apiArtifacts).toEqual(cliArtifacts);
+    } finally {
+      cleanup([cliPath, apiPath]);
+    }
+  }, 120000);
+});
 
-// describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
-//   test('produces html when --html is specified.', async () => {
-//     let result;
-//     try {
-//       result = await launchTest({
-//         url: 'https://www.example.com/',
-//         html: true,
-//         browser: browser,
-//       });
+describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
+  test('produces html when --html is specified.', async () => {
+    let result;
+    try {
+      result = await launchTest({
+        url: 'https://www.example.com/',
+        html: true,
+        browser: browser,
+      });
 
-//       expect(result).toBeDefined();
-//       expect(result.success).toBe(true);
-//       const indexPath = path.resolve(result.resultsPath, 'index.html');
-//       expect(fs.existsSync(indexPath)).toBe(true);
-//     } finally {
-//       if (!process.env.CI) {
-//         cleanup([path.resolve(result.resultsPath)]);
-//       }
-//     }
-//   }, 120000);
-// });
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      const indexPath = path.resolve(result.resultsPath, 'index.html');
+      expect(fs.existsSync(indexPath)).toBe(true);
+    } finally {
+      if (!process.env.CI) {
+        cleanup([path.resolve(result.resultsPath)]);
+      }
+    }
+  }, 120000);
+});
 
-// describe.each(browsers)('Generated list artifacts (%s)', browser => {
-//   test('produces the list page when --list is specified.', async () => {
-//     let result, indexPath;
-//     try {
-//       result = await launchTest({
-//         url: 'https://www.example.com/',
-//         list: true,
-//         browser: browser,
-//       });
+describe.each(browsers)('Generated list artifacts (%s)', browser => {
+  test('produces the list page when --list is specified.', async () => {
+    let result, indexPath;
+    try {
+      result = await launchTest({
+        url: 'https://www.example.com/',
+        list: true,
+        browser: browser,
+      });
 
-//       expect(result).toBeDefined();
-//       expect(result.success).toBe(true);
-//       indexPath = path.resolve(result.resultsPath, '..', 'index.html');
-//       expect(fs.existsSync(indexPath)).toBe(true);
-//     } finally {
-//       if (!process.env.CI) {
-//         cleanup([path.resolve(result.resultsPath), indexPath]);
-//       }
-//     }
-//   }, 120000);
-// });
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      indexPath = path.resolve(result.resultsPath, '..', 'index.html');
+      expect(fs.existsSync(indexPath)).toBe(true);
+    } finally {
+      if (!process.env.CI) {
+        cleanup([path.resolve(result.resultsPath), indexPath]);
+      }
+    }
+  }, 120000);
+});
 
 describe.each([true, false])('Upload URL with zip: %s', zip => {
   const server = setupServer(
@@ -196,41 +196,41 @@ describe.each([true, false])('Upload URL with zip: %s', zip => {
 });
 
 
-// describe('Invalid upload URL', () => {
-//   test('Error when invalid --uploadUrl is specified.', async () => {
-//     let result;
-//     try {
-//       let config = {
-//         url: 'https://www.example.com/',
-//         uploadUrl: 'invalid-url',
-//       };
+describe('Invalid upload URL', () => {
+  test('Error when invalid --uploadUrl is specified.', async () => {
+    let result;
+    try {
+      let config = {
+        url: 'https://www.example.com/',
+        uploadUrl: 'invalid-url',
+      };
 
-//       result = await launchTest(config);
+      result = await launchTest(config);
 
-//       expect(result).toBeDefined();
-//       expect(result.success).toBe(false);
-//     } finally {
-//     }
-//   });
-// });
+      expect(result).toBeDefined();
+      expect(result.success).toBe(false);
+    } finally {
+    }
+  });
+});
 
-// describe('Zip results', () => {
-//   test('Zips results when --zip is specified.', async () => {
-//     let result, zipfile;
-//     try {
-//       result = await launchTest({
-//         url: 'https://www.example.com/',
-//         zip: true
-//       });
+describe('Zip results', () => {
+  test('Zips results when --zip is specified.', async () => {
+    let result, zipfile;
+    try {
+      result = await launchTest({
+        url: 'https://www.example.com/',
+        zip: true
+      });
 
-//       zipfile = path.resolve(result.resultsPath, '..', `${path.basename(result.resultsPath)}.zip`);
-//       expect(result).toBeDefined();
-//       expect(result.success).toBe(true);
-//       expect(fs.existsSync(zipfile)).toBe(true);
-//     } finally {
-//       if (!process.env.CI) {
-//         cleanup([path.resolve(result.resultsPath), zipfile]);
-//       }
-//     }
-//   }, 120000);
-// });
+      zipfile = path.resolve(result.resultsPath, '..', `${path.basename(result.resultsPath)}.zip`);
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(fs.existsSync(zipfile)).toBe(true);
+    } finally {
+      if (!process.env.CI) {
+        cleanup([path.resolve(result.resultsPath), zipfile]);
+      }
+    }
+  }, 120000);
+});
