@@ -91,7 +91,7 @@ async function executeTest(options) {
   }
 
   log(config);
-
+  
   const Runner = getRunner(config, browserConfig);
 
   try {
@@ -287,6 +287,12 @@ export default function browserAgent() {
         'Dry run (do not run test, just save config and cleanup)',
       ).default(DEFAULT_OPTIONS.dry),
     )
+    .addOption(
+      new Option(
+        '--uploadUrl <string>',
+        'Upload results to URL. Must be a valid URL if provided.',
+      ).default(DEFAULT_OPTIONS.uploadUrl),
+    )
     .parse(process.argv);
 
   const cliOptions = program.opts();
@@ -298,7 +304,8 @@ export default function browserAgent() {
     console.error(err);
     process.exit(1);
   }
-
+  console.log('Normalized options:', options);
+return;
   (async () => {
     const result = await launchTest(options);
     if (!result.success) {

@@ -3,6 +3,9 @@ import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
+
 import { BrowserConfig } from '../lib/browsers.js';
 import { expect } from 'playwright/test';
 
@@ -152,6 +155,81 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
     } finally {
       if (!process.env.CI) {
         cleanup([path.resolve(result.resultsPath), indexPath]);
+      }
+    }
+  }, 120000);
+});
+
+describe.each([true, false])('Upload URL with zip: %s', zip => {
+  const server = setupServer(
+    http.post('https://api.example.com/upload', async ({ request }) => {
+      console.log('Mock server received upload request');
+      return HttpResponse.json({ url: 'https://mock-url.com/file' });
+    })
+  );
+  beforeAll(() => server.listen());           // Establish API mocking before all tests
+  afterEach(() => server.resetHandlers());    // Reset any runtime handlers (prevents test cross-contamination)
+  afterAll(() => server.close());             // Clean up once all tests are done
+  test('POST when --uploadUrl is specified.', async () => {
+    let result, zipfile;
+    try {
+      let config = {
+        url: 'https://www.example.com/',
+        uploadUrl: 'https://api.example.com/upload',
+        zip: zip,
+      };
+      result = await launchTest(config);
+      zipfile = path.resolve(result.resultsPath, '..', `${resultsRoot.testId}.zip`);
+
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(fs.existsSync(zipfile)).toBe(zip);
+    } finally {
+      if (!process.env.CI) {
+        cleanup([path.resolve(result.resultsPath)]);
+        if (zip) {
+          cleanup([zipfile]);
+        }
+      }
+    }
+  });
+});
+
+
+describe('Invalid upload URL', () => {
+  test('Error when invalid --uploadUrl is specified.', async () => {
+    let result;
+    try {
+      let config = {
+        url: 'https://www.example.com/',
+        uploadUrl: 'invalid-url',
+      };
+
+      result = await launchTest(config);
+
+      expect(result).toBeDefined();
+      expect(result.success).toBe(false);
+    } finally {
+    }
+  });
+});
+
+describe('Zip results', () => {
+  test('Zips results when --zip is specified.', async () => {
+    let result, zipfile;
+    try {
+      result = await launchTest({
+        url: 'https://www.example.com/',
+        zip: true
+      });
+
+      zipfile = path.resolve(result.resultsPath, '..', `${resultsRoot.testId}.zip`);
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(fs.existsSync(zipfile)).toBe(true);
+    } finally {
+      if (!process.env.CI) {
+        cleanup([path.resolve(result.resultsPath), zipfile]);
       }
     }
   }, 120000);
