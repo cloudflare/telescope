@@ -287,6 +287,12 @@ export default function browserAgent() {
         'Dry run (do not run test, just save config and cleanup)',
       ).default(DEFAULT_OPTIONS.dry),
     )
+    .addOption(
+      new Option(
+        '--uploadUrl <string>',
+        'Upload results to URL. Must be a valid URL if provided.',
+      ).default(DEFAULT_OPTIONS.uploadUrl),
+    )
     .parse(process.argv);
 
   const cliOptions = program.opts();

@@ -3,6 +3,9 @@ import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
+
 import { BrowserConfig } from '../lib/browsers.js';
 import { expect } from 'playwright/test';
 
@@ -152,6 +155,69 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
     } finally {
       if (!process.env.CI) {
         cleanup([path.resolve(result.resultsPath), indexPath]);
+      }
+    }
+  }, 120000);
+});
+
+describe.each(['firefox'])('Upload URL (browser?: %s))', browser => {
+  const server = setupServer(
+    http.post('https://api.example.com/upload', async ({ request }) => {
+      const data = await request.formData();
+      const file = data.get('file');
+      if (!file) return new HttpResponse(null, { status: 400 });
+      return HttpResponse.json({ url: 'https://mock-url.com/file' });
+    })
+  );
+  beforeAll(() => server.listen());           // Establish API mocking before all tests
+  afterEach(() => server.resetHandlers());    // Reset any runtime handlers (prevents test cross-contamination)
+  afterAll(() => server.close());             // Clean up once all tests are done
+  describe.each([true, false])('Zip: %s', zip => {
+    test('POST when --uploadUrl is specified.', async () => {
+      let result, zipfile;
+      try {
+        let config = {
+          url: 'https://www.example.com/',
+          browser: browser,
+          uploadUrl: 'https://api.example.com/upload',
+          zip: zip,
+        };
+        console.log('Running test with config:', config);
+        result = await launchTest(config);
+
+        if (zip) {
+          zipfile = path.resolve(result.resultsPath, '..', `${path.basename(result.resultsPath)}.zip`);
+        }
+
+        expect(result).toBeDefined();
+        expect(result.success).toBe(true);
+        expect(fs.existsSync(zipfile)).toBe(zip);
+      } finally {
+        if (!process.env.CI) {
+          cleanup([path.resolve(result.resultsPath)]);
+        }
+      }
+    });
+  });
+});
+
+describe.each(['firefox'])('Zip results (%s))', browser => {
+  test('Zips results when --zip is specified.', async () => {
+    let result, zipfile;
+    try {
+      result = await launchTest({
+        url: 'https://www.example.com/',
+        browser: browser,
+        zip: true
+      });
+
+      zipfile = path.resolve(result.resultsPath, '..', `${path.basename(result.resultsPath)}.zip`);
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(fs.existsSync(zipfile)).toBe(true);
+    } finally {
+      if (!process.env.CI) {
+        cleanup([path.resolve(result.resultsPath), zipfile]);
       }
     }
   }, 120000);
