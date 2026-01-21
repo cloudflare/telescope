@@ -132,6 +132,8 @@ describe.each(browsers)('Basic Test: %s', browser => {
 
 describe('CLI parameter array collapsing', () => {
   describe('Single string', () => {
+    let args;
+
     beforeAll(() => {
       testId = null;
       outputLogs = null;
@@ -139,7 +141,7 @@ describe('CLI parameter array collapsing', () => {
 
       const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
-      const args = [
+      args = [
         'node',
         'cli.js',
         '--dry',
@@ -167,9 +169,15 @@ describe('CLI parameter array collapsing', () => {
     it('Block one', async () => {
       expect(config.options.block).toEqual(['one']);
     });
+
+    it('captures CLI command in config', async () => {
+      expect(config.options.command.slice(2)).toEqual(args.slice(2));
+    });
   });
 
   describe('Two string options', () => {
+    let args;
+
     beforeAll(() => {
       testId = null;
       outputLogs = null;
@@ -177,7 +185,7 @@ describe('CLI parameter array collapsing', () => {
 
       const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
-      const args = [
+      args = [
         'node',
         'cli.js',
         '--dry',
@@ -207,9 +215,15 @@ describe('CLI parameter array collapsing', () => {
     it('Block one and two', async () => {
       expect(config.options.block).toEqual(['one', 'two']);
     });
+
+    it('captures CLI command in config', async () => {
+      expect(config.options.command.slice(2)).toEqual(args.slice(2));
+    });
   });
 
   describe('Two comma separated strings', () => {
+    let args;
+
     beforeAll(() => {
       testId = null;
       outputLogs = null;
@@ -217,7 +231,7 @@ describe('CLI parameter array collapsing', () => {
 
       const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
-      const args = [
+      args = [
         'node',
         'cli.js',
         '--dry',
@@ -245,9 +259,15 @@ describe('CLI parameter array collapsing', () => {
     it('Block one and two', async () => {
       expect(config.options.block).toEqual(['one', 'two']);
     });
+
+    it('captures CLI command in config', async () => {
+      expect(config.options.command.slice(2)).toEqual(args.slice(2));
+    });
   });
 
   describe('JSON array', () => {
+    let args;
+
     beforeAll(() => {
       testId = null;
       outputLogs = null;
@@ -255,7 +275,7 @@ describe('CLI parameter array collapsing', () => {
 
       const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
-      const args = [
+      args = [
         'node',
         'cli.js',
         '--dry',
@@ -283,9 +303,15 @@ describe('CLI parameter array collapsing', () => {
     it('Block one and two', async () => {
       expect(config.options.block).toEqual(['one', 'two']);
     });
+
+    it('captures CLI command in config', async () => {
+      expect(config.options.command.slice(2)).toEqual(args.slice(2));
+    });
   });
 
   describe('Two JSON arrays', () => {
+    let args;
+
     beforeAll(() => {
       testId = null;
       outputLogs = null;
@@ -293,7 +319,7 @@ describe('CLI parameter array collapsing', () => {
 
       const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
-      const args = [
+      args = [
         'node',
         'cli.js',
         '--dry',
@@ -323,9 +349,15 @@ describe('CLI parameter array collapsing', () => {
     it('Block one and two', async () => {
       expect(config.options.block).toEqual(['one', 'two']);
     });
+
+    it('captures CLI command in config', async () => {
+      expect(config.options.command.slice(2)).toEqual(args.slice(2));
+    });
   });
 
   describe('Two options with JSON arrays', () => {
+    let args;
+
     beforeAll(() => {
       testId = null;
       outputLogs = null;
@@ -333,7 +365,7 @@ describe('CLI parameter array collapsing', () => {
 
       const safeBrowser = singleBrowser.replace(/[^a-z0-9-]/, '');
 
-      const args = [
+      args = [
         'node',
         'cli.js',
         '--dry',
@@ -362,6 +394,10 @@ describe('CLI parameter array collapsing', () => {
 
     it('Block one, two, three and four', async () => {
       expect(config.options.block).toEqual(['one', 'two', 'three', 'four']);
+    });
+
+    it('captures CLI command in config', async () => {
+      expect(config.options.command.slice(2)).toEqual(args.slice(2));
     });
   });
 
