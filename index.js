@@ -91,7 +91,7 @@ async function executeTest(options) {
   }
 
   log(config);
-
+  
   const Runner = getRunner(config, browserConfig);
 
   try {
@@ -304,7 +304,8 @@ export default function browserAgent() {
     console.error(err);
     process.exit(1);
   }
-
+  console.log('Normalized options:', options);
+return;
   (async () => {
     const result = await launchTest(options);
     if (!result.success) {
