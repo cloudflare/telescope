@@ -3,7 +3,7 @@ const program = new Command();
 import { BrowserConfig } from './lib/browsers.js';
 import { TestRunner } from './lib/testRunner.js';
 import { ChromeRunner } from './lib/chromeRunner.js';
-import { log, shellEscape } from './lib/helpers.js';
+import { log } from './lib/helpers.js';
 import { normalizeCLIConfig } from './lib/config.js';
 import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
 
@@ -301,7 +301,7 @@ export default function browserAgent() {
 
   // Capture the CLI command for repeatability
   if (process.argv.length > 2) {
-    options.command = process.argv.slice(2).map(shellEscape).join(' ');
+    options.command = process.argv;
   }
 
   (async () => {
