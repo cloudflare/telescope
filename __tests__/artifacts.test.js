@@ -179,7 +179,7 @@ describe.each([true, false])('Upload URL with zip: %s', zip => {
         zip: zip,
       };
       result = await launchTest(config);
-      zipfile = path.resolve(result.resultsPath, '..', `${path.basename(result.resultsPath)}.zip`);
+      zipfile = path.resolve(result.resultsPath, '..', `${resultsRoot.testId}.zip`);
 
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
@@ -223,7 +223,7 @@ describe('Zip results', () => {
         zip: true
       });
 
-      zipfile = path.resolve(result.resultsPath, '..', `${path.basename(result.resultsPath)}.zip`);
+      zipfile = path.resolve(result.resultsPath, '..', `${resultsRoot.testId}.zip`);
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
       expect(fs.existsSync(zipfile)).toBe(true);
