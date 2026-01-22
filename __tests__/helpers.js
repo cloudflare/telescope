@@ -12,7 +12,7 @@ export function retrieveResults(testId, fileName, resultType) {
   const filePath = path.join(rootPath, safeTestPath, fileName);
 
   if (filePath.indexOf(rootPath) !== 0) {
-    console.error('Invalid test', resultType, path, filePath);
+    console.error('Invalid test', resultType, filePath);
     return null;
   }
 
