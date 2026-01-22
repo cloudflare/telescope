@@ -1,13 +1,21 @@
 # name: deploy telescopetest-io site
+
+# defaults:
+#   run:
+#     working-directory: ./telescoptest-io
+
 # on:
+#   push:
+#     branches:
+#       - main
 
 # jobs:
 #   deploy:
 #     runs-on: ubuntu-latest
 #     steps:
-#       - name: Checkout code
+#       - name: checkout code
 #         uses: actions/checkout@v4
-#       - name: Setup Node.js
+#       - name: setup Node.js
 #         uses: actions/setup-node@v4
 #         with:
 #           node-version: '20'
@@ -16,10 +24,10 @@
 #       - name: install dependencies
 #         working-directory: ./telescopetest-io
 #         run: npm ci
-#       - name: build Astro site
+#       - name: build astro site
 #         working-directory: ./telescopetest-io
 #         run: npm run build
-#       - name: deploy to Cloudflare Workers
+#       - name: deploy to cloudflare workers
 #         working-directory: ./telescopetest-io
 #         run: npx wrangler deploy
 #         env:
