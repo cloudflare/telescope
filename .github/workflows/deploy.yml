@@ -1,8 +1,8 @@
-name: DEPLOY
+name: DEPLOY telescopetest-io worker
 on:
   push:
     branches:
-      - homepage-ttio
+      - main
     paths:
       - 'telescopetest-io/**'
 
