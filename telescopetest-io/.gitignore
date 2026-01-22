@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+# Build outputs
+dist/
+.astro/
+# Wrangler
+.wrangler/
+.dev.vars
+# Environment
+.env
+.env.*
+!.env.example
+# Logs
+*.log

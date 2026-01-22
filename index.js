@@ -279,7 +279,7 @@ export default function browserAgent() {
     .addOption(
       new Option(
         '--overrideHost <object>',
-        'Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})'
+        'Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})',
       ),
     )
     .addOption(
