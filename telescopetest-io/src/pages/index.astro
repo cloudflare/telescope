@@ -3,11 +3,9 @@ const year = new Date().getFullYear();
 ---
 
 <!doctype html>
-<!-- saved from url=(0025)https://telescopetest.io/ -->
 <html lang="en">
-  <head
-    ><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-
+  <head>
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
       Cloudflare Telescope - Cross-Browser Performance Testing Agent
@@ -1087,7 +1085,6 @@ const year = new Date().getFullYear();
         animation: sparkleAnim 0.5s ease-out forwards;
       }
 
-
       @media (prefers-reduced-motion: reduce) {
         html {
           scroll-behavior: auto;
@@ -1129,11 +1126,11 @@ const year = new Date().getFullYear();
           animation: none !important;
         }
 
-        .logo:hover .logo-cloudflare{
+        .logo:hover .logo-cloudflare {
           letter-spacing: 8px;
         }
 
-        .logo:hover .logo-telescope{
+        .logo:hover .logo-telescope {
           letter-spacing: 12px;
         }
 
@@ -1148,8 +1145,6 @@ const year = new Date().getFullYear();
     </style>
   </head>
   <body>
-    
-
     <!-- Starfield Background -->
     <div class="stars" id="stars"></div>
 
@@ -1179,10 +1174,7 @@ const year = new Date().getFullYear();
             </svg>
             View on GitHub
           </a>
-          <a
-            href="#how-to-run"
-            class="btn btn-secondary"
-          >
+          <a href="#how-to-run" class="btn btn-secondary">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path
                 d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
@@ -1612,19 +1604,15 @@ cd telescope</code></pre>
 
     <!-- Back to Top Button -->
     <div class="back-to-top-wrapper">
-      <a
-        class="back-to-top"
-        href="#hero"
-        aria-label="Back to top"
-      >
-        ↑
-      </a>
+      <a class="back-to-top" href="#hero" aria-label="Back to top"> ↑ </a>
     </div>
     <div id="sparkle-template" class="sparkle" style="display: none"></div>
     <div id="star-template" class="star" style="display: none"></div>
 
     <script is:inline>
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const prefersReducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      ).matches;
 
       // Generate starfield
       function createStars() {
