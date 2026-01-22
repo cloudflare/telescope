@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+package-lock.json
+# Build outputs
+dist/
+.astro/
+# Wrangler
+.wrangler/
+.dev.vars
+# Environment
+.env
+.env.*
+!.env.example
+# Logs
+*.log

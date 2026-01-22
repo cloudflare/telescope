@@ -1,0 +1,26 @@
+# name: deploy telescopetest-io site
+# on:
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
+#           cache: 'npm'
+#           cache-dependency-path: './telescopetest-io/package-lock.json'
+#       - name: install dependencies
+#         working-directory: ./telescopetest-io
+#         run: npm ci
+#       - name: build Astro site
+#         working-directory: ./telescopetest-io
+#         run: npm run build
+#       - name: deploy to Cloudflare Workers
+#         working-directory: ./telescopetest-io
+#         run: npx wrangler deploy
+#         env:
+#           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

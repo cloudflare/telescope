@@ -1,0 +1,15 @@
+{
+  "name": "telescopetest-io",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "astro build && wrangler deploy"
+  },
+  "dependencies": {
+    "astro": "^5.16.14",
+    "@astrojs/cloudflare": "^12.6.12"
+  }
+}
