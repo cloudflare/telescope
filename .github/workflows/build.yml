@@ -1,0 +1,28 @@
+name: run telescopetest-io site
+on:
+  push:
+    branches:
+      - homepage-ttio
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './telescopetest-io/package-lock.json'
+
+      - name: install dependencies
+        working-directory: ./telescopetest-io
+        run: npm ci
+
+      - name: build astro site
+        working-directory: ./telescopetest-io
+        run: npm run build
