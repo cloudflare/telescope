@@ -1,11 +1,14 @@
 import { launchTest } from '../index.js';
 import fs from 'fs';
 
-describe('Programmatic API', () => {
+import { BrowserConfig } from '../lib/browsers.js';
+const browsers = BrowserConfig.getBrowsers();
+
+describe.each(browsers)('Programmatic API (%s)', browser => {
   test('launchTest executes and returns result object', async () => {
     const result = await launchTest({
       url: 'https://www.example.com',
-      browser: 'chrome',
+      browser,
     });
 
     expect(result).toHaveProperty('success');
@@ -18,7 +21,7 @@ describe('Programmatic API', () => {
   // test('launchTest handles errors gracefully', async () => {
   //   const result = await launchTest({
   //     url: 'not-a-valid-url',
-  //     browser: 'chrome',
+  //     browser,
   //   });
 
   //   expect(result.success).toBe(false);
@@ -28,7 +31,7 @@ describe('Programmatic API', () => {
   test('launchTest accepts programmatic options', async () => {
     const result = await launchTest({
       url: 'https://www.example.com',
-      browser: 'chrome',
+      browser,
       width: 1920,
       height: 1080,
       cookies: [{ name: 'test', value: 'value' }],

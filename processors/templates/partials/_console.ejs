@@ -1,16 +1,21 @@
-    <section id="console">
-        <h2>Console Messages</h2>
-        <% if (hasConsole) { %>
-            <% consoleData.forEach(function(log) { %>
-                <div class="console_<%= log.type %>">
-                    <code><%= log.type %></code>
-                    <span>message: <%= log.text %></span><br />
-                    <span>Location: L<%= log.locationLineNumber %>:<%= log.locationColumnNumber %> - <%= log.locationUrl %></span>
-                </div>
-            <% }); %>
-        <% } else { %>
-            <div class="empty">No console messages recorded</div>
-        <% } %>
-    </section>
-</body>
-
+<section id="console">
+  <h2>Console Messages</h2>
+  <% if (hasConsole) { %>
+  <% consoleData.forEach(function(log) { %>
+  <div class="console_<%= log.type %>">
+    <code><%= log.type %></code>
+    <span
+      >message:
+      <%= log.text %></span
+    ><br />
+    <span
+      >Location: L<%= log.locationLineNumber %>:<%= log.locationColumnNumber %>
+      -
+      <%= log.locationUrl %></span
+    >
+  </div>
+  <% }); %>
+  <% } else { %>
+  <div class="empty">No console messages recorded</div>
+  <% } %>
+</section>

@@ -1,20 +1,32 @@
-<%- include('partials/_head.ejs') %>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Performance Visual Report</title>
+    <%- include('partials/_styles.ejs') %>
+  </head>
 
-<%- include('partials/_nav.ejs') %>
-<!-- METRICS SECTION -->
-<%- include('partials/_metrics.ejs') %>
+  <body>
+    <%- include('partials/_nav.ejs') %>
+    <!-- METRICS SECTION -->
+    <%- include('partials/_metrics.ejs') %>
 
-<!-- FILMSTRIP SECTION -->
-<%- include('partials/_filmstrip.ejs') %>
+    <!-- FILMSTRIP SECTION -->
+    <%- include('partials/_filmstrip.ejs') %>
 
-<!-- VIDEO SECTION -->
-<%- include('partials/_video.ejs') %>
+    <!-- VIDEO SECTION -->
+    <%- include('partials/_video.ejs') %>
 
-<!-- NETWORK REQUESTS SECTION -->
-<%- include('partials/_network.ejs') %>
+    <!-- NETWORK REQUESTS SECTION -->
+    <%- include('partials/_network.ejs') %>
 
-<!-- CONSOLE SECTION -->
-<%- include('partials/_console.ejs') %>
+    <!-- CONSOLE SECTION -->
+    <%- include('partials/_console.ejs') %>
 
-<%- include('partials/_footer.ejs') %>
-
+    <code
+      >Generated at:
+      <%= new Date().toLocaleString() %></code
+    >
+  </body>
+</html>

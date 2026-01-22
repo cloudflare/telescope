@@ -1,14 +1,13 @@
-    <section id="video">
-        <h2>Page Load Recording</h2>
-        <% if (hasVideo) { %>
-            <div class="video-container">
-                <video controls>
-                    <source src="<%= videoPath %>" type="video/webm">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-        <% } else { %>
-            <div class="empty">No video recording available</div>
-        <% } %>
-    </section>
-
+<section id="video">
+  <h2>Page Load Recording</h2>
+  <% if (hasVideo) { %>
+  <div class="video-container">
+    <video controls>
+      <source src="<%= videoPath %>" type="video/webm" />
+      Your browser does not support the video tag.
+    </video>
+  </div>
+  <% } else { %>
+  <div class="empty">No video recording available</div>
+  <% } %>
+</section>

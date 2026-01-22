@@ -1,67 +1,77 @@
-    <section id="network">
-        <h2>Network Requests</h2>
-        <% if (hasNetworkRequests) { %>
-            <div class="network-legend">
-                <div class="network-legend-item">
-                    <div class="network-legend-color type-document"></div>
-                    <span>Document</span>
-                </div>
-                <div class="network-legend-item">
-                    <div class="network-legend-color type-stylesheet"></div>
-                    <span>Stylesheet</span>
-                </div>
-                <div class="network-legend-item">
-                    <div class="network-legend-color type-script"></div>
-                    <span>Script</span>
-                </div>
-                <div class="network-legend-item">
-                    <div class="network-legend-color type-image"></div>
-                    <span>Image</span>
-                </div>
-                <div class="network-legend-item">
-                    <div class="network-legend-color type-font"></div>
-                    <span>Font</span>
-                </div>
-                <div class="network-legend-item">
-                    <div class="network-legend-color type-json"></div>
-                    <span>JSON</span>
-                </div>
-                <div class="network-legend-item">
-                    <div class="network-legend-color type-media"></div>
-                    <span>Media</span>
-                </div>
-                <div class="network-legend-item">
-                    <div class="network-legend-color type-other"></div>
-                    <span>Other</span>
-                </div>
-            </div>
-            <div class="network-waterfall">
-                <div class="network-header">
-                    <div>URL</div>
-                    <div>Method</div>
-                    <div>Status</div>
-                    <div>Size</div>
-                    <div>Timeline</div>
-                </div>
-                <% networkData.forEach(function(entry) { %>
-                    <div class="network-request type-<%= entry.type %>">
-                        <div class="network-url" title="<%= entry.fullUrl %>"><%= entry.url %></div>
-                        <div><%= entry.method %></div>
-                        <div><%= entry.status %></div>
-                        <div><%= entry.size %></div>
-                        <div class="network-timeline-container" title="Start: <%= entry.startTime %>ms, Duration: <%= entry.duration %>ms">
-                            <div class="network-timeline-bar" style="left: <%= entry.startPct %>%; width: <%= entry.durationPct %>%;">
-                                <% entry.timelinePhases.forEach(function(phase) { %>
-                                    <div class="timing-phase <%= phase.colorClass %>" style="width: <%= phase.widthPct %>%;"
-                                        title="<%= phase.label %>: <%= phase.timing %>ms"></div>
-                                <% }); %>
-                            </div>
-                        </div>
-                    </div>
-                <% }); %>
-            </div>
-        <% } else { %>
-            <div class="empty">No network request data available</div>
-        <% } %>
-    </section>
-
+<section id="network">
+  <h2>Network Requests</h2>
+  <% if (hasNetworkRequests) { %>
+  <div class="network-legend">
+    <div class="network-legend-item">
+      <div class="network-legend-color type-document"></div>
+      <span>Document</span>
+    </div>
+    <div class="network-legend-item">
+      <div class="network-legend-color type-stylesheet"></div>
+      <span>Stylesheet</span>
+    </div>
+    <div class="network-legend-item">
+      <div class="network-legend-color type-script"></div>
+      <span>Script</span>
+    </div>
+    <div class="network-legend-item">
+      <div class="network-legend-color type-image"></div>
+      <span>Image</span>
+    </div>
+    <div class="network-legend-item">
+      <div class="network-legend-color type-font"></div>
+      <span>Font</span>
+    </div>
+    <div class="network-legend-item">
+      <div class="network-legend-color type-json"></div>
+      <span>JSON</span>
+    </div>
+    <div class="network-legend-item">
+      <div class="network-legend-color type-media"></div>
+      <span>Media</span>
+    </div>
+    <div class="network-legend-item">
+      <div class="network-legend-color type-other"></div>
+      <span>Other</span>
+    </div>
+  </div>
+  <div class="network-waterfall">
+    <div class="network-header">
+      <div>URL</div>
+      <div>Method</div>
+      <div>Status</div>
+      <div>Size</div>
+      <div>Timeline</div>
+    </div>
+    <% networkData.forEach(function(entry) { %>
+    <div class="network-request type-<%= entry.type %>">
+      <div class="network-url" title="<%= entry.fullUrl %>">
+        <%= entry.url %>
+      </div>
+      <div><%= entry.method %></div>
+      <div><%= entry.status %></div>
+      <div><%= entry.size %></div>
+      <div
+        class="network-timeline-container"
+        title="Start: <%= entry.startTime %>ms, Duration: <%= entry.duration %>ms"
+      >
+        <div
+          class="network-timeline-bar"
+          style="left: <%= entry.startPct %>%; width: <%= entry.durationPct %>%"
+        >
+          <% entry.timelinePhases.forEach(function(phase) { %>
+          <div
+            class="timing-phase <%= phase.colorClass %>"
+            style="width: <%= phase.widthPct %>%"
+            title="<%= phase.label %>: <%= phase.timing %>ms"
+          ></div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+  <% } else { %>
+  <div class="empty">No network request data available</div>
+  <% } %>
+</section>

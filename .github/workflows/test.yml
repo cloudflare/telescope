@@ -1,0 +1,45 @@
+name: Test PRs
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      HOME: /root
+    container:
+      # make sure to match this version with the one in package.json
+      image: mcr.microsoft.com/playwright:v1.57.0-noble
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install xz-utils
+        run: apt-get update && apt-get install -y xz-utils
+
+      - name: Set up FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+
+      - name: Install dependencies
+        # don't install the browsers since we're using the pre-built container
+        run: npm ci --ignore-scripts
+
+      - name: Run tests
+        run: npm test
+
+      - name: List all results
+        if: ${{ always() }}
+        run: find results

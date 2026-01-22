@@ -90,9 +90,11 @@ function getResourceTypeFromMime(mimeType: string | null | undefined): string {
   const mime = mimeType.toLowerCase();
   if (mime.includes('html')) return 'document';
   if (mime.includes('css') || mime.includes('stylesheet')) return 'stylesheet';
-  if (mime.includes('javascript') || mime.includes('ecmascript')) return 'script';
+  if (mime.includes('javascript') || mime.includes('ecmascript'))
+    return 'script';
   if (mime.includes('image') || mime.includes('svg')) return 'image';
-  if (mime.includes('font') || mime.includes('woff') || mime.includes('ttf')) return 'font';
+  if (mime.includes('font') || mime.includes('woff') || mime.includes('ttf'))
+    return 'font';
   if (mime.includes('json')) return 'json';
   if (mime.includes('video')) return 'media';
 
@@ -123,14 +125,19 @@ function getRating(metricName: string, value: number): string {
   return 'N/A';
 }
 
-function findFilmstripImages(basePath: string): Array<{ path: string; filename: string }> {
+function findFilmstripImages(
+  basePath: string,
+): Array<{ path: string; filename: string }> {
   const filmstripPath = path.join(basePath, 'filmstrip');
   if (!fs.existsSync(filmstripPath)) {
     return [];
   }
 
   const images: Array<{ path: string; filename: string }> = [];
-  const files = fs.readdirSync(filmstripPath).filter(f => f.endsWith('.png') || f.endsWith('.jpg')).sort();
+  const files = fs
+    .readdirSync(filmstripPath)
+    .filter(f => f.endsWith('.png') || f.endsWith('.jpg'))
+    .sort();
   for (let filename of files) {
     images.push({
       path: `filmstrip/${filename}`,
@@ -189,7 +196,10 @@ function parseHarFile(harPath: string): NetworkRequest[] | null {
     let requests: NetworkRequest[] = [];
     for (let entry of entries) {
       let request = entry.request || { url: '', method: 'GET' };
-      let response = entry.response || { status: 0, content: { size: 0, mimeType: '' } };
+      let response = entry.response || {
+        status: 0,
+        content: { size: 0, mimeType: '' },
+      };
       let url = request.url || '';
       let method = request.method || 'GET';
       let status = response.status || 0;
@@ -268,15 +278,23 @@ function parseHarFile(harPath: string): NetworkRequest[] | null {
 }
 
 function calculateTimingPhases(navTiming: any): TimingPhases {
-  let dnsTime = (navTiming.domainLookupEnd || 0) - (navTiming.domainLookupStart || 0);
+  let dnsTime =
+    (navTiming.domainLookupEnd || 0) - (navTiming.domainLookupStart || 0);
   let tcpTime = (navTiming.connectEnd || 0) - (navTiming.connectStart || 0);
-  let sslTime = (navTiming.connectEnd || 0) - (navTiming.secureConnectionStart || 0);
-  let requestTime = (navTiming.responseStart || 0) - (navTiming.requestStart || 0);
-  let responseTime = (navTiming.responseEnd || 0) - (navTiming.responseStart || 0);
-  let domProcessing = (navTiming.domInteractive || 0) - (navTiming.domLoading || 0);
-  let domContentLoaded = (navTiming.domContentLoadedEventEnd || 0) - (navTiming.domInteractive || 0);
-  let completeLoad = (navTiming.domComplete || 0) - (navTiming.domContentLoadedEventEnd || 0);
-  let totalTime = (navTiming.domComplete || 0) - (navTiming.navigationStart || 0);
+  let sslTime =
+    (navTiming.connectEnd || 0) - (navTiming.secureConnectionStart || 0);
+  let requestTime =
+    (navTiming.responseStart || 0) - (navTiming.requestStart || 0);
+  let responseTime =
+    (navTiming.responseEnd || 0) - (navTiming.responseStart || 0);
+  let domProcessing =
+    (navTiming.domInteractive || 0) - (navTiming.domLoading || 0);
+  let domContentLoaded =
+    (navTiming.domContentLoadedEventEnd || 0) - (navTiming.domInteractive || 0);
+  let completeLoad =
+    (navTiming.domComplete || 0) - (navTiming.domContentLoadedEventEnd || 0);
+  let totalTime =
+    (navTiming.domComplete || 0) - (navTiming.navigationStart || 0);
   let dnsPct = totalTime > 0 ? (dnsTime / totalTime) * 100 : 0;
   let tcpPct = totalTime > 0 ? (tcpTime / totalTime) * 100 : 0;
   let sslPct = totalTime > 0 ? (sslTime / totalTime) * 100 : 0;
@@ -308,25 +326,95 @@ function calculateTimingPhases(navTiming: any): TimingPhases {
 
 function buildTimelinePhases(timing: TimingPhases) {
   return [
-    { colorClass: 'dns', label: 'DNS Lookup', timing: timing.dns_time.toFixed(0), widthPct: timing.dns_pct.toFixed(2) },
-    { colorClass: 'tcp', label: 'TCP Connection', timing: timing.tcp_time.toFixed(0), widthPct: timing.tcp_pct.toFixed(2) },
-    { colorClass: 'ssl', label: 'SSL/TLS', timing: timing.ssl_time.toFixed(0), widthPct: timing.ssl_pct.toFixed(2) },
-    { colorClass: 'request', label: 'Request', timing: timing.request_time.toFixed(0), widthPct: timing.request_pct.toFixed(2) },
-    { colorClass: 'response', label: 'Response', timing: timing.response_time.toFixed(0), widthPct: timing.response_pct.toFixed(2) },
-    { colorClass: 'processing', label: 'DOM Processing', timing: timing.dom_processing.toFixed(0), widthPct: timing.processing_pct.toFixed(2) },
-    { colorClass: 'domContentLoaded', label: 'DOM Content Loaded', timing: timing.dom_content_loaded.toFixed(0), widthPct: timing.dom_content_pct.toFixed(2) },
-    { colorClass: 'complete', label: 'Complete Load', timing: timing.complete_load.toFixed(0), widthPct: timing.complete_pct.toFixed(2) },
+    {
+      colorClass: 'dns',
+      label: 'DNS Lookup',
+      timing: timing.dns_time.toFixed(0),
+      widthPct: timing.dns_pct.toFixed(2),
+    },
+    {
+      colorClass: 'tcp',
+      label: 'TCP Connection',
+      timing: timing.tcp_time.toFixed(0),
+      widthPct: timing.tcp_pct.toFixed(2),
+    },
+    {
+      colorClass: 'ssl',
+      label: 'SSL/TLS',
+      timing: timing.ssl_time.toFixed(0),
+      widthPct: timing.ssl_pct.toFixed(2),
+    },
+    {
+      colorClass: 'request',
+      label: 'Request',
+      timing: timing.request_time.toFixed(0),
+      widthPct: timing.request_pct.toFixed(2),
+    },
+    {
+      colorClass: 'response',
+      label: 'Response',
+      timing: timing.response_time.toFixed(0),
+      widthPct: timing.response_pct.toFixed(2),
+    },
+    {
+      colorClass: 'processing',
+      label: 'DOM Processing',
+      timing: timing.dom_processing.toFixed(0),
+      widthPct: timing.processing_pct.toFixed(2),
+    },
+    {
+      colorClass: 'domContentLoaded',
+      label: 'DOM Content Loaded',
+      timing: timing.dom_content_loaded.toFixed(0),
+      widthPct: timing.dom_content_pct.toFixed(2),
+    },
+    {
+      colorClass: 'complete',
+      label: 'Complete Load',
+      timing: timing.complete_load.toFixed(0),
+      widthPct: timing.complete_pct.toFixed(2),
+    },
   ];
 }
 
 function buildRequestTimelinePhases(timing: NetworkRequest['timings']) {
   return [
-    { colorClass: 'dns', label: 'DNS Lookup', timing: timing.dns_time.toFixed(0), widthPct: timing.dns_pct.toFixed(2) },
-    { colorClass: 'connect', label: 'Connect', timing: timing.connect_time.toFixed(0), widthPct: timing.connect_pct.toFixed(2) },
-    { colorClass: 'ssl', label: 'SSL/TLS', timing: timing.ssl_time.toFixed(0), widthPct: timing.ssl_pct.toFixed(2) },
-    { colorClass: 'send', label: 'Send', timing: timing.send_time.toFixed(0), widthPct: timing.send_pct.toFixed(2) },
-    { colorClass: 'wait', label: 'Wait', timing: timing.wait_time.toFixed(0), widthPct: timing.wait_pct.toFixed(2) },
-    { colorClass: 'receive', label: 'Receive', timing: timing.receive_time.toFixed(0), widthPct: timing.receive_pct.toFixed(2) },
+    {
+      colorClass: 'dns',
+      label: 'DNS Lookup',
+      timing: timing.dns_time.toFixed(0),
+      widthPct: timing.dns_pct.toFixed(2),
+    },
+    {
+      colorClass: 'connect',
+      label: 'Connect',
+      timing: timing.connect_time.toFixed(0),
+      widthPct: timing.connect_pct.toFixed(2),
+    },
+    {
+      colorClass: 'ssl',
+      label: 'SSL/TLS',
+      timing: timing.ssl_time.toFixed(0),
+      widthPct: timing.ssl_pct.toFixed(2),
+    },
+    {
+      colorClass: 'send',
+      label: 'Send',
+      timing: timing.send_time.toFixed(0),
+      widthPct: timing.send_pct.toFixed(2),
+    },
+    {
+      colorClass: 'wait',
+      label: 'Wait',
+      timing: timing.wait_time.toFixed(0),
+      widthPct: timing.wait_pct.toFixed(2),
+    },
+    {
+      colorClass: 'receive',
+      label: 'Receive',
+      timing: timing.receive_time.toFixed(0),
+      widthPct: timing.receive_pct.toFixed(2),
+    },
   ];
 }
 
@@ -335,14 +423,17 @@ function generateHtml(
   requests: any,
   consoleMessages: any,
   basePath: string,
-  outputPath: string
+  outputPath: string,
 ): void {
-
   let navTiming = metrics.navigationTiming || {};
   let timing = calculateTimingPhases(navTiming);
   let paintTiming = metrics.paintTiming || [];
-  let fpTime = paintTiming.find((p: any) => p.name?.includes('first-paint'))?.startTime || 0;
-  let fcpTime = paintTiming.find((p: any) => p.name?.includes('first-contentful-paint'))?.startTime || 0;
+  let fpTime =
+    paintTiming.find((p: any) => p.name?.includes('first-paint'))?.startTime ||
+    0;
+  let fcpTime =
+    paintTiming.find((p: any) => p.name?.includes('first-contentful-paint'))
+      ?.startTime || 0;
   let lcpData = (metrics.largestContentfulPaint || [{}])[0];
   let lcpTime = lcpData.startTime || 0;
   let layoutShifts = metrics.layoutShifts || [];
@@ -353,14 +444,42 @@ function generateHtml(
   let clsRating = getRating('CLS', clsScore);
   let tbtRating = getRating('TBT', tbt);
   let legendData = [
-    { colorClass: 'dns', label: 'DNS Lookup', timing: timing.dns_time.toFixed(0) },
-    { colorClass: 'tcp', label: 'TCP Connection', timing: timing.tcp_time.toFixed(0) },
+    {
+      colorClass: 'dns',
+      label: 'DNS Lookup',
+      timing: timing.dns_time.toFixed(0),
+    },
+    {
+      colorClass: 'tcp',
+      label: 'TCP Connection',
+      timing: timing.tcp_time.toFixed(0),
+    },
     { colorClass: 'ssl', label: 'SSL/TLS', timing: timing.ssl_time.toFixed(0) },
-    { colorClass: 'request', label: 'Request', timing: timing.request_time.toFixed(0) },
-    { colorClass: 'response', label: 'Response', timing: timing.response_time.toFixed(0) },
-    { colorClass: 'processing', label: 'DOM Processing', timing: timing.dom_processing.toFixed(0) },
-    { colorClass: 'domContentLoaded', label: 'DOM Content Loaded', timing: timing.dom_content_loaded.toFixed(0) },
-    { colorClass: 'complete', label: 'Complete Load', timing: timing.complete_load.toFixed(0) },
+    {
+      colorClass: 'request',
+      label: 'Request',
+      timing: timing.request_time.toFixed(0),
+    },
+    {
+      colorClass: 'response',
+      label: 'Response',
+      timing: timing.response_time.toFixed(0),
+    },
+    {
+      colorClass: 'processing',
+      label: 'DOM Processing',
+      timing: timing.dom_processing.toFixed(0),
+    },
+    {
+      colorClass: 'domContentLoaded',
+      label: 'DOM Content Loaded',
+      timing: timing.dom_content_loaded.toFixed(0),
+    },
+    {
+      colorClass: 'complete',
+      label: 'Complete Load',
+      timing: timing.complete_load.toFixed(0),
+    },
   ];
 
   let timelineData = buildTimelinePhases(timing);
@@ -380,10 +499,17 @@ function generateHtml(
     for (let source of sources) {
       let prevRect = source.previousRect || {};
       let currRect = source.currentRect || {};
-      viewportWidth = Math.max(viewportWidth, prevRect.right || 0, currRect.right || 0);
-      viewportHeight = Math.max(viewportHeight, prevRect.bottom || 0, currRect.bottom || 0);
+      viewportWidth = Math.max(
+        viewportWidth,
+        prevRect.right || 0,
+        currRect.right || 0,
+      );
+      viewportHeight = Math.max(
+        viewportHeight,
+        prevRect.bottom || 0,
+        currRect.bottom || 0,
+      );
     }
-
 
     let sourceVisualData = [];
     for (let source of sources) {
@@ -393,14 +519,26 @@ function generateHtml(
         continue;
       }
 
-      let prevLeftPct = viewportWidth > 0 ? ((prevRect.left || 0) / viewportWidth) * 100 : 0;
-      let prevTopPct = viewportHeight > 0 ? ((prevRect.top || 0) / viewportHeight) * 100 : 0;
-      let prevWidthPct = viewportWidth > 0 ? ((prevRect.width || 0) / viewportWidth) * 100 : 0;
-      let prevHeightPct = viewportHeight > 0 ? ((prevRect.height || 0) / viewportHeight) * 100 : 0;
-      let currLeftPct = viewportWidth > 0 ? ((currRect.left || 0) / viewportWidth) * 100 : 0;
-      let currTopPct = viewportHeight > 0 ? ((currRect.top || 0) / viewportHeight) * 100 : 0;
-      let currWidthPct = viewportWidth > 0 ? ((currRect.width || 0) / viewportWidth) * 100 : 0;
-      let currHeightPct = viewportHeight > 0 ? ((currRect.height || 0) / viewportHeight) * 100 : 0;
+      let prevLeftPct =
+        viewportWidth > 0 ? ((prevRect.left || 0) / viewportWidth) * 100 : 0;
+      let prevTopPct =
+        viewportHeight > 0 ? ((prevRect.top || 0) / viewportHeight) * 100 : 0;
+      let prevWidthPct =
+        viewportWidth > 0 ? ((prevRect.width || 0) / viewportWidth) * 100 : 0;
+      let prevHeightPct =
+        viewportHeight > 0
+          ? ((prevRect.height || 0) / viewportHeight) * 100
+          : 0;
+      let currLeftPct =
+        viewportWidth > 0 ? ((currRect.left || 0) / viewportWidth) * 100 : 0;
+      let currTopPct =
+        viewportHeight > 0 ? ((currRect.top || 0) / viewportHeight) * 100 : 0;
+      let currWidthPct =
+        viewportWidth > 0 ? ((currRect.width || 0) / viewportWidth) * 100 : 0;
+      let currHeightPct =
+        viewportHeight > 0
+          ? ((currRect.height || 0) / viewportHeight) * 100
+          : 0;
       sourceVisualData.push({
         prevLeftPct: prevLeftPct.toFixed(2),
         prevTopPct: prevTopPct.toFixed(2),
@@ -435,7 +573,9 @@ function generateHtml(
   let hasFilmstrip = filmstripImages.length > 0;
   let filmstripData = filmstripImages.map(img => ({
     imagePath: img.path,
-    timestamp: img.filename.replace('.png', '').replace('frame_', '').replace('_', '.') + 'ms',
+    timestamp:
+      img.filename.replace('.png', '').replace('frame_', '').replace('_', '.') +
+      'ms',
   }));
 
   let finalScreenshotFile = findFinalScreenshotFile(basePath);
@@ -461,14 +601,21 @@ function generateHtml(
   let networkData: any[] = [];
   if (hasNetworkRequests && harRequests) {
     let startTime = Math.min(...harRequests.map(entry => entry.start_time));
-    let maxEndTime = Math.max(...harRequests.map(entry => (entry.start_time + entry.duration)), 0) - startTime;
+    let maxEndTime =
+      Math.max(
+        ...harRequests.map(entry => entry.start_time + entry.duration),
+        0,
+      ) - startTime;
     networkData = harRequests.map(entry => {
       let urlParts = entry.url.split('?')[0].split('/');
-      let filename = urlParts[urlParts.length - 1] || (urlParts.length > 1 ? urlParts[urlParts.length - 2] : entry.url);
+      let filename =
+        urlParts[urlParts.length - 1] ||
+        (urlParts.length > 1 ? urlParts[urlParts.length - 2] : entry.url);
       filename = filename.substring(0, 60);
       let offset = entry.start_time - startTime;
       let startPct = maxEndTime > 0 ? (offset / maxEndTime) * 100 : 0;
-      let durationPct = maxEndTime > 0 ? (entry.duration / maxEndTime) * 100 : 0;
+      let durationPct =
+        maxEndTime > 0 ? (entry.duration / maxEndTime) * 100 : 0;
       let size = entry.size;
       let suffix = ' B';
       if (entry.size > 1024) {
@@ -501,44 +648,53 @@ function generateHtml(
   }
 
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-  const templatePath = path.join(scriptDir, '..', 'processors', 'templates', 'index.ejs');
+  const templatePath = path.join(
+    scriptDir,
+    '..',
+    'processors',
+    'templates',
+    'index.ejs',
+  );
   const template = fs.readFileSync(templatePath, 'utf-8');
   const templateDir = path.join(scriptDir, '..', 'processors', 'templates');
 
-  const html = ejs.render(template, {
-    ttfb: ttfb.toFixed(0),
-    fp: fpTime.toFixed(0),
-    fcp: fcpTime.toFixed(0),
-    lcp: lcpTime.toFixed(0),
-    cls: clsScore.toFixed(4),
-    tbt: tbt.toFixed(0),
-    lcpRating,
-    clsRating,
-    tbtRating,
-    lcpRatingClass: lcpRating.toLowerCase().replace(/ /g, '-'),
-    clsRatingClass: clsRating.toLowerCase().replace(/ /g, '-'),
-    tbtRatingClass: tbtRating.toLowerCase().replace(/ /g, '-'),
-    hasServerTimings,
-    serverTimingData,
-    legendData,
-    timelineData,
-    layoutVisualData,
-    hasFilmstrip,
-    filmstripData,
-    hasFinalScreenshot,
-    finalScreenshotPath: finalScreenshotFile,
-    finalScreenshotTimestamp: timing.total_time,
-    hasVideo,
-    videoPath: videoFile,
-    hasConsole,
-    consoleData,
-    hasNetworkRequests,
-    networkData,
-  }, {
-
-    views: [templateDir],
-    filename: templatePath,
-  });
+  const html = ejs.render(
+    template,
+    {
+      ttfb: ttfb.toFixed(0),
+      fp: fpTime.toFixed(0),
+      fcp: fcpTime.toFixed(0),
+      lcp: lcpTime.toFixed(0),
+      cls: clsScore.toFixed(4),
+      tbt: tbt.toFixed(0),
+      lcpRating,
+      clsRating,
+      tbtRating,
+      lcpRatingClass: lcpRating.toLowerCase().replace(/ /g, '-'),
+      clsRatingClass: clsRating.toLowerCase().replace(/ /g, '-'),
+      tbtRatingClass: tbtRating.toLowerCase().replace(/ /g, '-'),
+      hasServerTimings,
+      serverTimingData,
+      legendData,
+      timelineData,
+      layoutVisualData,
+      hasFilmstrip,
+      filmstripData,
+      hasFinalScreenshot,
+      finalScreenshotPath: finalScreenshotFile,
+      finalScreenshotTimestamp: timing.total_time,
+      hasVideo,
+      videoPath: videoFile,
+      hasConsole,
+      consoleData,
+      hasNetworkRequests,
+      networkData,
+    },
+    {
+      views: [templateDir],
+      filename: templatePath,
+    },
+  );
 
   if (html && typeof (html as any).then === 'function') {
     (html as any)
@@ -564,7 +720,9 @@ function main() {
 
   const directory = process.argv[2];
   const scriptDir = path.dirname(process.argv[1]);
-  const basePath = (directory.startsWith('/') ? directory : path.join(scriptDir, '..', directory));
+  const basePath = directory.startsWith('/')
+    ? directory
+    : path.join(scriptDir, '..', directory);
 
   if (!fs.existsSync(basePath)) {
     console.error(`Error: Directory '${basePath}' does not exist`);
@@ -594,6 +752,9 @@ function main() {
 }
 
 const __filename = fileURLToPath(import.meta.url);
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(__filename)
+) {
   main();
 }
