@@ -1,4 +1,4 @@
-name: run telescopetest-io site
+name: BUILD & RUN telescopetest-io site
 on:
   push:
     branches:
