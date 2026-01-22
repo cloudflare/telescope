@@ -25,7 +25,7 @@ telescopetest-io/
 4. Astro runtime routes to `src/pages/` and renders
 5. Response returns to user
 
-## GitHub Workflow
+## Deployment
 
 This website shold only be deployed on Cloudflare workers on successful PR into @cloudflare/telescope. To run this deployment automatically, we have a GitHub workflow `.github/workflows/deploy.yml`:
 
@@ -34,3 +34,5 @@ This website shold only be deployed on Cloudflare workers on successful PR into 
 3. `npm ci` in `telescopetest-io/`
 4. `npm run build` (generates `dist/`)
 5. `npx wrangler deploy` (uploads worker + dist to Cloudflare)
+
+Once successful, the deployed site can be found on telescopetest.io
