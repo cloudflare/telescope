@@ -1,4 +1,4 @@
-name: DEPLOY telescopetest-io site
+name: DEPLOY
 on:
   push:
     branches:
