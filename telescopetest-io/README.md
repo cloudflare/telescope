@@ -35,4 +35,4 @@ This website shold only be deployed on Cloudflare workers on successful PR into 
 4. `npm run build` (generates `dist/`)
 5. `npx wrangler deploy` (uploads worker + dist to Cloudflare)
 
-Once successful, the deployed site can be found on telescopetest.io
+Once successful, the deployed site can be found on telescopetest.io.
