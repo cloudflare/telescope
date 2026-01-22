@@ -2,7 +2,9 @@ name: DEPLOY telescopetest-io site
 on:
   push:
     branches:
-      - main
+      - homepage-ttio
+    paths:
+      - 'telescopetest-io/**'
 
 jobs:
   deploy:
