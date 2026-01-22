@@ -301,7 +301,7 @@ export default function browserAgent() {
 
   // Capture the CLI command for repeatability
   if (process.argv.length > 2) {
-    options.command = process.argv;
+    options.command = process.argv.splice(2);
   }
 
   (async () => {
