@@ -306,6 +306,11 @@ export default function browserAgent() {
     process.exit(1);
   }
 
+  // Capture the CLI command for repeatability
+  if (process.argv.length > 2) {
+    options.command = process.argv.splice(2);
+  }
+
   (async () => {
     const result = await launchTest(options);
     if (!result.success) {
