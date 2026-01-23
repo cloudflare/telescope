@@ -1,6 +1,4 @@
 import { BrowserConfig } from '../lib/browsers.js';
-import { normalizeCLIConfig } from '../lib/config.js';
-import { devices } from 'playwright/test';
 import fs from 'fs';
 
 const browsers = BrowserConfig.getBrowsers();
@@ -79,6 +77,7 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
     );
   });
 
+  //test for other options
   describe.each(Object.keys(devices))(
     'Setting device emulation updates the config for device: %s',
     device => {

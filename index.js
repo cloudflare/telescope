@@ -93,6 +93,12 @@ async function executeTest(options) {
 
   log(config);
 
+  // `npm test emlation` fails to finish
+  // browserConfig.isMobile = true
+
+  // `npm test emulation` succeeds and finishes
+  browserConfig.isMobile = false
+
   const Runner = getRunner(config, browserConfig);
 
   try {
