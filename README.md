@@ -148,15 +148,17 @@ npm install
 
 ### Browsers
 
-### Chrome, Firefox, Safari and Chrome Canary
+### Chrome, Firefox, and Safari
 
-Telescope uses Playwright to control and manage individual browser engines. Telescope will automatically run `npx playwright install` to install Chrome, Firefox, Chrome Canary and Safari (webkit).
-
-Note: Safari for MacOS Tahoe is now available in `playwright@next` version so we use that until it is available on the `@latest` channel.
+Telescope uses Playwright to control and manage individual browser engines. Telescope will automatically run `npx playwright install` to install Chrome, Firefox, and Safari (webkit).
 
 ### Microsoft Edge and Chrome-beta
 
 To install Microsoft Edge or Chrome Beta playwright requires root privileges and will not automatically install them, all you have to do that is to run `npx playwright install msedge chrome-beta` from the command line (and provide root password).
+
+### Chrome Canary
+
+Chrome Canary must be manually installed, please download and install from: https://www.google.com/chrome/canary/ 
 
 ### ffmpeg
 
