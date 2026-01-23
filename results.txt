@@ -1,0 +1,4 @@
+
+> @cloudflare/telescope@1.0.0 test
+> NODE_OPTIONS="--experimental-vm-modules" jest --verbose --maxWorkers=1 --detectOpenHandles
+

@@ -293,8 +293,10 @@ export default function browserAgent() {
       )
     )
     .addOption(
-      '-d, --device <string>',
-      'Device to emulate; devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
+      new Option(
+        '-d, --device <string>',
+        'Device to emulate; devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
+      )
     )
     .parse(process.argv);
 
