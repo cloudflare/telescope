@@ -1,4 +1,6 @@
 import { BrowserConfig } from '../lib/browsers.js';
+import { devices } from 'playwright/test';
+import { normalizeCLIConfig } from '../lib/config.js';
 import fs from 'fs';
 
 const browsers = BrowserConfig.getBrowsers();
