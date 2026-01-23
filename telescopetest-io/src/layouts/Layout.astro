@@ -10,11 +10,15 @@ const {
 } = Astro.props;
 
 const cookieValue = Astro.cookies.get('theme-override')?.value;
-const themeOverride = (cookieValue === 'dark' || cookieValue === 'light') ? cookieValue : undefined;
+const themeOverride =
+  cookieValue === 'dark' || cookieValue === 'light' ? cookieValue : undefined;
 ---
 
 <!doctype html>
-<html lang="en" {...(themeOverride ? { 'data-theme-override': themeOverride } : {})}>
+<html
+  lang="en"
+  {...themeOverride ? { 'data-theme-override': themeOverride } : {}}
+>
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />

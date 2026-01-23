@@ -28,7 +28,8 @@ const navItems = [
     </nav>
   </div>
   <div class="actions">
-    <button class="theme-toggle" type="button" aria-label="Toggle theme"></button>
+    <button class="theme-toggle" type="button" aria-label="Toggle theme"
+    ></button>
     <a
       class="gh"
       href="https://github.com/cloudflare/telescope"
@@ -123,7 +124,7 @@ const navItems = [
     align-items: center;
     justify-content: center;
   }
-  
+
   .theme-toggle::after {
     content: '🌙';
   }
@@ -174,14 +175,14 @@ const navItems = [
 
   function setCookie(name: string, value: string, days: number) {
     const d = new Date();
-    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+    d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
     const expires = d.toUTCString();
     const secure = window.location.protocol === 'https:' ? ';Secure' : '';
     document.cookie = `${name}=${value};expires=${expires};path=/;SameSite=Lax${secure}`;
   }
 
   const savedTheme = getCookie('theme-override');
-  
+
   if (savedTheme === 'light' || savedTheme === 'dark') {
     document.documentElement.setAttribute('data-theme-override', savedTheme);
   }
@@ -190,10 +191,13 @@ const navItems = [
 
   if (button) {
     button.addEventListener('click', () => {
-      const isDark = document.documentElement.getAttribute('data-theme-override') 
-        ? document.documentElement.getAttribute('data-theme-override') === 'dark'
+      const isDark = document.documentElement.getAttribute(
+        'data-theme-override',
+      )
+        ? document.documentElement.getAttribute('data-theme-override') ===
+          'dark'
         : window.matchMedia('(prefers-color-scheme: dark)').matches;
-      
+
       const newTheme = isDark ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme-override', newTheme);
       setCookie('theme-override', newTheme, 365);
