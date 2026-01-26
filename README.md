@@ -158,7 +158,7 @@ To install Microsoft Edge or Chrome Beta playwright requires root privileges and
 
 ### Chrome Canary
 
-Chrome Canary must be manually installed, please download and install from: https://www.google.com/chrome/canary/ 
+Chrome Canary must be manually installed, please download and install from: https://www.google.com/chrome/canary/
 
 ### ffmpeg
 
