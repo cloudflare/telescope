@@ -2,17 +2,17 @@ import { spawnSync } from 'child_process';
 
 import { retrieveConfig } from './helpers.js';
 
+const baseParams = [
+  'node',
+  'cli.js',
+  '--dry',
+  '--url',
+  'https://www.example.com',
+];
+
 describe.each(['block', 'blockDomains'])(
   'CLI parameter array collapsing for --%s',
   param => {
-    const baseParams = [
-      'node',
-      'cli.js',
-      '--dry',
-      '--url',
-      'https://www.example.com',
-    ];
-
     describe('Single string', () => {
       let config;
 
@@ -182,3 +182,24 @@ describe.each(['block', 'blockDomains'])(
     });
   },
 );
+
+describe('CLI should be logged in config.json', () => {
+  let config;
+
+  beforeAll(() => {
+    const output = spawnSync(baseParams[0], baseParams.slice(1));
+    const outputLogs = output.stdout.toString();
+    const match = outputLogs.match(/Test ID:(.*)/);
+    if (match && match.length > 1) {
+      config = retrieveConfig(match[1].trim());
+    }
+  });
+
+  it('generates a Configuration file', async () => {
+    expect(config).toBeTruthy();
+  });
+
+  it('captures CLI command in config', async () => {
+    expect(config.options.command).toEqual(baseParams.slice(2));
+  });
+});
