@@ -1,16 +1,193 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import TopNav from '../components/TopNav.astro';
+import '../styles/pages.css';
 
-export const prerender = false;
+export const prerender = false; // make SSR because needs dynamic backend services
 ---
 
 <Layout title="Upload Test Results - Telescope">
   <TopNav active="upload" />
   <section class="data-content">
     <h1>Upload Test Results</h1>
-    <h2>
-      Upload an existing test result as a ZIP file to view them in the UI.
-    </h2>
-  </section></Layout
->
+    <h2>Upload an existing test result as a ZIP to view it in the web UI.</h2>
+
+    <div class="overview-section">
+      <form id="upload-form" class="upload-form">
+        <input type="hidden" name="source" value="upload" />
+        <div class="form-group">
+          <label for="file-upload">
+            <span>Test Results Upload</span>
+            <span class="required">*</span>
+          </label>
+          <div class="file-upload-area" id="file-upload-area">
+            <input
+              type="file"
+              id="file-upload"
+              name="file"
+              accept=".zip"
+              required
+              style="display: none;"
+            />
+            <div class="file-upload-content">
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <p>Click to select a file or drag and drop</p>
+              <p class="file-upload-hint">Accepted formats: ZIP</p>
+              <p id="file-name" class="file-name" style="display: none;"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="name">
+            <span>Name (optional)</span>
+          </label>
+          <input type="text" id="name" name="name" placeholder="Test Name" />
+          <span class="form-help">Custom name for the test</span>
+        </div>
+
+        <div class="form-group">
+          <label for="description">
+            <span>Description (optional)</span>
+          </label>
+          <textarea
+            rows="3"
+            id="description"
+            name="description"
+            placeholder="Test Description"></textarea>
+          <span class="form-help">Custom description for the test</span>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="button button-primary">Upload</button>
+          <button type="reset" class="button button-secondary">Reset</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="upload-status" class="test-status" style="display: none;">
+      <div class="status-message"></div>
+    </div>
+  </section>
+</Layout>
+
+<!-- use 'script' tag for client-side logic -->
+<script>
+  const form = document.getElementById('upload-form') as HTMLFormElement;
+  const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+  const fileUploadArea = document.getElementById(
+    'file-upload-area',
+  ) as HTMLElement;
+  const fileName = document.getElementById('file-name') as HTMLElement;
+  const statusDiv = document.getElementById('upload-status') as HTMLElement;
+  const statusMessage = statusDiv.querySelector(
+    '.status-message',
+  ) as HTMLElement;
+
+  // File input click handler
+  fileUploadArea.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  // Drag and drop handlers
+  fileUploadArea.addEventListener('dragover', e => {
+    e.preventDefault();
+    fileUploadArea.classList.add('dragover');
+  });
+
+  fileUploadArea.addEventListener('dragleave', () => {
+    fileUploadArea.classList.remove('dragover');
+  });
+
+  fileUploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    fileUploadArea.classList.remove('dragover');
+
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      fileInput.files = files;
+      updateFileName(files[0].name);
+    }
+  });
+
+  fileInput.addEventListener('change', e => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      updateFileName(target.files[0].name);
+    }
+  });
+
+  function updateFileName(name: string) {
+    fileName.textContent = `Selected: ${escapeHtml(name)}`;
+    fileName.style.display = 'block';
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+      statusMessage.innerHTML = '<p>Error: Please select a file to upload</p>';
+      statusDiv.className = 'test-status status-error';
+      statusDiv.style.display = 'block';
+      return;
+    }
+
+    const formData = new FormData(form);
+
+    statusDiv.style.display = 'block';
+    statusMessage.innerHTML = '<p>Uploading file...</p>';
+    statusDiv.className = 'test-status status-running';
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Upload failed' }));
+        throw new Error(errorData.error || 'Failed to upload file');
+      }
+
+      const result = await response.json();
+
+      if (result.testId) {
+        statusMessage.innerHTML = `
+          <p>Upload successful!</p>
+          <p>Test ID: <strong>${escapeHtml(result.testId)}</strong></p>
+          <p><a href="/data/overview/${result.testId}" class="button button-primary">View Results</a></p>
+        `;
+        statusDiv.className = 'test-status status-success';
+        form.reset();
+        fileName.style.display = 'none';
+      } else {
+        throw new Error('No test ID returned');
+      }
+    } catch (error) {
+      statusMessage.innerHTML = `
+        <p>Error: ${escapeHtml((error as Error).message)}</p>
+      `;
+      statusDiv.className = 'test-status status-error';
+    }
+  });
+
+  function escapeHtml(text: string): string {
+    // protection against XSS by sanitizing user input
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+</script>
