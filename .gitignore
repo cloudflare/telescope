@@ -2,6 +2,3 @@ results/
 node_modules/
 tmp/
 .DS_Store
-
-# just for testing 
-telescope-web/
