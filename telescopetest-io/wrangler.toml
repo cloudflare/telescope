@@ -18,7 +18,6 @@ enabled = true
 [[d1_databases]]
 binding = "telescope_db"
 database_name = "telescope-db"
-database_id = "e2c795f9-961d-4470-8896-80263d598c99"
-
+database_id = "e34fc42f-f72a-4a88-b097-9d5ea67618f3"
 
 

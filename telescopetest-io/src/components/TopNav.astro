@@ -55,12 +55,6 @@ const { active, inactive } = Astro.props;
         const path = window.location.pathname;
         if (path === '/' || path === '/index' || path === '/home') {
           this._activeTab = 'home';
-        } else if (path.startsWith('/basic')) {
-          this._activeTab = 'basic';
-        } else if (path.startsWith('/advanced')) {
-          this._activeTab = 'advanced';
-        } else if (path.startsWith('/data')) {
-          this._activeTab = 'results';
         } else if (path.startsWith('/upload')) {
           this._activeTab = 'upload';
         } else {
@@ -93,9 +87,6 @@ const { active, inactive } = Astro.props;
     private render() {
       const navItems = [
         { name: 'home', label: 'Home', href: '/' },
-        { name: 'basic', label: 'Basic', href: '/basic' },
-        { name: 'advanced', label: 'Advanced', href: '/advanced' },
-        { name: 'results', label: 'Results', href: '/data' },
         { name: 'upload', label: 'Upload', href: '/upload' },
       ];
 
