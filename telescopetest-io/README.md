@@ -2,6 +2,12 @@
 
 This is the website for users to upload and view telescope ZIP results. This is built with Astro web framework and hosted on Cloudflare Workers.
 
+## Work Log
+
+- To create a d1 db, I ran `npx wrangler@latest d1 create telescope-db`: https://developers.cloudflare.com/d1/get-started/.
+- Then connected it to a db/schema.sql I made: `npx wrangler d1 execute telescope-db --local --file=./db/schema.sql`. Got some error about FileHandle error 22. This created a local db. I had to fix the error by updating my local wrangler version to the most recent.
+- I tested it with:
+
 ## Directory Structure
 
 ```

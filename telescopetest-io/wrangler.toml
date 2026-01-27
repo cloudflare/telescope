@@ -13,3 +13,12 @@ run_worker_first = true
 
 [observability]
 enabled = true
+
+# Local D1 database
+[[d1_databases]]
+binding = "telescope_db"
+database_name = "telescope-db"
+database_id = "e2c795f9-961d-4470-8896-80263d598c99"
+
+
+
