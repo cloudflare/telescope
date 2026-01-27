@@ -6,9 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro build && wrangler dev",
-    "astro": "astro",
-    "deploy": "astro build && wrangler deploy",
-    "cf-typegen": "wrangler types"
+    "cf": "astro build && wrangler dev",
+    "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",

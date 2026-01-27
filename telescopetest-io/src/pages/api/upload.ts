@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
-import { TestConfig, TestSource, TestStatus } from '../../types/testConfig';
+import { TestConfig, TestSource } from '../../types/testConfig';
+
+export const prerender = false; // make SSR because needs dynamic backend services
 
 
 /**
@@ -34,6 +36,7 @@ export const POST: APIRoute = async (context: any) => {
 
     // Access D1 database - try both env parameter and context.locals.runtime
     const env = context.env || context.locals?.runtime?.env;
+    console.log("this is env: ", env);
     const existing = await env.RESULTS_BUCKET.get(fileKey);
     if (existing) {
       return new Response(JSON.stringify({ error: 'Test already exists' }), {
@@ -76,7 +79,6 @@ export const POST: APIRoute = async (context: any) => {
       case TestSource.AGENT:
         break;
     }
-    testConfig.status = TestStatus.COMPLETED;
 
     // store the zip file in the results bucket
     // metadata will be pulled from the db
