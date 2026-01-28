@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS tests (
   zip_key TEXT UNIQUE NOT NULL, -- upload.ts: generated hash used as R2 storage key
   name TEXT, -- UI
   description TEXT, -- UI 
-  source TEXT, -- upload.ts: derived
+  source TEXT, -- upload.ts: not yet in config.json, will always be unknown 
   url TEXT NOT NULL,
   test_date DATE NOT NULL,
   browser TEXT NOT NULL,

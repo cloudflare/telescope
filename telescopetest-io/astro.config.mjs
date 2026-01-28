@@ -12,4 +12,9 @@ export default defineConfig({
 
     imageService: 'cloudflare',
   }),
+  vite: {
+    ssr: {
+      external: ['node:path', 'node:fs/promises', 'node:url', 'node:crypto']
+    }
+  }
 });

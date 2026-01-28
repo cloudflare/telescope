@@ -47,15 +47,15 @@ export const POST: APIRoute = async (context: any) => {
 
     // Generate content-based hash for unique R2 storage key
     const zipKey = await generateContentHash(buffer);
-    console.log('zipKey (content hash): ', zipKey);
-    console.log('files: ', files);
+    console.log('LOG: zipKey (content hash): ', zipKey);
+    console.log('LOG: files: ', files);
 
-    // get env (pass into other functions) -> in try except ? 
-    const env = context.locals?.runtime?.env;
+    // get env (pass into other functions) -> could put in try except ? 
+    const env = context.env || context.locals?.runtime?.env;
 
-    // Check if this exact content already exists in R2
-    const existing = await env.RESULTS_BUCKET.get(zipKey);
-    if (existing) {
+    // Check if this exact content already exists in R2 -> check for anything starting with '{zipKey}/'
+    const existing = await env.RESULTS_BUCKET.list({ prefix: `${zipKey}/`, limit: 1 });
+    if (existing.objects.length > 0) {
       return new Response(
         JSON.stringify({
           error:
@@ -80,7 +80,7 @@ export const POST: APIRoute = async (context: any) => {
       );
     }
 
-    // Extract and parse config.json - fflate returns Uint8Array, need to decode to string
+    // Extract and parse config.json
     const configData = unzipped[configFile];
     if (!configData) {
       return new Response(
@@ -93,14 +93,15 @@ export const POST: APIRoute = async (context: any) => {
     }
     const configText = new TextDecoder('utf-8').decode(configData);
     const config = JSON.parse(configText);
-
+    const source = formData.get('source');
     let testConfig = TestConfig.fromConfig(config, zipKey);
-    switch (testConfig.source) {
-      // if the source is upload, then we need to get the name and description from the form data
+    switch (source) {
+      // if the source is upload, then we also need to get the name and description from the form data
       case TestSource.UPLOAD:
+        console.log('LOG: hit upload as the source');
         testConfig.name = formData.get('name') as string;
         testConfig.description = formData.get('description') as string;
-        testConfig.source = formData.get('source') as TestSource;
+        testConfig.source = source as TestSource;
         break;
       // if the source is api, then we don't need to do anything
       case TestSource.API:
@@ -109,11 +110,14 @@ export const POST: APIRoute = async (context: any) => {
       case TestSource.AGENT:
         break;
     }
+    console.log('LOG: current testConfig: ', testConfig);
 
-    // store the zip file in the results bucket
-    // metadata will be pulled from the db
-    await env.RESULTS_BUCKET.put(zipKey, buffer);
-    // store the test config in the db
+    // Store all unzipped files in R2 with {zipKey}/{filename} format
+    for (const filename of files) {
+      await env.RESULTS_BUCKET.put(`${zipKey}/${filename}`, unzipped[filename]);
+    }
+
+    // store the test config (metadata) in the db
     await testConfig.saveToD1(env);
     return new Response(
       JSON.stringify({
