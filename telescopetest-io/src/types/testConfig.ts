@@ -38,7 +38,7 @@ export class TestConfig {
     testConfig.description = config.description || null;
     testConfig.source = config.source || TestSource.UNKNOWN;
     testConfig.url = config.url || '';
-    testConfig.test_date = config.test_date || null;
+    testConfig.test_date = config.date || null;
     testConfig.browser = config.options.browser || '';
     testConfig.created_at =
       Math.floor(new Date(config.date).getTime() / 1000) ||
@@ -59,7 +59,7 @@ export class TestConfig {
     testConfig.description = data.description || null;
     testConfig.source = data.source || TestSource.UNKNOWN;
     testConfig.url = data.url || '';
-    testConfig.test_date = data.test_date || null;
+    testConfig.test_date = data.date || null;
     testConfig.browser = data.options.browser || '';
     return testConfig;
   }
