@@ -1,6 +1,6 @@
 -- Telescope Web UI - D1 Database Schema
 
--- Test results table - stores info for results cards: URL, test time (date), browser
+-- test - stores info for results cards: URL, test time (date), browser
 CREATE TABLE IF NOT EXISTS tests (
   test_id TEXT PRIMARY KEY,
   zip_key TEXT UNIQUE NOT NULL, -- upload.ts: generated hash used as R2 storage key

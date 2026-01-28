@@ -118,7 +118,7 @@ export const POST: APIRoute = async (context: any) => {
     }
 
     // store the test config (metadata) in the db
-    await testConfig.saveToD1(env);
+    await testConfig.saveToD1(env); // will throw error if duplicate zip_key
     return new Response(
       JSON.stringify({
         success: true,
