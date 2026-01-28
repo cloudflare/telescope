@@ -3,6 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
+    "list-local-r2": "sqlite3 .wrangler/state/v3/r2/miniflare-R2BucketObject/*.sqlite 'SELECT key, size FROM _mf_objects'",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro build && wrangler dev --env development",
