@@ -1,12 +1,12 @@
 -- Telescope Web UI - D1 Database Schema
 
--- Test results table - stores info for card: URL, test time (date), browser
--- not final screenshot
+-- Test results table - stores info for results cards: URL, test time (date), browser
 CREATE TABLE IF NOT EXISTS tests (
   test_id TEXT PRIMARY KEY,
+  zip_key TEXT UNIQUE NOT NULL, -- upload.ts: generated hash used as R2 storage key
   name TEXT, -- UI
   description TEXT, -- UI 
-  source TEXT, -- derived
+  source TEXT, -- upload.ts: derived
   url TEXT NOT NULL,
   test_date DATE NOT NULL,
   browser TEXT NOT NULL,
@@ -16,3 +16,4 @@ CREATE TABLE IF NOT EXISTS tests (
 
 CREATE INDEX IF NOT EXISTS idx_tests_created_at ON tests(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_tests_updated_at ON tests(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tests_file_key ON tests(zip_key);
