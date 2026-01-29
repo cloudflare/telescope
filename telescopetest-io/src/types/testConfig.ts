@@ -1,3 +1,5 @@
+// data models related to tests
+
 export enum TestSource {
   BASIC = 'basic',
   ADVANCED = 'advanced',
@@ -79,41 +81,6 @@ export class TestConfig {
           return v.toString(16);
         },
       );
-    }
-  }
-
-  async saveToD1(env: any): Promise<any | null> {
-    try {
-      const stmt = env.TELESCOPE_DB.prepare(`
-    INSERT INTO tests (
-      test_id,
-      zip_key, 
-      name, 
-      description,
-      source,
-      url,
-      test_date,
-      browser,
-      created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-      await stmt
-        .bind(
-          this.test_id,
-          this.zip_key,
-          this.name,
-          this.description,
-          this.source,
-          this.url,
-          this.test_date,
-          this.browser,
-          this.created_at,
-        )
-        .run();
-      return stmt.changes;
-    } catch (error) {
-      console.error('Failed to save test:', error);
-      return null;
     }
   }
 }
