@@ -13,24 +13,31 @@
   "scripts": {
     "start": "node cli.js",
     "test": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --verbose --maxWorkers=1",
+    "test:ci": "export CI=true; npm test",
     "testAction": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest __tests__/browsers.test.js --verbose",
     "coverage": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --collect-coverage --verbose --maxWorkers=1",
     "clean": "rm -rf node_modules results",
     "prettier": "npx prettier --write .",
     "postinstall": "npx playwright install"
   },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "<rootDir>/__tests__/helpers.js"
+    ]
+  },
   "devDependencies": {
-    "@playwright/test": "next",
+    "@playwright/test": "^1.57.0",
     "jest": "^29.5.0",
     "prettier": "^3.6.2",
     "prettier-plugin-ejs": "^1.0.3"
   },
   "dependencies": {
     "@sitespeed.io/throttle": "^5.0.0",
+    "adm-zip": "^0.5.16",
     "commander": "^10.0.0",
     "ejs": "^3.1.10",
     "ffmpeg": "^0.0.4",
-    "playwright": "next",
-    "playwright-webkit": "next"
+    "playwright": "^1.57.0",
+    "playwright-webkit": "^1.57.0"
   }
 }

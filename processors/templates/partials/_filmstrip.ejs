@@ -1,20 +1,23 @@
-    <section id="filmstrip">
-        <h2>Page Load Filmstrip</h2>
-        <div class="filmstrip-container">
-            <% if (hasFilmstrip) { %>
-                <% filmstripData.forEach(function(frame) { %>
-                    <div class="filmstrip-frame">
-                        <img src="<%= frame.imagePath %>" alt="<%= frame.timestamp %>">
-                        <div class="filmstrip-timestamp"><%= frame.timestamp %></div>
-                    </div>
-                <% }); %>
-            <% } %>
-            <% if (hasFinalScreenshot) { %>
-                <div class="filmstrip-frame">
-                    <img src="<%= finalScreenshotPath %>" alt="<%= finalScreenshotTimestamp %>">
-                    <div class="filmstrip-timestamp">Final: <%= finalScreenshotTimestamp %> ms</div>
-                </div>
-            <% } %>
-        </div>
-    </section>
-
+<section id="filmstrip">
+  <h2>Page Load Filmstrip</h2>
+  <div class="filmstrip-container">
+    <% if (hasFilmstrip) { %> <% filmstripData.forEach(function(frame) { %>
+    <div class="filmstrip-frame">
+      <img src="<%= frame.imagePath %>" alt="<%= frame.timestamp %>" />
+      <div class="filmstrip-timestamp"><%= frame.timestamp %></div>
+    </div>
+    <% }); %>
+    <% } %>
+    <% if (hasFinalScreenshot) { %>
+    <div class="filmstrip-frame">
+      <img
+        src="<%= finalScreenshotPath %>"
+        alt="<%= finalScreenshotTimestamp %>"
+      />
+      <div class="filmstrip-timestamp">
+        Final: <%= finalScreenshotTimestamp %> ms
+      </div>
+    </div>
+    <% } %>
+  </div>
+</section>

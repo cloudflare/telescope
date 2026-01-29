@@ -33,6 +33,8 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @property {boolean=} html
  * @property {boolean=} openHtml
  * @property {boolean=} list
+ * @property {Record<string, string>=} overrideHost
+ * @property {boolean=} zip
  */
 
 /**
@@ -94,6 +96,20 @@ async function executeTest(options) {
   const Runner = getRunner(config, browserConfig);
 
   try {
+    await Runner.saveConfig();
+
+    // Bail out early if we're just doing a dry run
+    if (config.dry) {
+      Runner.cleanup();
+
+      return {
+        success: true,
+        dry: true,
+        testId: Runner.TESTID,
+        resultsPath: Runner.paths.results,
+      };
+    }
+
     await Runner.setupTest();
     await Runner.doNavigation();
     await Runner.postProcess();
@@ -144,7 +160,7 @@ export default function browserAgent() {
     .description('Cross-browser synthetic testing agent')
     .requiredOption('-u, --url <url>', 'URL to run tests against')
     .addOption(
-      new Option('-b, --browser <browser_name>', 'Browser to tests against')
+      new Option('-b, --browser <browser_name>', 'Browser to run tests with')
         .default(DEFAULT_OPTIONS.browser)
         .choices([
           'chrome',
@@ -197,7 +213,7 @@ export default function browserAgent() {
         .default(DEFAULT_OPTIONS.connectionType)
         .choices([
           'cable',
-          'dls',
+          'dsl',
           '4g',
           '3g',
           '3gfast',
@@ -235,7 +251,7 @@ export default function browserAgent() {
     .addOption(
       new Option(
         '--auth <object>',
-        'Basic HTTP authentication (Expects: {"username": "", "password":""}) ',
+        'Basic HTTP authentication (Expects: {"username": "", "password": ""})',
       ).default(DEFAULT_OPTIONS.auth),
     )
     .addOption(
@@ -260,10 +276,40 @@ export default function browserAgent() {
         DEFAULT_OPTIONS.list,
       ),
     )
+    .addOption(
+      new Option(
+        '--overrideHost <object>',
+        'Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})',
+      ),
+    )
+    .addOption(
+      new Option(
+        '--zip',
+        'Zip the results of the test into the results directory.',
+      ).default(DEFAULT_OPTIONS.zip),
+    )
+    .addOption(
+      new Option(
+        '--dry',
+        'Dry run (do not run test, just save config and cleanup)',
+      ).default(DEFAULT_OPTIONS.dry),
+    )
     .parse(process.argv);
 
   const cliOptions = program.opts();
-  const options = normalizeCLIConfig(cliOptions);
+  let options;
+
+  try {
+    options = normalizeCLIConfig(cliOptions);
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+
+  // Capture the CLI command for repeatability
+  if (process.argv.length > 2) {
+    options.command = process.argv.splice(2);
+  }
 
   (async () => {
     const result = await launchTest(options);
