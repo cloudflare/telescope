@@ -13,29 +13,23 @@ const { active, inactive } = Astro.props;
   class TopNav extends HTMLElement {
     private _activeTab: string = '';
     private _inactiveTab: string = '';
-
     static get observedAttributes() {
       return ['active', 'inactive'];
     }
-
     get activeTab(): string {
       return this._activeTab;
     }
-
     set activeTab(value: string) {
       this._activeTab = value;
       this.setAttribute('active', value);
     }
-
     get inactiveTab(): string {
       return this._inactiveTab;
     }
-
     set inactiveTab(value: string) {
       this._inactiveTab = value;
       this.setAttribute('inactive', value);
     }
-
     attributeChangedCallback(name: string, oldValue: string, newValue: string) {
       if (oldValue !== newValue && name === 'active') {
         this._activeTab = newValue || '';
@@ -46,7 +40,6 @@ const { active, inactive } = Astro.props;
         this.render();
       }
     }
-
     connectedCallback() {
       const activeAttr = this.getAttribute('active');
       if (activeAttr) {
@@ -61,12 +54,9 @@ const { active, inactive } = Astro.props;
           this._activeTab = '';
         }
       }
-
-      // Initialize theme from localStorage or system preference
-      this.initTheme();
-      this.render();
+      this.initTheme(); // init theme (light/dark mode)
+      this.render(); // render navigation html
     }
-
     private initTheme() {
       const savedTheme = localStorage.getItem('theme');
       const prefersDark = window.matchMedia(
@@ -75,7 +65,6 @@ const { active, inactive } = Astro.props;
       const theme = savedTheme || (prefersDark ? 'dark' : 'light');
       document.documentElement.setAttribute('data-theme', theme);
     }
-
     private toggleTheme() {
       const currentTheme = document.documentElement.getAttribute('data-theme');
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -83,17 +72,14 @@ const { active, inactive } = Astro.props;
       localStorage.setItem('theme', newTheme);
       this.render(); // Re-render to update icon
     }
-
     private render() {
       const navItems = [
         { name: 'home', label: 'Home', href: '/' },
         { name: 'upload', label: 'Upload', href: '/upload' },
       ];
-
       const currentTheme =
         document.documentElement.getAttribute('data-theme') || 'light';
       const themeIcon = currentTheme === 'dark' ? '☀️' : '🌙';
-
       this.innerHTML = `
         <nav class="top-nav">
           <a class="brand" href="/">Telescope</a>
@@ -121,7 +107,6 @@ const { active, inactive } = Astro.props;
           </a>
         </nav>
       `;
-
       // Attach event listener to theme toggle button
       const themeButton = this.querySelector('.theme-toggle');
       if (themeButton) {
@@ -129,6 +114,5 @@ const { active, inactive } = Astro.props;
       }
     }
   }
-
   customElements.define('top-nav', TopNav);
 </script>

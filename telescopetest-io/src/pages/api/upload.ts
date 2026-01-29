@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { TestConfig, TestSource } from '../../types/testConfig';
-
+import { TestRepository } from '../../lib/d1/repositories/test-repository';
+import { R2Client } from '../../lib/r2/r2-client';
 export const prerender = false;
 
 /**
@@ -18,6 +19,7 @@ async function getFilesFromZip(
   return unzipped;
 }
 
+
 /**
  * Generate a SHA-256 hash of the buffer contents to use as unique identifier
  * @param buffer - ArrayBuffer containing the file data
@@ -29,6 +31,7 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
 }
+
 
 export const POST: APIRoute = async (context: any) => {
   try {
@@ -44,30 +47,30 @@ export const POST: APIRoute = async (context: any) => {
     const buffer = await file.arrayBuffer();
     const unzipped = await getFilesFromZip(buffer);
     const files = Object.keys(unzipped).filter(name => !name.endsWith('/'));
-
     // Generate content-based hash for unique R2 storage key
     const zipKey = await generateContentHash(buffer);
     console.log('LOG: zipKey (content hash): ', zipKey);
     console.log('LOG: files: ', files);
-
-    // get env (pass into other functions) -> could put in try except ? 
+    // get env (pass into other functions) and d1 and r2 -> could put in try except ? 
+    console.log('LOG: context.env: ', context.env);
+    console.log('LOG: context.locals?.runtime?.env, ', context.locals?.runtime?.env);
     const env = context.env || context.locals?.runtime?.env;
-
-    // Check if this exact content already exists in R2 -> check for anything starting with '{zipKey}/'
-    const existing = await env.RESULTS_BUCKET.list({ prefix: `${zipKey}/`, limit: 1 });
-    if (existing.objects.length > 0) {
+    console.log('LOG: env :', env);
+    const testRepo = new TestRepository(env.TELESCOPE_DB);
+    const r2Client = new R2Client(env.RESULTS_BUCKET);
+    // Check if this exact content already exists in D1 -> check for hash
+    const existing = await testRepo.findByZipKey(zipKey);
+    if (existing) {
       return new Response(
         JSON.stringify({
-          error:
-            'This test content already exists. Duplicate uploads are not allowed.',
+          error: 'This test content already exists. Duplicate uploads are not allowed.',
         }),
         {
-          status: 409, // duplicate 
+          status: 409,
           headers: { 'Content-Type': 'application/json' },
         },
       );
     }
-
     // Confirm the config file exists
     const configFile = `config.json`;
     if (!files.includes(configFile)) {
@@ -79,7 +82,6 @@ export const POST: APIRoute = async (context: any) => {
         { status: 402, headers: { 'Content-Type': 'application/json' } },
       );
     }
-
     // Extract and parse config.json
     const configData = unzipped[configFile];
     if (!configData) {
@@ -111,18 +113,17 @@ export const POST: APIRoute = async (context: any) => {
         break;
     }
     console.log('LOG: current testConfig: ', testConfig);
-
     // Store all unzipped files in R2 with {zipKey}/{filename} format
     for (const filename of files) {
-      await env.RESULTS_BUCKET.put(`${zipKey}/${filename}`, unzipped[filename]);
+      await r2Client.put(`${zipKey}/${filename}`, unzipped[filename]);
     }
-
     // store the test config (metadata) in the db
-    await testConfig.saveToD1(env); // will throw error if duplicate zip_key
+    await testRepo.create(testConfig); // will throw error if duplicate zip_key
+    console.log('LOG: Successful insert into DB');
     return new Response(
       JSON.stringify({
         success: true,
-        testId: testConfig.test_id,
+        testId: testConfig.test_id, // returned on success
         message: 'Upload processed successfully',
       }),
       {
