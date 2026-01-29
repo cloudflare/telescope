@@ -49,17 +49,12 @@ export const POST: APIRoute = async (context: any) => {
     const files = Object.keys(unzipped).filter(name => !name.endsWith('/'));
     // Generate content-based hash for unique R2 storage key
     const zipKey = await generateContentHash(buffer);
-    console.log('LOG: zipKey (content hash): ', zipKey);
-    console.log('LOG: files: ', files);
-    // get env (pass into other functions) and d1 and r2 -> could put in try except ? 
-    console.log('LOG: context.env: ', context.env);
-    console.log('LOG: context.locals?.runtime?.env, ', context.locals?.runtime?.env);
-    const env = context.env || context.locals?.runtime?.env;
-    console.log('LOG: env :', env);
+    // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime 
+    const env = context.locals?.runtime?.env;
     const testRepo = new TestRepository(env.TELESCOPE_DB);
     const r2Client = new R2Client(env.RESULTS_BUCKET);
-    // Check if this exact content already exists in D1 -> check for hash
-    const existing = await testRepo.findByZipKey(zipKey);
+    // Check if this exact content already exists in D1
+    const existing = await testRepo.findTestByZipKey(zipKey);
     if (existing) {
       return new Response(
         JSON.stringify({
@@ -100,30 +95,32 @@ export const POST: APIRoute = async (context: any) => {
     switch (source) {
       // if the source is upload, then we also need to get the name and description from the form data
       case TestSource.UPLOAD:
-        console.log('LOG: hit upload as the source');
         testConfig.name = formData.get('name') as string;
         testConfig.description = formData.get('description') as string;
         testConfig.source = source as TestSource;
         break;
-      // if the source is api, then we don't need to do anything
+      // if the source is api, then we don't need to add name/desc -> need to test 
       case TestSource.API:
         break;
-      // if the source is agent, then we don't need to do anything
+      // if the source is agent, then we don't need to add name/desc -> need to test 
       case TestSource.AGENT:
         break;
     }
-    console.log('LOG: current testConfig: ', testConfig);
-    // Store all unzipped files in R2 with {zipKey}/{filename} format
-    for (const filename of files) {
-      await r2Client.put(`${zipKey}/${filename}`, unzipped[filename]);
-    }
     // store the test config (metadata) in the db
-    await testRepo.create(testConfig); // will throw error if duplicate zip_key
-    console.log('LOG: Successful insert into DB');
+    await testRepo.create(testConfig);
+    const testId = await testRepo.findTestIdByZipKey(zipKey);
+    if (!testId) {
+      throw new Error('Failed to retrieve test_id after insert');
+    }
+    // store all unzipped files in R2 with {testId}/{filename} format
+    // storing with {testId}/ for future expansion to multiple users
+    for (const filename of files) {
+      await r2Client.put(`${testId}/${filename}`, unzipped[filename]);
+    }
     return new Response(
       JSON.stringify({
         success: true,
-        testId: testConfig.test_id, // returned on success
+        testId: testConfig.test_id, // returned to upload.astro on success
         message: 'Upload processed successfully',
       }),
       {

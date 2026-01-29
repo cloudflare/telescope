@@ -7,6 +7,7 @@ export class TestRepository {
   }
   /**
    * Create a new test entry
+   * Will throw error if duplicate zip_key
    */
   async create(testConfig: TestConfig) {
     const sql = `
@@ -15,7 +16,6 @@ export class TestRepository {
         url, test_date, browser, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
     return await this.client.execute(sql, [
       testConfig.test_id,
       testConfig.zip_key,
@@ -28,43 +28,30 @@ export class TestRepository {
       testConfig.created_at,
     ]);
   }
-  /**
-   * Find test by ID
-   */
-  async findById(testId: string) {
-    const sql = `SELECT * FROM tests WHERE test_id = ?`;
-    return await this.client.first(sql, [testId]);
-  }
+
   /**
    * Find test by zip_key
    */
-  async findByZipKey(zipKey: string) {
+  async findTestByZipKey(zipKey: string) {
     const sql = `SELECT * FROM tests WHERE zip_key = ?`;
     return await this.client.first(sql, [zipKey]);
   }
+  
   /**
-   * Find all tests
+   * Find test_id by zip_key
+   * Returns only the test_id string, or null if not found
+   * Validates that only one result exists (enforced by UNIQUE constraint on zip_key)
    */
-  async findAll(limit: number = 100, offset: number = 0) {
-    const sql = `SELECT * FROM tests ORDER BY created_at DESC LIMIT ? OFFSET ?`;
-    return await this.client.all(sql, [limit, offset]);
-  }
-  /**
-   * Delete test by ID
-   */
-  async deleteById(testId: string) {
-    const sql = `DELETE FROM tests WHERE test_id = ?`;
-    return await this.client.execute(sql, [testId]);
-  }
-  /**
-   * Update test
-   */
-  async update(testId: string, updates: Partial<TestConfig>) {
-    const entries = Object.entries(updates);
-    const setClauses = entries.map(([key]) => `${key} = ?`).join(', ');
-    const values = entries.map(([, value]) => value);
-    
-    const sql = `UPDATE tests SET ${setClauses} WHERE test_id = ?`;
-    return await this.client.execute(sql, [...values, testId]);
+  async findTestIdByZipKey(zipKey: string): Promise<string | null> {
+    const sql = `SELECT test_id FROM tests WHERE zip_key = ?`;
+    const result = await this.client.first(sql, [zipKey]);
+    if (!result) {
+      return null;
+    }
+    const testId = result.test_id;
+    if (!testId || typeof testId !== 'string') {
+      throw new Error(`Invalid test_id returned for zip_key: ${zipKey}`);
+    }
+    return testId;
   }
 }
