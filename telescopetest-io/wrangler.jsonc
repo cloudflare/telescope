@@ -33,6 +33,10 @@
           "custom_domain": true,
         },
       ],
+      "assets": {
+        "binding": "ASSETS",
+        "directory": "./dist",
+      },
       "d1_databases": [
         {
           "binding": "TELESCOPE_DB",
@@ -54,6 +58,10 @@
           "custom_domain": true,
         },
       ],
+      "assets": {
+        "binding": "ASSETS",
+        "directory": "./dist",
+      },
       "d1_databases": [
         {
           "binding": "TELESCOPE_DB",
