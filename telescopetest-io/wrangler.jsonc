@@ -12,23 +12,61 @@
   "observability": {
     "enabled": true,
   },
-  "routes": [
-    {
-      "pattern": "telescopetest.io",
-      "custom_domain": true,
-    },
-  ],
   "d1_databases": [
     {
       "binding": "TELESCOPE_DB",
-      "database_name": "telescope-db",
-      "database_id": "db0baebd-6b49-434b-bc31-fc9224ef4585",
+      "database_name": "db-dev",
+      "database_id": "doesnt-matter-but-needed",
     },
   ],
   "r2_buckets": [
     {
       "binding": "RESULTS_BUCKET",
-      "bucket_name": "results-bucket",
+      "bucket_name": "bucket-dev",
     },
   ],
+  "env": {
+    "staging": {
+      "routes": [
+        {
+          "pattern": "staging.telescopetest.io",
+          "custom_domain": true,
+        },
+      ],
+      "d1_databases": [
+        {
+          "binding": "TELESCOPE_DB",
+          "database_name": "telescope-db-staging",
+          "database_id": "88626165-c6c0-42bf-9e7d-c9317aa98968",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "RESULTS_BUCKET",
+          "bucket_name": "results-bucket-staging",
+        },
+      ],
+    },
+    "production": {
+      "routes": [
+        {
+          "pattern": "telescopetest.io",
+          "custom_domain": true,
+        },
+      ],
+      "d1_databases": [
+        {
+          "binding": "TELESCOPE_DB",
+          "database_name": "telescope-db",
+          "database_id": "db0baebd-6b49-434b-bc31-fc9224ef4585",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "RESULTS_BUCKET",
+          "bucket_name": "results-bucket",
+        },
+      ],
+    },
+  },
 }
