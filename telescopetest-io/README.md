@@ -17,6 +17,11 @@ For type safety, Worker and binding types are defined in `worker-configuration.d
 
 Make sure you've followed all steps in Project Setup. Then, you can run `npm run build` and then `npm run dev` to view the site with Astro's hot reload (instantly reflect changes) using the adapter for Cloudflare. Alternatively, you can run `npm run preview` to see Astro with Workers together in one step, but there's no hot reload.
 
+## Migrations
+
+- To make migrations and database management simpler, we're using Prisma ORM with D1. This is a preview feature that Prisma has been building out since 2024: https://www.prisma.io/docs/orm/overview/databases/cloudflare-d1#migration-workflows.
+- I followed direct docs from Prisma for sestup: https://www.prisma.io/docs/guides/cloudflare-d1.
+
 ## Testing in Staging
 
 Staging allows you to test changes in a remote environment that isn't production. To deploy to staging, run `npm run deploy:staging`. This command will only work if you have permission to deploy to telesceoptest-io's remote Worker.

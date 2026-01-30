@@ -1,0 +1,29 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  runtime  = "cloudflare"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Test {
+  testId      String   @id @map("test_id")
+  zipKey      String   @unique @map("zip_key")
+  name        String?
+  description String?
+  source      String?
+  url         String
+  testDate    String   @map("test_date")
+  browser     String
+  createdAt   Int      @default(dbgenerated("(unixepoch())")) @map("created_at")
+  updatedAt   Int      @default(dbgenerated("(unixepoch())")) @map("updated_at")
+  @@index([createdAt(sort: Desc)])
+  @@index([updatedAt(sort: Desc)])
+  @@index([zipKey])
+  @@map("tests")
+}
