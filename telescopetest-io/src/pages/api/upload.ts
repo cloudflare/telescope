@@ -1,7 +1,10 @@
-import type { APIRoute } from 'astro';
-import { TestConfig, TestSource } from '../../types/testConfig';
-import { TestRepository } from '../../lib/d1/repositories/test-repository';
-import { R2Client } from '../../lib/r2/r2-client';
+import type { APIContext, APIRoute } from 'astro';
+import { unzipSync } from 'fflate';
+import { z } from 'zod';
+
+import { TestConfig, TestSource } from '../../lib/classes/TestConfig';
+import { D1TestStore } from '../../lib/d1/test-store/d1-test-store';
+
 export const prerender = false;
 
 /**
@@ -13,12 +16,10 @@ export const prerender = false;
 async function getFilesFromZip(
   buffer: ArrayBuffer,
 ): Promise<Record<string, any>> {
-  const { unzipSync } = await import('fflate');
   const uint8Array = new Uint8Array(buffer);
   const unzipped = unzipSync(uint8Array);
   return unzipped;
 }
-
 
 /**
  * Generate a SHA-256 hash of the buffer contents to use as unique identifier
@@ -32,11 +33,31 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   return hashHex;
 }
 
-
-export const POST: APIRoute = async (context: any) => {
+export const POST: APIRoute = async (context: APIContext) => {
   try {
-    const formData = await context.request?.formData();
-    const file = formData.get('file') as File;
+    // Define schema
+    const uploadSchema = z.object({
+      file: z.instanceof(File),
+      name: z.string().optional(),
+      description: z.string().optional(),
+      source: z.enum(['upload', 'api', 'agent']),
+    });
+    // Validate formData
+    const formData = await context.request.formData();
+    const result = uploadSchema.safeParse({
+      // safeParse() is explicit runtime type check: https://zod.dev/basics?id=handling-errors
+      file: formData.get('file'),
+      name: formData.get('name'),
+      description: formData.get('description'),
+      source: formData.get('source'),
+    });
+    if (!result.success) {
+      return new Response(JSON.stringify({ error: result.error.errors }), {
+        status: 400,
+      });
+    }
+    // Use validated data
+    const { file, name, description, source } = result.data;
     if (!file) {
       return new Response(JSON.stringify({ error: 'No file provided' }), {
         status: 400,
@@ -49,16 +70,15 @@ export const POST: APIRoute = async (context: any) => {
     const files = Object.keys(unzipped).filter(name => !name.endsWith('/'));
     // Generate content-based hash for unique R2 storage key
     const zipKey = await generateContentHash(buffer);
-    // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime 
-    const env = context.locals?.runtime?.env;
-    const testRepo = new TestRepository(env.TELESCOPE_DB);
-    const r2Client = new R2Client(env.RESULTS_BUCKET);
+    // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
+    const env = context.locals.runtime.env;
+    const testStore = new D1TestStore(env.TELESCOPE_DB);
     // Check if this exact content already exists in D1
-    const existing = await testRepo.findTestByZipKey(zipKey);
-    if (existing) {
+    const existingTestId = await testStore.findTestIdByZipKey(zipKey);
+    if (existingTestId) {
       return new Response(
         JSON.stringify({
-          error: 'This test content already exists. Duplicate uploads are not allowed.',
+          error: `This test content already exists with test ID: ${existingTestId}. Duplicate uploads are not allowed.`,
         }),
         {
           status: 409,
@@ -74,53 +94,74 @@ export const POST: APIRoute = async (context: any) => {
           success: false,
           error: 'No config.json file found in the ZIP archive',
         }),
-        { status: 402, headers: { 'Content-Type': 'application/json' } },
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // Extract and parse config.json
-    const configData = unzipped[configFile];
-    if (!configData) {
+    // Extract config.json
+    const configBytes = unzipped[configFile];
+    if (!configBytes) {
       return new Response(
         JSON.stringify({
           success: false,
           error: 'Failed to extract config.json from ZIP',
         }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } },
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    const configText = new TextDecoder('utf-8').decode(configData);
-    const config = JSON.parse(configText);
-    const source = formData.get('source');
-    let testConfig = TestConfig.fromConfig(config, zipKey);
+    // Parse config.json
+    const configDecoder = new TextDecoder('utf-8', { fatal: true });
+    let configText;
+    try {
+      configText = configDecoder.decode(configBytes);
+    } catch (error) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Failed to decode UTF-8 config.json bytes',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    let config;
+    try {
+      config = JSON.parse(configText);
+    } catch (error) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Invalid JSON format in config.json',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    // create testConfig (ts class) object
+    let testConfig = new TestConfig(config, zipKey);
+    testConfig.name = name || null;
+    testConfig.description = description || null;
     switch (source) {
-      // if the source is upload, then we also need to get the name and description from the form data
       case TestSource.UPLOAD:
-        testConfig.name = formData.get('name') as string;
-        testConfig.description = formData.get('description') as string;
         testConfig.source = source as TestSource;
-        break;
-      // if the source is api, then we don't need to add name/desc -> need to test 
       case TestSource.API:
         break;
-      // if the source is agent, then we don't need to add name/desc -> need to test 
       case TestSource.AGENT:
         break;
     }
     // store the test config (metadata) in the db
-    await testRepo.create(testConfig);
-    const testId = await testRepo.findTestIdByZipKey(zipKey);
+    await testStore.createTestFromConfig(testConfig);
+    const testId = testConfig.test_id; // generated in constructor
+    console.log('test id: ', testId);
     if (!testId) {
       throw new Error('Failed to retrieve test_id after insert');
     }
     // store all unzipped files in R2 with {testId}/{filename} format
     // storing with {testId}/ for future expansion to multiple users
     for (const filename of files) {
-      await r2Client.put(`${testId}/${filename}`, unzipped[filename]);
+      await env.RESULTS_BUCKET.put(`${testId}/${filename}`, unzipped[filename]);
     }
     return new Response(
       JSON.stringify({
         success: true,
-        testId: testConfig.test_id, // returned to upload.astro on success
+        testId: testId, // returned to upload.astro on success
         message: 'Upload processed successfully',
       }),
       {

@@ -12,18 +12,15 @@ export enum TestSource {
 
 export class TestConfig {
   test_id: string;
-  zip_key?: string;
+  zip_key: string;
   name?: string | null;
   description?: string | null;
-  source?: TestSource | TestSource.UNKNOWN;
-  url?: string;
-  test_date?: Date;
-  browser?: string;
+  source: TestSource;
+  url: string;
+  test_date: number;
+  browser: string;
   created_at: number = Math.floor(Date.now() / 1000);
-
-  constructor() {
-    this.test_id = this.generateUUID(); 
-  }
+  updated_at: number = Math.floor(Date.now() / 1000);
 
   /// <summary>
   /// Create a TestConfig from a config file that is
@@ -32,22 +29,18 @@ export class TestConfig {
   /// <param name="config">The config object</param>
   /// <param name="zipKey">R2 storage key (content hash)</param>
   /// <returns>The TestConfig object</returns>
-  static fromConfig(config: Record<string, any>, zipKey?: string): TestConfig {
-    const testConfig = new TestConfig();
-    testConfig.zip_key = zipKey;
-    testConfig.name = config.name || null;
-    testConfig.description = config.description || null;
-    testConfig.source = config.source || TestSource.UNKNOWN;
-    testConfig.url = config.url || '';
-    testConfig.test_date = config.date || null;
-    testConfig.browser = config.options.browser || '';
-    testConfig.created_at =
-      Math.floor(new Date(config.date).getTime() / 1000) ||
-      Math.floor(Date.now() / 1000);
-    return testConfig;
+  constructor(config: Record<string, any>, zipKey: string) {
+    this.test_id = this.generateTestId();
+    this.zip_key = zipKey;
+    this.name = config.name || null;
+    this.description = config.description || null;
+    this.source = config.source || TestSource.UNKNOWN;
+    this.url = config.url;
+    this.test_date = Math.floor(new Date(config.date).getTime() / 1000);
+    this.browser = config.options.browser;
   }
 
-  private generateUUID(): string {
+  private generateTestId(): string {
     let date_ob = new Date();
     // adjust 0 before single digit value
     let date = ('0' + date_ob.getDate()).slice(-2);
@@ -69,18 +62,7 @@ export class TestConfig {
       '_' +
       second +
       '_' +
-      generatePseudoRandomUUID()
+      self.crypto.randomUUID()
     );
-
-    function generatePseudoRandomUUID(): string {
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
-        /[xy]/g,
-        function (c) {
-          const r = (Math.random() * 16) | 0;
-          const v = c === 'x' ? r : (r & 0x3) | 0x8;
-          return v.toString(16);
-        },
-      );
-    }
   }
 }

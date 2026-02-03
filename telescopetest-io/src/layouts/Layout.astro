@@ -4,8 +4,10 @@ export interface Props {
   description?: string;
 }
 
-const { title, description = 'Telescope - Browser Performance Testing' } =
-  Astro.props;
+const {
+  title,
+  description = 'Telescope - Cross Browser Performance Testing Agent',
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -14,7 +16,7 @@ const { title, description = 'Telescope - Browser Performance Testing' } =
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <link rel="stylesheet" href="/style.css" />

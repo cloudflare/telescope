@@ -6,12 +6,12 @@ CREATE TABLE IF NOT EXISTS tests (
   zip_key TEXT UNIQUE NOT NULL, -- upload.ts: generated hash used as R2 storage key
   name TEXT, -- UI
   description TEXT, -- UI 
-  source TEXT, -- upload.ts: not yet in config.json, will always be unknown 
+  source TEXT, -- upload.ts
   url TEXT NOT NULL,
-  test_date DATE NOT NULL,
+  test_date INTEGER NOT NULL,
   browser TEXT NOT NULL,
-  created_at INTEGER DEFAULT (unixepoch()),
-  updated_at INTEGER DEFAULT (unixepoch())
+  created_at INTEGER DEFAULT (unixepoch()), -- for SQL entry
+  updated_at INTEGER DEFAULT (unixepoch()) -- for SQL entry
 );
 
 CREATE INDEX IF NOT EXISTS idx_tests_created_at ON tests(created_at DESC);

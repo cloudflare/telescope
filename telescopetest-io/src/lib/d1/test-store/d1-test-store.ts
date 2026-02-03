@@ -1,15 +1,16 @@
 import { D1Client } from '../d1-client';
-import { TestConfig } from '../../../types/testConfig';
-export class TestRepository {
+import { TestConfig } from '../../classes/TestConfig';
+export class D1TestStore {
   private client: D1Client;
   constructor(d1Binding: any) {
     this.client = new D1Client(d1Binding);
   }
+
   /**
-   * Create a new test entry
+   * Create a new test entry from TestConfig object
    * Will throw error if duplicate zip_key
    */
-  async create(testConfig: TestConfig) {
+  async createTestFromConfig(testConfig: TestConfig) {
     const sql = `
       INSERT INTO tests (
         test_id, zip_key, name, description, source, 
@@ -27,14 +28,6 @@ export class TestRepository {
       testConfig.browser,
       testConfig.created_at,
     ]);
-  }
-
-  /**
-   * Find test by zip_key
-   */
-  async findTestByZipKey(zipKey: string) {
-    const sql = `SELECT * FROM tests WHERE zip_key = ?`;
-    return await this.client.first(sql, [zipKey]);
   }
   
   /**
