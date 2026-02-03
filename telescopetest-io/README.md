@@ -12,6 +12,10 @@ This is how to set up the project from scratch.
 
 To run this project locally, make sure your Node version is the most recent and change current directory to `telescopetest-io/`. You'll need to then run `npm install` and `npm run preview`.
 
+## Running Locally
+
+To run this project locally, make sure to update your Node version (to at least 18.17.1) and be in this telescopetest-io/ repository. You'll need Then run `npm install` and `npm run preview`.
+
 ## Deployment
 
 This website should only be deployed on Cloudflare workers on successful PR into @cloudflare/telescope. To run this deployment automatically, we have a GitHub workflow `.github/workflows/deploy.yml`. This is what that workflow does:
