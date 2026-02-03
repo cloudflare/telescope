@@ -29,7 +29,6 @@ export class D1TestStore {
       testConfig.created_at,
     ]);
   }
-
   /**
    * Find test_id by zip_key
    * Returns only the test_id string, or null if not found
