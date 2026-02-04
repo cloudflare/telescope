@@ -1,0 +1,17 @@
+---
+import Layout from './Layout.astro';
+import TopNav from '@/components/TopNav.astro';
+---
+
+<Layout title="Telescope Page">
+  <TopNav />
+  <slot />
+</Layout>
+
+<style>
+  :global(.data-content) {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+</style>

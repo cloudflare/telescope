@@ -2,7 +2,7 @@ import { D1Client } from '../d1-client';
 import { TestConfig } from '../../classes/TestConfig';
 export class D1TestStore {
   private client: D1Client;
-  constructor(d1Binding: any) {
+  constructor(d1Binding: Env['TELESCOPE_DB']) {
     this.client = new D1Client(d1Binding);
   }
 
@@ -29,7 +29,7 @@ export class D1TestStore {
       testConfig.created_at,
     ]);
   }
-  
+
   /**
    * Find test_id by zip_key
    * Returns only the test_id string, or null if not found

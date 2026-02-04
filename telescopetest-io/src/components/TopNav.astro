@@ -1,43 +1,159 @@
 ---
-export interface Props {
-  active?: string;
-}
-
-const { active } = Astro.props;
+const currentPath = Astro.url.pathname;
 
 const navItems = [
-  { name: 'home', label: 'Home', href: '/' },
-  { name: 'upload', label: 'Upload', href: '/upload' },
+  { label: 'Home', href: '/' },
+  { label: 'Upload', href: '/upload' },
 ];
 ---
 
-<nav class="top-nav">
-  <a class="brand" href="/">Telescope</a>
-  <div class="tabs">
-    {
-      navItems.map(item => (
-        <a
-          class={`tab ${active === item.name ? 'active' : ''}`}
-          href={item.href}
-        >
-          {item.label}
-        </a>
-      ))
-    }
+<header class="top-nav">
+  <div class="left">
+    <a class="brand" href="/">Telescope</a>
+    <nav>
+      <ul>
+        {
+          navItems.map(item => (
+            <li>
+              <a
+                class={currentPath === item.href ? 'active' : ''}
+                href={item.href}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
   </div>
-  <div class="spacer"></div>
-  <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
-    🌙
-  </button>
-  <a
-    class="gh"
-    href="https://github.com/cloudflare/telescope"
-    target="_blank"
-    rel="noreferrer"
-  >
-    GitHub ↗
-  </a>
-</nav>
+  <div class="actions">
+    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
+      🌙
+    </button>
+    <a
+      class="gh"
+      href="https://github.com/cloudflare/telescope"
+      target="_blank"
+      rel="noreferrer"
+    >
+      GitHub ↗
+    </a>
+  </div>
+</header>
+
+<style>
+  header {
+    width: max(500px, calc(100% - 68px));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 30px;
+    margin: 20px;
+    padding: 0 20px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+  }
+
+  :global([data-theme='dark']) header {
+    background: rgba(15, 15, 15, 0.9);
+  }
+
+  .left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .brand {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+
+  nav ul {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  nav ul li a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    font-size: 14px;
+  }
+
+  nav ul li a:hover {
+    border-color: var(--border);
+    background: var(--panel);
+    color: var(--text);
+  }
+
+  nav ul li a.active {
+    color: var(--text);
+    border-color: rgba(14, 165, 233, 0.35);
+    background: linear-gradient(
+      135deg,
+      rgba(14, 165, 233, 0.1),
+      rgba(59, 130, 246, 0.1)
+    );
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .theme-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .theme-toggle:hover {
+    background: var(--panel);
+    border-color: rgba(14, 165, 233, 0.35);
+  }
+
+  .gh {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .gh:hover {
+    color: var(--text);
+    border-color: rgba(14, 165, 233, 0.35);
+  }
+</style>
 
 <script>
   const savedTheme = localStorage.getItem('theme');

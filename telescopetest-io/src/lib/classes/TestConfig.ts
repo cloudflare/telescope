@@ -10,11 +10,20 @@ export enum TestSource {
   UNKNOWN = 'unknown',
 }
 
+// just for type checking
+type ConfigJson = {
+  url: string;
+  date: string;
+  options: {
+    browser: string;
+  };
+};
+
 export class TestConfig {
   test_id: string;
   zip_key: string;
-  name?: string | null;
-  description?: string | null;
+  name?: string;
+  description?: string;
   source: TestSource;
   url: string;
   test_date: number;
@@ -29,40 +38,31 @@ export class TestConfig {
   /// <param name="config">The config object</param>
   /// <param name="zipKey">R2 storage key (content hash)</param>
   /// <returns>The TestConfig object</returns>
-  constructor(config: Record<string, any>, zipKey: string) {
+  constructor(
+    config: ConfigJson,
+    zipKey: string,
+    source: TestSource,
+    name?: string,
+    description?: string,
+  ) {
     this.test_id = this.generateTestId();
     this.zip_key = zipKey;
-    this.name = config.name || null;
-    this.description = config.description || null;
-    this.source = config.source || TestSource.UNKNOWN;
+    this.name = name;
+    this.description = description;
+    this.source = source;
     this.url = config.url;
     this.test_date = Math.floor(new Date(config.date).getTime() / 1000);
     this.browser = config.options.browser;
   }
 
   private generateTestId(): string {
-    let date_ob = new Date();
-    // adjust 0 before single digit value
-    let date = ('0' + date_ob.getDate()).slice(-2);
-    let month = ('0' + (date_ob.getMonth() + 1)).slice(-2);
-    let year = date_ob.getFullYear();
-    let hour = ('0' + date_ob.getHours()).slice(-2);
-    let minute = ('0' + date_ob.getMinutes()).slice(-2);
-    let second = ('0' + date_ob.getSeconds()).slice(-2);
-    return (
-      year +
-      '_' +
-      month +
-      '_' +
-      date +
-      '_' +
-      hour +
-      '_' +
-      minute +
-      '_' +
-      second +
-      '_' +
-      self.crypto.randomUUID()
-    );
+    const date_ob = new Date();
+    const date = date_ob.getDate().toString().padStart(2, '0');
+    const month = (date_ob.getMonth() + 1).toString().padStart(2, '0');
+    const year = date_ob.getFullYear();
+    const hour = date_ob.getHours().toString().padStart(2, '0');
+    const minute = date_ob.getMinutes().toString().padStart(2, '0');
+    const second = date_ob.getSeconds().toString().padStart(2, '0');
+    return `${year}_${month}_${date}_${hour}_${minute}_${second}_${crypto.randomUUID()}`;
   }
 }

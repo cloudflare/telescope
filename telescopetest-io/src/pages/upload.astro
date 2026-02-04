@@ -1,12 +1,8 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import TopNav from '../components/TopNav.astro';
-
-export const prerender = false;
+import Page from '@/layouts/Page.astro';
 ---
 
-<Layout title="Upload Test Results - Telescope">
-  <TopNav active="upload" />
+<Page>
   <section class="data-content">
     <h1>Upload</h1>
     <h2>
@@ -80,7 +76,7 @@ export const prerender = false;
       <div class="status-message"></div>
     </div>
   </section>
-</Layout>
+</Page>
 
 <!-- client-side logic -->
 <script>
@@ -361,5 +357,20 @@ export const prerender = false;
   .status-message a {
     display: inline-block;
     margin-top: 8px;
+  }
+
+  .overview-section {
+    margin: 24px 0;
+    padding: 20px;
+    background: var(--panel);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .overview-section h3 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    color: var(--text);
+    font-weight: 600;
   }
 </style>

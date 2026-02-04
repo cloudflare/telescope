@@ -2,8 +2,9 @@ import type { APIContext, APIRoute } from 'astro';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
-import { TestConfig, TestSource } from '../../lib/classes/TestConfig';
-import { D1TestStore } from '../../lib/d1/test-store/d1-test-store';
+import { TestConfig, TestSource } from '@/lib/classes/TestConfig';
+import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
+import type { Unzipped } from 'fflate';
 
 export const prerender = false;
 
@@ -11,13 +12,16 @@ export const prerender = false;
  * Extract file list from ZIP archive
  * Works in both Node.js (adm-zip) and Cloudflare Workers (fflate) environments
  * @param buffer - ArrayBuffer containing ZIP file data
- * @returns Promise<string[]> - Array of file paths/names in the ZIP
+ * @returns Promise<Unzipped> - Unzipped type return
  */
-async function getFilesFromZip(
-  buffer: ArrayBuffer,
-): Promise<Record<string, any>> {
+async function getUnzipped(buffer: ArrayBuffer): Promise<Unzipped> {
   const uint8Array = new Uint8Array(buffer);
-  const unzipped = unzipSync(uint8Array);
+  const unzipped = unzipSync(uint8Array, {
+    filter: file => {
+      if (file.name.endsWith('/')) return false;
+      return true;
+    },
+  });
   return unzipped;
 }
 
@@ -35,14 +39,13 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
 
 export const POST: APIRoute = async (context: APIContext) => {
   try {
-    // Define schema
+    // Validate formData
     const uploadSchema = z.object({
       file: z.instanceof(File),
       name: z.string().optional(),
       description: z.string().optional(),
-      source: z.enum(['upload', 'api', 'agent']),
+      source: z.nativeEnum(TestSource),
     });
-    // Validate formData
     const formData = await context.request.formData();
     const result = uploadSchema.safeParse({
       // safeParse() is explicit runtime type check: https://zod.dev/basics?id=handling-errors
@@ -53,21 +56,16 @@ export const POST: APIRoute = async (context: APIContext) => {
     });
     if (!result.success) {
       return new Response(JSON.stringify({ error: result.error.errors }), {
+        // TODO: add custom error messaging
         status: 400,
       });
     }
-    // Use validated data
     const { file, name, description, source } = result.data;
-    if (!file) {
-      return new Response(JSON.stringify({ error: 'No file provided' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
     // Read file buffer
     const buffer = await file.arrayBuffer();
-    const unzipped = await getFilesFromZip(buffer);
-    const files = Object.keys(unzipped).filter(name => !name.endsWith('/'));
+    const unzipped = await getUnzipped(buffer);
+    const files = Object.keys(unzipped);
+    // const files = Object.keys(unzipped).filter(name => !name.endsWith('/'));
     // Generate content-based hash for unique R2 storage key
     const zipKey = await generateContentHash(buffer);
     // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
@@ -135,24 +133,20 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     // create testConfig (ts class) object
-    let testConfig = new TestConfig(config, zipKey);
-    testConfig.name = name || null;
-    testConfig.description = description || null;
-    switch (source) {
-      case TestSource.UPLOAD:
-        testConfig.source = source as TestSource;
-      case TestSource.API:
-        break;
-      case TestSource.AGENT:
-        break;
-    }
+    let testConfig = new TestConfig(config, zipKey, source, name, description);
     // store the test config (metadata) in the db
-    await testStore.createTestFromConfig(testConfig);
-    const testId = testConfig.test_id; // generated in constructor
-    console.log('test id: ', testId);
-    if (!testId) {
-      throw new Error('Failed to retrieve test_id after insert');
+    try {
+      await testStore.createTestFromConfig(testConfig);
+    } catch (error) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Failed to insert test: ${(error as Error).message}`,
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      );
     }
+    const testId = testConfig.test_id; // generated in constructor
     // store all unzipped files in R2 with {testId}/{filename} format
     // storing with {testId}/ for future expansion to multiple users
     for (const filename of files) {

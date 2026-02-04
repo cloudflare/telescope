@@ -1,6 +1,6 @@
 export class D1Client {
-  private db: any; // D1Database binding
-  constructor(db: any) {
+  private db;
+  constructor(db: Env['TELESCOPE_DB']) {
     this.db = db;
   }
   /**
@@ -23,5 +23,4 @@ export class D1Client {
     const bound = params.length > 0 ? stmt.bind(...params) : stmt;
     return await bound.first();
   }
-
 }
