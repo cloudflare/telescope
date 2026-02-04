@@ -14,7 +14,7 @@ To run this project locally, make sure your Node version is the most recent and 
 
 ## Running Locally
 
-To run this project locally, make sure to update your Node version (to at least 18.17.1) and be in this telescopetest-io/ repository. You'll need Then run `npm install` and `npm run preview`.
+To run this project locally, make sure your Node version is the most recent and change current directory to `telescopetest-io/`. You'll need to then run `npm install` and `npm run preview`.
 
 ## Deployment
 
