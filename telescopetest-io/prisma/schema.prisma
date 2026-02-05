@@ -18,7 +18,7 @@ model Test {
   description String?
   source      String?
   url         String
-  testDate    String   @map("test_date")
+  testDate    Int      @map("test_date")
   browser     String
   createdAt   Int      @default(dbgenerated("(unixepoch())")) @map("created_at")
   updatedAt   Int      @default(dbgenerated("(unixepoch())")) @map("updated_at")

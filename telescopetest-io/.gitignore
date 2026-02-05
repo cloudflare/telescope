@@ -29,4 +29,5 @@ pnpm-debug.log*
 !.dev.vars.example
 !.env.example
 
+# prisma 
 /src/generated/prisma

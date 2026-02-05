@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { TestConfig, TestSource } from '@/lib/classes/TestConfig';
 import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
+import { createPrismaClient } from '@/lib/prisma/client';
 
 export const prerender = false;
 
@@ -39,6 +40,7 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
 }
 
 export const POST: APIRoute = async (context: APIContext) => {
+  let prisma;
   try {
     // Validate formData
     const uploadSchema = z.object({
@@ -73,7 +75,12 @@ export const POST: APIRoute = async (context: APIContext) => {
     const env = context.locals.runtime.env;
     const testStore = new D1TestStore(env.TELESCOPE_DB);
     // Check if this exact content already exists in D1
-    const existingTestId = await testStore.findTestIdByZipKey(zipKey);
+
+    prisma = createPrismaClient(env.TELESCOPE_DB);
+    const existing = await prisma.test.findUnique({ where: { zipKey } });
+    const existingTestId = existing?.testId;
+
+    // const existingTestId = await testStore.findTestIdByZipKey(zipKey);
     if (existingTestId) {
       return new Response(
         JSON.stringify({
@@ -139,7 +146,20 @@ export const POST: APIRoute = async (context: APIContext) => {
     let testConfig = new TestConfig(config, zipKey, source, name, description);
     // store the test config (metadata) in the db
     try {
-      await testStore.createTestFromConfig(testConfig);
+      // await testStore.createTestFromConfig(testConfig);
+
+      await prisma.test.create({
+        data: {
+          testId: 'WHATEVER_RN',
+          zipKey: zipKey,
+          name: name,
+          description: description,
+          source: source,
+          url: config.url,
+          testDate: config.testDate,
+          browser: config.options.browser,
+        },
+      });
     } catch (error) {
       return new Response(
         JSON.stringify({
@@ -155,6 +175,9 @@ export const POST: APIRoute = async (context: APIContext) => {
     for (const filename of files) {
       await env.RESULTS_BUCKET.put(`${testId}/${filename}`, unzipped[filename]);
     }
+
+    await prisma.$disconnect();
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -168,6 +191,9 @@ export const POST: APIRoute = async (context: APIContext) => {
     );
   } catch (error) {
     console.error('Upload error:', error);
+
+    if (prisma) await prisma.$disconnect();
+
     return new Response(
       JSON.stringify({
         success: false,
