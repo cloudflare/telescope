@@ -88,7 +88,7 @@ const navItems = [
     margin: 0;
   }
 
-  nav ul li a {
+  nav a {
     color: var(--muted);
     text-decoration: none;
     padding: 8px 10px;
@@ -97,20 +97,16 @@ const navItems = [
     font-size: 14px;
   }
 
-  nav ul li a:hover {
+  nav a:hover {
     border-color: var(--border);
     background: var(--panel);
     color: var(--text);
   }
 
-  nav ul li a.active {
+  nav a.active {
     color: var(--text);
-    border-color: rgba(14, 165, 233, 0.35);
-    background: linear-gradient(
-      135deg,
-      rgba(14, 165, 233, 0.1),
-      rgba(59, 130, 246, 0.1)
-    );
+    border-color: var(--brand-hover);
+    background: linear-gradient(135deg, var(--brand-bg), var(--brand-bg-alt));
   }
 
   .actions {
@@ -136,7 +132,7 @@ const navItems = [
 
   .theme-toggle:hover {
     background: var(--panel);
-    border-color: rgba(14, 165, 233, 0.35);
+    border-color: var(--brand-hover);
   }
 
   .gh {
@@ -151,7 +147,7 @@ const navItems = [
 
   .gh:hover {
     color: var(--text);
-    border-color: rgba(14, 165, 233, 0.35);
+    border-color: var(--brand-hover);
   }
 </style>
 

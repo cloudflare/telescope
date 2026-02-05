@@ -1,10 +1,11 @@
 import type { APIContext, APIRoute } from 'astro';
+import type { Unzipped } from 'fflate';
+
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
 import { TestConfig, TestSource } from '@/lib/classes/TestConfig';
 import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
-import type { Unzipped } from 'fflate';
 
 export const prerender = false;
 
@@ -76,7 +77,9 @@ export const POST: APIRoute = async (context: APIContext) => {
     if (existingTestId) {
       return new Response(
         JSON.stringify({
-          error: `This test content already exists with test ID: ${existingTestId}. Duplicate uploads are not allowed.`,
+          success: false,
+          error: `Duplicate uploads are not allowed.`,
+          testId: existingTestId,
         }),
         {
           status: 409,
