@@ -414,6 +414,7 @@ import Page from '@/layouts/Page.astro';
     font-size: 12px;
     color: var(--muted);
     font-style: italic;
+    margin: 0px;
   }
 
   .file-upload-area {
@@ -537,6 +538,11 @@ import Page from '@/layouts/Page.astro';
     border-color: var(--color-danger);
   }
 
+  .status-warning {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: var(--color-warning);
+  }
+
   .status-message p {
     margin: 8px 0;
   }
@@ -553,11 +559,120 @@ import Page from '@/layouts/Page.astro';
     border-radius: 8px;
     border: 1px solid var(--border);
   }
-
-  .overview-section h3 {
-    margin: 0 0 16px 0;
-    font-size: 16px;
-    color: var(--text);
-    font-weight: 600;
-  }
 </style>
+
+<script>
+  const form = document.getElementById('upload-form') as HTMLFormElement;
+  const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+  const fileUploadArea = document.getElementById(
+    'file-upload-area',
+  ) as HTMLElement;
+  const fileName = document.getElementById('file-name') as HTMLElement;
+  const statusDiv = document.getElementById('upload-status') as HTMLElement;
+  const statusMessage = statusDiv.querySelector(
+    '.status-message',
+  ) as HTMLElement;
+  // File input click handler
+  fileUploadArea.addEventListener('click', () => {
+    fileInput.click();
+  });
+  // Drag and drop handlers
+  fileUploadArea.addEventListener('dragover', e => {
+    e.preventDefault();
+    fileUploadArea.classList.add('dragover');
+  });
+  fileUploadArea.addEventListener('dragleave', () => {
+    fileUploadArea.classList.remove('dragover');
+  });
+  // Display chosen filename
+  fileUploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    fileUploadArea.classList.remove('dragover');
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      fileInput.files = files;
+      updateFileName(files[0].name);
+    }
+  });
+  fileInput.addEventListener('change', e => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      updateFileName(target.files[0].name);
+    }
+  });
+
+  // Validate file selected
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!fileInput.files || fileInput.files.length === 0) {
+      statusMessage.innerHTML = '<p>Error: Please select a file to upload</p>';
+      statusDiv.className = 'test-status status-error';
+      statusDiv.style.display = 'block';
+      return;
+    }
+    // create FormData from form: file, source="upload", optional name & description
+    const formData = new FormData(form);
+    statusDiv.style.display = 'block';
+    statusMessage.innerHTML = '<p>Uploading file...</p>';
+    statusDiv.className = 'test-status status-running';
+    try {
+      // POST to API
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = (await response.json()) as {
+        success?: boolean;
+        testId?: string;
+        error?: string;
+      };
+      // Handle duplicate (409)
+      if (response.status === 409 && result.testId) {
+        statusMessage.innerHTML = `
+          <p>This test already exists, duplicate uploads are not allowed.</p>
+          <p>Test ID: <strong>${escapeHtml(result.testId)}</strong></p>
+        `;
+        statusDiv.className = 'test-status status-warning';
+        statusDiv.style.display = 'block';
+        return;
+      }
+      // Handle other errors
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to upload file');
+      }
+      // Handle success
+      if (result.testId) {
+        statusMessage.innerHTML = `
+          <p>Upload successful!</p>
+          <p>Test ID: <strong>${escapeHtml(result.testId)}</strong></p>
+        `;
+        statusDiv.className = 'test-status status-success';
+        statusDiv.style.display = 'block';
+        fileName.style.display = 'none';
+      } else {
+        throw new Error('No test ID returned');
+      }
+    } catch (error) {
+      // show error
+      statusMessage.innerHTML = `
+        <p>Error: ${escapeHtml((error as Error).message)}</p>
+      `;
+      statusDiv.className = 'test-status status-error';
+    }
+  });
+  // Reset button handler
+  form.addEventListener('reset', () => {
+    fileName.style.display = 'none';
+    statusDiv.style.display = 'none';
+  });
+  function updateFileName(name: string) {
+    fileName.textContent = `Selected: ${escapeHtml(name)}`;
+    fileName.style.display = 'block';
+  }
+  function escapeHtml(text: string): string {
+    // protection against XSS by sanitizing user input
+    const div = document.createElement('div');
+    div.textContent = text; // automatically escapes
+    return div.innerHTML;
+  }
+</script>
