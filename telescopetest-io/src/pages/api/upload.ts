@@ -147,7 +147,7 @@ export const POST: APIRoute = async (context: APIContext) => {
     // store the test config (metadata) in the db
     try {
       // await testStore.createTestFromConfig(testConfig);
-
+      const testDate = Math.floor(new Date(config.date).getTime() / 1000);
       await prisma.test.create({
         data: {
           testId: 'WHATEVER_RN',
@@ -156,7 +156,7 @@ export const POST: APIRoute = async (context: APIContext) => {
           description: description,
           source: source,
           url: config.url,
-          testDate: config.testDate,
+          testDate: testDate,
           browser: config.options.browser,
         },
       });
