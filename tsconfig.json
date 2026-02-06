@@ -19,6 +19,6 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["lib/**/*", "index.ts", "cli.ts"],
+  "include": ["lib/**/*", "processors/**/*", "index.ts", "cli.ts"],
   "exclude": ["node_modules", "dist", "__tests__", "telescopetest-io"]
 }

@@ -81,9 +81,15 @@ interface NetworkDataEntry {
   timelinePhases: TimelinePhase[];
 }
 
-function loadJsonFile(filepath: string): unknown {
+interface HarLog {
+  log?: {
+    entries?: HarEntry[];
+  };
+}
+
+function loadJsonFile<T = unknown>(filepath: string): T {
   let data = fs.readFileSync(filepath, 'utf-8');
-  return JSON.parse(data);
+  return JSON.parse(data) as T;
 }
 
 function getResourceTypeFromMime(mimeType: string | null | undefined): string {
@@ -180,7 +186,7 @@ function parseHarFile(harPath: string): NetworkRequest[] | null {
   }
 
   try {
-    let harData = loadJsonFile(harPath);
+    let harData = loadJsonFile<HarLog>(harPath);
     let log = harData.log || {};
     let entries: HarEntry[] = log.entries || [];
     if (entries.length === 0) {
@@ -422,14 +428,19 @@ function buildRequestTimelinePhases(timing: NetworkRequest['timings']) {
   ];
 }
 
+interface LcpEntry {
+  startTime?: number;
+}
+
 function generateHtml(
   metrics: Partial<Metrics>,
-  requests: unknown,
+  _requests: unknown,
   consoleMessages: ConsoleMessage[] | null,
   basePath: string,
   outputPath: string,
 ): void {
-  let navTiming = metrics.navigationTiming || {};
+  let navTiming: Partial<NavigationTiming> & { serverTiming?: ServerTiming[] } =
+    metrics.navigationTiming || {};
   let timing = calculateTimingPhases(navTiming);
   let paintTiming = metrics.paintTiming || [];
   let fpTime =
@@ -439,7 +450,7 @@ function generateHtml(
     paintTiming.find((p: PaintTiming) =>
       p.name?.includes('first-contentful-paint'),
     )?.startTime || 0;
-  let lcpData = (metrics.largestContentfulPaint || [{}])[0];
+  let lcpData: LcpEntry = (metrics.largestContentfulPaint || [{}])[0] || {};
   let lcpTime = lcpData.startTime || 0;
   let layoutShifts = metrics.layoutShifts || [];
   let clsScore = calculateCls(layoutShifts);
@@ -737,8 +748,10 @@ function main() {
   console.log(`Loading data from ${basePath}...`);
 
   try {
-    let metrics = loadJsonFile(path.join(basePath, 'metrics.json'));
-    let requests;
+    let metrics = loadJsonFile<Partial<Metrics>>(
+      path.join(basePath, 'metrics.json'),
+    );
+    let requests: unknown;
     if (fs.existsSync(path.join(basePath, 'resources.json'))) {
       requests = loadJsonFile(path.join(basePath, 'resources.json'));
     } else if (fs.existsSync(path.join(basePath, 'requests.json'))) {
@@ -747,7 +760,9 @@ function main() {
       throw new Error('Neither resources.json nor requests.json found');
     }
 
-    const consoleMessages = loadJsonFile(path.join(basePath, 'console.json'));
+    const consoleMessages = loadJsonFile<ConsoleMessage[] | null>(
+      path.join(basePath, 'console.json'),
+    );
     const outputPath = path.join(basePath, 'visual_report.html');
     generateHtml(metrics, requests, consoleMessages, basePath, outputPath);
   } catch (e: unknown) {
