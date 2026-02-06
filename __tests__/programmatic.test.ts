@@ -1,7 +1,9 @@
-import { launchTest } from '../index.js';
+import { launchTest } from '../src/index.js';
 import fs from 'fs';
 
-import { BrowserConfig } from '../lib/browsers.js';
+import { BrowserConfig } from '../src/browsers.js';
+import type { SuccessfulTestResult } from '../src/types.js';
+
 const browsers = BrowserConfig.getBrowsers();
 
 describe.each(browsers)('Programmatic API (%s)', browser => {
@@ -15,7 +17,11 @@ describe.each(browsers)('Programmatic API (%s)', browser => {
     expect(result).toHaveProperty('testId');
     expect(result).toHaveProperty('resultsPath');
     expect(result.success).toBe(true);
-    expect(fs.existsSync(result.resultsPath)).toBe(true);
+    if (result.success) {
+      expect(fs.existsSync((result as SuccessfulTestResult).resultsPath)).toBe(
+        true,
+      );
+    }
   }, 60000);
 
   // test('launchTest handles errors gracefully', async () => {

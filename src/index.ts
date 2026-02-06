@@ -1,65 +1,61 @@
 import { Command, Option } from 'commander';
 const program = new Command();
-import { BrowserConfig } from './lib/browsers.js';
-import { TestRunner } from './lib/testRunner.js';
-import { ChromeRunner } from './lib/chromeRunner.js';
-import { log } from './lib/helpers.js';
-import { normalizeCLIConfig } from './lib/config.js';
-import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
+import { BrowserConfig } from './browsers.js';
+import { TestRunner } from './testRunner.js';
+import { ChromeRunner } from './chromeRunner.js';
+import { log } from './helpers.js';
+import { normalizeCLIConfig } from './config.js';
+import { DEFAULT_OPTIONS } from './defaultOptions.js';
+import type {
+  LaunchOptions,
+  BrowserConfigOptions,
+  SuccessfulTestResult,
+  FailedTestResult,
+  TestResult,
+  CLIOptions,
+  Cookie,
+} from './types.js';
+
+// Re-export types for library consumers
+export type {
+  LaunchOptions,
+  TestResult,
+  SuccessfulTestResult,
+  FailedTestResult,
+  Cookie,
+};
 
 /**
- * @typedef {Parameters<import('playwright').BrowserContext['addCookies']>[0][number]} Cookie
+ * Telescope class for programmatic usage.
+ * Provides an object-oriented interface to the testing functionality.
+ *
+ * @example
+ * const telescope = new Telescope({ url: 'https://example.com', browser: 'chrome' });
+ * const result = await telescope.run();
  */
+export class Telescope {
+  private options: LaunchOptions;
+
+  constructor(options: LaunchOptions) {
+    this.options = options;
+  }
+
+  /**
+   * Run the test with the configured options.
+   * @returns Test result with ID and results path, or error information
+   */
+  async run(): Promise<TestResult> {
+    return launchTest(this.options);
+  }
+}
 
 /**
- * @typedef {Object} LaunchOptions
- * @property {string} url
- * @property {string} browser
- * @property {Record<string, string>=} headers
- * @property {Cookie|Array<Cookie>=} cookies
- * @property {string[]=} args
- * @property {string[]=} blockDomains
- * @property {string[]=} block
- * @property {Record<string, unknown>=} firefoxPrefs
- * @property {number=} cpuThrottle
- * @property {keyof typeof import('./connectivity.js').networkTypes=} connectionType
- * @property {number=} width
- * @property {number=} height
- * @property {number=} frameRate
- * @property {boolean=} disableJS
- * @property {boolean=} debug
- * @property {import('playwright').HTTPCredentials=} auth
- * @property {number=} timeout
- * @property {boolean=} html
- * @property {boolean=} openHtml
- * @property {boolean=} list
- * @property {Record<string, string>=} overrideHost
- * @property {boolean=} zip
+ * Get the appropriate runner based on the browser engine
  */
-
-/**
- * @typedef {Object} SuccessfulTestResult
- * @property {true} success - Whether the test was successful
- * @property {string} testId - Unique identifier for the test
- * @property {string} resultsPath - Path to the test results
- */
-
-/**
- * @typedef {Object} FailedTestResult
- * @property {false} success - Whether the test was successful
- * @property {string} error - Error message if the test failed
- */
-
-/**
- * @typedef {SuccessfulTestResult | FailedTestResult} TestResult
- */
-
-/**
- * @param {LaunchOptions} options
- * @param {BrowserConfig} browserConfig
- * @returns {TestRunner}
- */
-function getRunner(options, browserConfig) {
+function getRunner(
+  options: LaunchOptions,
+  browserConfig: BrowserConfigOptions,
+): TestRunner {
   if (browserConfig.engine === 'chromium') {
     return new ChromeRunner(options, browserConfig);
   } else {
@@ -72,13 +68,15 @@ function getRunner(options, browserConfig) {
  * Internal function that handles the core test execution flow.
  * Normalizes options, creates browser instance, runs test, and ensures cleanup.
  *
- * @param {LaunchOptions} options - Test options (raw from CLI or programmatic use)
- * @returns {SuccessfulTestResult} Test result with ID and results path
- * @throws {Error} If the test fails
+ * @param options - Test options (raw from CLI or programmatic use)
+ * @returns Test result with ID and results path
+ * @throws If the test fails
  * @private
  */
-async function executeTest(options) {
-  const config = {
+async function executeTest(
+  options: LaunchOptions,
+): Promise<SuccessfulTestResult> {
+  const config: LaunchOptions = {
     ...DEFAULT_OPTIONS,
     ...options,
   };
@@ -88,7 +86,7 @@ async function executeTest(options) {
   );
 
   if (config.debug) {
-    process.env.DEBUG_MODE = true;
+    process.env.DEBUG_MODE = 'true';
   }
 
   log(config);
@@ -100,7 +98,7 @@ async function executeTest(options) {
 
     // Bail out early if we're just doing a dry run
     if (config.dry) {
-      Runner.cleanup();
+      await Runner.cleanup();
 
       return {
         success: true,
@@ -120,10 +118,10 @@ async function executeTest(options) {
       resultsPath: Runner.paths.results,
     };
   } catch (error) {
-    // Ensure cleanup runs even on error
+    // Ensure cleanup runs even on error (closes browser + removes temp files)
     try {
-      Runner.cleanup();
-    } catch (cleanupError) {
+      await Runner.cleanup();
+    } catch (_cleanupError) {
       // Ignore cleanup errors
     }
     throw error;
@@ -135,26 +133,26 @@ async function executeTest(options) {
  * Public programmatic API that wraps executeTest with error handling.
  * Always returns a result object (never throws).
  *
- * @param {LaunchOptions} options - Test configuration (see CLI --help for available options)
- * @returns {TestResult} Result object: {success, testId, resultsPath} or {success, error}
+ * @param options - Test configuration (see CLI --help for available options)
+ * @returns Result object: {success, testId, resultsPath} or {success, error}
  *
  * @example
  * const result = await launchTest({ url: 'https://example.com', browser: 'chrome' });
  * if (result.success) console.log(`Test: ${result.testId}`);
  * else console.error(`Failed: ${result.error}`);
  */
-export async function launchTest(options) {
+export async function launchTest(options: LaunchOptions): Promise<TestResult> {
   try {
     return await executeTest(options);
   } catch (error) {
     return {
       success: false,
-      error: error.message,
+      error: (error as Error).message,
     };
   }
 }
 
-export default function browserAgent() {
+export default function browserAgent(): void {
   program
     .name('telescope')
     .description('Cross-browser synthetic testing agent')
@@ -296,8 +294,8 @@ export default function browserAgent() {
     )
     .parse(process.argv);
 
-  const cliOptions = program.opts();
-  let options;
+  const cliOptions = program.opts() as CLIOptions;
+  let options: LaunchOptions;
 
   try {
     options = normalizeCLIConfig(cliOptions);
@@ -308,7 +306,7 @@ export default function browserAgent() {
 
   // Capture the CLI command for repeatability
   if (process.argv.length > 2) {
-    options.command = process.argv.splice(2);
+    options.command = process.argv.slice(2);
   }
 
   (async () => {

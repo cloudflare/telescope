@@ -1,21 +1,24 @@
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
+import type { LaunchOptions, CLIOptions, ConnectionType } from './types.js';
+import type { HTTPCredentials } from 'playwright';
 
 /**
  * Normalize options from any source (CLI or programmatic).
  * Converts types, parses JSON strings, and applies defaults.
  * Handles both CLI string inputs and programmatic object inputs.
  *
- * @param {Object} options - Test options (raw from CLI or programmatic)
- * @returns {Object} Normalized config object with correct types and defaults applied
+ * @param options - Test options (raw from CLI or programmatic)
+ * @returns Normalized config object with correct types and defaults applied
  */
-export function normalizeCLIConfig(options) {
-  const config = {
+export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
+  const config: LaunchOptions = {
     url: options.url,
-    browser: options.browser || DEFAULT_OPTIONS.browser,
-    width: parseInt(options.width) || DEFAULT_OPTIONS.width,
-    height: parseInt(options.height) || DEFAULT_OPTIONS.height,
-    frameRate: parseInt(options.frameRate) || DEFAULT_OPTIONS.frameRate,
-    timeout: parseInt(options.timeout) || DEFAULT_OPTIONS.timeout,
+    browser:
+      (options.browser as LaunchOptions['browser']) || DEFAULT_OPTIONS.browser,
+    width: parseInt(String(options.width)) || DEFAULT_OPTIONS.width,
+    height: parseInt(String(options.height)) || DEFAULT_OPTIONS.height,
+    frameRate: parseInt(String(options.frameRate)) || DEFAULT_OPTIONS.frameRate,
+    timeout: parseInt(String(options.timeout)) || DEFAULT_OPTIONS.timeout,
     blockDomains: options.blockDomains || DEFAULT_OPTIONS.blockDomains,
     block: options.block || DEFAULT_OPTIONS.block,
     disableJS: options.disableJS || DEFAULT_OPTIONS.disableJS,
@@ -23,8 +26,10 @@ export function normalizeCLIConfig(options) {
     html: options.html || DEFAULT_OPTIONS.html,
     openHtml: options.openHtml || DEFAULT_OPTIONS.openHtml,
     list: options.list || DEFAULT_OPTIONS.list,
-    connectionType: options.connectionType || DEFAULT_OPTIONS.connectionType,
-    auth: options.auth || DEFAULT_OPTIONS.auth,
+    connectionType:
+      (options.connectionType as ConnectionType) ||
+      DEFAULT_OPTIONS.connectionType,
+    auth: DEFAULT_OPTIONS.auth,
     zip: options.zip || DEFAULT_OPTIONS.zip,
     dry: options.dry || DEFAULT_OPTIONS.dry,
   };
@@ -39,7 +44,7 @@ export function normalizeCLIConfig(options) {
   }
 
   if (options.auth) {
-    config.auth = JSON.parse(options.auth);
+    config.auth = JSON.parse(options.auth) as HTTPCredentials;
   }
 
   if (options.firefoxPrefs) {
@@ -64,7 +69,9 @@ export function normalizeCLIConfig(options) {
     try {
       config.block = parseJSONArrayOrCommaSeparatedStrings(options.block);
     } catch (err) {
-      throw new Error(`Problem parsing "--block" options - ${err.message}`);
+      throw new Error(
+        `Problem parsing "--block" options - ${(err as Error).message}`,
+      );
     }
   }
 
@@ -75,7 +82,7 @@ export function normalizeCLIConfig(options) {
       );
     } catch (err) {
       throw new Error(
-        `Problem parsing "--blockDomains" options - ${err.message}`,
+        `Problem parsing "--blockDomains" options - ${(err as Error).message}`,
       );
     }
   }
@@ -87,16 +94,16 @@ export function normalizeCLIConfig(options) {
  * Parse the command line parameters options whether they be a JSON array or
  * comma separated strings.
  *
- * @param {Array} choices - List of options to a command line parameter
- * @returns {Array} The parsed list of options
+ * @param choices - List of options to a command line parameter
+ * @returns The parsed list of options
  */
-function parseJSONArrayOrCommaSeparatedStrings(choices) {
-  const chosen = [];
+function parseJSONArrayOrCommaSeparatedStrings(choices: string[]): string[] {
+  const chosen: string[] = [];
 
   choices.forEach(opt_group => {
     if (opt_group.includes('[')) {
       // Looks like a JSON array
-      chosen.push(...JSON.parse(opt_group));
+      chosen.push(...(JSON.parse(opt_group) as string[]));
     } else {
       opt_group.split(/,/).forEach(opt => {
         if (opt) {

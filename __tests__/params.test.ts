@@ -1,10 +1,11 @@
 import { spawnSync } from 'child_process';
 
 import { retrieveConfig } from './helpers.js';
+import type { SavedConfig } from '../src/types.js';
 
 const baseParams = [
   'node',
-  'cli.js',
+  'dist/src/cli.js',
   '--dry',
   '--url',
   'https://www.example.com',
@@ -14,15 +15,13 @@ describe.each(['block', 'blockDomains'])(
   'CLI parameter array collapsing for --%s',
   param => {
     describe('Single string', () => {
-      let config;
+      let config: SavedConfig | null;
 
       beforeAll(() => {
-        let outputLogs;
-
         const args = [...baseParams, `--${param}`, 'one'];
 
         const output = spawnSync(args[0], args.slice(1));
-        outputLogs = output.stdout.toString();
+        const outputLogs = output.stdout.toString();
         const match = outputLogs.match(/Test ID:(.*)/);
         if (match && match.length > 1) {
           config = retrieveConfig(match[1].trim());
@@ -34,12 +33,14 @@ describe.each(['block', 'blockDomains'])(
       });
 
       it(`${param} one`, async () => {
-        expect(config.options[param]).toEqual(['one']);
+        expect(config?.options[param as keyof typeof config.options]).toEqual([
+          'one',
+        ]);
       });
     });
 
     describe('Two string options', () => {
-      let config;
+      let config: SavedConfig | null;
 
       beforeAll(() => {
         const args = [...baseParams, `--${param}`, 'one', `--${param}`, 'two'];
@@ -57,12 +58,15 @@ describe.each(['block', 'blockDomains'])(
       });
 
       it(`${param} one and two`, async () => {
-        expect(config.options[param]).toEqual(['one', 'two']);
+        expect(config?.options[param as keyof typeof config.options]).toEqual([
+          'one',
+          'two',
+        ]);
       });
     });
 
     describe('Two comma separated strings', () => {
-      let config;
+      let config: SavedConfig | null;
 
       beforeAll(() => {
         const args = [...baseParams, `--${param}`, 'one,two'];
@@ -80,12 +84,15 @@ describe.each(['block', 'blockDomains'])(
       });
 
       it(`${param} one and two`, async () => {
-        expect(config.options[param]).toEqual(['one', 'two']);
+        expect(config?.options[param as keyof typeof config.options]).toEqual([
+          'one',
+          'two',
+        ]);
       });
     });
 
     describe('JSON array', () => {
-      let config;
+      let config: SavedConfig | null;
 
       beforeAll(() => {
         const args = [...baseParams, `--${param}`, '[ "one", "two" ]'];
@@ -103,12 +110,15 @@ describe.each(['block', 'blockDomains'])(
       });
 
       it(`${param} one and two`, async () => {
-        expect(config.options[param]).toEqual(['one', 'two']);
+        expect(config?.options[param as keyof typeof config.options]).toEqual([
+          'one',
+          'two',
+        ]);
       });
     });
 
     describe('Two JSON arrays', () => {
-      let config;
+      let config: SavedConfig | null;
 
       beforeAll(() => {
         const args = [
@@ -132,12 +142,15 @@ describe.each(['block', 'blockDomains'])(
       });
 
       it(`${param} one and two`, async () => {
-        expect(config.options[param]).toEqual(['one', 'two']);
+        expect(config?.options[param as keyof typeof config.options]).toEqual([
+          'one',
+          'two',
+        ]);
       });
     });
 
     describe('Two options with JSON arrays', () => {
-      let config;
+      let config: SavedConfig | null;
 
       beforeAll(() => {
         const args = [
@@ -161,12 +174,17 @@ describe.each(['block', 'blockDomains'])(
       });
 
       it(`${param} one, two, three and four`, async () => {
-        expect(config.options[param]).toEqual(['one', 'two', 'three', 'four']);
+        expect(config?.options[param as keyof typeof config.options]).toEqual([
+          'one',
+          'two',
+          'three',
+          'four',
+        ]);
       });
     });
 
     describe('Bad JSON option should fail', () => {
-      let errLogs;
+      let errLogs: string;
 
       beforeAll(() => {
         const args = [...baseParams, `--${param}`, "[ 'one', 'two' ]"];
@@ -177,14 +195,14 @@ describe.each(['block', 'blockDomains'])(
 
       it(`Problem parsing ${param} command line option`, async () => {
         const match = errLogs.match(/Error: Problem parsing (.*)/);
-        expect(match.length).toBeGreaterThan(1);
+        expect(match?.length).toBeGreaterThan(1);
       });
     });
   },
 );
 
 describe('CLI should be logged in config.json', () => {
-  let config;
+  let config: SavedConfig | null;
 
   beforeAll(() => {
     const output = spawnSync(baseParams[0], baseParams.slice(1));
@@ -200,6 +218,6 @@ describe('CLI should be logged in config.json', () => {
   });
 
   it('captures CLI command in config', async () => {
-    expect(config.options.command).toEqual(baseParams.slice(2));
+    expect(config?.options.command).toEqual(baseParams.slice(2));
   });
 });

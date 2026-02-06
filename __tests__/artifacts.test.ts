@@ -1,15 +1,16 @@
-import { launchTest } from '../index.js';
+import { launchTest } from '../src/index.js';
 import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-import { BrowserConfig } from '../lib/browsers.js';
-import { expect } from 'playwright/test';
+import { BrowserConfig } from '../src/browsers.js';
+import { expect } from '@playwright/test';
+import type { LaunchOptions, SuccessfulTestResult } from '../src/types.js';
 
 const browsers = BrowserConfig.getBrowsers();
 const resultsRoot = path.resolve('results');
 
-function safeResultsPath(testId) {
+function safeResultsPath(testId: string | undefined): string {
   if (!testId) {
     throw new Error('Invalid test id');
   }
@@ -21,8 +22,8 @@ function safeResultsPath(testId) {
   return fullPath;
 }
 
-function listArtifacts(root) {
-  const normalize = relative => {
+function listArtifacts(root: string): string[] {
+  const normalize = (relative: string): string => {
     const base = path.posix.basename(relative);
     const parent = path.posix.basename(path.posix.dirname(relative));
 
@@ -44,11 +45,13 @@ function listArtifacts(root) {
     return relative;
   };
 
-  const items = [];
-  const stack = [{ dir: root, rel: '' }];
+  const items: string[] = [];
+  const stack: Array<{ dir: string; rel: string }> = [{ dir: root, rel: '' }];
 
   while (stack.length) {
-    const { dir, rel } = stack.pop();
+    const item = stack.pop();
+    if (!item) continue;
+    const { dir, rel } = item;
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const absolute = path.join(dir, entry.name);
@@ -63,16 +66,16 @@ function listArtifacts(root) {
   return [...new Set(items)].sort();
 }
 
-async function runProgrammaticTest(options) {
+async function runProgrammaticTest(options: LaunchOptions): Promise<string> {
   const result = await launchTest(options);
   if (!result.success) {
     throw new Error(`Programmatic test failed: ${result.error}`);
   }
-  return path.resolve(result.resultsPath);
+  return path.resolve((result as SuccessfulTestResult).resultsPath);
 }
 
-function runCliTest(url, browser) {
-  const args = ['cli.js', '--url', url, '-b', browser];
+function runCliTest(url: string, browser: string): string {
+  const args = ['dist/src/cli.js', '--url', url, '-b', browser];
   const output = spawnSync('node', args, { encoding: 'utf-8' });
   if (output.status !== 0) {
     throw new Error(`CLI test failed: ${output.stderr || output.stdout}`);
@@ -84,7 +87,7 @@ function runCliTest(url, browser) {
   return safeResultsPath(match[1].trim());
 }
 
-function cleanup(paths) {
+function cleanup(paths: Array<string | undefined>): void {
   for (const p of paths) {
     if (p && fs.existsSync(p)) {
       fs.rmSync(p, { recursive: true, force: true });
@@ -96,8 +99,8 @@ describe.each(browsers)('CLI vs Programmatic artifacts (%s)', browser => {
   test('produces same artifact files for CLI and programmatic API', async () => {
     const url = 'https://example.com';
 
-    let cliPath;
-    let apiPath;
+    let cliPath: string | undefined;
+    let apiPath: string | undefined;
     try {
       cliPath = runCliTest(url, browser);
       apiPath = await runProgrammaticTest({ url, browser });
@@ -115,7 +118,7 @@ describe.each(browsers)('CLI vs Programmatic artifacts (%s)', browser => {
 
 describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
   test('produces html when --html is specified.', async () => {
-    let result;
+    let result: Awaited<ReturnType<typeof launchTest>> | undefined;
     try {
       result = await launchTest({
         url: 'https://www.example.com/',
@@ -125,11 +128,13 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
 
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      const indexPath = path.resolve(result.resultsPath, 'index.html');
-      expect(fs.existsSync(indexPath)).toBe(true);
+      if (result.success) {
+        const indexPath = path.resolve(result.resultsPath, 'index.html');
+        expect(fs.existsSync(indexPath)).toBe(true);
+      }
     } finally {
-      if (!process.env.CI) {
-        cleanup([path.resolve(result.resultsPath)]);
+      if (!process.env.CI && result?.success) {
+        cleanup([path.resolve((result as SuccessfulTestResult).resultsPath)]);
       }
     }
   }, 120000);
@@ -137,7 +142,8 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
 
 describe.each(browsers)('Generated list artifacts (%s)', browser => {
   test('produces the list page when --list is specified.', async () => {
-    let result, indexPath;
+    let result: Awaited<ReturnType<typeof launchTest>> | undefined;
+    let indexPath: string | undefined;
     try {
       result = await launchTest({
         url: 'https://www.example.com/',
@@ -147,11 +153,20 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
 
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      indexPath = path.resolve(result.resultsPath, '..', 'index.html');
-      expect(fs.existsSync(indexPath)).toBe(true);
+      if (result.success) {
+        indexPath = path.resolve(
+          (result as SuccessfulTestResult).resultsPath,
+          '..',
+          'index.html',
+        );
+        expect(fs.existsSync(indexPath)).toBe(true);
+      }
     } finally {
-      if (!process.env.CI) {
-        cleanup([path.resolve(result.resultsPath), indexPath]);
+      if (!process.env.CI && result?.success) {
+        cleanup([
+          path.resolve((result as SuccessfulTestResult).resultsPath),
+          indexPath,
+        ]);
       }
     }
   }, 120000);

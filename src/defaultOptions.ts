@@ -1,9 +1,11 @@
+import type { DefaultOptions } from './types.js';
+
 /**
  * Default values for all test options.
  * Used by both CLI (Commander.js) and programmatic API (normalizeConfig).
  * Single source of truth prevents defaults from drifting between interfaces.
  */
-export const DEFAULT_OPTIONS = {
+export const DEFAULT_OPTIONS: DefaultOptions = {
   // Browser engine to use for testing
   browser: 'chrome',
   // Viewport width and height in pixels
