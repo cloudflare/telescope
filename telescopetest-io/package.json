@@ -7,7 +7,7 @@
     "build": "astro build",
     "preview": "astro build && wrangler dev",
     "cf-typegen": "wrangler types",
-    "deploy": "astro build && wrangler deploy",
+    "deploy": "astro build && wrangler deploy --env production",
     "deploy:staging": "astro build && wrangler deploy --env staging"
   },
   "dependencies": {

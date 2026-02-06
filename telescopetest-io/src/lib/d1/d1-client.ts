@@ -14,6 +14,7 @@ export class D1Client {
     const bound = params.length > 0 ? stmt.bind(...params) : stmt;
     return await bound.run();
   }
+
   /**
    * Query and return first row
    */
