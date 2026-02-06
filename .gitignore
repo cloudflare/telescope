@@ -1,4 +1,5 @@
 results/
+!telescopetest-io/src/pages/results/
 node_modules/
 tmp/
 .DS_Store

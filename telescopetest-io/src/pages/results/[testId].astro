@@ -1,0 +1,79 @@
+---
+import Page from '@/layouts/Page.astro';
+
+export const prerender = false;
+
+const { testId } = Astro.params;
+
+if (!testId) {
+  return Astro.redirect('/results');
+}
+---
+
+<Page title={`Test ${testId}`}>
+  <div class="detail-header">
+    <a href="/results" class="back-link">← Back to all results</a>
+    <h1>Test Results</h1>
+    <p class="test-id">ID: {testId}</p>
+  </div>
+
+  <div class="placeholder">
+    <p>Full test details coming soon...</p>
+    <p class="hint">
+      This page will display HAR files, screenshots, videos, and performance
+      metrics.
+    </p>
+  </div>
+</Page>
+
+<style>
+  .detail-header {
+    margin-bottom: 32px;
+  }
+
+  .back-link {
+    display: inline-block;
+    color: var(--muted);
+    text-decoration: none;
+    margin-bottom: 16px;
+    font-size: 14px;
+    transition: color 0.2s ease;
+  }
+
+  .back-link:hover {
+    color: var(--brand);
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+  }
+
+  .test-id {
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .placeholder {
+    padding: 60px;
+    text-align: center;
+    background: var(--panel);
+    border-radius: 12px;
+    border: 1px dashed var(--border);
+  }
+
+  .placeholder p {
+    margin: 8px 0;
+    color: var(--text);
+  }
+
+  .hint {
+    color: var(--muted);
+    font-size: 14px;
+  }
+</style>
