@@ -37,6 +37,9 @@ jobs:
         # don't install the browsers since we're using the pre-built container
         run: npm ci --ignore-scripts
 
+      - name: Build TypeScript
+        run: npm run build
+
       - name: Run tests
         run: npm test
 

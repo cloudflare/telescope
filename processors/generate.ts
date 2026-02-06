@@ -2,34 +2,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ejs from 'ejs';
 import { fileURLToPath } from 'url';
-
-interface HarEntry {
-  request: {
-    url: string;
-    method: string;
-  };
-  response: {
-    status: number;
-    _transferSize?: number;
-    content: {
-      size: number;
-      mimeType: string;
-    };
-  };
-  time: number;
-  startedDateTime: string;
-  timings?: any;
-  _dns_start?: number;
-  _dns_end?: number;
-  _connect_start?: number;
-  _connect_end?: number;
-  _secure_start?: number;
-  _secure_end?: number;
-  _request_start?: number;
-  _request_end?: number;
-  _response_start?: number;
-  _response_end?: number;
-}
+import type {
+  HarEntry,
+  LayoutShift,
+  ConsoleMessage,
+  Metrics,
+  NavigationTiming,
+  PaintTiming,
+  ServerTiming,
+} from '../lib/types.js';
 
 interface NetworkRequest {
   url: string;
@@ -79,7 +60,28 @@ interface TimingPhases {
   complete_pct: number;
 }
 
-function loadJsonFile(filepath: string): any {
+interface TimelinePhase {
+  colorClass: string;
+  label: string;
+  timing: string;
+  widthPct: string;
+}
+
+interface NetworkDataEntry {
+  url: string;
+  fullUrl: string;
+  method: string;
+  status: string;
+  size: string;
+  type: string;
+  startTime: string;
+  duration: string;
+  startPct: string;
+  durationPct: string;
+  timelinePhases: TimelinePhase[];
+}
+
+function loadJsonFile(filepath: string): unknown {
   let data = fs.readFileSync(filepath, 'utf-8');
   return JSON.parse(data);
 }
@@ -167,7 +169,7 @@ function findVideoFile(basePath: string): string | null {
   return null;
 }
 
-function calculateCls(layoutShifts: any[]): number {
+function calculateCls(layoutShifts: LayoutShift[]): number {
   if (!layoutShifts || layoutShifts.length === 0) return 0;
   return layoutShifts.reduce((sum, shift) => sum + (shift.value || 0), 0);
 }
@@ -277,7 +279,9 @@ function parseHarFile(harPath: string): NetworkRequest[] | null {
   }
 }
 
-function calculateTimingPhases(navTiming: any): TimingPhases {
+function calculateTimingPhases(
+  navTiming: Partial<NavigationTiming>,
+): TimingPhases {
   let dnsTime =
     (navTiming.domainLookupEnd || 0) - (navTiming.domainLookupStart || 0);
   let tcpTime = (navTiming.connectEnd || 0) - (navTiming.connectStart || 0);
@@ -419,9 +423,9 @@ function buildRequestTimelinePhases(timing: NetworkRequest['timings']) {
 }
 
 function generateHtml(
-  metrics: any,
-  requests: any,
-  consoleMessages: any,
+  metrics: Partial<Metrics>,
+  requests: unknown,
+  consoleMessages: ConsoleMessage[] | null,
   basePath: string,
   outputPath: string,
 ): void {
@@ -429,11 +433,12 @@ function generateHtml(
   let timing = calculateTimingPhases(navTiming);
   let paintTiming = metrics.paintTiming || [];
   let fpTime =
-    paintTiming.find((p: any) => p.name?.includes('first-paint'))?.startTime ||
-    0;
-  let fcpTime =
-    paintTiming.find((p: any) => p.name?.includes('first-contentful-paint'))
+    paintTiming.find((p: PaintTiming) => p.name?.includes('first-paint'))
       ?.startTime || 0;
+  let fcpTime =
+    paintTiming.find((p: PaintTiming) =>
+      p.name?.includes('first-contentful-paint'),
+    )?.startTime || 0;
   let lcpData = (metrics.largestContentfulPaint || [{}])[0];
   let lcpTime = lcpData.startTime || 0;
   let layoutShifts = metrics.layoutShifts || [];
@@ -485,7 +490,7 @@ function generateHtml(
   let timelineData = buildTimelinePhases(timing);
   let serverTimings = navTiming.serverTiming || [];
   let hasServerTimings = serverTimings.length > 0;
-  let serverTimingData = serverTimings.map((timing: any) => ({
+  let serverTimingData = serverTimings.map((timing: ServerTiming) => ({
     name: timing.name || '',
     description: timing.description || '',
     timing: (timing.duration || 0).toFixed(1),
@@ -583,7 +588,7 @@ function generateHtml(
   let videoFile = findVideoFile(basePath);
   let hasVideo = videoFile !== null;
   let hasConsole = consoleMessages && consoleMessages.length > 0;
-  let consoleData = (consoleMessages || []).map((log: any) => ({
+  let consoleData = (consoleMessages || []).map((log: ConsoleMessage) => ({
     type: log.type || '',
     text: log.text || '',
     locationUrl: log.location?.url || '',
@@ -598,7 +603,7 @@ function generateHtml(
   }
 
   let hasNetworkRequests = harRequests && harRequests.length > 0;
-  let networkData: any[] = [];
+  let networkData: NetworkDataEntry[] = [];
   if (hasNetworkRequests && harRequests) {
     let startTime = Math.min(...harRequests.map(entry => entry.start_time));
     let maxEndTime =
@@ -696,13 +701,13 @@ function generateHtml(
     },
   );
 
-  if (html && typeof (html as any).then === 'function') {
-    (html as any)
+  if (html && typeof (html as unknown as Promise<string>).then === 'function') {
+    (html as unknown as Promise<string>)
       .then((resolved: string) => {
         fs.writeFileSync(outputPath, resolved, 'utf-8');
         console.log(`Visual report generated: ${outputPath}`);
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         console.error('Error rendering template (async):', err);
       });
   } else {
@@ -745,8 +750,9 @@ function main() {
     const consoleMessages = loadJsonFile(path.join(basePath, 'console.json'));
     const outputPath = path.join(basePath, 'visual_report.html');
     generateHtml(metrics, requests, consoleMessages, basePath, outputPath);
-  } catch (e: any) {
-    console.error(`Error: ${e.message}`);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error(`Error: ${message}`);
     process.exit(1);
   }
 }
