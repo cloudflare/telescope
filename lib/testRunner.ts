@@ -576,7 +576,13 @@ class TestRunner {
     this.fillOutHar();
 
     // Get the directory of the current file for resolving relative paths
+    // When running from source (Jest/ts-node): lib/testRunner.ts -> lib/ -> project root is ../
+    // When running compiled (node): dist/lib/testRunner.js -> dist/lib/ -> project root is ../../
     const currentDir = path.dirname(url.fileURLToPath(import.meta.url));
+    const isCompiledDist = currentDir.includes('/dist/');
+    const projectRoot = isCompiledDist
+      ? path.resolve(currentDir, '../..')
+      : path.resolve(currentDir, '..');
 
     //post process
     try {
@@ -613,10 +619,11 @@ class TestRunner {
 
     if (this.options.html) {
       // Generate HTML report
+      // img/ is at project root
       copyFileSync(
         path.resolve(
-          currentDir,
-          `../img/${
+          projectRoot,
+          `img/${
             this.selectedBrowser.channel || this.selectedBrowser.engine
           }.png`,
         ),

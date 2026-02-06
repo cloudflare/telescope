@@ -26,6 +26,30 @@ export type {
 };
 
 /**
+ * Telescope class for programmatic usage.
+ * Provides an object-oriented interface to the testing functionality.
+ *
+ * @example
+ * const telescope = new Telescope({ url: 'https://example.com', browser: 'chrome' });
+ * const result = await telescope.run();
+ */
+export class Telescope {
+  private options: LaunchOptions;
+
+  constructor(options: LaunchOptions) {
+    this.options = options;
+  }
+
+  /**
+   * Run the test with the configured options.
+   * @returns Test result with ID and results path, or error information
+   */
+  async run(): Promise<TestResult> {
+    return launchTest(this.options);
+  }
+}
+
+/**
  * Get the appropriate runner based on the browser engine
  */
 function getRunner(
