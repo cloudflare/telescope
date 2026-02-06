@@ -17,14 +17,14 @@
       "d1_databases": [
         {
           "binding": "TELESCOPE_DB",
-          "database_name": "db-dev",
-          "database_id": "doesnt-matter-but-needed",
+          "database_name": "telescope-db-development",
+          "database_id": "9cb42d60-b1d5-4447-a04b-86ea48225f87",
         },
       ],
       "r2_buckets": [
         {
           "binding": "RESULTS_BUCKET",
-          "bucket_name": "bucket-dev",
+          "bucket_name": "results-bucket-development",
         },
       ],
     },
