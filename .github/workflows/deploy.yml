@@ -30,6 +30,6 @@ jobs:
 
       - name: deploy to cloudflare workers
         working-directory: ./telescopetest-io
-        run: npx wrangler deploy
+        run: npx wrangler deploy --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

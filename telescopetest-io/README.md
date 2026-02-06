@@ -12,11 +12,15 @@ This is how to set up the project from scratch.
 
 To run this project locally, make sure your Node version is the most recent and change current directory to `telescopetest-io/`. You'll need to then run `npm install` and `npm run preview`.
 
-## Deployment
+## Testing in Staging
 
-This website should only be deployed on Cloudflare workers on successful PR into @cloudflare/telescope. To run this deployment automatically, we have a GitHub workflow `.github/workflows/deploy.yml`. This is what that workflow does:
+Staging allows you to test changes in a remote environment that isn't production. To deploy to staging, run `npm run deploy:staging`. This command will only work if you have permission to deploy to telesceoptest-io's Worker.
 
-1. Checkouts code
+## Deployment to Production
+
+Changes to the production website should only be deployed on Cloudflare workers on successful PR into @cloudflare/telescope. To run this deployment, we have a GitHub workflow `.github/workflows/deploy.yml`. This is what that workflow does:
+
+1. Checks out code
 2. Installs Node.js 20
 3. `npm ci` in `telescopetest-io/`
 4. `npm run build` (generates `dist/`)

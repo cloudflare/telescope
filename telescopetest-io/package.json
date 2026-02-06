@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro build && wrangler dev",
+    "preview": "astro build && wrangler dev --env development",
     "cf-typegen": "wrangler types",
-    "deploy": "astro build && wrangler deploy"
+    "deploy": "astro build && wrangler deploy --env production",
+    "deploy:staging": "astro build && wrangler deploy --env staging"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
