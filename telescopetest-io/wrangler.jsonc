@@ -5,27 +5,29 @@
   "main": "./dist/_worker.js/index.js",
   "compatibility_date": "2025-11-18",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "assets": {
-    "binding": "ASSETS",
-    "directory": "./dist",
-  },
   "observability": {
     "enabled": true,
   },
-  "d1_databases": [
-    {
-      "binding": "TELESCOPE_DB",
-      "database_name": "db-dev",
-      "database_id": "doesnt-matter-but-needed",
-    },
-  ],
-  "r2_buckets": [
-    {
-      "binding": "RESULTS_BUCKET",
-      "bucket_name": "bucket-dev",
-    },
-  ],
   "env": {
+    "development": {
+      "assets": {
+        "binding": "ASSETS",
+        "directory": "./dist",
+      },
+      "d1_databases": [
+        {
+          "binding": "TELESCOPE_DB",
+          "database_name": "db-dev",
+          "database_id": "doesnt-matter-but-needed",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "RESULTS_BUCKET",
+          "bucket_name": "bucket-dev",
+        },
+      ],
+    },
     "staging": {
       "routes": [
         {
