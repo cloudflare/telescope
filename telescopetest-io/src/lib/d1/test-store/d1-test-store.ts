@@ -47,4 +47,24 @@ export class D1TestStore {
     }
     return testId;
   }
+
+  async getAllTests(): Promise<
+    Array<{
+      test_id: string;
+      url: string;
+      test_date: number;
+      browser: string;
+      name: string | null;
+      description: string | null;
+      created_at: number;
+    }>
+  > {
+    const sql = `
+    SELECT test_id, url, test_date, browser, name, description, created_at
+    FROM tests
+    ORDER BY created_at DESC
+  `;
+    const result = await this.client.all(sql);
+    return result.results as any[];
+  }
 }
