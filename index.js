@@ -92,7 +92,7 @@ async function executeTest(options) {
   }
 
   log(config);
-  
+
   const Runner = getRunner(config, browserConfig);
 
   try {

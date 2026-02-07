@@ -165,11 +165,11 @@ describe.each([true, false])('Upload URL with zip: %s', zip => {
     http.post('https://api.example.com/upload', () => {
       console.log('Mock server received upload request');
       return HttpResponse.json({ url: 'https://mock-url.com/file' });
-    })
+    }),
   );
-  beforeAll(() => server.listen());           // Establish API mocking before all tests
-  afterEach(() => server.resetHandlers());    // Reset any runtime handlers (prevents test cross-contamination)
-  afterAll(() => server.close());             // Clean up once all tests are done
+  beforeAll(() => server.listen()); // Establish API mocking before all tests
+  afterEach(() => server.resetHandlers()); // Reset any runtime handlers (prevents test cross-contamination)
+  afterAll(() => server.close()); // Clean up once all tests are done
   test('POST when --uploadUrl is specified.', async () => {
     let result, zipfile;
     try {
@@ -216,7 +216,7 @@ describe('Zip results', () => {
     try {
       result = await launchTest({
         url: 'https://www.example.com/',
-        zip: true
+        zip: true,
       });
 
       zipfile = path.resolve(resultsRoot, `${result.testId}.zip`);
