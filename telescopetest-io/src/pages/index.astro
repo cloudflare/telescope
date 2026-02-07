@@ -2077,17 +2077,6 @@ cd telescope</code></pre>
         metricObserver.observe(item);
       });
 
-      // Hero parallax effect
-      window.addEventListener('scroll', () => {
-        // Parallax effect on hero
-        const hero = document.getElementById('hero');
-        if (window.scrollY > 100) {
-          hero.classList.add('scrolled');
-        } else {
-          hero.classList.remove('scrolled');
-        }
-      });
-
       // Copy code functionality
       function copyCode(button) {
         const codeBlock = button.nextElementSibling;
