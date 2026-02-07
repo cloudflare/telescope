@@ -175,6 +175,7 @@ describe.each([true, false])('Upload URL with zip: %s', zip => {
     try {
       let config = {
         url: 'https://www.example.com/',
+        browser: 'firefox',
         uploadUrl: 'https://api.example.com/upload',
         zip: zip,
       };
@@ -199,6 +200,7 @@ describe('Invalid upload URL', () => {
   test('Error when invalid --uploadUrl is specified.', async () => {
     const config = {
       url: 'https://www.example.com/',
+      browser: 'firefox',
       uploadUrl: 'invalid-url',
     };
 
@@ -216,6 +218,7 @@ describe('Zip results', () => {
     try {
       result = await launchTest({
         url: 'https://www.example.com/',
+        browser: 'firefox',
         zip: true,
       });
 
