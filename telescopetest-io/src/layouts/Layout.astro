@@ -8,10 +8,13 @@ const {
   title = 'telescopetest-io',
   description = 'Telescope - Cross Browser Performance Testing Agent',
 } = Astro.props;
+
+const cookieValue = Astro.cookies.get('theme-override')?.value;
+const themeOverride = (cookieValue === 'dark' || cookieValue === 'light') ? cookieValue : undefined;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" {...(themeOverride ? { 'data-theme-override': themeOverride } : {})}>
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
@@ -45,6 +48,7 @@ const {
     --border: rgba(0, 0, 0, 0.12);
     --text: rgba(0, 0, 0, 0.92);
     --muted: rgba(0, 0, 0, 0.62);
+    --nav-bg: rgba(255, 255, 255, 0.9);
     --brand: #0ea5e9;
     --brand-hover: rgba(14, 165, 233, 0.35);
     --brand-bg: rgba(14, 165, 233, 0.1);
@@ -54,13 +58,50 @@ const {
     --color-danger: #ef4444;
   }
 
-  [data-theme='dark'] {
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #0f0f0f;
+      --panel: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.62);
+      --nav-bg: rgba(15, 15, 15, 0.9);
+      --brand: #0ea5e9;
+      --brand-hover: rgba(14, 165, 233, 0.35);
+      --brand-bg: rgba(14, 165, 233, 0.1);
+      --brand-bg-alt: rgba(59, 130, 246, 0.1);
+      --color-success: #22c55e;
+      --color-warning: #eab308;
+      --color-danger: #ef4444;
+    }
+  }
+
+  [data-theme-override='light'] {
+    color-scheme: light;
+    --bg: #ffffff;
+    --panel: rgba(0, 0, 0, 0.03);
+    --border: rgba(0, 0, 0, 0.12);
+    --text: rgba(0, 0, 0, 0.92);
+    --muted: rgba(0, 0, 0, 0.62);
+    --nav-bg: rgba(255, 255, 255, 0.9);
+    --brand: #0ea5e9;
+    --brand-hover: rgba(14, 165, 233, 0.35);
+    --brand-bg: rgba(14, 165, 233, 0.1);
+    --brand-bg-alt: rgba(59, 130, 246, 0.1);
+    --color-success: #22c55e;
+    --color-warning: #eab308;
+    --color-danger: #ef4444;
+  }
+
+  [data-theme-override='dark'] {
     color-scheme: dark;
     --bg: #0f0f0f;
     --panel: rgba(255, 255, 255, 0.04);
     --border: rgba(255, 255, 255, 0.12);
     --text: rgba(255, 255, 255, 0.92);
     --muted: rgba(255, 255, 255, 0.62);
+    --nav-bg: rgba(15, 15, 15, 0.9);
     --brand: #0ea5e9;
     --brand-hover: rgba(14, 165, 233, 0.35);
     --brand-bg: rgba(14, 165, 233, 0.1);
