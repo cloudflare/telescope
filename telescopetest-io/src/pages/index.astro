@@ -85,32 +85,6 @@ const year = new Date().getFullYear();
         }
       }
 
-      /* Shooting stars - occasional effect */
-      @keyframes shootingStar {
-        0% {
-          transform: translateX(0) translateY(0) rotate(-45deg);
-          opacity: 1;
-        }
-        100% {
-          transform: translateX(300px) translateY(300px) rotate(-45deg);
-          opacity: 0;
-        }
-      }
-
-      .shooting-star {
-        position: fixed;
-        width: 2px;
-        height: 80px;
-        background: linear-gradient(
-          to bottom,
-          rgba(255, 255, 255, 1),
-          transparent
-        );
-        animation: shootingStar 1.5s ease-out;
-        pointer-events: none;
-        z-index: 1;
-      }
-
       /* Hero Section */
       .hero {
         position: relative;
@@ -2004,24 +1978,6 @@ cd telescope</code></pre>
           starsContainer.appendChild(star);
         }
       }
-
-      // Create occasional shooting stars
-      function createShootingStar() {
-        const star = document.createElement('div');
-        star.className = 'shooting-star';
-        star.style.left = Math.random() * 50 + '%';
-        star.style.top = Math.random() * 50 + '%';
-        document.body.appendChild(star);
-
-        setTimeout(() => star.remove(), 1500);
-      }
-
-      // Random shooting stars
-      setInterval(() => {
-        if (Math.random() > 0.95) {
-          createShootingStar();
-        }
-      }, 2000);
 
       // Smooth scroll for anchor links
       document.querySelectorAll('a[href^="#"]').forEach(anchor => {
