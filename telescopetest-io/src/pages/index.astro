@@ -2102,15 +2102,11 @@ cd telescope</code></pre>
       }
 
       // Mouse trail effect (subtle stars)
-      let mouseX = 0,
-        mouseY = 0;
       document.addEventListener('mousemove', e => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-
         // Create subtle sparkle occasionally
         if (Math.random() > 0.98) {
-          createSparkle(mouseX, mouseY);
+          createSparkle(e.clientX, e.clientY);
+          console.log("sparkle", e.clientX, e.clientY);
         }
       });
 
