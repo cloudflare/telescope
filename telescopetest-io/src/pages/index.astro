@@ -1572,13 +1572,13 @@ cd telescope</code></pre>
       function createStars() {
         const starTemplate = document.getElementById('star-template');
         starTemplate.removeAttribute('id');
-        starTemplate.style.display = 'block';
 
         const starsContainer = document.getElementById('stars');
         const starCount = 100;
 
         for (let i = 0; i < starCount; i++) {
           const star = starTemplate.cloneNode();
+          star.style.display = 'block';
           star.style.left = Math.random() * 100 + '%';
           star.style.top = Math.random() * 100 + '%';
           star.style.animationDelay = Math.random() * 3 + 's';
@@ -1663,13 +1663,13 @@ cd telescope</code></pre>
 
       const sparkleTemplate = document.getElementById('sparkle-template');
       sparkleTemplate.removeAttribute('id');
-      sparkleTemplate.style.display = 'block';
 
       function createSparkle(x, y) {
         const sparkle = sparkleTemplate.cloneNode();
-        document.body.appendChild(sparkle);
+        sparkle.style.display = 'block';
         sparkle.style.left = x + 'px';
         sparkle.style.top = y + 'px';
+        document.body.appendChild(sparkle);
 
         setTimeout(() => sparkle.remove(), 500);
       }
