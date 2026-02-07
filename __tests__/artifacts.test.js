@@ -162,7 +162,7 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
 
 describe.each([true, false])('Upload URL with zip: %s', zip => {
   const server = setupServer(
-    http.post('https://api.example.com/upload', async ({ request }) => {
+    http.post('https://api.example.com/upload', () => {
       console.log('Mock server received upload request');
       return HttpResponse.json({ url: 'https://mock-url.com/file' });
     })
@@ -179,7 +179,7 @@ describe.each([true, false])('Upload URL with zip: %s', zip => {
         zip: zip,
       };
       result = await launchTest(config);
-      zipfile = path.resolve(result.resultsPath, '..', `${resultsRoot.testId}.zip`);
+      zipfile = path.resolve(resultsRoot, `${result.testId}.zip`);
 
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
@@ -195,22 +195,18 @@ describe.each([true, false])('Upload URL with zip: %s', zip => {
   });
 });
 
-
 describe('Invalid upload URL', () => {
   test('Error when invalid --uploadUrl is specified.', async () => {
-    let result;
-    try {
-      let config = {
-        url: 'https://www.example.com/',
-        uploadUrl: 'invalid-url',
-      };
+    const config = {
+      url: 'https://www.example.com/',
+      uploadUrl: 'invalid-url',
+    };
 
-      result = await launchTest(config);
+    const result = await launchTest(config);
 
-      expect(result).toBeDefined();
-      expect(result.success).toBe(false);
-    } finally {
-    }
+    expect(result).toBeDefined();
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
   });
 });
 
@@ -223,7 +219,7 @@ describe('Zip results', () => {
         zip: true
       });
 
-      zipfile = path.resolve(result.resultsPath, '..', `${resultsRoot.testId}.zip`);
+      zipfile = path.resolve(resultsRoot, `${result.testId}.zip`);
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
       expect(fs.existsSync(zipfile)).toBe(true);
