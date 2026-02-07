@@ -44,6 +44,7 @@ const year = new Date().getFullYear();
         line-height: 1.6;
         overflow-x: hidden;
         cursor: default;
+        position: relative;
       }
 
       /* Custom cursor for interactive elements */
@@ -973,11 +974,22 @@ const year = new Date().getFullYear();
         opacity: 1;
       }
 
+      /* Back to top button wrapper */
+      .back-to-top-wrapper {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 40px;
+        width: 50px;
+        pointer-events: none;
+        z-index: 1000;
+      }
+
       /* Back to top button */
       .back-to-top {
-        position: fixed;
-        bottom: 40px;
-        right: 40px;
+        position: sticky;
+        top: calc(100vh - 90px);
+        margin-top: 110vh;
         background: linear-gradient(135deg, var(--pink), var(--orange));
         color: white;
         width: 50px;
@@ -988,25 +1000,11 @@ const year = new Date().getFullYear();
         justify-content: center;
         font-size: 1.5rem;
         cursor: pointer;
-        opacity: 0;
-        transform: translateY(100px);
+        pointer-events: auto;
         transition:
           transform 0.3s ease,
           box-shadow 0.3s ease;
-        z-index: 1000;
         box-shadow: 0 10px 30px rgba(216, 74, 140, 0.6);
-
-        /* CSS-only visibility based on scroll */
-        animation: back-to-top-visibility linear forwards;
-        animation-timeline: scroll();
-        animation-range: 0 500px;
-      }
-
-      @keyframes back-to-top-visibility {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
       }
 
       .back-to-top:hover {
@@ -1083,9 +1081,12 @@ const year = new Date().getFullYear();
           background-position: center bottom;
         }
 
-        .back-to-top {
-          bottom: 20px;
+        .back-to-top-wrapper {
           right: 20px;
+          width: 45px;
+        }
+
+        .back-to-top {
           width: 45px;
           height: 45px;
         }
@@ -1105,6 +1106,17 @@ const year = new Date().getFullYear();
     </style></head
   >
   <body>
+    <!-- Back to Top Button -->
+    <div class="back-to-top-wrapper">
+      <div
+        class="back-to-top"
+        id="backToTop"
+        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+      >
+        ↑
+      </div>
+    </div>
+
     <!-- Starfield Background -->
     <div class="stars" id="stars">
       <div
@@ -1964,15 +1976,6 @@ cd telescope</code></pre>
           © 2025 - {year} Cloudflare Telescope Project
         </p>
       </footer>
-    </div>
-
-    <!-- Back to Top Button -->
-    <div
-      class="back-to-top"
-      id="backToTop"
-      onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
-    >
-      ↑
     </div>
 
     <script is:inline>
