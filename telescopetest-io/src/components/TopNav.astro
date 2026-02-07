@@ -180,7 +180,7 @@ const navItems = [
 
   const savedTheme = getCookie('theme-override');
   
-  if (savedTheme) {
+  if (savedTheme === 'light' || savedTheme === 'dark') {
     document.documentElement.setAttribute('data-theme-override', savedTheme);
   }
 
