@@ -20,6 +20,11 @@
     "prettier": "npx prettier --write .",
     "postinstall": "npx playwright install"
   },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "<rootDir>/__tests__/helpers.js"
+    ]
+  },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "jest": "^29.5.0",

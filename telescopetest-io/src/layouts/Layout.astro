@@ -1,0 +1,80 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+}
+
+const {
+  title = 'telescopetest-io',
+  description = 'Telescope - Cross Browser Performance Testing Agent',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    color-scheme: light;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      Segoe UI,
+      Roboto,
+      Inter,
+      Arial,
+      sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    --bg: #ffffff;
+    --panel: rgba(0, 0, 0, 0.03);
+    --border: rgba(0, 0, 0, 0.12);
+    --text: rgba(0, 0, 0, 0.92);
+    --muted: rgba(0, 0, 0, 0.62);
+    --brand: #0ea5e9;
+    --brand-hover: rgba(14, 165, 233, 0.35);
+    --brand-bg: rgba(14, 165, 233, 0.1);
+    --brand-bg-alt: rgba(59, 130, 246, 0.1);
+    --color-success: #22c55e;
+    --color-warning: #eab308;
+    --color-danger: #ef4444;
+  }
+
+  [data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #0f0f0f;
+    --panel: rgba(255, 255, 255, 0.04);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: rgba(255, 255, 255, 0.92);
+    --muted: rgba(255, 255, 255, 0.62);
+    --brand: #0ea5e9;
+    --brand-hover: rgba(14, 165, 233, 0.35);
+    --brand-bg: rgba(14, 165, 233, 0.1);
+    --brand-bg-alt: rgba(59, 130, 246, 0.1);
+    --color-success: #22c55e;
+    --color-warning: #eab308;
+    --color-danger: #ef4444;
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+  }
+</style>

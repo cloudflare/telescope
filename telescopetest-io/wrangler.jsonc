@@ -1,0 +1,82 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "telescopetest-io",
+  "account_id": "4b1c95badf17540db82cd8b431ae3eb0",
+  "main": "./dist/_worker.js/index.js",
+  "compatibility_date": "2025-11-18",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "observability": {
+    "enabled": true,
+  },
+  "env": {
+    "development": {
+      "assets": {
+        "binding": "ASSETS",
+        "directory": "./dist",
+      },
+      "d1_databases": [
+        {
+          "binding": "TELESCOPE_DB",
+          "database_name": "telescope-db-development",
+          "database_id": "9cb42d60-b1d5-4447-a04b-86ea48225f87",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "RESULTS_BUCKET",
+          "bucket_name": "results-bucket-development",
+        },
+      ],
+    },
+    "staging": {
+      "routes": [
+        {
+          "pattern": "staging.telescopetest.io",
+          "custom_domain": true,
+        },
+      ],
+      "assets": {
+        "binding": "ASSETS",
+        "directory": "./dist",
+      },
+      "d1_databases": [
+        {
+          "binding": "TELESCOPE_DB",
+          "database_name": "telescope-db-staging",
+          "database_id": "88626165-c6c0-42bf-9e7d-c9317aa98968",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "RESULTS_BUCKET",
+          "bucket_name": "results-bucket-staging",
+        },
+      ],
+    },
+    "production": {
+      "routes": [
+        {
+          "pattern": "telescopetest.io",
+          "custom_domain": true,
+        },
+      ],
+      "assets": {
+        "binding": "ASSETS",
+        "directory": "./dist",
+      },
+      "d1_databases": [
+        {
+          "binding": "TELESCOPE_DB",
+          "database_name": "telescope-db",
+          "database_id": "db0baebd-6b49-434b-bc31-fc9224ef4585",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "RESULTS_BUCKET",
+          "bucket_name": "results-bucket",
+        },
+      ],
+    },
+  },
+}

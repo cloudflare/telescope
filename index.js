@@ -33,6 +33,7 @@ import { DEFAULT_OPTIONS } from './lib/defaultOptions.js';
  * @property {boolean=} html
  * @property {boolean=} openHtml
  * @property {boolean=} list
+ * @property {Record<string, string>=} overrideHost
  * @property {boolean=} zip
  */
 
@@ -277,6 +278,12 @@ export default function browserAgent() {
     )
     .addOption(
       new Option(
+        '--overrideHost <object>',
+        'Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})',
+      ),
+    )
+    .addOption(
+      new Option(
         '--zip',
         'Zip the results of the test into the results directory.',
       ).default(DEFAULT_OPTIONS.zip),
@@ -304,8 +311,12 @@ export default function browserAgent() {
     console.error(err);
     process.exit(1);
   }
-  console.log('Normalized options:', options);
-return;
+
+  // Capture the CLI command for repeatability
+  if (process.argv.length > 2) {
+    options.command = process.argv.splice(2);
+  }
+
   (async () => {
     const result = await launchTest(options);
     if (!result.success) {

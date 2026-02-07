@@ -1,0 +1,374 @@
+---
+import Page from '@/layouts/Page.astro';
+---
+
+<Page title="Upload Test Results">
+  <h1>Upload</h1>
+  <h2>
+    Upload an existing test result as a ZIP file to view it in the web UI.
+  </h2>
+  <div class="overview-section">
+    <form id="upload-form" class="upload-form">
+      <!-- Always sends "upload" as source-->
+      <input type="hidden" name="source" value="upload" />
+      <!-- File upload with drag-n-drop -->
+      <div class="form-group">
+        <label for="file-upload">
+          <span>ZIP File</span>
+          <span class="required">*</span>
+        </label>
+        <div class="file-upload-area" id="file-upload-area">
+          <input
+            type="file"
+            id="file-upload"
+            name="file"
+            accept=".zip"
+            style="display: none;"
+          />
+          <img
+            src="/upload.png"
+            alt="Upload file icon"
+            width="48"
+            height="48"
+          />
+          <p>Click to select a file or drag and drop</p>
+          <p class="file-upload-hint">Accepted formats: ZIP</p>
+          <p id="file-name" class="file-name" style="display: none;"></p>
+        </div>
+      </div>
+      <!-- Name input (optional) -->
+      <div class="form-group">
+        <label for="name">
+          <span>Name (optional)</span>
+        </label>
+        <input type="text" id="name" name="name" placeholder="Test Name" />
+        <p class="form-help">Custom name for the test</p>
+      </div>
+      <!-- Description textarea (optional) -->
+      <div class="form-group">
+        <label for="description">
+          <span>Description (optional)</span>
+        </label>
+        <textarea
+          rows="3"
+          id="description"
+          name="description"
+          placeholder="Test Description"></textarea>
+        <p class="form-help">Custom description for the test</p>
+      </div>
+      <!-- Buttons -->
+      <div class="form-actions">
+        <button type="submit" class="button button-primary">Upload</button>
+        <button type="reset" class="button button-secondary">Reset</button>
+      </div>
+    </form>
+  </div>
+  <div id="upload-status" class="test-status" style="display: none;">
+    <div class="status-message"></div>
+  </div>
+</Page>
+
+<style>
+  .upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 16px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .form-group textarea {
+    font: inherit;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0);
+    color: var(--text);
+    font-size: 14px;
+    resize: vertical;
+  }
+
+  .required {
+    color: rgba(239, 68, 68, 0.9);
+  }
+
+  .form-help {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    margin: 0px;
+  }
+
+  .file-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--panel);
+  }
+
+  .file-upload-area:hover {
+    border-color: rgba(125, 211, 252, 0.5);
+    background: rgba(125, 211, 252, 0.05);
+  }
+
+  .file-upload-area.dragover {
+    border-color: var(--brand);
+    background: rgba(125, 211, 252, 0.1);
+  }
+
+  .file-upload-content {
+    pointer-events: none;
+  }
+
+  .file-upload-content svg {
+    margin-bottom: 16px;
+    color: var(--muted);
+  }
+
+  .file-upload-content p {
+    margin: 8px 0;
+    color: var(--text);
+  }
+
+  .file-upload-hint {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .file-name {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: rgba(125, 211, 252, 0.1);
+    border-radius: 6px;
+    color: var(--brand);
+    font-weight: 500;
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
+  }
+
+  .form-group input[type='text'] {
+    font: inherit;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0);
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .button {
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .button-primary {
+    background: var(--brand);
+    color: white;
+  }
+
+  .button-primary:hover {
+    opacity: 0.9;
+  }
+
+  .button-secondary {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .button-secondary:hover {
+    background: var(--panel);
+    filter: brightness(1.1);
+  }
+
+  .test-status {
+    margin-top: 24px;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .status-running {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: var(--color-warning);
+  }
+
+  .status-success {
+    background: rgba(74, 222, 128, 0.1);
+    border-color: var(--color-success);
+  }
+
+  .status-error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--color-danger);
+  }
+
+  .status-warning {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: var(--color-warning);
+  }
+
+  .status-message p {
+    margin: 8px 0;
+  }
+
+  .status-message a {
+    display: inline-block;
+    margin-top: 8px;
+  }
+
+  .overview-section {
+    margin: 24px 0;
+    padding: 20px;
+    background: var(--panel);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+</style>
+
+<script>
+  const form = document.getElementById('upload-form') as HTMLFormElement;
+  const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+  const fileUploadArea = document.getElementById(
+    'file-upload-area',
+  ) as HTMLElement;
+  const fileName = document.getElementById('file-name') as HTMLElement;
+  const statusDiv = document.getElementById('upload-status') as HTMLElement;
+  const statusMessage = statusDiv.querySelector(
+    '.status-message',
+  ) as HTMLElement;
+  // File input click handler
+  fileUploadArea.addEventListener('click', () => {
+    fileInput.click();
+  });
+  // Drag and drop handlers
+  fileUploadArea.addEventListener('dragover', e => {
+    e.preventDefault();
+    fileUploadArea.classList.add('dragover');
+  });
+  fileUploadArea.addEventListener('dragleave', () => {
+    fileUploadArea.classList.remove('dragover');
+  });
+  // Display chosen filename
+  fileUploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    fileUploadArea.classList.remove('dragover');
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      fileInput.files = files;
+      updateFileName(files[0].name);
+    }
+  });
+  fileInput.addEventListener('change', e => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      updateFileName(target.files[0].name);
+    }
+  });
+
+  // Validate file selected
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!fileInput.files || fileInput.files.length === 0) {
+      statusMessage.innerHTML = '<p>Error: Please select a file to upload</p>';
+      statusDiv.className = 'test-status status-error';
+      statusDiv.style.display = 'block';
+      return;
+    }
+    // create FormData from form: file, source="upload", optional name & description
+    const formData = new FormData(form);
+    statusDiv.style.display = 'block';
+    statusMessage.innerHTML = '<p>Uploading file...</p>';
+    statusDiv.className = 'test-status status-running';
+    try {
+      // POST to API
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = (await response.json()) as {
+        success?: boolean;
+        testId?: string;
+        error?: string;
+      };
+      // Handle duplicate (409)
+      if (response.status === 409 && result.testId) {
+        statusMessage.innerHTML = `
+          <p>This test already exists, duplicate uploads are not allowed.</p>
+          <p>Test ID: <strong>${escapeHtml(result.testId)}</strong></p>
+        `;
+        statusDiv.className = 'test-status status-warning';
+        statusDiv.style.display = 'block';
+        return;
+      }
+      // Handle other errors
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to upload file');
+      }
+      // Handle success
+      if (result.testId) {
+        statusMessage.innerHTML = `
+          <p>Upload successful!</p>
+          <p>Test ID: <strong>${escapeHtml(result.testId)}</strong></p>
+        `;
+        statusDiv.className = 'test-status status-success';
+        statusDiv.style.display = 'block';
+        fileName.style.display = 'none';
+      } else {
+        throw new Error('No test ID returned');
+      }
+    } catch (error) {
+      // show error
+      statusMessage.innerHTML = `
+        <p>Error: ${escapeHtml((error as Error).message)}</p>
+      `;
+      statusDiv.className = 'test-status status-error';
+    }
+  });
+  // Reset button handler
+  form.addEventListener('reset', () => {
+    fileName.style.display = 'none';
+    statusDiv.style.display = 'none';
+  });
+  function updateFileName(name: string) {
+    fileName.textContent = `Selected: ${escapeHtml(name)}`;
+    fileName.style.display = 'block';
+  }
+  function escapeHtml(text: string): string {
+    // protection against XSS by sanitizing user input
+    const div = document.createElement('div');
+    div.textContent = text; // automatically escapes
+    return div.innerHTML;
+  }
+</script>

@@ -29,6 +29,7 @@ Options:
   -f, --flags <string>          A comma separated list of Chromium flags to launch Chrome with. See: https://peter.sh/experiments/chromium-command-line-switches/
   --blockDomains <domains...>   A comma separated list of domains to block (default: [])
   --block <substrings...>       A comma-delimited list of urls to block (based on a substring match) (default: [])
+  --overrideHost <object>       Override the hostname of a URI with another host (Expects: {"example.com": "uat.example.com"})
   --firefoxPrefs <object>       Any Firefox User Preferences to apply (Firefox only). Example: '{"network.trr.mode": 2}'
   --cpuThrottle <int>           CPU throttling factor
   --connectionType <string>     Network connection type. By default, no throttling is applied. (choices: "cable", "dsl", "4g", "3g", "3gfast", "3gslow", "2g", "fios", default: false)
@@ -147,15 +148,17 @@ npm install
 
 ### Browsers
 
-### Chrome, Firefox, Safari and Chrome Canary
+### Chrome, Firefox, and Safari
 
-Telescope uses Playwright to control and manage individual browser engines. Telescope will automatically run `npx playwright install` to install Chrome, Firefox, Chrome Canary and Safari (webkit).
-
-Note: Safari for MacOS Tahoe is now available in `playwright@next` version so we use that until it is available on the `@latest` channel.
+Telescope uses Playwright to control and manage individual browser engines. Telescope will automatically run `npx playwright install` to install Chrome, Firefox, and Safari (webkit).
 
 ### Microsoft Edge and Chrome-beta
 
 To install Microsoft Edge or Chrome Beta playwright requires root privileges and will not automatically install them, all you have to do that is to run `npx playwright install msedge chrome-beta` from the command line (and provide root password).
+
+### Chrome Canary
+
+Chrome Canary must be manually installed, please download and install from: https://www.google.com/chrome/canary/
 
 ### ffmpeg
 
