@@ -9,7 +9,8 @@ const {
   description = 'Telescope - Cross Browser Performance Testing Agent',
 } = Astro.props;
 
-const themeOverride = Astro.cookies.get('theme-override')?.value;
+const cookieValue = Astro.cookies.get('theme-override')?.value;
+const themeOverride = (cookieValue === 'dark' || cookieValue === 'light') ? cookieValue : undefined;
 ---
 
 <!doctype html>
