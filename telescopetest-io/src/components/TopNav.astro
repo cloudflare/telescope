@@ -167,7 +167,7 @@ const navItems = [
   function getCookie(name: string) {
     const cookies = document.cookie.split(';');
     for (let cookie of cookies) {
-      const [cookieName, cookieValue] = cookie.split('=').map(c => c.trim());
+      const [cookieName, cookieValue] = cookie.split('=', 2).map(c => c.trim());
       if (cookieName === name) return cookieValue;
     }
   }
