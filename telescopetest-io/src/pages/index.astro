@@ -990,14 +990,23 @@ const year = new Date().getFullYear();
         cursor: pointer;
         opacity: 0;
         transform: translateY(100px);
-        transition: all 0.3s ease;
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease;
         z-index: 1000;
         box-shadow: 0 10px 30px rgba(216, 74, 140, 0.6);
+
+        /* CSS-only visibility based on scroll */
+        animation: back-to-top-visibility linear forwards;
+        animation-timeline: scroll();
+        animation-range: 0 500px;
       }
 
-      .back-to-top.visible {
-        opacity: 1;
-        transform: translateY(0);
+      @keyframes back-to-top-visibility {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       .back-to-top:hover {
@@ -2065,15 +2074,8 @@ cd telescope</code></pre>
         metricObserver.observe(item);
       });
 
-      // Back to top button visibility
+      // Hero parallax effect
       window.addEventListener('scroll', () => {
-        const backToTop = document.getElementById('backToTop');
-        if (window.scrollY > 500) {
-          backToTop.classList.add('visible');
-        } else {
-          backToTop.classList.remove('visible');
-        }
-
         // Parallax effect on hero
         const hero = document.getElementById('hero');
         if (window.scrollY > 100) {
