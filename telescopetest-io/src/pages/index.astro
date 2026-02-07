@@ -28,6 +28,12 @@ const year = new Date().getFullYear();
         scroll-behavior: smooth;
       }
 
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+
       :root {
         --deep-purple: #1a0b2e;
         --purple: #2d1b4e;
