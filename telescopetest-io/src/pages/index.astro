@@ -1091,8 +1091,7 @@ const year = new Date().getFullYear();
           height: 45px;
         }
       }
-    </style>
-    <style>
+
       @keyframes sparkleAnim {
         0% {
           transform: scale(0);
@@ -1103,8 +1102,19 @@ const year = new Date().getFullYear();
           opacity: 0;
         }
       }
-    </style></head
-  >
+
+      .sparkle {
+        position: fixed;
+        width: 4px;
+        height: 4px;
+        background: white;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        animation: sparkleAnim 0.5s ease-out forwards;
+      }
+    </style>
+  </head>
   <body>
     <!-- Back to Top Button -->
     <div class="back-to-top-wrapper">
@@ -1977,6 +1987,7 @@ cd telescope</code></pre>
         </p>
       </footer>
     </div>
+    <div id="sparkle-template" class="sparkle" style="display: none"></div>
 
     <script is:inline>
       // Generate starfield
@@ -2101,32 +2112,18 @@ cd telescope</code></pre>
         }
       });
 
+      const sparkleTemplate = document.getElementById('sparkle-template');
+      sparkleTemplate.removeAttribute('id');
+      sparkleTemplate.style.display = 'block';
+
       function createSparkle(x, y) {
-        const sparkle = document.createElement('div');
-        sparkle.style.position = 'fixed';
+        const sparkle = sparkleTemplate.cloneNode();
+        document.body.appendChild(sparkle);
         sparkle.style.left = x + 'px';
         sparkle.style.top = y + 'px';
-        sparkle.style.width = '4px';
-        sparkle.style.height = '4px';
-        sparkle.style.background = 'white';
-        sparkle.style.borderRadius = '50%';
-        sparkle.style.pointerEvents = 'none';
-        sparkle.style.zIndex = '9999';
-        sparkle.style.animation = 'sparkleAnim 0.5s ease-out forwards';
-        document.body.appendChild(sparkle);
 
         setTimeout(() => sparkle.remove(), 500);
       }
-
-      // Add sparkle animation
-      const style = document.createElement('style');
-      style.textContent = `
-            @keyframes sparkleAnim {
-                0% { transform: scale(0); opacity: 1; }
-                100% { transform: scale(2); opacity: 0; }
-            }
-        `;
-      document.head.appendChild(style);
 
       // Initialize
       createStars();
