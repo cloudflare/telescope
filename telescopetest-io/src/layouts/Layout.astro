@@ -14,7 +14,7 @@ const themeOverride = (cookieValue === 'dark' || cookieValue === 'light') ? cook
 ---
 
 <!doctype html>
-<html lang="en" {...themeOverride ? { 'data-theme-override': themeOverride } : {}}>
+<html lang="en" {...(themeOverride ? { 'data-theme-override': themeOverride } : {})}>
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
