@@ -43,7 +43,6 @@ const year = new Date().getFullYear();
         }
 
         .hero::before,
-        .hero.scrolled::before,
         .tagline,
         .subtitle,
         .hero-buttons,
@@ -162,11 +161,6 @@ const year = new Date().getFullYear();
         opacity: 0.9;
         z-index: 1;
         transition: transform 0.3s ease;
-      }
-
-      /* Parallax effect on scroll */
-      .hero.scrolled::before {
-        transform: translateY(-20px);
       }
 
       /* Radial gradient overlay */
