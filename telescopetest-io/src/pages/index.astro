@@ -28,50 +28,6 @@ const year = new Date().getFullYear();
         scroll-behavior: smooth;
       }
 
-      @media (prefers-reduced-motion: reduce) {
-        html {
-          scroll-behavior: auto;
-        }
-
-        *,
-        *::before,
-        *::after {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-          scroll-behavior: auto !important;
-        }
-
-        .hero::before,
-        .tagline,
-        .subtitle,
-        .hero-buttons,
-        .btn,
-        .btn svg,
-        .metric-icon,
-        .feature-icon,
-        .scroll-indicator,
-        section,
-        .param-card,
-        .param-name,
-        .metric-item,
-        .feature-card,
-        .back-to-top,
-        .logo,
-        .logo-cloudflare,
-        .logo-telescope,
-        footer::before {
-          transform: none !important;
-          opacity: 1 !important;
-          transition: none !important;
-          animation: none !important;
-        }
-
-        section::after {
-          display: none !important;
-        }
-      }
-
       :root {
         --deep-purple: #1a0b2e;
         --purple: #2d1b4e;
@@ -1129,6 +1085,60 @@ const year = new Date().getFullYear();
         pointer-events: none;
         z-index: 9999;
         animation: sparkleAnim 0.5s ease-out forwards;
+      }
+
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+
+        .hero::before,
+        .tagline,
+        .subtitle,
+        .hero-buttons,
+        .btn,
+        .btn svg,
+        .metric-icon,
+        .feature-icon,
+        .scroll-indicator,
+        section,
+        .param-card,
+        .param-name,
+        .metric-item,
+        .feature-card,
+        .back-to-top,
+        .logo,
+        .logo-cloudflare,
+        .logo-telescope,
+        footer::before,
+        .logo:hover {
+          transform: none !important;
+          opacity: 1 !important;
+          transition: none !important;
+          animation: none !important;
+        }
+
+        .logo:hover .logo-cloudflare{
+          letter-spacing: 8px;
+        }
+
+        .logo:hover .logo-telescope{
+          letter-spacing: 12px;
+        }
+
+        section::after {
+          display: none !important;
+        }
       }
     </style>
   </head>
