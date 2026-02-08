@@ -32,6 +32,45 @@ const year = new Date().getFullYear();
         html {
           scroll-behavior: auto;
         }
+
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+
+        .hero::before,
+        .hero.scrolled::before,
+        .tagline,
+        .subtitle,
+        .hero-buttons,
+        .btn,
+        .btn svg,
+        .metric-icon,
+        .feature-icon,
+        .scroll-indicator,
+        section,
+        .param-card,
+        .param-name,
+        .metric-item,
+        .feature-card,
+        .back-to-top,
+        .logo,
+        .logo-cloudflare,
+        .logo-telescope,
+        footer::before {
+          transform: none !important;
+          opacity: 1 !important;
+          transition: none !important;
+          animation: none !important;
+        }
+
+        section::after {
+          display: none !important;
+        }
       }
 
       :root {
@@ -288,7 +327,7 @@ const year = new Date().getFullYear();
       }
 
       .btn:hover::before {
-        width: 400px;
+        width: 120%;
         height: 400px;
       }
 
@@ -794,7 +833,6 @@ const year = new Date().getFullYear();
         transition: all 0.4s ease;
         position: relative;
         overflow: hidden;
-        cursor: pointer;
       }
 
       /* Radial gradient reveal */
@@ -1576,6 +1614,8 @@ cd telescope</code></pre>
     <div id="star-template" class="star" style="display: none"></div>
 
     <script is:inline>
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
       // Generate starfield
       function createStars() {
         const starTemplate = document.getElementById('star-template');
@@ -1612,12 +1652,20 @@ cd telescope</code></pre>
 
       // Observe sections
       document.querySelectorAll('section').forEach(section => {
-        observer.observe(section);
+        if (prefersReducedMotion) {
+          section.classList.add('visible');
+        } else {
+          observer.observe(section);
+        }
       });
 
       // Observe param cards with stagger
       const paramCards = document.querySelectorAll('.param-card');
       paramCards.forEach((card, index) => {
+        if (prefersReducedMotion) {
+          card.classList.add('visible');
+          return;
+        }
         const cardObserver = new IntersectionObserver(entries => {
           entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -1633,6 +1681,10 @@ cd telescope</code></pre>
       // Observe metric items
       const metricItems = document.querySelectorAll('.metric-item');
       metricItems.forEach((item, index) => {
+        if (prefersReducedMotion) {
+          item.classList.add('visible');
+          return;
+        }
         const metricObserver = new IntersectionObserver(entries => {
           entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -1663,6 +1715,7 @@ cd telescope</code></pre>
 
       // Mouse trail effect (subtle stars)
       document.addEventListener('mousemove', e => {
+        if (prefersReducedMotion) return;
         // Create subtle sparkle occasionally
         if (Math.random() > 0.98) {
           createSparkle(e.clientX, e.clientY);
@@ -1683,7 +1736,9 @@ cd telescope</code></pre>
       }
 
       // Initialize
-      createStars();
+      if (!prefersReducedMotion) {
+        createStars();
+      }
     </script>
   </body>
 </html>
