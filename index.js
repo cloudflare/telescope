@@ -93,6 +93,12 @@ async function executeTest(options) {
 
   log(config);
 
+  // `npm test emlation` fails to finish
+  browserConfig.isMobile = true
+
+  // `npm test emulation` succeeds and finishes
+  // browserConfig.isMobile = false
+
   const Runner = getRunner(config, browserConfig);
 
   try {
@@ -222,16 +228,8 @@ export default function browserAgent() {
           'fios',
         ]),
     )
-    .addOption(
-      new Option('--width <int>', 'Viewport width, in pixels').default(
-        String(DEFAULT_OPTIONS.width),
-      ),
-    )
-    .addOption(
-      new Option('--height <int>', 'Viewport height, in pixels').default(
-        String(DEFAULT_OPTIONS.height),
-      ),
-    )
+    .addOption(new Option('--width <int>', 'Viewport width, in pixels'))
+    .addOption(new Option('--height <int>', 'Viewport height, in pixels'))
     .addOption(
       new Option(
         '--frameRate <int>',
@@ -292,7 +290,13 @@ export default function browserAgent() {
       new Option(
         '--dry',
         'Dry run (do not run test, just save config and cleanup)',
-      ).default(DEFAULT_OPTIONS.dry),
+      )
+    )
+    .addOption(
+      new Option(
+        '-d, --device <string>',
+        'Device to emulate; devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
+      )
     )
     .parse(process.argv);
 
