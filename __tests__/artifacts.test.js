@@ -131,9 +131,7 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
       const indexPath = path.resolve(result.resultsPath, 'index.html');
       expect(fs.existsSync(indexPath)).toBe(true);
     } finally {
-      if (!process.env.CI) {
-        cleanup([path.resolve(result.resultsPath)]);
-      }
+      cleanup([path.resolve(result.resultsPath)]);
     }
   }, 120000);
 });
@@ -153,9 +151,7 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
       indexPath = path.resolve(result.resultsPath, '..', 'index.html');
       expect(fs.existsSync(indexPath)).toBe(true);
     } finally {
-      if (!process.env.CI) {
-        cleanup([path.resolve(result.resultsPath), indexPath]);
-      }
+      cleanup([path.resolve(result.resultsPath), indexPath]);
     }
   }, 120000);
 });
@@ -187,11 +183,9 @@ describe.each(browsers)('Upload zip for browsers (%s)', browser => {
         expect(result.success).toBe(true);
         expect(fs.existsSync(zipfile)).toBe(zip);
       } finally {
-        if (!process.env.CI) {
-          cleanup([path.resolve(result.resultsPath)]);
-          if (zip) {
-            cleanup([zipfile]);
-          }
+        cleanup([path.resolve(result.resultsPath)]);
+        if (zip) {
+          cleanup([zipfile]);
         }
       }
     });
@@ -232,9 +226,7 @@ describe.each(browsers)('Zip results (%s)', browser => {
         expect(result.success).toBe(true);
         expect(fs.existsSync(zipfile)).toBe(true);
       } finally {
-        if (!process.env.CI) {
-          cleanup([path.resolve(result.resultsPath), zipfile]);
-        }
+        cleanup([path.resolve(result.resultsPath), zipfile]);
       }
     }, 120000);
   });
