@@ -123,7 +123,7 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
       result = await launchTest({
         url: 'https://www.example.com/',
         html: true,
-        browser: browser,
+        browser,
       });
 
       expect(result).toBeDefined();
@@ -145,7 +145,7 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
       result = await launchTest({
         url: 'https://www.example.com/',
         list: true,
-        browser: browser,
+        browser,
       });
 
       expect(result).toBeDefined();
@@ -176,9 +176,9 @@ describe.each(browsers)('Upload zip for browsers (%s)', browser => {
       try {
         let config = {
           url: 'https://www.example.com/',
-          browser: browser,
+          browser,
           uploadUrl: 'https://api.example.com/upload',
-          zip: zip,
+          zip,
         };
         result = await launchTest(config);
         zipfile = path.resolve(resultsRoot, `${result.testId}.zip`);
@@ -203,7 +203,7 @@ describe.each(browsers)('Invalid url for browsers (%s)', browser => {
     test('Error when invalid --uploadUrl is specified.', async () => {
       const config = {
         url: 'https://www.example.com/',
-        browser: browser,
+        browser,
         uploadUrl: 'invalid-url',
       };
 
@@ -223,7 +223,7 @@ describe.each(browsers)('Zip results (%s)', browser => {
       try {
         result = await launchTest({
           url: 'https://www.example.com/',
-          browser: browser,
+          browser,
           zip: true,
         });
 
