@@ -45,6 +45,7 @@ Options:
   --list                        Generate list of results in HTML (default: false)
   --zip                         Zip the results of the test into the results directory. (default: false)
   --dry                         Dry run (do not run test, just save config and cleanup) (default: false)
+  --uploadUrl <string>          Upload results to URL. Must be a valid URL if provided. (default: null)
   --help                        display help for command
 ```
 
