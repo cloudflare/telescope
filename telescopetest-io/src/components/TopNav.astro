@@ -28,9 +28,7 @@ const navItems = [
     </nav>
   </div>
   <div class="actions">
-    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
-      🌙
-    </button>
+    <button class="theme-toggle" type="button" aria-label="Toggle theme"></button>
     <a
       class="gh"
       href="https://github.com/cloudflare/telescope"
@@ -54,13 +52,9 @@ const navItems = [
     position: sticky;
     top: 0;
     z-index: 10;
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--nav-bg);
     backdrop-filter: blur(10px);
     border-radius: 8px;
-  }
-
-  :global([data-theme='dark']) header {
-    background: rgba(15, 15, 15, 0.9);
   }
 
   .left {
@@ -129,6 +123,24 @@ const navItems = [
     align-items: center;
     justify-content: center;
   }
+  
+  .theme-toggle::after {
+    content: '🌙';
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .theme-toggle::after {
+      content: '☀️';
+    }
+  }
+
+  :global([data-theme-override='dark']) .theme-toggle::after {
+    content: '☀️';
+  }
+
+  :global([data-theme-override='light']) .theme-toggle::after {
+    content: '🌙';
+  }
 
   .theme-toggle:hover {
     background: var(--panel);
@@ -152,19 +164,39 @@ const navItems = [
 </style>
 
 <script>
-  const savedTheme = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-  document.documentElement.setAttribute('data-theme', theme);
+  function getCookie(name: string) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [cookieName, cookieValue] = cookie.split('=', 2).map(c => c.trim());
+      if (cookieName === name) return cookieValue;
+    }
+  }
+
+  function setCookie(name: string, value: string, days: number) {
+    const d = new Date();
+    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = d.toUTCString();
+    const secure = window.location.protocol === 'https:' ? ';Secure' : '';
+    document.cookie = `${name}=${value};expires=${expires};path=/;SameSite=Lax${secure}`;
+  }
+
+  const savedTheme = getCookie('theme-override');
+  
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme-override', savedTheme);
+  }
+
   const button = document.querySelector('.theme-toggle') as HTMLButtonElement;
+
   if (button) {
-    button.textContent = theme === 'dark' ? '☀️' : '🌙';
     button.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme');
-      const newTheme = current === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-      button.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+      const isDark = document.documentElement.getAttribute('data-theme-override') 
+        ? document.documentElement.getAttribute('data-theme-override') === 'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      const newTheme = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme-override', newTheme);
+      setCookie('theme-override', newTheme, 365);
     });
   }
 </script>
