@@ -3,6 +3,9 @@ import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
+
 import { BrowserConfig } from '../lib/browsers.js';
 import { expect } from 'playwright/test';
 
@@ -120,7 +123,7 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
       result = await launchTest({
         url: 'https://www.example.com/',
         html: true,
-        browser: browser,
+        browser,
       });
 
       expect(result).toBeDefined();
@@ -128,9 +131,7 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
       const indexPath = path.resolve(result.resultsPath, 'index.html');
       expect(fs.existsSync(indexPath)).toBe(true);
     } finally {
-      if (!process.env.CI) {
-        cleanup([path.resolve(result.resultsPath)]);
-      }
+      cleanup([path.resolve(result.resultsPath)]);
     }
   }, 120000);
 });
@@ -142,7 +143,7 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
       result = await launchTest({
         url: 'https://www.example.com/',
         list: true,
-        browser: browser,
+        browser,
       });
 
       expect(result).toBeDefined();
@@ -150,9 +151,83 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
       indexPath = path.resolve(result.resultsPath, '..', 'index.html');
       expect(fs.existsSync(indexPath)).toBe(true);
     } finally {
-      if (!process.env.CI) {
-        cleanup([path.resolve(result.resultsPath), indexPath]);
-      }
+      cleanup([path.resolve(result.resultsPath), indexPath]);
     }
   }, 120000);
+});
+
+describe.each(browsers)('Upload zip for browsers (%s)', browser => {
+  describe.each([true, false])('Upload URL with zip: %s', zip => {
+    const server = setupServer(
+      http.post('https://api.example.com/upload', () => {
+        console.log('Mock server received upload request');
+        return HttpResponse.json({ url: 'https://mock-url.com/file' });
+      }),
+    );
+    beforeAll(() => server.listen()); // Establish API mocking before all tests
+    afterEach(() => server.resetHandlers()); // Reset any runtime handlers (prevents test cross-contamination)
+    afterAll(() => server.close()); // Clean up once all tests are done
+    test('POST when --uploadUrl is specified.', async () => {
+      let result, zipfile;
+      try {
+        let config = {
+          url: 'https://www.example.com/',
+          browser,
+          uploadUrl: 'https://api.example.com/upload',
+          zip,
+        };
+        result = await launchTest(config);
+        zipfile = path.resolve(resultsRoot, `${result.testId}.zip`);
+
+        expect(result).toBeDefined();
+        expect(result.success).toBe(true);
+        expect(fs.existsSync(zipfile)).toBe(zip);
+      } finally {
+        cleanup([path.resolve(result.resultsPath)]);
+        if (zip) {
+          cleanup([zipfile]);
+        }
+      }
+    });
+  });
+});
+
+describe.each(browsers)('Invalid url for browsers (%s)', browser => {
+  describe('Invalid upload URL', () => {
+    test('Error when invalid --uploadUrl is specified.', async () => {
+      const config = {
+        url: 'https://www.example.com/',
+        browser,
+        uploadUrl: 'invalid-url',
+      };
+
+      const result = await launchTest(config);
+
+      expect(result).toBeDefined();
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+    });
+  });
+});
+
+describe.each(browsers)('Zip results (%s)', browser => {
+  describe('Zip results', () => {
+    test('Zips results when --zip is specified.', async () => {
+      let result, zipfile;
+      try {
+        result = await launchTest({
+          url: 'https://www.example.com/',
+          browser,
+          zip: true,
+        });
+
+        zipfile = path.resolve(resultsRoot, `${result.testId}.zip`);
+        expect(result).toBeDefined();
+        expect(result.success).toBe(true);
+        expect(fs.existsSync(zipfile)).toBe(true);
+      } finally {
+        cleanup([path.resolve(result.resultsPath), zipfile]);
+      }
+    }, 120000);
+  });
 });
