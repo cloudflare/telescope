@@ -177,7 +177,7 @@ describe.each([true, false])('Upload URL with zip: %s', zip => {
         url: 'https://www.example.com/',
         browser: 'firefox',
         uploadUrl: 'https://api.example.com/upload',
-        zip: zip,
+        zip,
       };
       result = await launchTest(config);
       zipfile = path.resolve(resultsRoot, `${result.testId}.zip`);
