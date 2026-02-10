@@ -1,5 +1,10 @@
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
-import type { LaunchOptions, CLIOptions, ConnectionType } from './types.js';
+import type {
+  LaunchOptions,
+  CLIOptions,
+  ConnectionType,
+  BrowserName,
+} from './types.js';
 import type { HTTPCredentials } from 'playwright';
 
 /**
@@ -13,8 +18,7 @@ import type { HTTPCredentials } from 'playwright';
 export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
   const config: LaunchOptions = {
     url: options.url,
-    browser:
-      (options.browser as LaunchOptions['browser']) || DEFAULT_OPTIONS.browser,
+    browser: (options.browser as BrowserName) || DEFAULT_OPTIONS.browser,
     width: parseInt(String(options.width)) || DEFAULT_OPTIONS.width,
     height: parseInt(String(options.height)) || DEFAULT_OPTIONS.height,
     frameRate: parseInt(String(options.frameRate)) || DEFAULT_OPTIONS.frameRate,

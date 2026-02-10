@@ -151,7 +151,7 @@ class BrowserConfig {
 
   getBrowserConfig(
     browser: BrowserName,
-    options: Partial<LaunchOptions>,
+    options: LaunchOptions,
   ): BrowserConfigOptions {
     //check for browser and see if it has value
     if (

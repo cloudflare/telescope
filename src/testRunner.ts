@@ -43,7 +43,7 @@ class TestRunner {
   args: string[] = [];
   consoleMessages: ConsoleMessage[] = [];
   browserConfig: BrowserConfigOptions;
-  metrics: Partial<Metrics> = {};
+  metrics?: Metrics;
   resourceTimings: ResourceTiming[] = [];
   paths: TestPaths = {} as TestPaths;
   requests: RequestData[] = [];
@@ -298,32 +298,32 @@ class TestRunner {
       throw new Error('Page not initialized');
     }
 
-    //navigation timing
-    this.metrics['navigationTiming'] = await this.collectNavTiming();
     //resource timing
     this.resourceTimings = JSON.parse(
       await this.page.evaluate(() =>
         JSON.stringify(window.performance.getEntriesByType('resource')),
       ),
     ) as ResourceTiming[];
-    //paint timing
-    this.metrics['paintTiming'] = JSON.parse(
-      await this.page.evaluate(() =>
-        JSON.stringify(window.performance.getEntriesByType('paint')),
-      ),
-    );
-    //user timing
-    this.metrics['userTiming'] = JSON.parse(
-      await this.page.evaluate(() =>
-        JSON.stringify([
-          ...window.performance.getEntriesByType('mark'),
-          ...window.performance.getEntriesByType('measure'),
-        ]),
-      ),
-    );
 
-    this.metrics['largestContentfulPaint'] = await this.collectLCP();
-    this.metrics['layoutShifts'] = await this.collectLayoutShifts();
+    // Collect all metrics and assign as single object
+    this.metrics = {
+      navigationTiming: await this.collectNavTiming(),
+      paintTiming: JSON.parse(
+        await this.page.evaluate(() =>
+          JSON.stringify(window.performance.getEntriesByType('paint')),
+        ),
+      ),
+      userTiming: JSON.parse(
+        await this.page.evaluate(() =>
+          JSON.stringify([
+            ...window.performance.getEntriesByType('mark'),
+            ...window.performance.getEntriesByType('measure'),
+          ]),
+        ),
+      ),
+      largestContentfulPaint: await this.collectLCP(),
+      layoutShifts: await this.collectLayoutShifts(),
+    };
   }
 
   async collectLayoutShifts(): Promise<LayoutShift[]> {
@@ -747,14 +747,14 @@ class TestRunner {
     );
 
     //first, TTFB
-    const navTiming = this.metrics.navigationTiming;
+    const navTiming = this.metrics?.navigationTiming;
     if (navTiming) {
       const TTFB = navTiming.responseStart - navTiming.navigationStart;
       harData.log.pages[0].pageTimings._TTFB = TTFB;
     }
 
     // now our LCP
-    const lcpEvents = this.metrics.largestContentfulPaint;
+    const lcpEvents = this.metrics?.largestContentfulPaint;
     let lcpURL: string | null = null;
     if (lcpEvents && lcpEvents.length > 0) {
       const lcp = lcpEvents[lcpEvents.length - 1];
