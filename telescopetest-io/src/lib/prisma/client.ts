@@ -16,10 +16,3 @@ export function createPrismaClient(db: D1Database) {
   const adapter = new PrismaD1(db);
   return new PrismaClient({ adapter });
 }
-
-/*
-// Usage:
-const prisma = createPrismaClient(context.locals.runtime.env.TELESCOPE_DB);
-const tests = await prisma.test.findMany();
-await prisma.$disconnect();
-*/

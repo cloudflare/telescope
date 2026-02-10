@@ -3,25 +3,27 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "list-local-r2": "sqlite3 .wrangler/state/v3/r2/miniflare-R2BucketObject/*.sqlite 'SELECT key, size FROM _mf_objects'",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro build && wrangler dev --env development",
     "cf-typegen": "wrangler types",
     "deploy": "astro build && wrangler deploy --env production",
-    "deploy:staging": "astro build && wrangler deploy --env staging"
+    "deploy:staging": "astro build && wrangler deploy --env staging",
+    "migrate:local": "prisma generate && wrangler d1 migrations apply telescope-db-development --local --env development",
+    "migrate:staging": "prisma generate && wrangler d1 migrations apply telescope-db-staging --remote --env staging",
+    "generate": "prisma generate"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
-    "astro": "^5.16.15",
-    "fflate": "^0.8.2",
-    "zod": "^3.25.76",
     "@prisma/adapter-d1": "^7.3.0",
     "@prisma/client": "^7.3.0",
-    "dotenv": "^17.2.3"
+    "astro": "^5.16.15",
+    "fflate": "^0.8.2",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^25.0.10",
+    "dotenv": "^17.2.4",
     "prisma": "^7.3.0",
     "wrangler": "^4.61.0"
   }

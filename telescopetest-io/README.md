@@ -19,8 +19,22 @@ Make sure you've followed all steps in Project Setup. Then, you can run `npm run
 
 ## Migrations
 
-- To make migrations and database management simpler, we're using Prisma ORM with D1. This is a preview feature that Prisma has been building out since 2024: https://www.prisma.io/docs/orm/overview/databases/cloudflare-d1#migration-workflows.
-- I followed direct docs from Prisma for sestup: https://www.prisma.io/docs/guides/cloudflare-d1.
+- To make migrations and database management simpler, we're using Prisma ORM with D1. This is a [preview feature](https://www.prisma.io/docs/orm/overview/databases/cloudflare-d1#migration-workflows) that Prisma has been building out since 2024, so some features are still being built out.
+- Prisma migrate does not support D1 yet, so you cannot follow the default prisma migrate workflows. Instead, migration files need to be created like this:
+  1.  Make schema changes in `telescopetest-io/prisma/schema.prisma`
+  2.  Run this command to create a migration file:
+
+      ```bash
+      npx prisma migrate diff \
+      --from-local-d1 \
+      --to-schema prisma/schema.prisma \
+      --script > prisma/migrations/<#_your_change_name>.sql
+
+      ```
+
+  3.  Regenerate a prisma client that reflects your new changes in `schema.prisma` and apply the newly created migration file locally (in development environment) with the command `npm run migrate:local`.
+
+- To read more about prisma D1 migrations, read [here](https://www.prisma.io/docs/guides/cloudflare-d1#52-generate-migration-sql).
 
 ## Testing in Staging
 

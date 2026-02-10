@@ -19,6 +19,7 @@
           "binding": "TELESCOPE_DB",
           "database_name": "telescope-db-development",
           "database_id": "9cb42d60-b1d5-4447-a04b-86ea48225f87",
+          "migrations_dir": "prisma/migrations",
         },
       ],
       "r2_buckets": [
@@ -44,6 +45,7 @@
           "binding": "TELESCOPE_DB",
           "database_name": "telescope-db-staging",
           "database_id": "88626165-c6c0-42bf-9e7d-c9317aa98968",
+          "migrations_dir": "prisma/migrations",
         },
       ],
       "r2_buckets": [
@@ -69,6 +71,7 @@
           "binding": "TELESCOPE_DB",
           "database_name": "telescope-db",
           "database_id": "db0baebd-6b49-434b-bc31-fc9224ef4585",
+          "migrations_dir": "prisma/migrations",
         },
       ],
       "r2_buckets": [

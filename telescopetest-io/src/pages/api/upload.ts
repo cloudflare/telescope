@@ -1,12 +1,16 @@
 import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
+import type { ConfigJson, TestConfig } from '@/lib/classes/TestConfig';
 
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
-import { TestConfig, TestSource } from '@/lib/classes/TestConfig';
-import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
+import { generateTestId, TestSource } from '@/lib/classes/TestConfig';
 import { createPrismaClient } from '@/lib/prisma/client';
+import {
+  createTest,
+  findTestIdByZipKey,
+} from '@/lib/repositories/test-repository';
 
 export const prerender = false;
 
@@ -68,19 +72,23 @@ export const POST: APIRoute = async (context: APIContext) => {
     const buffer = await file.arrayBuffer();
     const unzipped = await getUnzipped(buffer);
     const files = Object.keys(unzipped);
-    // const files = Object.keys(unzipped).filter(name => !name.endsWith('/'));
     // Generate content-based hash for unique R2 storage key
     const zipKey = await generateContentHash(buffer);
     // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
     const env = context.locals.runtime.env;
-    const testStore = new D1TestStore(env.TELESCOPE_DB);
+    // Validate required bindings exist
+    if (!env.TELESCOPE_DB || !env.RESULTS_BUCKET) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Environment bindings not configured properly',
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
     // Check if this exact content already exists in D1
-
     prisma = createPrismaClient(env.TELESCOPE_DB);
-    const existing = await prisma.test.findUnique({ where: { zipKey } });
-    const existingTestId = existing?.testId;
-
-    // const existingTestId = await testStore.findTestIdByZipKey(zipKey);
+    const existingTestId = await findTestIdByZipKey(prisma, zipKey);
     if (existingTestId) {
       return new Response(
         JSON.stringify({
@@ -130,7 +138,7 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    let config;
+    let config: ConfigJson;
     try {
       config = JSON.parse(configText);
     } catch (error) {
@@ -142,24 +150,21 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // create testConfig (ts class) object
-    let testConfig = new TestConfig(config, zipKey, source, name, description);
-    // store the test config (metadata) in the db
+    // Build test configuration object
+    const testId = generateTestId();
+    const testConfig: TestConfig = {
+      testId,
+      zipKey,
+      name,
+      description,
+      source,
+      url: config.url,
+      testDate: Math.floor(new Date(config.date).getTime() / 1000),
+      browser: config.options.browser,
+    };
+    // Store test metadata in database
     try {
-      // await testStore.createTestFromConfig(testConfig);
-      const testDate = Math.floor(new Date(config.date).getTime() / 1000);
-      await prisma.test.create({
-        data: {
-          testId: 'WHATEVER_RN',
-          zipKey: zipKey,
-          name: name,
-          description: description,
-          source: source,
-          url: config.url,
-          testDate: testDate,
-          browser: config.options.browser,
-        },
-      });
+      await createTest(prisma, testConfig);
     } catch (error) {
       return new Response(
         JSON.stringify({
@@ -169,19 +174,17 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    const testId = testConfig.test_id; // generated in constructor
-    // store all unzipped files in R2 with {testId}/{filename} format
-    // storing with {testId}/ for future expansion to multiple users
+    // Store all unzipped files in R2 with {testId}/{filename} format
     for (const filename of files) {
       await env.RESULTS_BUCKET.put(`${testId}/${filename}`, unzipped[filename]);
     }
-
+    // disconnect from prisma
     await prisma.$disconnect();
-
+    // return success
     return new Response(
       JSON.stringify({
         success: true,
-        testId: testId, // returned to upload.astro on success
+        testId: testId,
         message: 'Upload processed successfully',
       }),
       {
@@ -191,9 +194,8 @@ export const POST: APIRoute = async (context: APIContext) => {
     );
   } catch (error) {
     console.error('Upload error:', error);
-
+    // disconnect from prisma
     if (prisma) await prisma.$disconnect();
-
     return new Response(
       JSON.stringify({
         success: false,

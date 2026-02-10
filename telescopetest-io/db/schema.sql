@@ -17,5 +17,3 @@ CREATE TABLE IF NOT EXISTS tests (
 CREATE INDEX IF NOT EXISTS idx_tests_created_at ON tests(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_tests_updated_at ON tests(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_tests_file_key ON tests(zip_key);
-
--- OLD, moving now to prisma 

@@ -1,10 +1,12 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
+//   previewFeatures = ["driverAdapters"]
 
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
   runtime  = "cloudflare"
+
 }
 
 datasource db {
@@ -16,7 +18,7 @@ model Test {
   zipKey      String   @unique @map("zip_key")
   name        String?
   description String?
-  source      String?
+  source      String
   url         String
   testDate    Int      @map("test_date")
   browser     String
