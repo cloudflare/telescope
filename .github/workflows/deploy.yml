@@ -1,4 +1,4 @@
-name: DEPLOY telescopetest-io worker
+name: Deploy telescopetest.io production site (no-op on forks)
 on:
   push:
     branches:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   deploy:
+    if: github.repository == 'cloudflare/telescope'
     runs-on: ubuntu-latest
     steps:
       - name: checkout code
