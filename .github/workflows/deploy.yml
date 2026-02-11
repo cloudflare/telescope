@@ -1,4 +1,7 @@
 name: Deploy telescopetest.io production site (no-op on forks)
+permissions:
+  contents: read
+
 on:
   push:
     branches:
