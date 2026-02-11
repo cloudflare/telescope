@@ -140,10 +140,11 @@ npx . -u https://newsletter.www.example.com/admin -b safari --auth '{"username":
 
 ### NPM dependencies
 
-After checking out the code, you need to install all the dependencies:
+After checking out the code, you need to install all the dependencies and build the project:
 
 ```
 npm install
+npm run build
 ```
 
 ### Browsers

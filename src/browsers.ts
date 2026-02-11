@@ -1,10 +1,18 @@
 import fs from 'fs';
+import type {
+  BrowserName,
+  BrowserConfigOptions,
+  BrowserConfigEntry,
+  LaunchOptions,
+} from './types.js';
 
 // should browsers be headless? defaults to false unless running in CI
 const headless = !!process.env.CI;
 
+type BrowserConfigs = Record<BrowserName, BrowserConfigEntry>;
+
 class BrowserConfig {
-  defaultChromiumArgs = [
+  defaultChromiumArgs: string[] = [
     '--allow-running-insecure-content',
     '--disable-background-networking',
     '--disable-background-timer-throttling',
@@ -31,13 +39,18 @@ class BrowserConfig {
     '--window-size="1366,768"',
     '--remote-debugging-port=0',
   ];
-  defaultIgnoreArgs = [
+
+  defaultIgnoreArgs: string[] = [
     //this one is causing padding on the video oddly...
     //since the reported issue is the opposite: https://bugs.chromium.org/p/chromium/issues/detail?id=1277272
     // '--enable-automation',
     '--no-sandbox',
   ];
-  defaultBrowserOptions = {
+
+  defaultBrowserOptions: Pick<
+    BrowserConfigOptions,
+    'headless' | 'viewport' | 'recordHar' | 'recordVideo'
+  > = {
     headless,
     viewport: { width: 1366, height: 768 },
     recordHar: {
@@ -48,7 +61,8 @@ class BrowserConfig {
       size: { width: 1366, height: 768 },
     },
   };
-  static browserConfigs = {
+
+  static browserConfigs: BrowserConfigs = {
     chrome: {
       engine: 'chromium',
       channel: 'chrome',
@@ -89,17 +103,22 @@ class BrowserConfig {
       args: [],
     },
   };
-  constructor(browser) {
+
+  browser: BrowserName | undefined;
+
+  constructor(browser?: BrowserName) {
     this.browser = browser;
   }
-  static getBrowsers() {
+
+  static getBrowsers(): BrowserName[] {
     // only run firefox in CI (for now)
     return process.env.CI
       ? ['firefox']
-      : Object.keys(BrowserConfig.browserConfigs);
+      : (Object.keys(BrowserConfig.browserConfigs) as BrowserName[]);
   }
-  addFirefoxPrefs(prefs) {
-    let userPrefLines = [];
+
+  addFirefoxPrefs(prefs: Record<string, string | number | boolean>): void {
+    const userPrefLines: string[] = [];
     for (const [key, value] of Object.entries(prefs)) {
       let prefline = '';
       if (typeof value == 'boolean') {
@@ -111,7 +130,8 @@ class BrowserConfig {
     }
     userPrefLines.forEach(s => fs.appendFileSync('./tmp/user.js', s));
   }
-  createUserDataDir(browserConfig) {
+
+  createUserDataDir(browserConfig: BrowserConfigEntry): void {
     //let's make sure there's a user directory
     const userDataDir = './tmp';
     if (!fs.existsSync(userDataDir)) {
@@ -128,31 +148,49 @@ class BrowserConfig {
       });
     }
   }
-  getBrowserConfig(browser, options) {
-    //check for browser and see if it has value
 
-    if (!BrowserConfig.browserConfigs.hasOwnProperty(browser)) {
+  getBrowserConfig(
+    browser: BrowserName,
+    options: LaunchOptions,
+  ): BrowserConfigOptions {
+    //check for browser and see if it has value
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        BrowserConfig.browserConfigs,
+        browser,
+      )
+    ) {
       throw new Error('Invalid browser name');
     }
 
-    let browserConfig = Object.assign(
-      {},
-      BrowserConfig.browserConfigs[browser],
-      this.defaultBrowserOptions,
-    );
-    if (browserConfig.args) {
-      browserConfig.args = [...browserConfig.args, ...this.defaultChromiumArgs];
+    const baseConfig = BrowserConfig.browserConfigs[browser];
+    const browserConfig: BrowserConfigOptions = {
+      ...baseConfig,
+      ...this.defaultBrowserOptions,
+    };
+
+    // Handle Chromium-specific args
+    if ('args' in baseConfig && baseConfig.args) {
+      browserConfig.args = [...baseConfig.args, ...this.defaultChromiumArgs];
       if (options.args) {
         browserConfig.args = [...browserConfig.args, ...options.args];
       }
       browserConfig.ignoreDefaultArgs = this.defaultIgnoreArgs;
     }
-    if (browserConfig.firefoxUserPrefs && options.firefoxPrefs) {
-      this.createUserDataDir(browserConfig);
+
+    // Handle Firefox preferences
+    if (
+      'firefoxUserPrefs' in baseConfig &&
+      baseConfig.firefoxUserPrefs &&
+      options.firefoxPrefs
+    ) {
+      this.createUserDataDir(baseConfig);
       this.addFirefoxPrefs(options.firefoxPrefs);
       browserConfig.firefoxUserPrefs = options.firefoxPrefs || {};
     }
-    if (browserConfig.mozLog) {
+
+    // Handle Firefox mozLog
+    if ('mozLog' in baseConfig && baseConfig.mozLog) {
       //quick test for firefox
       browserConfig.env = {
         MOZ_LOG_FILE: 'moz.log',
@@ -160,6 +198,7 @@ class BrowserConfig {
           'timestamp,nsHttp:{0:d},nsSocketTransport:{0:d},nsHostResolver:{0:d},pipnss:5',
       };
     }
+
     if (options.width) {
       browserConfig.viewport.width = options.width;
       browserConfig.recordVideo.size.width = options.width;
@@ -168,6 +207,7 @@ class BrowserConfig {
       browserConfig.viewport.height = options.height;
       browserConfig.recordVideo.size.height = options.height;
     }
+
     return browserConfig;
   }
 }

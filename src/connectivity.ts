@@ -1,4 +1,6 @@
-export const networkTypes = {
+import type { NetworkTypes } from './types.js';
+
+export const networkTypes: NetworkTypes = {
   '3g': {
     down: 1600,
     up: 768,

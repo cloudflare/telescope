@@ -2,34 +2,50 @@
   "name": "@cloudflare/telescope",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "keywords": [],
   "author": "Cloudflare",
   "license": "Apache-2.0",
   "type": "module",
+  "files": [
+    "dist",
+    "img",
+    "support"
+  ],
   "bin": {
-    "telescope": "cli.js"
+    "telescope": "dist/src/cli.js"
   },
   "scripts": {
-    "start": "node cli.js",
-    "test": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --verbose --maxWorkers=1",
+    "build": "tsc && cp -r src/templates dist/src/ && mkdir -p dist/processors/templates && cp -r processors/templates/* dist/processors/templates/",
+    "dev": "tsc --watch",
+    "start": "node dist/src/cli.js",
+    "test": "npm run build && NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --verbose --maxWorkers=1",
     "test:ci": "export CI=true; npm test",
     "testAction": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest __tests__/browsers.test.js --verbose",
     "coverage": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --collect-coverage --verbose --maxWorkers=1",
-    "clean": "rm -rf node_modules results",
+    "clean": "rm -rf node_modules results dist",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "prettier": "npx prettier --write .",
+    "prepublishOnly": "npm run build",
     "postinstall": "npx playwright install"
-  },
-  "jest": {
-    "testPathIgnorePatterns": [
-      "<rootDir>/__tests__/helpers.js"
-    ]
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
+    "@types/adm-zip": "^0.5.7",
+    "@types/ejs": "^3.1.5",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^25.2.1",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "eslint": "^9.39.2",
     "jest": "^29.5.0",
     "prettier": "^3.6.2",
-    "prettier-plugin-ejs": "^1.0.3"
+    "prettier-plugin-ejs": "^1.0.3",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@sitespeed.io/throttle": "^5.0.0",

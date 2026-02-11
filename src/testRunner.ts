@@ -19,29 +19,56 @@ import ffmpeg from 'ffmpeg';
 import ejs from 'ejs';
 import { log, logTimer, generateTestID } from './helpers.js';
 import AdmZip from 'adm-zip';
+import type {
+  BrowserConfigOptions,
+  LaunchOptions,
+  TestPaths,
+  ResultAssets,
+  Metrics,
+  ConsoleMessage,
+  RequestData,
+  ResourceTiming,
+  HarData,
+  HarEntry,
+  LCPEvent,
+  LayoutShift,
+  NavigationTiming,
+  FilmstripFrame,
+  ConnectionType,
+  SavedConfig,
+} from './types.js';
+import type { BrowserContext, Page, Route, Request } from 'playwright';
 
 class TestRunner {
-  args = [];
-  consoleMessages = [];
-  browserConfig;
-  metrics = {};
-  resourceTimings = {};
-  paths = {};
-  requests = [];
-  resultAssets = {
+  args: string[] = [];
+  consoleMessages: ConsoleMessage[] = [];
+  browserConfig: BrowserConfigOptions;
+  metrics?: Metrics;
+  resourceTimings: ResourceTiming[] = [];
+  paths: TestPaths = {} as TestPaths;
+  requests: RequestData[] = [];
+  resultAssets: ResultAssets = {
     filmstripFiles: [],
     videoFile: null,
   };
+  options: LaunchOptions;
+  testURL: string;
+  selectedBrowser: BrowserConfigOptions;
+  TESTID: string;
+  videoRecordingFile: string = '';
+  browserInstance: BrowserContext | null = null;
+  page: Page | null = null;
 
-  constructor(options, browserConfig) {
+  constructor(options: LaunchOptions, browserConfig: BrowserConfigOptions) {
     this.options = options;
     this.testURL = options.url;
     this.selectedBrowser = browserConfig;
+    this.browserConfig = browserConfig;
     this.TESTID = generateTestID();
     this.setupPaths(this.TESTID);
   }
 
-  setupPaths(testID) {
+  setupPaths(testID: string): void {
     this.paths['temporaryContext'] = './tmp/';
     this.paths['results'] = './results/' + testID;
     this.paths['filmstrip'] = this.paths.results + '/filmstrip';
@@ -55,9 +82,9 @@ class TestRunner {
   /**
    * Set up any necessary request blocking, using the page.route handler
    */
-  async setupBlocking(page) {
-    if (this.options.blockDomains.length > 0) {
-      let domains = [];
+  async setupBlocking(page: Page): Promise<void> {
+    if (this.options.blockDomains && this.options.blockDomains.length > 0) {
+      const domains: string[] = [];
 
       this.options.blockDomains.forEach(domain => {
         domains.push('//' + domain + '/'); /* Domain part of URL */
@@ -65,15 +92,15 @@ class TestRunner {
 
       const domain_rx = new RegExp(domains.join('|'));
 
-      await page.route(domain_rx, async route => {
+      await page.route(domain_rx, async (route: Route) => {
         route.abort();
       });
     }
 
-    if (this.options.block.length > 0) {
+    if (this.options.block && this.options.block.length > 0) {
       const blocks_rx = new RegExp(this.options.block.join('|'));
 
-      await page.route(blocks_rx, async route => {
+      await page.route(blocks_rx, async (route: Route) => {
         route.abort();
       });
     }
@@ -84,20 +111,25 @@ class TestRunner {
   /**
    * Set up any hostname overrides that have been requested
    */
-  async setupHostOverrides(page, overrides) {
-    let domains = [];
+  async setupHostOverrides(
+    page: Page,
+    overrides: Record<string, string>,
+  ): Promise<void> {
+    const domains: string[] = [];
 
     Object.keys(overrides).forEach(original => {
       domains.push('//(' + original + ')/'); /* Domain part of URL */
     });
     const domain_rx = new RegExp(domains.join('|'));
 
-    await page.route(domain_rx, async (route, request) => {
+    await page.route(domain_rx, async (route: Route, request: Request) => {
       const original_url = request.url();
       const parts = domain_rx.exec(original_url);
-      const original_domain = parts.findLast(d => {
-        return !!d;
-      }); /* Grab what matched */
+      const original_domain = parts?.findLast(d => !!d); /* Grab what matched */
+      if (!original_domain) {
+        route.fallback();
+        return;
+      }
       const host_rx = new RegExp('//' + original_domain);
       const new_url = original_url.replace(
         host_rx,
@@ -120,11 +152,11 @@ class TestRunner {
    * Creates a browser instance using the browser config for the browser to be tested
    * Also merges in any browser-specific settings
    */
-  async createBrowser() {
+  async createBrowser(): Promise<BrowserContext> {
     //turn on logging
     this.selectedBrowser.logger = {
-      isEnabled: (name, severity) => true,
-      log: (name, severity, message) => {
+      isEnabled: (_name: string, _severity: string) => true,
+      log: (name: string, severity: string, message: string) => {
         console.log(name + ' ' + severity + ' ' + message);
       },
     };
@@ -134,11 +166,15 @@ class TestRunner {
     if (this.options.auth) {
       this.selectedBrowser.httpCredentials = this.options.auth;
     }
-    const browser = await playwright[
-      this.selectedBrowser.engine
-    ].launchPersistentContext(
+
+    const engine = this.selectedBrowser.engine;
+    const browserType = playwright[engine];
+
+    const browser = await browserType.launchPersistentContext(
       this.paths['temporaryContext'],
-      this.selectedBrowser,
+      this.selectedBrowser as Parameters<
+        typeof browserType.launchPersistentContext
+      >[1],
     );
     await this.prepareContext(browser);
     return browser;
@@ -148,12 +184,13 @@ class TestRunner {
    * Given a browser instance, grab the page and then kick off anything that
    * needs to be attached at the page level
    */
-  async createPage(browser) {
-    const page = await browser.pages()[0];
+  async createPage(browser: BrowserContext): Promise<Page> {
+    const page = browser.pages()[0];
     await this.preparePage(page);
     return page;
   }
-  setupConsoleMessages(page) {
+
+  setupConsoleMessages(page: Page): void {
     //collect console messages
     page.on('console', msg => {
       this.consoleMessages.push({
@@ -164,7 +201,8 @@ class TestRunner {
     });
     return;
   }
-  async preparePage(page) {
+
+  async preparePage(page: Page): Promise<void> {
     this.setupConsoleMessages(page);
 
     if (this.options.overrideHost) {
@@ -172,22 +210,19 @@ class TestRunner {
     }
 
     await this.setupBlocking(page);
-    // page.on('request', data => {
-    //     console.log("started: " + data.url());
-    //     console.log("started: " + new Date().getTime());
-    // })
     page.on('requestfinished', data => {
-      let reqData = {};
-      // console.info(data);
-      reqData.url = data.url();
-      reqData.timing = data.timing();
+      const reqData: RequestData = {
+        url: data.url(),
+        timing: data.timing(),
+      };
       this.requests.push(reqData);
     });
   }
+
   /**
    * Prepares the context by kicking off anything that needs to be attached at the context level
    */
-  async prepareContext(context) {
+  async prepareContext(context: BrowserContext): Promise<void> {
     // add any custom headers
     if (this.options.headers) {
       await context.setExtraHTTPHeaders(this.options.headers);
@@ -210,15 +245,24 @@ class TestRunner {
       await context.addCookies(cookies);
     }
   }
+
   /**
    * Triggers the navigation based on the passed in url, grabs a screenshot, and closes the context and browser
    */
-  async doNavigation() {
+  async doNavigation(): Promise<void> {
+    if (!this.page) {
+      throw new Error('Page not initialized');
+    }
+
     try {
       await this.page.goto(this.testURL, { waitUntil: 'networkidle' });
     } catch (err) {
       // If navigation timed out, set the context offline and continue.
-      if (err && (err.name === 'TimeoutError' || /Timeout/.test(err.message))) {
+      if (
+        err &&
+        ((err as Error).name === 'TimeoutError' ||
+          /Timeout/.test((err as Error).message))
+      ) {
         await this.page.context().setOffline(true);
       } else {
         throw err;
@@ -230,49 +274,67 @@ class TestRunner {
     });
 
     //grab the videoname
-    this.videoRecordingFile = await this.page.video().path();
-    this.resultAssets.videoFile = path.relative(
-      this.paths['results'],
-      this.videoRecordingFile,
-    );
+    const video = this.page.video();
+    if (video) {
+      this.videoRecordingFile = await video.path();
+      this.resultAssets.videoFile = path.relative(
+        this.paths['results'],
+        this.videoRecordingFile,
+      );
+    }
     //collect metrics
     await this.collectMetrics();
     //close our browser instance
-    await this.browserInstance.close();
+    if (this.browserInstance) {
+      await this.browserInstance.close();
+    }
   }
 
   /**
    * Collect all perf metrics
    */
-  async collectMetrics() {
-    //navigation timing
-    this.metrics['navigationTiming'] = await this.collectNavTiming();
+  async collectMetrics(): Promise<void> {
+    if (!this.page) {
+      throw new Error('Page not initialized');
+    }
+
     //resource timing
     this.resourceTimings = JSON.parse(
       await this.page.evaluate(() =>
         JSON.stringify(window.performance.getEntriesByType('resource')),
       ),
-    );
-    //paint timing
-    this.metrics['paintTiming'] = JSON.parse(
-      await this.page.evaluate(() =>
-        JSON.stringify(window.performance.getEntriesByType('paint')),
-      ),
-    );
-    //user timing
-    this.metrics['userTiming'] = JSON.parse(
-      await this.page.evaluate(() =>
-        JSON.stringify(window.performance.getEntriesByType('mark', 'measure')),
-      ),
-    );
+    ) as ResourceTiming[];
 
-    this.metrics['largestContentfulPaint'] = await this.collectLCP();
-    this.metrics['layoutShifts'] = await this.collectLayoutShifts();
+    // Collect all metrics and assign as single object
+    this.metrics = {
+      navigationTiming: await this.collectNavTiming(),
+      paintTiming: JSON.parse(
+        await this.page.evaluate(() =>
+          JSON.stringify(window.performance.getEntriesByType('paint')),
+        ),
+      ),
+      userTiming: JSON.parse(
+        await this.page.evaluate(() =>
+          JSON.stringify([
+            ...window.performance.getEntriesByType('mark'),
+            ...window.performance.getEntriesByType('measure'),
+          ]),
+        ),
+      ),
+      largestContentfulPaint: await this.collectLCP(),
+      layoutShifts: await this.collectLayoutShifts(),
+    };
   }
-  async collectLayoutShifts() {
-    await this.page.evaluate(() => {
+
+  async collectLayoutShifts(): Promise<LayoutShift[]> {
+    if (!this.page) {
+      throw new Error('Page not initialized');
+    }
+
+    // This code runs in the browser context - use string to avoid TypeScript DOM checking
+    await this.page.evaluate(`
       window.layoutShifts = [];
-      new PerformanceObserver(entryList => {
+      new PerformanceObserver((entryList) => {
         for (const entry of entryList.getEntries()) {
           try {
             let event = {
@@ -297,32 +359,43 @@ class TestRunner {
           } catch (err) {}
         }
       }).observe({ type: 'layout-shift', buffered: true });
-    });
-    let layoutShifts = await this.page.evaluate(() => {
-      return window.layoutShifts;
-    });
-    return layoutShifts;
+    `);
+    const layoutShifts =
+      await this.page.evaluate<LayoutShift[]>(`window.layoutShifts`);
+    return layoutShifts || [];
   }
-  async collectNavTiming() {
-    await this.page.evaluate(() => {
+
+  async collectNavTiming(): Promise<NavigationTiming> {
+    if (!this.page) {
+      throw new Error('Page not initialized');
+    }
+
+    // This code runs in the browser context
+    await this.page.evaluate(`
       window.navTimings = [];
-      const observer = new PerformanceObserver(list => {
-        list.getEntries().forEach(entry => {
+      const observer = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
           window.navTimings.push(entry);
         });
       });
-
       observer.observe({ type: 'navigation', buffered: true });
-    });
-    let navTimings = await this.page.evaluate(() => {
-      return window.navTimings;
-    });
-    return navTimings.length > 0 ? navTimings[0] : {};
+    `);
+    const navTimings =
+      await this.page.evaluate<NavigationTiming[]>(`window.navTimings`);
+    return navTimings && navTimings.length > 0
+      ? navTimings[0]
+      : ({} as NavigationTiming);
   }
-  async collectLCP() {
-    await this.page.evaluate(() => {
+
+  async collectLCP(): Promise<LCPEvent[]> {
+    if (!this.page) {
+      throw new Error('Page not initialized');
+    }
+
+    // This code runs in the browser context
+    await this.page.evaluate(`
       window.lcpEvents = [];
-      new PerformanceObserver(entryList => {
+      new PerformanceObserver((entryList) => {
         for (const entry of entryList.getEntries()) {
           try {
             let event = {
@@ -361,21 +434,23 @@ class TestRunner {
           } catch (err) {}
         }
       }).observe({ type: 'largest-contentful-paint', buffered: true });
-    });
-    let lcpEvents = await this.page.evaluate(() => {
-      return window.lcpEvents;
-    });
-    return lcpEvents;
+    `);
+    const lcpEvents = await this.page.evaluate<LCPEvent[]>(`window.lcpEvents`);
+    return lcpEvents || [];
   }
-  async throttleNetwork() {
+
+  async throttleNetwork(): Promise<void> {
     // Only apply throttling if connectionType is explicitly set
     if (!this.options.connectionType) {
       log('No network throttling applied');
       return;
     }
 
-    let start = performance.now();
-    let networkType = this.options.connectionType;
+    const start = performance.now();
+    const networkType = this.options.connectionType as Exclude<
+      ConnectionType,
+      false
+    >;
 
     try {
       //TODO: Remove monkey patch in throttle (currently setting dummynet any to any)
@@ -388,14 +463,15 @@ class TestRunner {
     } catch (error) {
       console.error('throttling error: ' + error);
     }
-    let end = performance.now();
+    const end = performance.now();
     logTimer('Network Throttle', end, start);
     return;
   }
+
   /**
    * Setup our test: create the browser, context and page
    */
-  async setupTest() {
+  async setupTest(): Promise<void> {
     this.browserInstance = await this.createBrowser();
     this.page = await this.createPage(this.browserInstance);
     if (this.options.timeout && this.options.timeout > 0) {
@@ -403,17 +479,18 @@ class TestRunner {
     }
     await this.throttleNetwork();
   }
-  async createFilmStrip() {
-    let start = performance.now();
-    let paths = this.paths;
-    let filmstripFiles = [];
-    const frameRate = this.options.frameRate;
+
+  async createFilmStrip(): Promise<void> {
+    const start = performance.now();
+    const paths = this.paths;
+    let filmstripFiles: string[] = [];
+    const frameRate = this.options.frameRate || 1;
 
     try {
-      let process = new ffmpeg(this.videoRecordingFile);
+      const process = new ffmpeg(this.videoRecordingFile);
       filmstripFiles = await process.then(
         function (video) {
-          return new Promise((resolve, reject) => {
+          return new Promise<string[]>((resolve, reject) => {
             // Callback mode
             video.fnExtractFrameToJPG(
               paths['filmstrip'],
@@ -421,7 +498,7 @@ class TestRunner {
                 frame_rate: frameRate,
                 file_name: 'frame_%s',
               },
-              function (err, files) {
+              function (err: Error | null, files: string[]) {
                 if (err) {
                   console.error('Error generating filmstrip frames:', err);
                   reject(err);
@@ -434,19 +511,21 @@ class TestRunner {
         },
         function (err) {
           console.error('Error generating filmstrip frames:', err);
+          return [];
         },
       );
     } catch (e) {
-      console.error(e.code);
-      console.error(e.msg);
+      const error = e as { code?: string; msg?: string };
+      console.error(error.code);
+      console.error(error.msg);
     }
 
     this.resultAssets.filmstrip = filmstripFiles
-      .map(filePath => {
+      .map((filePath): FilmstripFrame => {
         const filename = path.relative(this.paths['results'], filePath);
 
         const match = filename.match(/(?<num>\d+).jpg$/);
-        const num = Number.parseInt(match.groups.num);
+        const num = Number.parseInt(match?.groups?.num || '0');
 
         const ms = Math.floor((num * 1000) / frameRate);
 
@@ -462,17 +541,18 @@ class TestRunner {
   /**
    * Save configuration file used to run the test
    */
-  async saveConfig() {
+  async saveConfig(): Promise<void> {
     // write config.json
     try {
+      const config: SavedConfig = {
+        url: this.testURL,
+        date: new Date().toUTCString(),
+        options: this.options,
+        browserConfig: this.selectedBrowser,
+      };
       writeFileSync(
         this.paths['results'] + '/config.json',
-        JSON.stringify({
-          url: this.testURL,
-          date: new Date().toUTCString(),
-          options: this.options,
-          browserConfig: this.selectedBrowser,
-        }),
+        JSON.stringify(config),
         'utf8',
       );
     } catch (err) {
@@ -483,7 +563,7 @@ class TestRunner {
   /**
    * Run any post processing on test results
    */
-  async postProcess() {
+  async postProcess(): Promise<void> {
     try {
       // Only stop throttling if it was actually started
       if (this.options.connectionType) {
@@ -496,7 +576,13 @@ class TestRunner {
     this.fillOutHar();
 
     // Get the directory of the current file for resolving relative paths
+    // When running from source (Jest/ts-node): lib/testRunner.ts -> lib/ -> project root is ../
+    // When running compiled (node): dist/lib/testRunner.js -> dist/lib/ -> project root is ../../
     const currentDir = path.dirname(url.fileURLToPath(import.meta.url));
+    const isCompiledDist = currentDir.includes('/dist/');
+    const projectRoot = isCompiledDist
+      ? path.resolve(currentDir, '../..')
+      : path.resolve(currentDir, '..');
 
     //post process
     try {
@@ -533,10 +619,11 @@ class TestRunner {
 
     if (this.options.html) {
       // Generate HTML report
+      // img/ is at project root
       copyFileSync(
         path.resolve(
-          currentDir,
-          `../img/${
+          projectRoot,
+          `img/${
             this.selectedBrowser.channel || this.selectedBrowser.engine
           }.png`,
         ),
@@ -570,12 +657,16 @@ class TestRunner {
           try {
             const config = readFileSync(configFileName, 'utf8').toString();
             return { folder: folder.name, config: JSON.parse(config) };
-          } catch (err) {
+          } catch (_err) {
             return null;
           }
         })
-        .filter(test => test)
-        .sort((a, b) => new Date(b.config.date) - new Date(a.config.date));
+        .filter((test): test is NonNullable<typeof test> => test !== null)
+        .sort(
+          (a, b) =>
+            new Date(b.config.date).getTime() -
+            new Date(a.config.date).getTime(),
+        );
 
       const listTemplate = readFileSync(
         path.resolve(currentDir, './templates/list.ejs'),
@@ -603,28 +694,29 @@ class TestRunner {
     }
 
     //run cleanup
-    this.cleanup();
+    await this.cleanup();
   }
-  mergeEntries(harEntries, lcpURL) {
+
+  mergeEntries(harEntries: HarEntry[], lcpURL: string | null): HarEntry[] {
     for (const request of this.requests) {
       const indexToUpdate = harEntries.findIndex(object => {
         return object.request.url === request.url && !request.rawTimings;
       });
       if (indexToUpdate !== -1) {
         //we'll do our calculations now
-        let connectEnd =
+        const connectEnd =
           request.timing.secureConnectionStart > 0
             ? request.timing.secureConnectionStart
             : request.timing.connectEnd;
-        let secureStart = request.timing.secureConnectionStart
+        const secureStart = request.timing.secureConnectionStart
           ? request.timing.secureConnectionStart
           : -1;
-        let secureEnd = request.timing.secureConnectionStart
+        const secureEnd = request.timing.secureConnectionStart
           ? request.timing.connectEnd
           : -1;
 
         // create a new object with the updated values
-        const updatedObject = {
+        const updatedObject: HarEntry = {
           ...harEntries[indexToUpdate],
           _dns_start: request.timing.domainLookupStart,
           _dns_end: request.timing.domainLookupEnd,
@@ -646,34 +738,37 @@ class TestRunner {
     }
     return harEntries;
   }
-  fillOutHar() {
-    let start = performance.now();
+
+  fillOutHar(): void {
+    const start = performance.now();
     //grab our har file
-    const harData = JSON.parse(
-      readFileSync(this.paths['results'] + '/pageload.har'),
+    const harData: HarData = JSON.parse(
+      readFileSync(this.paths['results'] + '/pageload.har', 'utf8'),
     );
 
     //first, TTFB
-    let TTFB =
-      this.metrics.navigationTiming.responseStart -
-      this.metrics.navigationTiming.navigationStart;
-    harData.log.pages[0].pageTimings._TTFB = TTFB;
+    const navTiming = this.metrics?.navigationTiming;
+    if (navTiming) {
+      const TTFB = navTiming.responseStart - navTiming.navigationStart;
+      harData.log.pages[0].pageTimings._TTFB = TTFB;
+    }
+
     // now our LCP
-    let lcp =
-      this.metrics.largestContentfulPaint[
-        this.metrics.largestContentfulPaint.length - 1
-      ];
-    let lcpURL = null;
-    if (lcp) {
-      harData.log.pages[0].pageTimings._LCP = lcp.startTime;
-      if (lcp.url) {
-        //let's see if we can find it in our resources
-        lcpURL = lcp.url;
+    const lcpEvents = this.metrics?.largestContentfulPaint;
+    let lcpURL: string | null = null;
+    if (lcpEvents && lcpEvents.length > 0) {
+      const lcp = lcpEvents[lcpEvents.length - 1];
+      if (lcp) {
+        harData.log.pages[0].pageTimings._LCP = lcp.startTime;
+        if (lcp.url) {
+          //let's see if we can find it in our resources
+          lcpURL = lcp.url;
+        }
       }
     }
 
     //now lets add the raw timings we collected
-    let mergedEntries = this.mergeEntries(harData.log.entries, lcpURL);
+    const mergedEntries = this.mergeEntries(harData.log.entries, lcpURL);
     harData.log.entries = mergedEntries;
     try {
       writeFileSync(
@@ -686,10 +781,11 @@ class TestRunner {
     }
     logTimer('Har Edit', performance.now(), start);
   }
+
   /**
    * Opens a file in the default browser
    */
-  openInBrowser(filePath) {
+  openInBrowser(filePath: string): void {
     let command = '';
     if (process.platform === 'darwin') {
       command = `open "${filePath}"`;
@@ -707,13 +803,24 @@ class TestRunner {
   }
 
   /**
-   * Cleans up after our test
+   * Cleans up after our test - closes browser and removes temp files
    */
-  cleanup() {
+  async cleanup(): Promise<void> {
     log('Cleanup started');
+    // Close browser instance if it exists (prevents Jest open handles)
+    if (this.browserInstance) {
+      try {
+        await this.browserInstance.close();
+        log('Browser instance closed');
+      } catch (err) {
+        log('Error closing browser instance: ' + (err as Error).message);
+      }
+      this.browserInstance = null as unknown as BrowserContext;
+    }
     rmSync(this.paths['temporaryContext'], { recursive: true, force: true });
     log('Cleanup ended');
     console.log('Test ID:' + this.TESTID);
   }
 }
+
 export { TestRunner };
