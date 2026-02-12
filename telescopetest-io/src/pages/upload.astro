@@ -63,12 +63,43 @@ import Page from '@/layouts/Page.astro';
       </div>
     </form>
   </div>
-  <div id="upload-status" class="test-status" style="display: none;">
-    <div class="status-message"></div>
+  <!-- Status messages (hidden by default, shown by JS) -->
+  <div id="status-error" class="test-status status-error" style="display: none;">
+    <p id="error-message"></p>
+  </div>
+
+  <div id="status-uploading" class="test-status status-running" style="display: none;">
+    <p>Uploading file...</p>
+  </div>
+
+  <div id="status-success" class="test-status status-success" style="display: none;">
+    <p>Upload successful! Redirecting...</p>
+    <p>Test ID: <strong id="success-test-id"></strong></p>
+  </div>
+
+  <div id="status-duplicate" class="test-status status-warning" style="display: none;">
+    <p>This test already exists, duplicate uploads are not allowed.</p>
+    <p>Test ID: <strong id="duplicate-test-id"></strong></p>
+    <a href="#" id="view-test-button" class="button button-primary" style="margin-top: 12px;">
+      View Existing Test
+    </a>
   </div>
 </Page>
 
 <style>
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+  }
+
+  h2 {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--muted);
+    margin: 0 0 24px 0;
+  }
+
   .upload-form {
     display: flex;
     flex-direction: column;
@@ -239,14 +270,7 @@ import Page from '@/layouts/Page.astro';
     border-color: var(--color-warning);
   }
 
-  .status-message p {
-    margin: 8px 0;
-  }
 
-  .status-message a {
-    display: inline-block;
-    margin-top: 8px;
-  }
 
   .overview-section {
     margin: 24px 0;
@@ -264,10 +288,36 @@ import Page from '@/layouts/Page.astro';
     'file-upload-area',
   ) as HTMLElement;
   const fileName = document.getElementById('file-name') as HTMLElement;
-  const statusDiv = document.getElementById('upload-status') as HTMLElement;
-  const statusMessage = statusDiv.querySelector(
-    '.status-message',
-  ) as HTMLElement;
+  
+  // Status elements
+  const statusError = document.getElementById('status-error') as HTMLElement;
+  const statusUploading = document.getElementById('status-uploading') as HTMLElement;
+  const statusSuccess = document.getElementById('status-success') as HTMLElement;
+  const statusDuplicate = document.getElementById('status-duplicate') as HTMLElement;
+  
+  const errorMessage = document.getElementById('error-message') as HTMLElement;
+  const successTestId = document.getElementById('success-test-id') as HTMLElement;
+  const duplicateTestId = document.getElementById('duplicate-test-id') as HTMLElement;
+  const viewTestButton = document.getElementById('view-test-button') as HTMLAnchorElement;
+  
+  // Debug: Check if all elements exist
+  console.log('Elements loaded:', {
+    form: !!form,
+    fileInput: !!fileInput,
+    statusError: !!statusError,
+    statusSuccess: !!statusSuccess,
+    statusDuplicate: !!statusDuplicate,
+    successTestId: !!successTestId,
+    duplicateTestId: !!duplicateTestId,
+    viewTestButton: !!viewTestButton
+  });
+  
+  function hideAllStatus() {
+    if (statusError) statusError.style.display = 'none';
+    if (statusUploading) statusUploading.style.display = 'none';
+    if (statusSuccess) statusSuccess.style.display = 'none';
+    if (statusDuplicate) statusDuplicate.style.display = 'none';
+  }
   // File input click handler
   fileUploadArea.addEventListener('click', () => {
     fileInput.click();
@@ -301,16 +351,16 @@ import Page from '@/layouts/Page.astro';
   form.addEventListener('submit', async e => {
     e.preventDefault();
     if (!fileInput.files || fileInput.files.length === 0) {
-      statusMessage.innerHTML = '<p>Error: Please select a file to upload</p>';
-      statusDiv.className = 'test-status status-error';
-      statusDiv.style.display = 'block';
+      hideAllStatus();
+      errorMessage.textContent = 'Error: Please select a file to upload';
+      statusError.style.display = 'block';
       return;
     }
     // create FormData from form: file, source="upload", optional name & description
     const formData = new FormData(form);
-    statusDiv.style.display = 'block';
-    statusMessage.innerHTML = '<p>Uploading file...</p>';
-    statusDiv.className = 'test-status status-running';
+    hideAllStatus();
+    statusUploading.style.display = 'block';
+    
     try {
       // POST to API
       const response = await fetch('/api/upload', {
@@ -322,53 +372,51 @@ import Page from '@/layouts/Page.astro';
         testId?: string;
         error?: string;
       };
+      
+      console.log('Upload response:', { status: response.status, result });
+      
+      hideAllStatus();
+      
       // Handle duplicate (409)
       if (response.status === 409 && result.testId) {
-        statusMessage.innerHTML = `
-          <p>This test already exists, duplicate uploads are not allowed.</p>
-          <p>Test ID: <strong>${escapeHtml(result.testId)}</strong></p>
-        `;
-        statusDiv.className = 'test-status status-warning';
-        statusDiv.style.display = 'block';
+        console.log('Duplicate test detected:', result.testId);
+        if (duplicateTestId) duplicateTestId.textContent = result.testId;
+        if (viewTestButton) viewTestButton.href = `/results/${result.testId}`;
+        if (statusDuplicate) statusDuplicate.style.display = 'block';
         return;
       }
       // Handle other errors
       if (!response.ok) {
         throw new Error(result.error || 'Failed to upload file');
       }
-      // Handle success
+      // Handle success - redirect to test page
       if (result.testId) {
-        statusMessage.innerHTML = `
-          <p>Upload successful!</p>
-          <p>Test ID: <strong>${escapeHtml(result.testId)}</strong></p>
-        `;
-        statusDiv.className = 'test-status status-success';
-        statusDiv.style.display = 'block';
+        console.log('Upload successful, redirecting to:', result.testId);
+        if (successTestId) successTestId.textContent = result.testId;
+        if (statusSuccess) statusSuccess.style.display = 'block';
         fileName.style.display = 'none';
+
+        // Redirect after a brief delay to show success message
+        setTimeout(() => {
+          console.log('Redirecting now...');
+          window.location.href = `/results/${result.testId}`;
+        }, 1000);
       } else {
         throw new Error('No test ID returned');
       }
     } catch (error) {
-      // show error
-      statusMessage.innerHTML = `
-        <p>Error: ${escapeHtml((error as Error).message)}</p>
-      `;
-      statusDiv.className = 'test-status status-error';
+      hideAllStatus();
+      errorMessage.textContent = `Error: ${(error as Error).message}`;
+      statusError.style.display = 'block';
     }
   });
   // Reset button handler
   form.addEventListener('reset', () => {
     fileName.style.display = 'none';
-    statusDiv.style.display = 'none';
+    hideAllStatus();
   });
   function updateFileName(name: string) {
-    fileName.textContent = `Selected: ${escapeHtml(name)}`;
+    fileName.textContent = `Selected: ${name}`;
     fileName.style.display = 'block';
-  }
-  function escapeHtml(text: string): string {
-    // protection against XSS by sanitizing user input
-    const div = document.createElement('div');
-    div.textContent = text; // automatically escapes
-    return div.innerHTML;
   }
 </script>

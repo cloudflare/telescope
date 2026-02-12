@@ -3,8 +3,6 @@ import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
 import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
 
-export const prerender = false;
-
 // Fetch all tests from D1
 const env = Astro.locals.runtime.env;
 const testStore = new D1TestStore(env.TELESCOPE_DB);
@@ -17,45 +15,39 @@ interface TestWithScreenshot {
   test_date: number;
   browser: string;
   name: string | null;
+  description: string | null;
   screenshotUrl: string | null;
 }
 
+const filename = 'screenshot.png';
 const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
-  tests.map(async (test: Awaited<ReturnType<typeof testStore.getAllTests>>[0]) => {
-    // Try common screenshot filenames
-    const possibleFilenames = [
-      'screenshot.png',
-      'screenshot_final.png',
-      'final.png',
-    ];
-
-    let screenshotUrl: string | null = null;
-
-    for (const filename of possibleFilenames) {
+  tests.map(
+    async (test: Awaited<ReturnType<typeof testStore.getAllTests>>[0]) => {
+      let screenshotUrl: string | null = null;
       const key = `${test.test_id}/${filename}`;
       const obj = await env.RESULTS_BUCKET.head(key);
       if (obj) {
         screenshotUrl = `/api/tests/${test.test_id}/${filename}`;
-        break;
       }
-    }
-
-    return {
-      test_id: test.test_id,
-      url: test.url,
-      test_date: test.test_date,
-      browser: test.browser,
-      name: test.name,
-      screenshotUrl,
-    };
-  }),
+      return {
+        test_id: test.test_id,
+        url: test.url,
+        test_date: test.test_date,
+        browser: test.browser,
+        name: test.name,
+        description: test.description,
+        screenshotUrl,
+      };
+    },
+  ),
 );
+
+export const prerender = false;
 ---
 
 <Page title="Test Results">
   <h1>Test Results</h1>
-  <h2>Historical test runs</h2>
-
+  <h2>View historical test runs</h2>
   {
     testsWithScreenshots.length === 0 ? (
       <div class="empty-state">
@@ -65,18 +57,89 @@ const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
         </a>
       </div>
     ) : (
-      <div class="results-grid">
-        {testsWithScreenshots.map((test) => (
-          <TestCard
-            testId={test.test_id}
-            url={test.url}
-            testDate={test.test_date}
-            browser={test.browser}
-            name={test.name}
-            screenshotUrl={test.screenshotUrl}
-          />
-        ))}
-      </div>
+      <>
+        <div class="view-toggle">
+          <button class="toggle-button active" data-view="vertical">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect
+                x="2"
+                y="3"
+                width="16"
+                height="3"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="2"
+                y="8.5"
+                width="16"
+                height="3"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="2"
+                y="14"
+                width="16"
+                height="3"
+                rx="1"
+                fill="currentColor"
+              />
+            </svg>
+            List
+          </button>
+          <button class="toggle-button" data-view="grid">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect
+                x="2"
+                y="2"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="11"
+                y="2"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="2"
+                y="11"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="11"
+                y="11"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+            </svg>
+            Grid
+          </button>
+        </div>
+        <div class="results-container" data-layout="vertical">
+          {testsWithScreenshots.map(test => (
+            <TestCard
+              testId={test.test_id}
+              url={test.url}
+              testDate={test.test_date}
+              browser={test.browser}
+              name={test.name}
+              description={test.description}
+              screenshotUrl={test.screenshotUrl}
+            />
+          ))}
+        </div>
+      </>
     )
   }
 </Page>
@@ -92,14 +155,59 @@ const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
     font-size: 18px;
     font-weight: 400;
     color: var(--muted);
-    margin: 0 0 24px 0;
+    margin: 0 0 16px 0;
   }
 
-  .results-grid {
+  .view-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    padding: 4px;
+    background: var(--panel);
+    border-radius: 8px;
+    width: fit-content;
+    border: 1px solid var(--border);
+  }
+
+  .toggle-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .toggle-button:hover {
+    background: var(--background);
+    color: var(--text);
+  }
+
+  .toggle-button.active {
+    background: var(--brand);
+    color: white;
+  }
+
+  .toggle-button svg {
+    flex-shrink: 0;
+  }
+
+  .results-container[data-layout='vertical'] {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .results-container[data-layout='grid'] {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 20px;
-    margin-top: 24px;
   }
 
   .empty-state {
@@ -135,3 +243,56 @@ const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
     opacity: 0.9;
   }
 </style>
+
+<script is:inline>
+  (function () {
+    function initToggle() {
+      const buttons = document.querySelectorAll('.toggle-button');
+      const container = document.querySelector('.results-container');
+
+      if (!buttons.length || !container) {
+        console.log('Toggle elements not found');
+        return;
+      }
+
+      // Load saved preference
+      const savedView = localStorage.getItem('resultsView') || 'vertical';
+      container.setAttribute('data-layout', savedView);
+      buttons.forEach(btn => {
+        if (btn.getAttribute('data-view') === savedView) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // Add click handlers
+      buttons.forEach(button => {
+        button.addEventListener('click', () => {
+          const view = button.getAttribute('data-view');
+          if (!view || !container) return;
+
+          console.log('Switching to view:', view);
+
+          // Update active state
+          buttons.forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+
+          // Update layout
+          container.setAttribute('data-layout', view);
+
+          // Save preference
+          localStorage.setItem('resultsView', view);
+        });
+      });
+
+      console.log('Toggle initialized with view:', savedView);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initToggle);
+    } else {
+      initToggle();
+    }
+  })();
+</script>

@@ -1,0 +1,62 @@
+---
+export interface Props {
+  href?: string;
+  variant?: 'primary' | 'secondary';
+  type?: 'button' | 'submit' | 'reset';
+  class?: string;
+  id?: string;
+}
+
+const {
+  href,
+  variant = 'primary',
+  type = 'button',
+  class: className,
+  id,
+} = Astro.props;
+const Element = href ? 'a' : 'button'; // dynamic tags: https://docs.astro.build/en/reference/astro-syntax/#dynamic-tags
+---
+
+<Element
+  href={href}
+  type={!href ? type : undefined}
+  class:list={['button', `button-${variant}`, className]}
+  id={id}
+>
+  <slot />
+</Element>
+
+<style>
+  .button {
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+    font-family: inherit;
+  }
+
+  .button-primary {
+    background: var(--brand);
+    color: white;
+  }
+
+  .button-primary:hover {
+    opacity: 0.9;
+  }
+
+  .button-secondary {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .button-secondary:hover {
+    background: var(--panel);
+    filter: brightness(1.1);
+  }
+</style>

@@ -1,13 +1,13 @@
 ---
 import Page from '@/layouts/Page.astro';
 
-export const prerender = false;
-
 const { testId } = Astro.params;
 
 if (!testId) {
   return Astro.redirect('/results');
 }
+
+export const prerender = false;
 ---
 
 <Page title={`Test ${testId}`}>
@@ -16,12 +16,10 @@ if (!testId) {
     <h1>Test Results</h1>
     <p class="test-id">ID: {testId}</p>
   </div>
-
   <div class="placeholder">
     <p>Full test details coming later</p>
     <p class="hint">
-      This page will display HAR files, screenshots, videos, and performance
-      metrics.
+      This page will display screenshots, videos, metrics, etc.
     </p>
   </div>
 </Page>
