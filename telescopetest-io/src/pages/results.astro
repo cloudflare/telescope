@@ -2,22 +2,16 @@
 import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
 import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
+import type { TestWithScreenshot } from '@/lib/classes/TestConfig';
+
+// Get saved view preference from cookie
+const savedView = Astro.cookies.get('resultsView')?.value;
+const viewLayout = (savedView === 'grid' || savedView === 'vertical') ? savedView : 'vertical';
 
 // Fetch all tests from D1
 const env = Astro.locals.runtime.env;
 const testStore = new D1TestStore(env.TELESCOPE_DB);
 const tests = await testStore.getAllTests();
-
-// For each test, check for screenshot in R2
-interface TestWithScreenshot {
-  test_id: string;
-  url: string;
-  test_date: number;
-  browser: string;
-  name: string | null;
-  description: string | null;
-  screenshotUrl: string | null;
-}
 
 const filename = 'screenshot.png';
 const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
@@ -59,7 +53,7 @@ export const prerender = false;
     ) : (
       <>
         <div class="view-toggle">
-          <button class="toggle-button active" data-view="vertical">
+          <button class={`toggle-button ${viewLayout === 'vertical' ? 'active' : ''}`} data-view="vertical">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect
                 x="2"
@@ -88,7 +82,7 @@ export const prerender = false;
             </svg>
             List
           </button>
-          <button class="toggle-button" data-view="grid">
+          <button class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`} data-view="grid">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect
                 x="2"
@@ -126,7 +120,7 @@ export const prerender = false;
             Grid
           </button>
         </div>
-        <div class="results-container" data-layout="vertical">
+        <div class="results-container" data-layout={viewLayout}>
           {testsWithScreenshots.map(test => (
             <TestCard
               testId={test.test_id}
@@ -150,25 +144,22 @@ export const prerender = false;
     font-weight: 700;
     margin: 0 0 8px 0;
   }
-
   h2 {
     font-size: 18px;
     font-weight: 400;
     color: var(--muted);
     margin: 0 0 16px 0;
   }
-
   .view-toggle {
     display: flex;
     gap: 8px;
     margin-bottom: 24px;
     padding: 4px;
     background: var(--panel);
+    border: 1px solid var(--border);
     border-radius: 8px;
     width: fit-content;
-    border: 1px solid var(--border);
   }
-
   .toggle-button {
     display: flex;
     align-items: center;
@@ -181,118 +172,75 @@ export const prerender = false;
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
   }
-
   .toggle-button:hover {
     background: var(--background);
     color: var(--text);
   }
-
   .toggle-button.active {
     background: var(--brand);
     color: white;
   }
-
-  .toggle-button svg {
-    flex-shrink: 0;
-  }
-
-  .results-container[data-layout='vertical'] {
+  .results-container {
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
-
   .results-container[data-layout='grid'] {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 20px;
   }
-
   .empty-state {
     padding: 60px;
     text-align: center;
     background: var(--panel);
-    border-radius: 12px;
     border: 1px dashed var(--border);
+    border-radius: 12px;
     margin-top: 24px;
   }
-
   .empty-state p {
     font-size: 16px;
     color: var(--muted);
     margin-bottom: 20px;
   }
-
   .button {
     display: inline-block;
     padding: 10px 20px;
     border-radius: 12px;
     text-decoration: none;
     font-weight: 600;
-    transition: all 0.2s ease;
-  }
-
-  .button-primary {
     background: var(--brand);
     color: white;
+    transition: opacity 0.2s;
   }
-
-  .button-primary:hover {
+  .button:hover {
     opacity: 0.9;
   }
 </style>
 
-<script is:inline>
-  (function () {
-    function initToggle() {
-      const buttons = document.querySelectorAll('.toggle-button');
-      const container = document.querySelector('.results-container');
-
-      if (!buttons.length || !container) {
-        console.log('Toggle elements not found');
-        return;
-      }
-
-      // Load saved preference
-      const savedView = localStorage.getItem('resultsView') || 'vertical';
-      container.setAttribute('data-layout', savedView);
-      buttons.forEach(btn => {
-        if (btn.getAttribute('data-view') === savedView) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
+<script>
+  const buttons = document.querySelectorAll('.toggle-button');
+  const container = document.querySelector('.results-container');
+  
+  if (buttons.length && container) {
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        const view = button.getAttribute('data-view');
+        if (!view) return;
+        
+        // Update active state
+        buttons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        // Update layout
+        container.setAttribute('data-layout', view);
+        
+        // Save to both localStorage and cookie
+        localStorage.setItem('resultsView', view);
+        document.cookie = `resultsView=${view};path=/;max-age=31536000;SameSite=Lax`;
       });
-
-      // Add click handlers
-      buttons.forEach(button => {
-        button.addEventListener('click', () => {
-          const view = button.getAttribute('data-view');
-          if (!view || !container) return;
-
-          console.log('Switching to view:', view);
-
-          // Update active state
-          buttons.forEach(btn => btn.classList.remove('active'));
-          button.classList.add('active');
-
-          // Update layout
-          container.setAttribute('data-layout', view);
-
-          // Save preference
-          localStorage.setItem('resultsView', view);
-        });
-      });
-
-      console.log('Toggle initialized with view:', savedView);
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initToggle);
-    } else {
-      initToggle();
-    }
-  })();
+    });
+  }
 </script>
