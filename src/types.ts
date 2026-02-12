@@ -177,7 +177,7 @@ export interface LaunchOptions {
   dry?: boolean;
   command?: string[];
   delay?: Record<string, number>;
-  delayUsing: DelayMethod;
+  delayUsing?: DelayMethod;
 }
 
 /**

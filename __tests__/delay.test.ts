@@ -1,7 +1,7 @@
 import { launchTest, SuccessfulTestResult } from '../src/index.js';
 import { BrowserConfig } from '../src/browsers.js';
 
-import type { DelayMethod } from '../src/types.js';
+import type { DelayMethod } from '../src/delay.js';
 
 const browsers = BrowserConfig.getBrowsers();
 
