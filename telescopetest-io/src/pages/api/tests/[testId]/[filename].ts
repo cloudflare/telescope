@@ -1,6 +1,5 @@
 import type { APIContext, APIRoute } from 'astro';
-
-export const prerender = false;
+// route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
 /**
  * Serve files from R2 bucket
@@ -9,21 +8,16 @@ export const prerender = false;
  */
 export const GET: APIRoute = async (context: APIContext) => {
   const { testId, filename } = context.params;
-
   if (!testId || !filename) {
     return new Response('Missing testId or filename', { status: 400 });
   }
-
   const env = context.locals.runtime.env;
   const key = `${testId}/${filename}`;
-
   try {
     const object = await env.RESULTS_BUCKET.get(key);
-
     if (!object) {
       return new Response('File not found', { status: 404 });
     }
-
     // Determine content type based on file extension
     const ext = filename.toLowerCase().split('.').pop();
     const contentTypeMap: Record<string, string> = {
@@ -40,9 +34,7 @@ export const GET: APIRoute = async (context: APIContext) => {
       js: 'application/javascript',
       txt: 'text/plain',
     };
-
     const contentType = contentTypeMap[ext || ''] || 'application/octet-stream';
-
     return new Response(object.body, {
       headers: {
         'Content-Type': contentType,
