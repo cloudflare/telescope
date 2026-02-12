@@ -22,10 +22,12 @@ const formattedDate = date.toLocaleString('en-US', {
   minute: '2-digit',
   timeZoneName: 'short',
 });
+
+const noname = 'No Name';
 ---
 
-<a href={`/results/${testId}`} class="test-card">
-  <div class="screenshot-container">
+<a href={`/results/${testId}`} class="card">
+  <div class="screenshot">
     {
       screenshotUrl ? (
         <img
@@ -35,55 +37,43 @@ const formattedDate = date.toLocaleString('en-US', {
           decoding="async"
         />
       ) : (
-        <div class="screenshot-placeholder">
-          <p class="placeholder-text">Screenshot not found.</p>
-        </div>
+        <p>Screenshot not found.</p>
       )
     }
   </div>
-  <div class="card-content">
-    <div class="card-header">
-      <h3 class="test-name">{name || url}</h3>
-    </div>
-    {description && <p class="test-description">{description}</p>}
-    <div class="metadata">
-      <div class="metadata-item">
-        <span class="metadata-label">Browser:</span>
-        <span class="metadata-value browser-badge">{browser}</span>
-      </div>
-    </div>
-    {name && <p class="test-url">{url}</p>}
-    <p class="test-info">{formattedDate}</p>
+  <div class="content">
+    <h3>{name || noname}</h3>
+    <p class="description">{description || '\u00A0'}</p>
+    <p class="browser">Browser: {browser}</p>
+    <p class="url">{url}</p>
+    <p class="date">{formattedDate}</p>
   </div>
 </a>
 
 <style>
-  /* Default: vertical layout for grid view */
-  .test-card {
+  .card {
     display: flex;
     flex-direction: column;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
     text-decoration: none;
     color: var(--text);
   }
 
-  /* Horizontal layout for list view */
-  :global(.results-container[data-layout='vertical']) .test-card {
-    flex-direction: row;
-  }
-
-  .test-card:hover {
+  .card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     border-color: var(--brand-hover);
   }
 
-  /* Default: full width for grid view */
-  .screenshot-container {
+  :global(.results-container[data-layout='vertical']) .card {
+    flex-direction: row;
+  }
+
+  .screenshot {
     width: 100%;
     aspect-ratio: 16 / 10;
     background: var(--background);
@@ -91,85 +81,51 @@ const formattedDate = date.toLocaleString('en-US', {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    color: var(--muted);
+    font-size: 14px;
   }
 
-  /* Fixed width for list view */
-  :global(.results-container[data-layout='vertical']) .screenshot-container {
-    width: 240px;
-    min-width: 240px;
-    aspect-ratio: auto;
-  }
-
-  .screenshot-container img {
+  .screenshot img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
-  .screenshot-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    color: var(--muted);
+  :global(.results-container[data-layout='vertical']) .screenshot {
+    width: 240px;
+    min-width: 240px;
+    aspect-ratio: auto;
   }
 
-  .screenshot-placeholder span:first-child {
-    font-size: 48px;
-    opacity: 0.5;
-  }
-
-  .placeholder-text {
-    font-size: 14px;
-  }
-
-  .card-content {
+  .content {
     padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     flex: 1;
     min-width: 0;
   }
 
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    gap: 12px;
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
   }
 
-  .test-description {
+  .description {
     font-size: 14px;
     color: var(--muted);
     margin: 0;
-    line-height: 1.4;
   }
 
-  .metadata {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .metadata-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .browser {
     font-size: 13px;
-  }
-
-  .metadata-label {
     color: var(--muted);
-    font-weight: 500;
+    margin: 0;
   }
 
-  .metadata-value {
-    color: var(--text);
-  }
-
-  .test-url {
-    font-size: 12px;
+  .url {
+    font-size: 13px;
     color: var(--muted);
     margin: 0;
     overflow: hidden;
@@ -177,7 +133,7 @@ const formattedDate = date.toLocaleString('en-US', {
     white-space: nowrap;
   }
 
-  .test-info {
+  .date {
     font-size: 12px;
     color: var(--muted);
     margin: 0;
@@ -185,11 +141,11 @@ const formattedDate = date.toLocaleString('en-US', {
   }
 
   @media (max-width: 768px) {
-    .test-card {
+    .card {
       flex-direction: column;
     }
 
-    .screenshot-container {
+    .screenshot {
       width: 100%;
       aspect-ratio: 16 / 10;
     }
