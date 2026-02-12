@@ -105,6 +105,7 @@ async function executeTest(
         dry: true,
         testId: Runner.TESTID,
         resultsPath: Runner.paths.results,
+        runner: Runner,
       };
     }
 
@@ -116,6 +117,7 @@ async function executeTest(
       success: true,
       testId: Runner.TESTID,
       resultsPath: Runner.paths.results,
+      runner: Runner,
     };
   } catch (error) {
     // Ensure cleanup runs even on error (closes browser + removes temp files)
@@ -188,13 +190,24 @@ export default function browserAgent(): void {
       new Option(
         '--blockDomains <domains...>',
         'A comma separated list of domains to block',
-      ).default(DEFAULT_OPTIONS.blockDomains),
+      ).default(JSON.stringify(DEFAULT_OPTIONS.blockDomains)),
     )
     .addOption(
       new Option(
         '--block <substrings...>',
         'A comma-delimited list of urls to block (based on a substring match)',
-      ).default(DEFAULT_OPTIONS.block),
+      ).default(JSON.stringify(DEFAULT_OPTIONS.block)),
+    )
+    .addOption(
+      new Option(
+        '--delay <object>',
+        'An object mapping request regexes to response delays. Example: \'{".css$": 2000, ".js$": 5000}\'',
+      ).default(JSON.stringify(DEFAULT_OPTIONS.delay)),
+    )
+    .addOption(
+      new Option('--delayUsing <string>', 'Method to use to delay responses')
+        .default(DEFAULT_OPTIONS.delayUsing)
+        .choices(['fulfill', 'continue']),
     )
     .addOption(
       new Option(

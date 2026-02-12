@@ -4,6 +4,8 @@
  */
 
 import type { BrowserContext, HTTPCredentials } from 'playwright';
+import { TestRunner } from './testRunner.js';
+import type { DelayMethod } from './delay.js';
 
 // ============================================================================
 // Cookie Types
@@ -174,6 +176,8 @@ export interface LaunchOptions {
   zip?: boolean;
   dry?: boolean;
   command?: string[];
+  delay?: Record<string, number>;
+  delayUsing: DelayMethod;
 }
 
 /**
@@ -197,6 +201,8 @@ export interface DefaultOptions {
   auth: HTTPCredentials | false;
   zip: boolean;
   dry: boolean;
+  delay: Record<string, number>;
+  delayUsing: DelayMethod;
 }
 
 // ============================================================================
@@ -211,6 +217,7 @@ export interface SuccessfulTestResult {
   testId: string;
   resultsPath: string;
   dry?: boolean;
+  runner: TestRunner;
 }
 
 /**
@@ -620,4 +627,6 @@ export interface CLIOptions {
   overrideHost?: string;
   zip?: boolean;
   dry?: boolean;
+  delay?: string;
+  delayUsing?: string;
 }
