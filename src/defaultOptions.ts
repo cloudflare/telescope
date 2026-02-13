@@ -19,6 +19,10 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   blockDomains: [],
   // URL substrings to block (request blocking)
   block: [],
+  // Request regex with a corresponding response delay in ms
+  delay: {},
+  // Delay implementation method
+  delayUsing: 'continue',
   // Disable JavaScript execution
   disableJS: false,
   // Enable debug logging

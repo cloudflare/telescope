@@ -38,6 +38,7 @@ import type {
   SavedConfig,
 } from './types.js';
 import type { BrowserContext, Page, Route, Request } from 'playwright';
+import { delayUsingFulfill, delayUsingContinue } from './delay.js';
 
 class TestRunner {
   args: string[] = [];
@@ -147,6 +148,37 @@ class TestRunner {
 
     return;
   }
+  
+  /**
+   * Set up response response delays using the page.route handler
+   */
+  async setupResponseDelays(page: Page) {
+    if (!this.options.delay) {
+      return;
+    }
+
+    return Promise.all(
+      Object.entries(this.options.delay).map(async ([regexString, delay]) => {
+        log(
+          `Adding a rule for delaying URLs matching '${regexString}' regex for ${delay} (using "${this.options.delayUsing}" method)`,
+        );
+
+        const regex = new RegExp(regexString, 'i');
+
+        if (this.options.delayUsing === 'fulfill') {
+          await page.route(regex, async (route: Route, request: Request) =>
+            delayUsingFulfill(route, request, regexString, delay),
+          );
+        }
+
+        if (this.options.delayUsing === 'continue') {
+          await page.route(regex, async (route: Route, request: Request) =>
+            delayUsingContinue(route, request, regexString, delay),
+          );
+        }
+      }),
+    );
+  }
 
   /**
    * Creates a browser instance using the browser config for the browser to be tested
@@ -210,6 +242,8 @@ class TestRunner {
     }
 
     await this.setupBlocking(page);
+    await this.setupResponseDelays(page);
+
     page.on('requestfinished', data => {
       const reqData: RequestData = {
         url: data.url(),
