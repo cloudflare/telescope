@@ -12,7 +12,6 @@ export interface Props {
 const { testId, url, testDate, browser, name, description, screenshotUrl } =
   Astro.props;
 
-// Format date with timezone
 const date = new Date(testDate * 1000);
 const formattedDate = date.toLocaleString('en-US', {
   month: 'short',
@@ -23,7 +22,7 @@ const formattedDate = date.toLocaleString('en-US', {
   timeZoneName: 'short',
 });
 
-const noname = 'No Name';
+const nonamePlaceholder = 'No Name';
 ---
 
 <a href={`/results/${testId}`} class="card">
@@ -42,7 +41,7 @@ const noname = 'No Name';
     }
   </div>
   <div class="content">
-    <h3>{name || noname}</h3>
+    <h3>{name || nonamePlaceholder}</h3>
     <p class="description">{description || '\u00A0'}</p>
     <p class="browser">Browser: {browser}</p>
     <p class="url">{url}</p>

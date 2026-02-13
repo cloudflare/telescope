@@ -6,7 +6,8 @@ import type { TestWithScreenshot } from '@/lib/classes/TestConfig';
 
 // Get saved view preference from cookie
 const savedView = Astro.cookies.get('resultsView')?.value;
-const viewLayout = (savedView === 'grid' || savedView === 'vertical') ? savedView : 'vertical';
+const viewLayout =
+  savedView === 'grid' || savedView === 'vertical' ? savedView : 'vertical';
 
 // Fetch all tests from D1
 const env = Astro.locals.runtime.env;
@@ -46,14 +47,17 @@ export const prerender = false;
     testsWithScreenshots.length === 0 ? (
       <div class="empty-state">
         <p>No test results yet.</p>
-        <a href="/upload" class="button button-primary">
+        <a href="/upload" class="button">
           Upload your first test →
         </a>
       </div>
     ) : (
       <>
         <div class="view-toggle">
-          <button class={`toggle-button ${viewLayout === 'vertical' ? 'active' : ''}`} data-view="vertical">
+          <button
+            class={`toggle-button ${viewLayout === 'vertical' ? 'active' : ''}`}
+            data-view="vertical"
+          >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect
                 x="2"
@@ -82,7 +86,10 @@ export const prerender = false;
             </svg>
             List
           </button>
-          <button class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`} data-view="grid">
+          <button
+            class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`}
+            data-view="grid"
+          >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect
                 x="2"
@@ -223,20 +230,16 @@ export const prerender = false;
 <script>
   const buttons = document.querySelectorAll('.toggle-button');
   const container = document.querySelector('.results-container');
-  
   if (buttons.length && container) {
     buttons.forEach(button => {
       button.addEventListener('click', () => {
         const view = button.getAttribute('data-view');
         if (!view) return;
-        
         // Update active state
         buttons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
-        
         // Update layout
         container.setAttribute('data-layout', view);
-        
         // Save to both localStorage and cookie
         localStorage.setItem('resultsView', view);
         document.cookie = `resultsView=${view};path=/;max-age=31536000;SameSite=Lax`;
