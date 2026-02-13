@@ -1,0 +1,249 @@
+---
+import Page from '@/layouts/Page.astro';
+import TestCard from '@/components/TestCard.astro';
+import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
+import type { TestWithScreenshot } from '@/lib/classes/TestConfig';
+
+// Get saved view preference from cookie
+const savedView = Astro.cookies.get('resultsView')?.value;
+const viewLayout =
+  savedView === 'grid' || savedView === 'vertical' ? savedView : 'vertical';
+
+// Fetch all tests from D1
+const env = Astro.locals.runtime.env;
+const testStore = new D1TestStore(env.TELESCOPE_DB);
+const tests = await testStore.getAllTests();
+
+const filename = 'screenshot.png';
+const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
+  tests.map(
+    async (test: Awaited<ReturnType<typeof testStore.getAllTests>>[0]) => {
+      let screenshotUrl: string | null = null;
+      const key = `${test.test_id}/${filename}`;
+      const obj = await env.RESULTS_BUCKET.head(key);
+      if (obj) {
+        screenshotUrl = `/api/tests/${test.test_id}/${filename}`;
+      }
+      return {
+        test_id: test.test_id,
+        url: test.url,
+        test_date: test.test_date,
+        browser: test.browser,
+        name: test.name,
+        description: test.description,
+        screenshotUrl,
+      };
+    },
+  ),
+);
+
+export const prerender = false;
+---
+
+<Page title="Test Results">
+  <h1>Test Results</h1>
+  <h2>View historical test runs</h2>
+  {
+    testsWithScreenshots.length === 0 ? (
+      <div class="empty-state">
+        <p>No test results yet.</p>
+        <a href="/upload" class="button">
+          Upload your first test →
+        </a>
+      </div>
+    ) : (
+      <>
+        <div class="view-toggle">
+          <button
+            class={`toggle-button ${viewLayout === 'vertical' ? 'active' : ''}`}
+            data-view="vertical"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect
+                x="2"
+                y="3"
+                width="16"
+                height="3"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="2"
+                y="8.5"
+                width="16"
+                height="3"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="2"
+                y="14"
+                width="16"
+                height="3"
+                rx="1"
+                fill="currentColor"
+              />
+            </svg>
+            List
+          </button>
+          <button
+            class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`}
+            data-view="grid"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect
+                x="2"
+                y="2"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="11"
+                y="2"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="2"
+                y="11"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="11"
+                y="11"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+            </svg>
+            Grid
+          </button>
+        </div>
+        <div class="results-container" data-layout={viewLayout}>
+          {testsWithScreenshots.map(test => (
+            <TestCard
+              testId={test.test_id}
+              url={test.url}
+              testDate={test.test_date}
+              browser={test.browser}
+              name={test.name}
+              description={test.description}
+              screenshotUrl={test.screenshotUrl}
+            />
+          ))}
+        </div>
+      </>
+    )
+  }
+</Page>
+
+<style>
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+  }
+  h2 {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--muted);
+    margin: 0 0 16px 0;
+  }
+  .view-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    padding: 4px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: fit-content;
+  }
+  .toggle-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .toggle-button:hover {
+    background: var(--background);
+    color: var(--text);
+  }
+  .toggle-button.active {
+    background: var(--brand);
+    color: white;
+  }
+  .results-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .results-container[data-layout='grid'] {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  .empty-state {
+    padding: 60px;
+    text-align: center;
+    background: var(--panel);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    margin-top: 24px;
+  }
+  .empty-state p {
+    font-size: 16px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .button {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    background: var(--brand);
+    color: white;
+    transition: opacity 0.2s;
+  }
+  .button:hover {
+    opacity: 0.9;
+  }
+</style>
+
+<script>
+  const buttons = document.querySelectorAll('.toggle-button');
+  const container = document.querySelector('.results-container');
+  if (buttons.length && container) {
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        const view = button.getAttribute('data-view');
+        if (!view) return;
+        // Update active state
+        buttons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        // Update layout
+        container.setAttribute('data-layout', view);
+        // Save to both localStorage and cookie
+        localStorage.setItem('resultsView', view);
+        document.cookie = `resultsView=${view};path=/;max-age=31536000;SameSite=Lax`;
+      });
+    });
+  }
+</script>

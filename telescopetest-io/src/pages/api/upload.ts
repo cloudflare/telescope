@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { TestConfig, TestSource } from '@/lib/classes/TestConfig';
 import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
 
-export const prerender = false;
+// route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
 /**
  * Extract file list from ZIP archive

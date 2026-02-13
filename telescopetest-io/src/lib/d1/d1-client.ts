@@ -23,4 +23,13 @@ export class D1Client {
     const bound = params.length > 0 ? stmt.bind(...params) : stmt;
     return await bound.first();
   }
+
+  /**
+   * Query and return all rows
+   */
+  async all(sql: string, params: any[] = []) {
+    const stmt = this.db.prepare(sql);
+    const bound = params.length > 0 ? stmt.bind(...params) : stmt;
+    return await bound.all();
+  }
 }
