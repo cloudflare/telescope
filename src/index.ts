@@ -207,7 +207,7 @@ export default function browserAgent(): void {
     .addOption(
       new Option('--delayUsing <string>', 'Method to use to delay responses')
         .default(DEFAULT_OPTIONS.delayUsing)
-        .choices(['fulfill', 'continue']),
+        .choices(['continue', 'fulfill']),
     )
     .addOption(
       new Option(

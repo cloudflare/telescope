@@ -22,7 +22,7 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   // Request regex with a corresponding response delay in ms
   delay: {},
   // Delay implementation method
-  delayUsing: 'fulfill',
+  delayUsing: 'continue',
   // Disable JavaScript execution
   disableJS: false,
   // Enable debug logging
