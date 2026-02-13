@@ -4,7 +4,7 @@
  */
 
 import type { BrowserContext, HTTPCredentials } from 'playwright';
-import { TestRunner } from './testRunner.js';
+import type { TestRunner } from './testRunner.js';
 import type { DelayMethod } from './delay.js';
 
 // ============================================================================

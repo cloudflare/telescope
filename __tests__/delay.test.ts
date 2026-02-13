@@ -105,6 +105,6 @@ describe.each(browsers)('Delaying response - %s', browser => {
           .every((r: ResourceTiming) => r.duration >= DELAY),
       ).toBe(resourceTimingDurationSupported);
     },
-    browsers.length * delayMethods.length * (DELAY + 2000),
+    DELAY + 2000,
   );
 });
