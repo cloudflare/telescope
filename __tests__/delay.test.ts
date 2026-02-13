@@ -57,7 +57,9 @@ afterAll(async () => {
 });
 
 describe.each(browsers)('Delaying response - %s', browser => {
-  test.each(['continue', 'fulfill'] as DelayMethod[])(
+  const delayMethods: DelayMethod[] = ['continue', 'fulfill'];
+
+  test.each(delayMethods)(
     `launchTest delays .CSS responses by ${DELAY}ms (using "%s" method)`,
     async (delayImplementationName: DelayMethod) => {
       const result = await launchTest({
@@ -97,6 +99,6 @@ describe.each(browsers)('Delaying response - %s', browser => {
           .every((r: ResourceTiming) => r.duration >= DELAY),
       ).toBe(resourceTimingDurationSupported);
     },
-    60000,
+    browsers.length * delayMethods.length * (DELAY + 2000),
   );
 });
