@@ -34,11 +34,11 @@ export const GET: APIRoute = async (context: APIContext) => {
       js: 'application/javascript',
       txt: 'text/plain',
     };
-    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream';
+    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // ensure contentType always valid string
     return new Response(object.body, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'public, max-age=31536000, immutable', // 1 year and immutable, aggressive
       },
     });
   } catch (error) {

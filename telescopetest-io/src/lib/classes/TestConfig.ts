@@ -19,7 +19,7 @@ type ConfigJson = {
   };
 };
 
-// For each test, check for screenshot in R2
+// For each test, get screenshot from R2
 export interface TestWithScreenshot {
   test_id: string;
   url: string;
@@ -27,7 +27,7 @@ export interface TestWithScreenshot {
   browser: string;
   name: string | null;
   description: string | null;
-  screenshotUrl: string | null;
+  screenshotUrl: string;
 }
 
 export class TestConfig {

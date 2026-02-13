@@ -1,5 +1,8 @@
 import { D1Client } from '../d1-client';
 import { TestConfig } from '../../classes/TestConfig';
+import type { TestWithScreenshot } from '@/lib/classes/TestConfig';
+export type TestRecord = Omit<TestWithScreenshot, 'screenshotUrl'>;
+
 export class D1TestStore {
   private client: D1Client;
   constructor(d1Binding: Env['TELESCOPE_DB']) {
@@ -48,23 +51,16 @@ export class D1TestStore {
     return testId;
   }
 
-  async getAllTests(): Promise<
-    Array<{
-      test_id: string;
-      url: string;
-      test_date: number;
-      browser: string;
-      name: string | null;
-      description: string | null;
-      created_at: number;
-    }>
-  > {
+  /**
+   * Returns all tests
+   */
+  async getAllTests(): Promise<TestRecord[]> {
     const sql = `
-    SELECT test_id, url, test_date, browser, name, description, created_at
+    SELECT test_id, url, test_date, browser, name, description
     FROM tests
     ORDER BY created_at DESC
   `;
     const result = await this.client.all(sql);
-    return result.results as any[];
+    return result.results as TestRecord[];
   }
 }
