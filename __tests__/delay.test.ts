@@ -20,26 +20,32 @@ let baseUrl: string;
 const DELAY = 2000;
 
 beforeAll(async () => {
+  const allowedFiles = ['index.html', 'delayed_style.css', 'telescope.png'];
+
   const fixturesDir = join(
-    dirname(fileURLToPath(import.meta.url)),
-    '..',
+    dirname(dirname(fileURLToPath(import.meta.url))),
     'tests',
     'delay',
   );
   server = createServer(async (req, res) => {
-    const filePath = join(
-      fixturesDir,
-      req.url === '/' ? 'index.html' : req.url!,
+    const fileName = allowedFiles.find(
+      f => req.url === '/' + f || (f === 'index.html' && req.url === '/'),
     );
+    if (!fileName) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+    const filePath = join(fixturesDir, fileName);
     try {
       const data = await readFile(filePath);
-      const ext = filePath.split('.').pop();
-      const contentType =
-        ext === 'html'
-          ? 'text/html'
-          : ext === 'css'
-            ? 'text/css'
-            : 'application/octet-stream';
+      const mimeTypes: Record<string, string> = {
+        html: 'text/html',
+        css: 'text/css',
+        png: 'image/png',
+      };
+      const ext = filePath.split('.').pop() ?? '';
+      const contentType = mimeTypes[ext] ?? 'application/octet-stream';
       res.writeHead(200, { 'Content-Type': contentType });
       res.end(data);
     } catch {
