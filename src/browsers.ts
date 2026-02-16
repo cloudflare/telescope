@@ -208,6 +208,13 @@ class BrowserConfig {
       browserConfig.recordVideo.size.height = options.height;
     }
 
+    if (options.userAgent) {
+      browserConfig.userAgent = options.userAgent;
+    }
+    if (options.agentExtra) {
+      browserConfig.agentExtra = options.agentExtra;
+    }
+
     return browserConfig;
   }
 }

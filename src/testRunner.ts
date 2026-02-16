@@ -170,6 +170,22 @@ class TestRunner {
     const engine = this.selectedBrowser.engine;
     const browserType = playwright[engine];
 
+    if (this.options.agentExtra) {
+      const tmpbrowser = await browserType.launch(
+        this.selectedBrowser as Parameters<
+          typeof browserType.launchPersistentContext
+        >[1]
+      );
+      const tmpcontext = await tmpbrowser.newContext();
+      const tmppage = await tmpcontext.newPage();
+
+      // Get the User-Agent string from the blank page in the browser
+      const originalUserAgent = await tmppage.evaluate(() => navigator.userAgent);
+      await tmpbrowser.close();
+
+      this.selectedBrowser.userAgent = originalUserAgent.concat(this.options.agentExtra);
+    }
+
     const browser = await browserType.launchPersistentContext(
       this.paths['temporaryContext'],
       this.selectedBrowser as Parameters<
