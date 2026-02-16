@@ -175,8 +175,8 @@ export interface LaunchOptions {
   overrideHost?: Record<string, string>;
   zip?: boolean;
   dry?: boolean;
-  userAgent?: string,
-  agentExtra?: string,
+  userAgent?: string;
+  agentExtra?: string;
   command?: string[];
 }
 

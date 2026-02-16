@@ -37,7 +37,7 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     zip: options.zip || DEFAULT_OPTIONS.zip,
     dry: options.dry || DEFAULT_OPTIONS.dry,
     userAgent: options.userAgent || undefined,
-    agentExtra: options.agentExtra || undefined
+    agentExtra: options.agentExtra || undefined,
   };
 
   // Parse JSON strings from CLI (pass through objects from programmatic)

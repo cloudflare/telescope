@@ -174,7 +174,7 @@ class TestRunner {
       const tmpbrowser = await browserType.launch(
         this.selectedBrowser as Parameters<
           typeof browserType.launchPersistentContext
-        >[1]
+        >[1],
       );
       const tmpcontext = await tmpbrowser.newContext();
       const tmppage = await tmpcontext.newPage();
