@@ -1,40 +1,50 @@
 ---
 import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
+import Icon from '@/components/Icon.astro';
 import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
-import type { TestWithScreenshot } from '@/lib/classes/TestConfig';
+import type { Tests } from '@/lib/classes/TestConfig';
 
 // Get saved view preference from cookie
 const savedView = Astro.cookies.get('resultsView')?.value;
 const viewLayout =
   savedView === 'grid' || savedView === 'vertical' ? savedView : 'vertical';
 
-// Fetch all tests from D1
+// Check env
 const env = Astro.locals.runtime.env;
+if (!env.TELESCOPE_DB || !env.RESULTS_BUCKET) {
+  throw new Error(
+    'Missing required environment bindings: TELESCOPE_DB and RESULTS_BUCKET must be configured in wrangler.jsonc',
+  );
+}
+// fetch all tests from D1
 const testStore = new D1TestStore(env.TELESCOPE_DB);
 const tests = await testStore.getAllTests();
 
+// get proper interface with screenshot
+type TestWithScreenshot = Tests & {
+  screenshotUrl: string | null;
+};
+
 const filename = 'screenshot.png';
 const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
-  tests.map(
-    async (test: Awaited<ReturnType<typeof testStore.getAllTests>>[0]) => {
-      let screenshotUrl: string | null = null;
-      const key = `${test.test_id}/${filename}`;
-      const obj = await env.RESULTS_BUCKET.head(key);
-      if (obj) {
-        screenshotUrl = `/api/tests/${test.test_id}/${filename}`;
-      }
-      return {
-        test_id: test.test_id,
-        url: test.url,
-        test_date: test.test_date,
-        browser: test.browser,
-        name: test.name,
-        description: test.description,
-        screenshotUrl,
-      };
-    },
-  ),
+  tests.map(async (test: Tests): Promise<TestWithScreenshot> => {
+    let screenshotUrl: string | null = null;
+    const key = `${test.test_id}/${filename}`;
+    const obj = await env.RESULTS_BUCKET!.head(key);
+    if (obj) {
+      screenshotUrl = `/api/tests/${test.test_id}/${filename}`;
+    }
+    return {
+      test_id: test.test_id,
+      url: test.url,
+      test_date: test.test_date,
+      browser: test.browser,
+      name: test.name,
+      description: test.description,
+      screenshotUrl,
+    };
+  }),
 );
 
 export const prerender = false;
@@ -47,7 +57,7 @@ export const prerender = false;
     testsWithScreenshots.length === 0 ? (
       <div class="empty-state">
         <p>No test results yet.</p>
-        <a href="/upload" class="button">
+        <a href="/upload" class="button button-primary">
           Upload your first test →
         </a>
       </div>
@@ -58,72 +68,14 @@ export const prerender = false;
             class={`toggle-button ${viewLayout === 'vertical' ? 'active' : ''}`}
             data-view="vertical"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect
-                x="2"
-                y="3"
-                width="16"
-                height="3"
-                rx="1"
-                fill="currentColor"
-              />
-              <rect
-                x="2"
-                y="8.5"
-                width="16"
-                height="3"
-                rx="1"
-                fill="currentColor"
-              />
-              <rect
-                x="2"
-                y="14"
-                width="16"
-                height="3"
-                rx="1"
-                fill="currentColor"
-              />
-            </svg>
+            <Icon name="list" size={20} />
             List
           </button>
           <button
             class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`}
             data-view="grid"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect
-                x="2"
-                y="2"
-                width="7"
-                height="7"
-                rx="1"
-                fill="currentColor"
-              />
-              <rect
-                x="11"
-                y="2"
-                width="7"
-                height="7"
-                rx="1"
-                fill="currentColor"
-              />
-              <rect
-                x="2"
-                y="11"
-                width="7"
-                height="7"
-                rx="1"
-                fill="currentColor"
-              />
-              <rect
-                x="11"
-                y="11"
-                width="7"
-                height="7"
-                rx="1"
-                fill="currentColor"
-              />
-            </svg>
+            <Icon name="grid-four" size={20} />
             Grid
           </button>
         </div>
@@ -146,38 +98,27 @@ export const prerender = false;
 </Page>
 
 <style>
-  h1 {
-    font-size: 32px;
-    font-weight: 700;
-    margin: 0 0 8px 0;
-  }
-  h2 {
-    font-size: 18px;
-    font-weight: 400;
-    color: var(--muted);
-    margin: 0 0 16px 0;
-  }
   .view-toggle {
     display: flex;
-    gap: 8px;
-    margin-bottom: 24px;
-    padding: 4px;
+    gap: 0.5rem; /* 8px */
+    margin-bottom: 1.5rem; /* 24px */
+    padding: 0.25rem; /* 4px */
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 0.5rem; /* 8px */
     width: fit-content;
   }
   .toggle-button {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
+    gap: 0.5rem; /* 8px */
+    padding: 0.5rem 1rem; /* 8px 16px */
     border: none;
     background: transparent;
     color: var(--muted);
-    border-radius: 6px;
+    border-radius: 0.375rem; /* 6px */
     cursor: pointer;
-    font-size: 14px;
+    font-size: 0.875rem; /* 14px */
     font-weight: 500;
     transition: all 0.2s;
   }
@@ -192,38 +133,25 @@ export const prerender = false;
   .results-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 1rem; /* 16px */
   }
   .results-container[data-layout='grid'] {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); /* 320px */
+    gap: 1.25rem; /* 20px */
   }
   .empty-state {
-    padding: 60px;
+    padding: 3.75rem; /* 60px */
     text-align: center;
     background: var(--panel);
     border: 1px dashed var(--border);
-    border-radius: 12px;
-    margin-top: 24px;
+    border-radius: 0.75rem; /* 12px */
+    margin-top: 1.5rem; /* 24px */
   }
   .empty-state p {
-    font-size: 16px;
+    font-size: 1rem; /* 16px */
     color: var(--muted);
-    margin-bottom: 20px;
-  }
-  .button {
-    display: inline-block;
-    padding: 10px 20px;
-    border-radius: 12px;
-    text-decoration: none;
-    font-weight: 600;
-    background: var(--brand);
-    color: white;
-    transition: opacity 0.2s;
-  }
-  .button:hover {
-    opacity: 0.9;
+    margin-bottom: 1.25rem; /* 20px */
   }
 </style>
 

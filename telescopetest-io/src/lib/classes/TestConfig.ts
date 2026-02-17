@@ -20,6 +20,16 @@ export interface ConfigJson {
   };
 }
 
+// For each test, get screenshot from R2
+export type Tests = {
+  test_id: string;
+  url: string;
+  test_date: number;
+  browser: string;
+  name: string | null;
+  description: string | null;
+};
+
 // Test configuration interface matching database schema
 export interface TestConfig {
   testId: string;

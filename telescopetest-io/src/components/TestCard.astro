@@ -41,7 +41,7 @@ const nonamePlaceholder = 'No Name';
     }
   </div>
   <div class="content">
-    <h3>{name || nonamePlaceholder}</h3>
+    <h3 class="name">{name || nonamePlaceholder}</h3>
     <p class="description">{description || '\u00A0'}</p>
     <p class="browser">Browser: {browser}</p>
     <p class="url">{url}</p>
@@ -55,17 +55,21 @@ const nonamePlaceholder = 'No Name';
     flex-direction: column;
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 0.75rem; /* 12px */
     overflow: hidden;
     transition: all 0.2s;
     text-decoration: none;
     color: var(--text);
-  }
 
-  .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    border-color: var(--brand-hover);
+    &:hover {
+      transform: translateY(-0.125rem); /* -2px */
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1); /* 8px 16px */
+      border-color: var(--brand-hover);
+    }
+
+    @media (max-width: 48rem) { /* 768px */
+      flex-direction: column;
+    }
   }
 
   :global(.results-container[data-layout='vertical']) .card {
@@ -81,50 +85,60 @@ const nonamePlaceholder = 'No Name';
     justify-content: center;
     overflow: hidden;
     color: var(--muted);
-    font-size: 14px;
-  }
+    font-size: 0.875rem; /* 14px */
 
-  .screenshot img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    & img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    @media (max-width: 48rem) { /* 768px */
+      width: 100%;
+      aspect-ratio: 16 / 10;
+    }
   }
 
   :global(.results-container[data-layout='vertical']) .screenshot {
-    width: 240px;
-    min-width: 240px;
+    width: 15rem; /* 240px */
+    min-width: 15rem; /* 240px */
     aspect-ratio: auto;
   }
 
   .content {
-    padding: 16px;
+    padding: 1rem; /* 16px */
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0.5rem; /* 8px */
     flex: 1;
     min-width: 0;
   }
 
-  h3 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0;
+  .name {
+    max-height: 1.125rem; /* 18px */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .description {
-    font-size: 14px;
+    font-size: 0.875rem; /* 14px */
     color: var(--muted);
     margin: 0;
+    max-height: 0.875rem; /* 14px */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .browser {
-    font-size: 13px;
+    font-size: 0.8125rem; /* 13px */
     color: var(--muted);
     margin: 0;
   }
 
   .url {
-    font-size: 13px;
+    font-size: 0.8125rem; /* 13px */
     color: var(--muted);
     margin: 0;
     overflow: hidden;
@@ -133,20 +147,9 @@ const nonamePlaceholder = 'No Name';
   }
 
   .date {
-    font-size: 12px;
+    font-size: 0.75rem; /* 12px */
     color: var(--muted);
     margin: 0;
     margin-top: auto;
-  }
-
-  @media (max-width: 768px) {
-    .card {
-      flex-direction: column;
-    }
-
-    .screenshot {
-      width: 100%;
-      aspect-ratio: 16 / 10;
-    }
   }
 </style>
