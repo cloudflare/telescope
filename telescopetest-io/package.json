@@ -15,12 +15,12 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
-    "@phosphor-icons/web": "^2.1.2",
     "astro": "^5.16.15",
     "fflate": "^0.8.2",
-    "zod": "^3.25.76",
     "@prisma/adapter-d1": "^7.3.0",
-    "@prisma/client": "^7.3.0"
+    "@prisma/client": "^7.3.0",
+    "phosphor-astro": "^2.1.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

@@ -1,7 +1,8 @@
 ---
 import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
-import Icon from '@/components/Icon.astro';
+import List from 'phosphor-astro/List.astro';
+import GridFour from 'phosphor-astro/GridFour.astro';
 import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
 import type { Tests } from '@/lib/classes/TestConfig';
 
@@ -10,14 +11,8 @@ const savedView = Astro.cookies.get('resultsView')?.value;
 const viewLayout =
   savedView === 'grid' || savedView === 'vertical' ? savedView : 'vertical';
 
-// Check env
+// Fetch all tests from D1
 const env = Astro.locals.runtime.env;
-if (!env.TELESCOPE_DB || !env.RESULTS_BUCKET) {
-  throw new Error(
-    'Missing required environment bindings: TELESCOPE_DB and RESULTS_BUCKET must be configured in wrangler.jsonc',
-  );
-}
-// fetch all tests from D1
 const testStore = new D1TestStore(env.TELESCOPE_DB);
 const tests = await testStore.getAllTests();
 
@@ -68,14 +63,16 @@ export const prerender = false;
             class={`toggle-button ${viewLayout === 'vertical' ? 'active' : ''}`}
             data-view="vertical"
           >
-            <Icon name="list" size={20} />
+            <List width={20} height={20} />
+            {/* using components from library phosphor-astro directly */}
             List
           </button>
           <button
             class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`}
             data-view="grid"
           >
-            <Icon name="grid-four" size={20} />
+            <GridFour width={20} height={20} />
+            {/* using components from library phosphor-astro directly */}
             Grid
           </button>
         </div>
