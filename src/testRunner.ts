@@ -148,9 +148,9 @@ class TestRunner {
 
     return;
   }
-  
+
   /**
-   * Set up response response delays using the page.route handler
+   * Set up response delays using the page.route handler
    */
   async setupResponseDelays(page: Page) {
     if (!this.options.delay) {
