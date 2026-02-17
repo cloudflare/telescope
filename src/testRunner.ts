@@ -163,7 +163,15 @@ class TestRunner {
           `Adding a rule for delaying URLs matching '${regexString}' regex for ${delay} (using "${this.options.delayUsing}" method)`,
         );
 
-        const regex = new RegExp(regexString, 'i');
+        let regex: RegExp;
+        try {
+          regex = new RegExp(regexString, 'i');
+        } catch (error) {
+          const message =
+            `Invalid delay rule regex '${regexString}': ` +
+            (error instanceof Error ? error.message : String(error));
+          throw new Error(message);
+        }
 
         if (this.options.delayUsing === 'fulfill') {
           await page.route(regex, async (route: Route, request: Request) =>

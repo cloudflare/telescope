@@ -3,38 +3,43 @@ import type { Route, Request } from 'playwright';
 
 export type DelayMethod = 'fulfill' | 'continue';
 
-export async function delayUsingFulfill(route: Route, request: Request, regexString: string, delay: number) {
-  return new Promise(resolve => {
-    const url = request.url();
+export async function delayUsingFulfill(
+  route: Route,
+  request: Request,
+  regexString: string,
+  delay: number,
+) {
+  const url = request.url();
 
-    // start fetching right-away, keep the promise
-    const responsePromise = route.fetch();
+  // start fetching right-away, keep the promise
+  const responsePromise = route.fetch();
 
-    log(
-      `Fetching ${url} (matched /${regexString}/i), but delaying response for ${delay}ms`,
-    );
+  log(
+    `Fetching ${url} (matched /${regexString}/i), but delaying response for ${delay}ms`,
+  );
 
-    setTimeout(async () => {
-      log(`Fulfilling ${url} after ${delay}ms`);
+  // wait for the specified delay
+  await new Promise<void>(resolve => setTimeout(resolve, delay));
 
-      // make sure we continue only after request came back
-      const response = await responsePromise;
+  log(`Fulfilling ${url} after ${delay}ms`);
 
-      resolve(route.fulfill({ response }));
-    }, delay);
-  });
+  // make sure we continue only after request came back
+  const response = await responsePromise;
+  await route.fulfill({ response });
 }
 
-export async function delayUsingContinue(route: Route, request: Request, regexString: string, delay: number) {
-  return new Promise((resolve) => {
-    const url = request.url();
+export async function delayUsingContinue(
+  route: Route,
+  request: Request,
+  regexString: string,
+  delay: number,
+) {
+  const url = request.url();
 
-    log(`Delaying ${url} (matched /${regexString}/i) request for ${delay}ms`);
+  log(`Delaying ${url} (matched /${regexString}/i) request for ${delay}ms`);
 
-    setTimeout(() => {
-      log(`Continuing ${url} request after ${delay}ms`);
+  // wait for the specified delay
+  await new Promise<void>(resolve => setTimeout(resolve, delay));
 
-      resolve(route.continue());
-    }, delay);
-  });
+  return route.continue();
 }
