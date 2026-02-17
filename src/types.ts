@@ -4,7 +4,6 @@
  */
 
 import type { BrowserContext, HTTPCredentials } from 'playwright';
-import type { TestRunner } from './testRunner.js';
 import type { DelayMethod } from './delay.js';
 
 // ============================================================================
@@ -217,7 +216,6 @@ export interface SuccessfulTestResult {
   testId: string;
   resultsPath: string;
   dry?: boolean;
-  runner: TestRunner;
 }
 
 /**

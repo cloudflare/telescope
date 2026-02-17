@@ -105,7 +105,6 @@ async function executeTest(
         dry: true,
         testId: Runner.TESTID,
         resultsPath: Runner.paths.results,
-        runner: Runner,
       };
     }
 
@@ -117,7 +116,6 @@ async function executeTest(
       success: true,
       testId: Runner.TESTID,
       resultsPath: Runner.paths.results,
-      runner: Runner,
     };
   } catch (error) {
     // Ensure cleanup runs even on error (closes browser + removes temp files)

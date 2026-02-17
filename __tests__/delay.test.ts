@@ -9,6 +9,8 @@ import type { DelayMethod } from '../src/delay.js';
 import type { ResourceTiming } from '../src/types.js';
 import type { SuccessfulTestResult } from '../src/index.js';
 
+import { retrieveResources } from './helpers.js';
+
 import { launchTest } from '../src/index.js';
 import { BrowserConfig } from '../src/browsers.js';
 
@@ -82,8 +84,18 @@ describe.each(browsers)('Delaying response - %s', browser => {
       expect(result).toHaveProperty('testId');
       expect(result).toHaveProperty('resultsPath');
 
+      const resources = retrieveResources(
+        (result as SuccessfulTestResult).testId,
+      );
+
+      expect(resources).not.toBeNull();
+
+      if (resources === null) {
+        return fail('Resources should not be null');
+      }
+
       expect(
-        (result as SuccessfulTestResult).runner.resourceTimings
+        resources
           .filter((r: ResourceTiming) => r.name.match('telescope.png$'))
           .every((r: ResourceTiming) => r.startTime >= DELAY),
       ).toBe(true);
@@ -100,7 +112,7 @@ describe.each(browsers)('Delaying response - %s', browser => {
         !(browser === 'safari' && delayImplementationName === 'continue');
 
       expect(
-        (result as SuccessfulTestResult).runner.resourceTimings
+        resources
           .filter((r: ResourceTiming) => r.name.match('.css$'))
           .every((r: ResourceTiming) => r.duration >= DELAY),
       ).toBe(resourceTimingDurationSupported);
