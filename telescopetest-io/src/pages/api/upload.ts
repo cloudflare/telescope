@@ -44,7 +44,6 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
 }
 
 export const POST: APIRoute = async (context: APIContext) => {
-  let prisma;
   try {
     // Validate formData
     const uploadSchema = z.object({
@@ -88,7 +87,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     // Check if this exact content already exists in D1
-    prisma = createPrismaClient(env.TELESCOPE_DB);
+    const prisma = createPrismaClient(env.TELESCOPE_DB);
     const existingTestId = await findTestIdByZipKey(prisma, zipKey);
     if (existingTestId) {
       return new Response(
@@ -179,8 +178,9 @@ export const POST: APIRoute = async (context: APIContext) => {
     for (const filename of files) {
       await env.RESULTS_BUCKET.put(`${testId}/${filename}`, unzipped[filename]);
     }
-    // disconnect from prisma
-    await prisma.$disconnect();
+
+    // no need to disconnect manually b/c using Workers
+
     // return success
     return new Response(
       JSON.stringify({
@@ -195,8 +195,9 @@ export const POST: APIRoute = async (context: APIContext) => {
     );
   } catch (error) {
     console.error('Upload error:', error);
-    // disconnect from prisma
-    if (prisma) await prisma.$disconnect();
+
+    // no need to disconnect manually b/c using Workers
+
     return new Response(
       JSON.stringify({
         success: false,

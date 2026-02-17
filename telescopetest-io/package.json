@@ -10,7 +10,8 @@
     "deploy": "astro build && wrangler deploy --env production",
     "deploy:staging": "astro build && wrangler deploy --env staging",
     "migrate:staging": "npx wrangler d1 migrations apply telescope-db-staging --remote --env staging",
-    "generate": "prisma generate"
+    "generate": "prisma generate",
+    "studio": "prisma studio"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
