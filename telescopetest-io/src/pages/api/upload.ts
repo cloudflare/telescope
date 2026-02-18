@@ -6,7 +6,7 @@ import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
 import { generateTestId, TestSource } from '@/lib/classes/TestConfig';
-import { createPrismaClient } from '@/lib/prisma/client';
+import { getPrismaClient } from '@/lib/prisma/client';
 import {
   createTest,
   findTestIdByZipKey,
@@ -75,7 +75,7 @@ export const POST: APIRoute = async (context: APIContext) => {
     // TODO: make hash content-based, not ZIP based
     const zipKey = await generateContentHash(buffer);
     // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
-    const env = context.locals.runtime.env;
+    const env = context.locals.runtime?.env;
     // Validate required bindings exist
     if (!env.TELESCOPE_DB || !env.RESULTS_BUCKET) {
       return new Response(
@@ -87,7 +87,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     // Check if this exact content already exists in D1
-    const prisma = createPrismaClient(env.TELESCOPE_DB);
+    const prisma = getPrismaClient(context);
     const existingTestId = await findTestIdByZipKey(prisma, zipKey);
     if (existingTestId) {
       return new Response(
