@@ -176,7 +176,18 @@ export const POST: APIRoute = async (context: APIContext) => {
     }
     // store all unzipped files in R2 with {testId}/{filename} format
     for (const filename of files) {
-      await env.RESULTS_BUCKET.put(`${testId}/${filename}`, unzipped[filename]);
+      await env.RESULTS_BUCKET!.put(
+        `${testId}/${filename}`,
+        unzipped[filename],
+      );
+    }
+    // Rate the URL content via Workers AI — fire-and-forget, don't block response
+    if (env.AI) {
+      context.locals.runtime.ctx.waitUntil(
+        rateUrlContent(testConfig.url, env.AI).then(rating =>
+          testStore.updateContentRating(testId, rating),
+        ),
+      );
     }
 
     // no need to disconnect manually b/c using Workers
