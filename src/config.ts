@@ -1,11 +1,12 @@
-import { DEFAULT_OPTIONS } from './defaultOptions.js';
+import type { HTTPCredentials } from 'playwright';
 import type {
   LaunchOptions,
   CLIOptions,
   ConnectionType,
   BrowserName,
 } from './types.js';
-import type { HTTPCredentials } from 'playwright';
+
+import { DEFAULT_OPTIONS } from './defaultOptions.js';
 
 /**
  * Normalize options from any source (CLI or programmatic).
@@ -36,6 +37,7 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     auth: DEFAULT_OPTIONS.auth,
     zip: options.zip || DEFAULT_OPTIONS.zip,
     dry: options.dry || DEFAULT_OPTIONS.dry,
+    delayUsing: DEFAULT_OPTIONS.delayUsing,
   };
 
   // Parse JSON strings from CLI (pass through objects from programmatic)
@@ -49,6 +51,17 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
 
   if (options.auth) {
     config.auth = JSON.parse(options.auth) as HTTPCredentials;
+  }
+
+  if (options.delay) {
+    config.delay = JSON.parse(options.delay) as Record<string, number>;
+  }
+
+  if (
+    options.delayUsing &&
+    (options.delayUsing === 'fulfill' || options.delayUsing === 'continue')
+  ) {
+    config.delayUsing = options.delayUsing;
   }
 
   if (options.firefoxPrefs) {

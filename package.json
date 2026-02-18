@@ -17,14 +17,14 @@
     "telescope": "dist/src/cli.js"
   },
   "scripts": {
-    "build": "tsc && cp -r src/templates dist/src/ && mkdir -p dist/processors/templates && cp -r processors/templates/* dist/processors/templates/",
+    "build": "tsc && chmod +x dist/src/cli.js && cp -r src/templates dist/src/ && mkdir -p dist/processors/templates && cp -r processors/templates/* dist/processors/templates/",
     "dev": "tsc --watch",
     "start": "node dist/src/cli.js",
     "test": "npm run build && NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --verbose --maxWorkers=1",
     "test:ci": "export CI=true; npm test",
-    "testAction": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest __tests__/browsers.test.js --verbose",
     "coverage": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest --collect-coverage --verbose --maxWorkers=1",
     "clean": "rm -rf node_modules results dist",
+    "clean:results": "rm -rf results",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prettier": "npx prettier --write .",

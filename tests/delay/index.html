@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Testing Delay</title>
+    <style>
+      .box {
+        width: 10rem;
+        height: 10rem;
+        border: 2px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>This page is for testing delaying requests</h1>
+    <p>
+      The test should be delaying loading of <b>delayed_style.css</b> CSS
+      resource loaded at the end of the body of the document (which should not
+      block initial rendering and update styles after resource loads).
+    </p>
+
+    <hr />
+    <p>Text on the page should show up immediately</p>
+    <p>But <b>background color should change</b> after the delay</p>
+    <hr />
+    <p>Box below <b>will get the logo background</b> after the delay.</p>
+    <p>
+      The <b>image request should be delayed</b> as a result of CSS being
+      delayed
+    </p>
+    <div class="box"></div>
+
+    <link rel="stylesheet" href="delayed_style.css" />
+  </body>
+</html>
