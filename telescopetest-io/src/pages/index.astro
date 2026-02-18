@@ -637,6 +637,38 @@ const year = new Date().getFullYear();
         transform: translateX(-30px);
       }
 
+      .param-card {
+        opacity: 1;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .param-card {
+          transition: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        @supports (animation-timeline: view()) {
+          .param-card {
+            opacity: 0;
+            animation: quickFadeIn 0.4s ease;
+            animation-timeline: view();
+            animation-range: entry -100px exit 100%;
+            animation-delay: 50ms;
+          }
+        }
+
+        @keyframes quickFadeIn {
+          50% {
+            opacity: 1;
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      }
+
       .param-card.visible {
         opacity: 1;
         transform: translateX(0);
@@ -742,6 +774,38 @@ const year = new Date().getFullYear();
         transform-style: preserve-3d;
         opacity: 0;
         transform: translateY(30px);
+      }
+
+      .metric-item {
+        opacity: 1;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .metric-item {
+          transition: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        @supports (animation-timeline: view()) {
+          .metric-item {
+            opacity: 0;
+            animation: itemFadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);;
+            animation-timeline: view();
+            animation-range: entry -100px exit 100%;
+            animation-delay: 50ms;
+          }
+        }
+
+        @keyframes itemFadeIn {
+          50% {
+            opacity: 1;
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
       }
 
       .metric-item.visible {
@@ -1700,43 +1764,43 @@ cd telescope</code></pre>
         }
       });
 
-      // Observe param cards with stagger
-      const paramCards = document.querySelectorAll('.param-card');
-      paramCards.forEach((card, index) => {
-        if (prefersReducedMotion) {
-          card.classList.add('visible');
-          return;
-        }
-        const cardObserver = new IntersectionObserver(entries => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              setTimeout(() => {
-                entry.target.classList.add('visible');
-              }, index * 50);
-            }
-          });
-        }, observerOptions);
-        cardObserver.observe(card);
-      });
+      if (!prefersReducedMotion) {
+        // Observe param cards with stagger
+        const paramCards = document.querySelectorAll('.param-card');
+        paramCards.forEach((card, index) => {
+          const cardObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting &&
+                !entry.target.getAnimations().some((anim) => anim.animationName == 'quickFadeIn')) {
+                setTimeout(() => {
+                  entry.target.classList.add('visible');
+                }, index * 50);
+              }
+            });
+          }, observerOptions);
+          cardObserver.observe(card);
+        });
 
-      // Observe metric items
-      const metricItems = document.querySelectorAll('.metric-item');
-      metricItems.forEach((item, index) => {
-        if (prefersReducedMotion) {
-          item.classList.add('visible');
-          return;
-        }
-        const metricObserver = new IntersectionObserver(entries => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              setTimeout(() => {
-                entry.target.classList.add('visible');
-              }, index * 100);
-            }
-          });
-        }, observerOptions);
-        metricObserver.observe(item);
-      });
+        // Observe metric items
+        const metricItems = document.querySelectorAll('.metric-item');
+        metricItems.forEach((item, index) => {
+          if (prefersReducedMotion) {
+            item.classList.add('visible');
+            return;
+          }
+          const metricObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting &&
+                !entry.target.getAnimations().some((anim) => anim.animationName == 'itemFadeIn')) {
+                setTimeout(() => {
+                  entry.target.classList.add('visible');
+                }, index * 100);
+              }
+            });
+          }, observerOptions);
+          metricObserver.observe(item);
+        });
+      }
 
       // Copy code functionality
       function copyCode(button) {
