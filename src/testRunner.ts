@@ -249,8 +249,9 @@ class TestRunner {
       this.setupHostOverrides(page, this.options.overrideHost);
     }
 
-    await this.setupBlocking(page);
+    // blocking would happen first, then delays
     await this.setupResponseDelays(page);
+    await this.setupBlocking(page);
 
     page.on('requestfinished', data => {
       const reqData: RequestData = {
