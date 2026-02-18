@@ -45,4 +45,8 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   uploadUrl: null,
   // Dry run (false = no dry run)
   dry: false,
+  // Target device to emulate (false = no emulation)
+  device: false,
+  // Target device name to emulate (false = no emulation)
+  deviceName: false,
 };

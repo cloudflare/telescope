@@ -4,9 +4,11 @@ import type {
   CLIOptions,
   ConnectionType,
   BrowserName,
+  CustomDeviceDescriptor,
 } from './types.js';
 
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
+import { devices } from 'playwright';
 
 /**
  * Normalize options from any source (CLI or programmatic).
@@ -38,6 +40,7 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     zip: options.zip || DEFAULT_OPTIONS.zip,
     dry: options.dry || DEFAULT_OPTIONS.dry,
     delayUsing: DEFAULT_OPTIONS.delayUsing,
+    device: DEFAULT_OPTIONS.device,
   };
 
   // Parse JSON strings from CLI (pass through objects from programmatic)
@@ -111,8 +114,15 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     } catch (err) {
       throw new Error(`--uploadUrl must be a valid URL`);
     }
-
     config.uploadUrl = options.uploadUrl;
+  }
+  // Handle device emulation
+  if (options.deviceName) {
+    const playwrightDevice = devices[options.deviceName as keyof typeof devices];
+    if (!playwrightDevice) {
+      throw new Error(`Device "${options.deviceName}" not found in Playwright device list`);
+    }
+    config.device = playwrightDevice as CustomDeviceDescriptor;
   }
 
   return config;
