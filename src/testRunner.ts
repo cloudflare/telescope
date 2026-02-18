@@ -177,9 +177,7 @@ class TestRunner {
           await page.route(regex, async (route: Route, request: Request) =>
             delayUsingFulfill(route, request, regexString, delay),
           );
-        }
-
-        if (this.options.delayUsing === 'continue') {
+        } else if (this.options.delayUsing === 'continue') {
           await page.route(regex, async (route: Route, request: Request) =>
             delayUsingContinue(route, request, regexString, delay),
           );
