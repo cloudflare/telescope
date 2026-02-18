@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import type { BrowserName } from '../src/types.js';
 import type { DelayMethod } from '../src/delay.js';
 import type { ResourceTiming } from '../src/types.js';
 import type { SuccessfulTestResult } from '../src/index.js';
@@ -14,7 +15,8 @@ import { retrieveResources } from './helpers.js';
 import { launchTest } from '../src/index.js';
 import { BrowserConfig } from '../src/browsers.js';
 
-const browsers = BrowserConfig.getBrowsers();
+const browsers: BrowserName[] = BrowserConfig.getBrowsers();
+const delayMethods: DelayMethod[] = ['continue', 'fulfill'];
 
 let server: Server;
 let baseUrl: string;
@@ -65,8 +67,6 @@ afterAll(async () => {
 });
 
 describe.each(browsers)('Delaying response - %s', browser => {
-  const delayMethods: DelayMethod[] = ['continue', 'fulfill'];
-
   test.each(delayMethods)(
     `launchTest delays .CSS responses by ${DELAY}ms (using "%s" method)`,
     async (delayImplementationName: DelayMethod) => {
@@ -115,7 +115,7 @@ describe.each(browsers)('Delaying response - %s', browser => {
         !(browser === 'safari' && delayImplementationName === 'continue');
 
       const cssResources = resources.filter((r: ResourceTiming) =>
-        r.name.match('.css$'),
+        r.name.match('delayed_style.css$'),
       );
 
       expect(cssResources.length).toBe(1);
