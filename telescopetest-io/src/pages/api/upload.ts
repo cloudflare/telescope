@@ -10,7 +10,8 @@ import { getPrismaClient } from '@/lib/prisma/client';
 import {
   createTest,
   findTestIdByZipKey,
-} from '@/lib/repositories/testRepository';
+} from '@/lib/repositories/test-repository';
+import { rateUrlContent } from '@/lib/ai/ai-content-rater';
 
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
