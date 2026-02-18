@@ -101,7 +101,7 @@ describe.each(browsers)('Delaying response - %s', browser => {
       ).toBe(true);
 
       /**
-       * ResourceTiming durations are not pupulated properly when using delay:
+       * ResourceTiming durations are not populated properly when using delay:
        * - firefox when using 'fulfill' method
        * - safari when using 'continue' method
        *
