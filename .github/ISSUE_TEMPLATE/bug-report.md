@@ -1,7 +1,7 @@
 ---
 name: Bug Report
 about: Report something that isn't working correctly
-labels: 'bug'
+type: bug
 ---
 
 <!-- Before filing a bug, please check for any duplicate issues -->
