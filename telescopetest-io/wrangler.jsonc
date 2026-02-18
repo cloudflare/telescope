@@ -45,6 +45,9 @@
           "bucket_name": "results-bucket-development",
         },
       ],
+      "ai": {
+        "binding": "AI",
+      },
     },
     "staging": {
       "routes": [
@@ -71,6 +74,9 @@
           "bucket_name": "results-bucket-staging",
         },
       ],
+      "ai": {
+        "binding": "AI",
+      },
     },
     "production": {
       "routes": [
@@ -97,6 +103,9 @@
           "bucket_name": "results-bucket",
         },
       ],
+      "ai": {
+        "binding": "AI",
+      },
     },
   },
 }
