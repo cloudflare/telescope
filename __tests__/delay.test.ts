@@ -84,6 +84,9 @@ describe.each(browsers)('Delaying response - %s', browser => {
       expect(result).toHaveProperty('testId');
       expect(result).toHaveProperty('resultsPath');
 
+      /**
+       * Test ResourceTimings
+       */
       const resources = retrieveResources(
         (result as SuccessfulTestResult).testId,
       );
@@ -111,11 +114,15 @@ describe.each(browsers)('Delaying response - %s', browser => {
         !(browser === 'firefox' && delayImplementationName === 'fulfill') &&
         !(browser === 'safari' && delayImplementationName === 'continue');
 
-      expect(
-        resources
-          .filter((r: ResourceTiming) => r.name.match('.css$'))
-          .every((r: ResourceTiming) => r.duration >= DELAY),
-      ).toBe(resourceTimingDurationSupported);
+      const cssResources = resources.filter((r: ResourceTiming) =>
+        r.name.match('.css$'),
+      );
+
+      expect(cssResources.length).toBe(1);
+
+      expect(cssResources[0].duration >= DELAY).toBe(
+        resourceTimingDurationSupported,
+      );
     },
     60000,
   );
