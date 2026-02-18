@@ -20,7 +20,7 @@ export interface ConfigJson {
   };
 }
 
-// For each test, get screenshot from R2
+// Return type from D1
 export type Tests = {
   test_id: string;
   url: string;
@@ -30,7 +30,7 @@ export type Tests = {
   description: string | null;
 };
 
-// Test configuration interface matching database schema
+// Upload type into D1
 export interface TestConfig {
   testId: string;
   zipKey: string;

@@ -1,10 +1,13 @@
 ---
+import type { Tests } from '@/lib/classes/TestConfig';
+
 import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
 import List from 'phosphor-astro/List.astro';
 import GridFour from 'phosphor-astro/GridFour.astro';
-import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
-import type { Tests } from '@/lib/classes/TestConfig';
+
+import { createPrismaClient } from '@/lib/prisma/client';
+import { getAllTests } from '@/lib/repositories/test-repository';
 
 // Get saved view preference from cookie
 const savedView = Astro.cookies.get('resultsView')?.value;
@@ -13,12 +16,12 @@ const viewLayout =
 
 // Fetch all tests from D1
 const env = Astro.locals.runtime.env;
-const testStore = new D1TestStore(env.TELESCOPE_DB);
-const tests = await testStore.getAllTests();
+const prisma = createPrismaClient(env.TELESCOPE_DB);
+const tests = await getAllTests(prisma);
 
 // get proper interface with screenshot
 type TestWithScreenshot = Tests & {
-  screenshotUrl: string | null;
+  screenshot_url: string | null;
 };
 
 const filename = 'screenshot.png';
@@ -37,7 +40,7 @@ const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
       browser: test.browser,
       name: test.name,
       description: test.description,
-      screenshotUrl,
+      screenshot_url: screenshotUrl,
     };
   }),
 );
@@ -85,7 +88,7 @@ export const prerender = false;
               browser={test.browser}
               name={test.name}
               description={test.description}
-              screenshotUrl={test.screenshotUrl}
+              screenshotUrl={test.screenshot_url}
             />
           ))}
         </div>
