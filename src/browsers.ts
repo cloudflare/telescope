@@ -199,6 +199,19 @@ class BrowserConfig {
       };
     }
 
+    // collect device info and insert device emulation settings into browser config
+    if (options.device) {
+      browserConfig.userAgent = options.device.userAgent;
+      browserConfig.deviceScaleFactor = options.device.deviceScaleFactor;
+      browserConfig.isMobile = options.device.isMobile;
+      browserConfig.hasTouch = options.device.hasTouch;
+      browserConfig.viewport.width = options.device.viewport.width;
+      browserConfig.recordVideo.size.width = options.device.viewport.width;
+      browserConfig.viewport.height = options.device.viewport.height;
+      browserConfig.recordVideo.size.height = options.device.viewport.height;
+    }
+
+    // allow client CLI args to override device width + height settings
     if (options.width) {
       browserConfig.viewport.width = options.width;
       browserConfig.recordVideo.size.width = options.width;
@@ -207,7 +220,7 @@ class BrowserConfig {
       browserConfig.viewport.height = options.height;
       browserConfig.recordVideo.size.height = options.height;
     }
-
+    
     return browserConfig;
   }
 }

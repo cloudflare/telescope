@@ -221,12 +221,12 @@ export default function browserAgent(): void {
         ]),
     )
     .addOption(
-      new Option('--width <int>', 'Viewport width, in pixels').default(
+      new Option('--width <int>', 'Viewport width, in pixels. If both width and device are provided, the width value will override device emulation viewport width.').default(
         String(DEFAULT_OPTIONS.width),
       ),
     )
     .addOption(
-      new Option('--height <int>', 'Viewport height, in pixels').default(
+      new Option('--height <int>', 'Viewport height, in pixels. If both height and device are provided, the height value will override device emulation viewport height.').default(
         String(DEFAULT_OPTIONS.height),
       ),
     )
@@ -291,6 +291,12 @@ export default function browserAgent(): void {
         '--dry',
         'Dry run (do not run test, just save config and cleanup)',
       ).default(DEFAULT_OPTIONS.dry),
+    )
+    .addOption(
+      new Option(
+        '--deviceName <string>',
+        'Device name to use device emulation; devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
+      ).default(DEFAULT_OPTIONS.deviceName),
     )
     .parse(process.argv);
 
