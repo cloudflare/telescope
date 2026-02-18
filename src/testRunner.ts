@@ -152,9 +152,9 @@ class TestRunner {
   /**
    * Set up response delays using the page.route handler
    */
-  async setupResponseDelays(page: Page) {
+  async setupResponseDelays(page: Page): Promise<void[]> {
     if (!this.options.delay) {
-      return;
+      return [];
     }
 
     return Promise.all(
