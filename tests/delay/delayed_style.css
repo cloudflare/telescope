@@ -1,8 +1,8 @@
 body {
-    background-color: salmon;
+  background-color: salmon;
 }
 
 .box {
-    background-image: url("telescope.png");
-    background-size: cover;
+  background-image: url('telescope.png');
+  background-size: cover;
 }

@@ -56,8 +56,11 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
   if (options.delay) {
     config.delay = JSON.parse(options.delay) as Record<string, number>;
   }
-  
-  if (options.delayUsing && (options.delayUsing === 'fulfill' || options.delayUsing === 'continue')) {
+
+  if (
+    options.delayUsing &&
+    (options.delayUsing === 'fulfill' || options.delayUsing === 'continue')
+  ) {
     config.delayUsing = options.delayUsing;
   }
 
