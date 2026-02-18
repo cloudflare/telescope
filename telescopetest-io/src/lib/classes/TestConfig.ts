@@ -11,6 +11,12 @@ export enum TestSource {
   UNKNOWN = 'unknown',
 }
 
+export enum ContentRating {
+  SAFE = 'safe',
+  UNSAFE = 'unsafe',
+  UNKNOWN = 'unknown',
+}
+
 // Config.json structure from Telescope test archives
 export interface ConfigJson {
   url: string;
