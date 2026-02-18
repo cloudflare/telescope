@@ -25,7 +25,7 @@ export async function delayUsingFulfill(
 
   // make sure we continue only after request came back
   const response = await responsePromise;
-  await route.fulfill({ response });
+  return route.fulfill({ response });
 }
 
 export async function delayUsingContinue(

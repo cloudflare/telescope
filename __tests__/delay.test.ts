@@ -97,11 +97,13 @@ describe.each(browsers)('Delaying response - %s', browser => {
         return fail('Resources should not be null');
       }
 
-      expect(
-        resources
-          .filter((r: ResourceTiming) => r.name.match('telescope.png$'))
-          .every((r: ResourceTiming) => r.startTime >= DELAY),
-      ).toBe(true);
+      const imageResources = resources.filter((r: ResourceTiming) =>
+        r.name.match('telescope.png$'),
+      );
+
+      expect(imageResources.length).toBe(1);
+
+      expect(imageResources[0].startTime >= DELAY).toBe(true);
 
       /**
        * ResourceTiming durations are not populated properly when using delay:
