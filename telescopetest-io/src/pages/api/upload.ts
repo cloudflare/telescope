@@ -77,7 +77,7 @@ export const POST: APIRoute = async (context: APIContext) => {
     // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
     const env = context.locals.runtime?.env;
     // Validate required bindings exist
-    if (!env.TELESCOPE_DB || !env.RESULTS_BUCKET) {
+    if (!env?.TELESCOPE_DB || !env?.RESULTS_BUCKET) {
       return new Response(
         JSON.stringify({
           success: false,

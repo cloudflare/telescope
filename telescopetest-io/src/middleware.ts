@@ -11,8 +11,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const adapter = new PrismaD1(d1_database);
     prisma = new PrismaClient({ adapter });
   }
-  if (prisma) {
-    context.locals.prisma = prisma;
-  }
+  context.locals.prisma = prisma;
   return next();
 });
