@@ -28,3 +28,9 @@ pnpm-debug.log*
 .dev.vars*
 !.dev.vars.example
 !.env.example
+
+# types 
+worker-configuration.d.ts
+
+# prisma 
+/generated/prisma

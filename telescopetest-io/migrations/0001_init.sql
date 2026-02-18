@@ -1,3 +1,5 @@
+-- Migration number: 0001 	 2026-02-12T18:19:24.705Z
+
 -- Telescope Web UI - D1 Database Schema
 
 -- test - stores info for results cards: URL, test time (date), browser
