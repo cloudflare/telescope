@@ -1,0 +1,177 @@
+---
+import type { Tests } from '@/lib/classes/TestConfig';
+
+import Page from '@/layouts/Page.astro';
+import TestCard from '@/components/TestCard.astro';
+import List from 'phosphor-astro/List.astro';
+import GridFour from 'phosphor-astro/GridFour.astro';
+
+import { createPrismaClient } from '@/lib/prisma/client';
+import { getAllTests } from '@/lib/repositories/test-repository';
+
+// Get saved view preference from cookie
+const savedView = Astro.cookies.get('resultsView')?.value;
+const viewLayout =
+  savedView === 'grid' || savedView === 'vertical' ? savedView : 'vertical';
+
+// Fetch all tests from D1
+const env = Astro.locals.runtime.env;
+const prisma = createPrismaClient(env.TELESCOPE_DB);
+const tests = await getAllTests(prisma);
+
+// get proper interface with screenshot
+type TestWithScreenshot = Tests & {
+  screenshot_url: string | null;
+};
+
+const filename = 'screenshot.png';
+const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
+  tests.map(async (test: Tests): Promise<TestWithScreenshot> => {
+    let screenshotUrl: string | null = null;
+    const key = `${test.test_id}/${filename}`;
+    const obj = await env.RESULTS_BUCKET!.head(key);
+    if (obj) {
+      screenshotUrl = `/api/tests/${test.test_id}/${filename}`;
+    }
+    return {
+      test_id: test.test_id,
+      url: test.url,
+      test_date: test.test_date,
+      browser: test.browser,
+      name: test.name,
+      description: test.description,
+      screenshot_url: screenshotUrl,
+    };
+  }),
+);
+
+export const prerender = false;
+---
+
+<Page title="Test Results">
+  <h1>Test Results</h1>
+  <h2>View historical test runs</h2>
+  {
+    testsWithScreenshots.length === 0 ? (
+      <div class="empty-state">
+        <p>No test results yet.</p>
+        <a href="/upload" class="button button-primary">
+          Upload your first test →
+        </a>
+      </div>
+    ) : (
+      <>
+        <div class="view-toggle">
+          <button
+            class={`toggle-button ${viewLayout === 'vertical' ? 'active' : ''}`}
+            data-view="vertical"
+          >
+            <List width={20} height={20} />
+            {/* using components from library phosphor-astro directly */}
+            List
+          </button>
+          <button
+            class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`}
+            data-view="grid"
+          >
+            <GridFour width={20} height={20} />
+            {/* using components from library phosphor-astro directly */}
+            Grid
+          </button>
+        </div>
+        <div class="results-container" data-layout={viewLayout}>
+          {testsWithScreenshots.map(test => (
+            <TestCard
+              testId={test.test_id}
+              url={test.url}
+              testDate={test.test_date}
+              browser={test.browser}
+              name={test.name}
+              description={test.description}
+              screenshotUrl={test.screenshot_url}
+            />
+          ))}
+        </div>
+      </>
+    )
+  }
+</Page>
+
+<style>
+  .view-toggle {
+    display: flex;
+    gap: 0.5rem; /* 8px */
+    margin-bottom: 1.5rem; /* 24px */
+    padding: 0.25rem; /* 4px */
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem; /* 8px */
+    width: fit-content;
+  }
+  .toggle-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* 8px */
+    padding: 0.5rem 1rem; /* 8px 16px */
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 0.375rem; /* 6px */
+    cursor: pointer;
+    font-size: 0.875rem; /* 14px */
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .toggle-button:hover {
+    background: var(--background);
+    color: var(--text);
+  }
+  .toggle-button.active {
+    background: var(--brand);
+    color: white;
+  }
+  .results-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* 16px */
+  }
+  .results-container[data-layout='grid'] {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); /* 320px */
+    gap: 1.25rem; /* 20px */
+  }
+  .empty-state {
+    padding: 3.75rem; /* 60px */
+    text-align: center;
+    background: var(--panel);
+    border: 1px dashed var(--border);
+    border-radius: 0.75rem; /* 12px */
+    margin-top: 1.5rem; /* 24px */
+  }
+  .empty-state p {
+    font-size: 1rem; /* 16px */
+    color: var(--muted);
+    margin-bottom: 1.25rem; /* 20px */
+  }
+</style>
+
+<script>
+  const buttons = document.querySelectorAll('.toggle-button');
+  const container = document.querySelector('.results-container');
+  if (buttons.length && container) {
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        const view = button.getAttribute('data-view');
+        if (!view) return;
+        // Update active state
+        buttons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        // Update layout
+        container.setAttribute('data-layout', view);
+        // Save to both localStorage and cookie
+        localStorage.setItem('resultsView', view);
+        document.cookie = `resultsView=${view};path=/;max-age=31536000;SameSite=Lax`;
+      });
+    });
+  }
+</script>

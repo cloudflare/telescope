@@ -7,7 +7,8 @@ import cloudflare from '@astrojs/cloudflare';
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({
-    platformProxy: { // only used for `astro dev`: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#platformproxy
+    platformProxy: {
+      // only used for `astro dev`: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#platformproxy
       enabled: true,
       configPath: './wrangler.jsonc',
       environment: 'development',
@@ -17,7 +18,18 @@ export default defineConfig({
   }),
   vite: {
     ssr: {
-      external: ['node:path', 'node:fs/promises', 'node:url', 'node:crypto', 'node:process', 'node:buffer', 'node:module', 'node:fs', 'node:async_hooks', 'node:events', 'node:os'
+      external: [
+        'node:path',
+        'node:fs/promises',
+        'node:url',
+        'node:crypto',
+        'node:process',
+        'node:buffer',
+        'node:module',
+        'node:fs',
+        'node:async_hooks',
+        'node:events',
+        'node:os',
       ],
     },
   },

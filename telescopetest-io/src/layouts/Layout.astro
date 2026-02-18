@@ -10,11 +10,15 @@ const {
 } = Astro.props;
 
 const cookieValue = Astro.cookies.get('theme-override')?.value;
-const themeOverride = (cookieValue === 'dark' || cookieValue === 'light') ? cookieValue : undefined;
+const themeOverride =
+  cookieValue === 'dark' || cookieValue === 'light' ? cookieValue : undefined;
 ---
 
 <!doctype html>
-<html lang="en" {...(themeOverride ? { 'data-theme-override': themeOverride } : {})}>
+<html
+  lang="en"
+  {...themeOverride ? { 'data-theme-override': themeOverride } : {}}
+>
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
@@ -117,5 +121,57 @@ const themeOverride = (cookieValue === 'dark' || cookieValue === 'light') ? cook
     margin: 0;
     background: var(--bg);
     color: var(--text);
+  }
+
+  h1 {
+    font-size: 2rem; /* 32px */
+    font-weight: 700;
+    margin: 0 0 0.5rem 0; /* 8px */
+  }
+
+  h2 {
+    font-size: 1.125rem; /* 18px */
+    font-weight: 400;
+    color: var(--muted);
+    margin: 0 0 1.5rem 0; /* 24px */
+  }
+
+  h3 {
+    font-size: 1.125rem; /* 18px */
+    font-weight: 600;
+    margin: 0;
+  }
+
+  /* Button styles - common UI element with variants */
+  .button {
+    display: inline-block;
+    padding: 0.625rem 1.25rem; /* 10px 20px */
+    border-radius: 0.75rem; /* 12px */
+    border: none;
+    font-size: 0.875rem; /* 14px */
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .button-primary {
+    background: var(--brand);
+    color: white;
+  }
+
+  .button-primary:hover {
+    opacity: 0.9;
+  }
+
+  .button-secondary {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .button-secondary:hover {
+    background: var(--panel);
+    filter: brightness(1.1);
   }
 </style>

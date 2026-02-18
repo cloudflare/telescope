@@ -8,6 +8,23 @@
   "observability": {
     "enabled": true,
   },
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist",
+  },
+  "d1_databases": [
+    {
+      "binding": "TELESCOPE_DB",
+      "database_name": "db-placeholder",
+      "database_id": "anything-just-need-id-field",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "RESULTS_BUCKET",
+      "bucket_name": "bucket-placeholder",
+    },
+  ],
   "env": {
     "development": {
       "assets": {

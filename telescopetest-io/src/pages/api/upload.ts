@@ -12,7 +12,7 @@ import {
   findTestIdByZipKey,
 } from '@/lib/repositories/test-repository';
 
-export const prerender = false;
+// route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
 /**
  * Extract file list from ZIP archive
