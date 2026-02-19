@@ -3,11 +3,11 @@ import type { Tests } from '@/lib/classes/TestConfig';
 
 import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
-import List from 'phosphor-astro/List.astro';
-import GridFour from 'phosphor-astro/GridFour.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getAllTests } from '@/lib/repositories/test-repository';
+
+import { ListIcon, SquaresFourIcon } from '@phosphor-icons/react/ssr';
 
 // Get saved view preference from cookie
 const savedView = Astro.cookies.get('resultsView')?.value;
@@ -66,16 +66,14 @@ export const prerender = false;
             class={`toggle-button ${viewLayout === 'vertical' ? 'active' : ''}`}
             data-view="vertical"
           >
-            <List width={20} height={20} />
-            {/* using components from library phosphor-astro directly */}
+            <ListIcon width={20} height={20} />
             List
           </button>
           <button
             class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`}
             data-view="grid"
           >
-            <GridFour width={20} height={20} />
-            {/* using components from library phosphor-astro directly */}
+            <SquaresFourIcon width={20} height={20} />
             Grid
           </button>
         </div>
