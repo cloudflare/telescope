@@ -1,6 +1,4 @@
 ---
-import '@phosphor-icons/web/regular'; // importing to page, but if we need it for multiple pages, we should move it to a layout
-
 import type { Tests } from '@/lib/classes/TestConfig';
 
 import Page from '@/layouts/Page.astro';
@@ -8,6 +6,9 @@ import TestCard from '@/components/TestCard.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getAllTests } from '@/lib/repositories/test-repository';
+
+import ListIcon from '@/icons/list.svg';
+import GridIcon from '@/icons/squares-four.svg';
 
 // Get saved view preference from cookie
 const savedView = Astro.cookies.get('resultsView')?.value;
@@ -66,14 +67,14 @@ export const prerender = false;
             class={`toggle-button ${viewLayout === 'vertical' ? 'active' : ''}`}
             data-view="vertical"
           >
-            <i class="ph ph-list" style="font-size:20px;" />
+            <ListIcon width={20} height={20} />
             List
           </button>
           <button
             class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`}
             data-view="grid"
           >
-            <i class="ph ph-squares-four" style="font-size:20px;" />
+            <GridIcon width={20} height={20} />
             Grid
           </button>
         </div>
