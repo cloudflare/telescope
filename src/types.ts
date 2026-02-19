@@ -210,7 +210,7 @@ export interface DefaultOptions {
   delay: Record<string, number>;
   delayUsing: DelayMethod;
   device: CustomDeviceDescriptor | false;
-  deviceName: string | false; 
+  deviceName: string | false;
 }
 
 // ============================================================================
@@ -691,4 +691,4 @@ export interface CustomDeviceDescriptor {
    * Options: 'chromium', 'firefox', or 'webkit'
    */
   defaultBrowserType: 'chromium' | 'firefox' | 'webkit';
-};
+}

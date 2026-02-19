@@ -51,7 +51,8 @@ describe.each(browsers)('Basic Test: %s', browser => {
   });
 
   it(`captures fIRS and fRHS in chromium and webkit browsers`, async () => {
-    if (BrowserConfig.browserConfigs[browser].engine === 'chromium' ||
+    if (
+      BrowserConfig.browserConfigs[browser].engine === 'chromium' ||
       BrowserConfig.browserConfigs[browser].engine === 'webkit'
     ) {
       expect(
