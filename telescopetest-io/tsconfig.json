@@ -8,6 +8,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/generated/*": ["./generated/*"]
-    }
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
   }
 }

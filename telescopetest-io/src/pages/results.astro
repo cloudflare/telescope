@@ -7,8 +7,7 @@ import TestCard from '@/components/TestCard.astro';
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getAllTests } from '@/lib/repositories/test-repository';
 
-import ListIcon from '@/icons/list.svg';
-import GridIcon from '@/icons/squares-four.svg';
+import { ListIcon, SquaresFourIcon } from '@phosphor-icons/react/ssr';
 
 // Get saved view preference from cookie
 const savedView = Astro.cookies.get('resultsView')?.value;
@@ -74,7 +73,7 @@ export const prerender = false;
             class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`}
             data-view="grid"
           >
-            <GridIcon width={20} height={20} />
+            <SquaresFourIcon width={20} height={20} />
             Grid
           </button>
         </div>
