@@ -50,8 +50,11 @@ describe.each(browsers)('Basic Test: %s', browser => {
     expect(metrics?.navigationTiming.startTime).toBeGreaterThanOrEqual(0);
   });
 
-  it(`captures fIRS and fRHS only in chromium browsers`, async () => {
-    if (BrowserConfig.browserConfigs[browser].engine === 'chromium') {
+  it(`captures fIRS and fRHS in chromium and webkit browsers`, async () => {
+    if (
+      BrowserConfig.browserConfigs[browser].engine === 'chromium' ||
+      BrowserConfig.browserConfigs[browser].engine === 'webkit'
+    ) {
       expect(
         metrics?.navigationTiming.firstInterimResponseStart,
       ).toBeGreaterThanOrEqual(0);

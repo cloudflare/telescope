@@ -172,7 +172,7 @@ class TestRunner {
 
     const browser = await browserType.launchPersistentContext(
       this.paths['temporaryContext'],
-      this.selectedBrowser as Parameters<
+      {...this.selectedBrowser} as Parameters<
         typeof browserType.launchPersistentContext
       >[1],
     );

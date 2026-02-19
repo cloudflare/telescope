@@ -4,8 +4,10 @@ import type {
   CLIOptions,
   ConnectionType,
   BrowserName,
+  CustomDeviceDescriptor,
 } from './types.js';
 import type { HTTPCredentials } from 'playwright';
+import { devices } from 'playwright';
 
 /**
  * Normalize options from any source (CLI or programmatic).
@@ -36,6 +38,7 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     auth: DEFAULT_OPTIONS.auth,
     zip: options.zip || DEFAULT_OPTIONS.zip,
     dry: options.dry || DEFAULT_OPTIONS.dry,
+    device: DEFAULT_OPTIONS.device,
   };
 
   // Parse JSON strings from CLI (pass through objects from programmatic)
@@ -89,6 +92,17 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
         `Problem parsing "--blockDomains" options - ${(err as Error).message}`,
       );
     }
+  }
+
+  if (options.deviceName) {
+    const playwrightDevice =
+      devices[options.deviceName as keyof typeof devices];
+    if (!playwrightDevice) {
+      throw new Error(
+        `Device "${options.deviceName}" not found in Playwright device list`,
+      );
+    }
+    config.device = playwrightDevice as CustomDeviceDescriptor;
   }
 
   return config;
