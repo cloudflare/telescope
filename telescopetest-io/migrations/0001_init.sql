@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS tests (
   url TEXT NOT NULL,
   test_date INTEGER NOT NULL,
   browser TEXT NOT NULL,
-  content_rating TEXT, -- ContentRating enum: 'safe' | 'unsafe' | 'unknown'
   created_at INTEGER DEFAULT (unixepoch()), -- for SQL entry
   updated_at INTEGER DEFAULT (unixepoch()) -- for SQL entry
 );
