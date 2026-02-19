@@ -61,17 +61,21 @@ export async function getTestById(
       browser: true,
       name: true,
       description: true,
+      content_rating: true,
     },
   });
   return row ?? null;
 }
 
 /**
- * Find all tests
- * Returns rows as Tests type
+ * Find all tests that are safe or unrated (unknown).
+ * Unsafe tests are excluded from the public results list.
  */
 export async function getAllTests(prisma: PrismaClient): Promise<Tests[]> {
   const rows = await prisma.tests.findMany({
+    where: {
+      content_rating: ContentRating.SAFE,
+    },
     select: {
       test_id: true,
       url: true,
@@ -84,6 +88,21 @@ export async function getAllTests(prisma: PrismaClient): Promise<Tests[]> {
     orderBy: { created_at: 'desc' },
   });
   return rows;
+}
+
+/**
+ * Get just the content_rating for a single test.
+ * Used by the individual result page to check before rendering.
+ */
+export async function getTestRating(
+  prisma: PrismaClient,
+  testId: string,
+): Promise<string | null> {
+  const row = await prisma.tests.findUnique({
+    where: { test_id: testId },
+    select: { content_rating: true },
+  });
+  return row?.content_rating ?? null;
 }
 
 /**
