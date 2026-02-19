@@ -75,17 +75,7 @@ export const POST: APIRoute = async (context: APIContext) => {
     // TODO: make hash content-based, not ZIP based
     const zipKey = await generateContentHash(buffer);
     // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
-    const env = context.locals.runtime?.env;
-    // Validate required bindings exist
-    if (!env?.TELESCOPE_DB || !env?.RESULTS_BUCKET) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Bindings not configured properly',
-        }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } },
-      );
-    }
+    const env = context.locals.runtime.env;
     // Check if this exact content already exists in D1
     const prisma = getPrismaClient(context);
     const existingTestId = await findTestIdByZipKey(prisma, zipKey);
