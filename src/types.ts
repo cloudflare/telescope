@@ -128,7 +128,7 @@ export interface BrowserConfigOptions {
   channel?: BrowserChannel;
   headless: boolean;
   viewport: { width: number; height: number };
-  recordHar: { path: string };
+  recordHar?: { path: string };
   recordVideo: { dir: string; size: { width: number; height: number } };
   args?: string[];
   ignoreDefaultArgs?: string[];
