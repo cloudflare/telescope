@@ -1,5 +1,6 @@
 import fs from 'fs';
-import { launchTest, SuccessfulTestResult } from '../src/index.js';
+import type { SuccessfulTestResult } from '../src/index.js';
+import { launchTest } from '../src/index.js';
 import { BrowserConfig } from '../src/browsers.js';
 import { normalizeCLIConfig } from '../src/config.js';
 
