@@ -34,6 +34,7 @@ export type Tests = {
   browser: string;
   name: string | null;
   description: string | null;
+  content_rating: string;
 };
 
 // Upload type into D1

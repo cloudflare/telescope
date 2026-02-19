@@ -10,6 +10,7 @@ import { createPrismaClient } from '@/lib/prisma/client';
 import {
   createTest,
   findTestIdByZipKey,
+  updateContentRating,
 } from '@/lib/repositories/test-repository';
 import { rateUrlContent } from '@/lib/ai/ai-content-rater';
 
@@ -182,19 +183,8 @@ export const POST: APIRoute = async (context: APIContext) => {
         unzipped[filename],
       );
     }
-    // Rate the URL content via Workers AI — fire-and-forget, don't block response
-    if (env.AI) {
-      context.locals.runtime.ctx.waitUntil(
-        rateUrlContent(testConfig.url, env.AI).then(rating =>
-          testStore.updateContentRating(testId, rating),
-        ),
-      );
-    }
-
-    // no need to disconnect manually b/c using Workers
-
-    // return success
-    return new Response(
+    // Build success response first
+    const response = new Response(
       JSON.stringify({
         success: true,
         testId: testId,
@@ -205,6 +195,19 @@ export const POST: APIRoute = async (context: APIContext) => {
         headers: { 'Content-Type': 'application/json' },
       },
     );
+
+    // Rate the URL content via Workers AI — fire-and-forget after response is built
+    if (env.AI) {
+      context.locals.runtime.ctx.waitUntil(
+        rateUrlContent(testConfig.url, env.AI).then(rating =>
+          updateContentRating(prisma, testId, rating),
+        ),
+      );
+    }
+
+    // no need to disconnect manually b/c using Workers
+
+    return response;
   } catch (error) {
     console.error('Upload error:', error);
 

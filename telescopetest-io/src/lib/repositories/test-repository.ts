@@ -5,6 +5,7 @@
 
 import type { PrismaClient } from '@/generated/prisma/client';
 import type { TestConfig, Tests } from '@/lib/classes/TestConfig';
+import { ContentRating } from '@/lib/classes/TestConfig';
 
 /**
  * Create a new test in the database
@@ -23,6 +24,7 @@ export async function createTest(
       url: testConfig.url,
       test_date: testConfig.testDate,
       browser: testConfig.browser,
+      content_rating: ContentRating.UNKNOWN,
     },
   });
 }
@@ -55,8 +57,23 @@ export async function getAllTests(prisma: PrismaClient): Promise<Tests[]> {
       browser: true,
       name: true,
       description: true,
+      content_rating: true,
     },
     orderBy: { created_at: 'desc' },
   });
   return rows;
+}
+
+/**
+ * Update the content_rating for a test using Workers AI classification
+ */
+export async function updateContentRating(
+  prisma: PrismaClient,
+  testId: string,
+  rating: ContentRating,
+): Promise<void> {
+  await prisma.tests.update({
+    where: { test_id: testId },
+    data: { content_rating: rating },
+  });
 }
