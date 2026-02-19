@@ -197,9 +197,12 @@ export const POST: APIRoute = async (context: APIContext) => {
     );
 
     // Rate the URL content via Workers AI — fire-and-forget after response is built
+    // Passes the already-unzipped files so the rater can use metrics.json and
+    // screenshot.png directly, instead of re-fetching the URL (which misses
+    // JS-rendered content on single-page apps).
     if (env.AI) {
       context.locals.runtime.ctx.waitUntil(
-        rateUrlContent(testConfig.url, env.AI).then(rating =>
+        rateUrlContent(unzipped, env.AI).then(rating =>
           updateContentRating(prisma, testId, rating),
         ),
       );

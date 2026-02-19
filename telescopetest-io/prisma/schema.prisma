@@ -17,11 +17,12 @@ model tests {
   url            String
   test_date      Int
   browser        String
-  content_rating String?
+  content_rating String
   created_at     Int?    @default(dbgenerated("(unixepoch())"))
   updated_at     Int?    @default(dbgenerated("(unixepoch())"))
 
   @@index([zip_key], map: "idx_tests_file_key")
+  @@index([content_rating], map: "idx_tests_content_rating")
   @@index([updated_at(sort: Desc)], map: "idx_tests_updated_at")
   @@index([created_at(sort: Desc)], map: "idx_tests_created_at")
 }
