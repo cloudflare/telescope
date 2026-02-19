@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
-    "@phosphor-icons/web": "^2.1.2",
     "@prisma/adapter-d1": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "astro": "^5.16.15",
