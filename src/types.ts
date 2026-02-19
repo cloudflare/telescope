@@ -128,7 +128,7 @@ export interface BrowserConfigOptions {
   channel?: BrowserChannel;
   headless: boolean;
   viewport: { width: number; height: number };
-  recordHar: { path: string };
+  recordHar?: { path: string };
   recordVideo: { dir: string; size: { width: number; height: number } };
   args?: string[];
   ignoreDefaultArgs?: string[];
@@ -140,6 +140,8 @@ export interface BrowserConfigOptions {
     isEnabled: (name: string, severity: string) => boolean;
     log: (name: string, severity: string, message: string) => void;
   };
+  userAgent?: string;
+  agentExtra?: string;
 }
 
 // ============================================================================
@@ -173,6 +175,8 @@ export interface LaunchOptions {
   overrideHost?: Record<string, string>;
   zip?: boolean;
   dry?: boolean;
+  userAgent?: string;
+  agentExtra?: string;
   command?: string[];
 }
 
@@ -620,4 +624,6 @@ export interface CLIOptions {
   overrideHost?: string;
   zip?: boolean;
   dry?: boolean;
+  userAgent?: string;
+  agentExtra?: string;
 }

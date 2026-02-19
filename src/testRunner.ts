@@ -74,9 +74,14 @@ class TestRunner {
     this.paths['filmstrip'] = this.paths.results + '/filmstrip';
     mkdirSync(this.paths['results'], { recursive: true });
 
-    this.selectedBrowser.recordHar.path =
-      this.paths['results'] + '/pageload.har';
-    this.selectedBrowser.recordVideo.dir = this.paths['results'];
+    if (this.selectedBrowser.recordHar) {
+      this.selectedBrowser.recordHar.path =
+        this.paths['results'] + '/pageload.har';
+    }
+
+    if (this.selectedBrowser.recordVideo) {
+      this.selectedBrowser.recordVideo.dir = this.paths['results'];
+    }
   }
 
   /**
@@ -169,6 +174,37 @@ class TestRunner {
 
     const engine = this.selectedBrowser.engine;
     const browserType = playwright[engine];
+
+    if (this.options.agentExtra) {
+      let simpleOptions = JSON.parse(JSON.stringify(this.selectedBrowser)); // Deep clone
+      delete simpleOptions.recordHar;
+      delete simpleOptions.recordVideo;
+      delete simpleOptions.logger;
+
+      simpleOptions.viewport.width = 1;
+      simpleOptions.viewport.height = 1;
+
+      if (simpleOptions.args) {
+        let idx = simpleOptions.args.indexOf('--metrics-recording-only');
+        if (idx > -1) {
+          simpleOptions.args.splice(idx, 1);
+        }
+      }
+
+      const tmpbrowser = await browserType.launch(
+        simpleOptions as Parameters<
+          typeof browserType.launchPersistentContext
+        >[1],
+      );
+      const tmpcontext = await tmpbrowser.newContext();
+      const tmppage = await tmpcontext.newPage();
+
+      // Get the User-Agent string from the blank page in the browser
+      const originalUserAgent = await tmppage.evaluate(() => navigator.userAgent);
+      await tmpbrowser.close();
+
+      this.selectedBrowser.userAgent = originalUserAgent.concat(this.options.agentExtra);
+    }
 
     const browser = await browserType.launchPersistentContext(
       this.paths['temporaryContext'],

@@ -292,6 +292,18 @@ export default function browserAgent(): void {
         'Dry run (do not run test, just save config and cleanup)',
       ).default(DEFAULT_OPTIONS.dry),
     )
+    .addOption(
+      new Option(
+        '--userAgent <string>',
+        'Set the browser User Agent'
+      )
+    )
+    .addOption(
+      new Option(
+        '--agentExtra <string>',
+        'Append to the browser User Agent. Takes precedence over --userAgent'
+      )
+    )
     .parse(process.argv);
 
   const cliOptions = program.opts() as CLIOptions;
