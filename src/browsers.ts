@@ -220,7 +220,7 @@ class BrowserConfig {
       browserConfig.viewport.height = options.height;
       browserConfig.recordVideo.size.height = options.height;
     }
-    
+
     return browserConfig;
   }
 }

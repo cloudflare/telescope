@@ -203,7 +203,7 @@ export interface DefaultOptions {
   zip: boolean;
   dry: boolean;
   device: CustomDeviceDescriptor | false;
-  deviceName: string | false; 
+  deviceName: string | false;
 }
 
 // ============================================================================
@@ -681,4 +681,4 @@ export interface CustomDeviceDescriptor {
    * Options: 'chromium', 'firefox', or 'webkit'
    */
   defaultBrowserType: 'chromium' | 'firefox' | 'webkit';
-};
+}

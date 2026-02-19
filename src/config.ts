@@ -95,9 +95,12 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
   }
 
   if (options.deviceName) {
-    const playwrightDevice = devices[options.deviceName as keyof typeof devices];
+    const playwrightDevice =
+      devices[options.deviceName as keyof typeof devices];
     if (!playwrightDevice) {
-      throw new Error(`Device "${options.deviceName}" not found in Playwright device list`);
+      throw new Error(
+        `Device "${options.deviceName}" not found in Playwright device list`,
+      );
     }
     config.device = playwrightDevice as CustomDeviceDescriptor;
   }
