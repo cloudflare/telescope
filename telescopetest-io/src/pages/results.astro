@@ -1,10 +1,10 @@
 ---
+import '@phosphor-icons/web/regular'; // importing to page, but if we need it for multiple pages, we should move it to a layout
+
 import type { Tests } from '@/lib/classes/TestConfig';
 
 import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
-import List from 'phosphor-astro/List.astro';
-import GridFour from 'phosphor-astro/GridFour.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getAllTests } from '@/lib/repositories/test-repository';
@@ -66,16 +66,14 @@ export const prerender = false;
             class={`toggle-button ${viewLayout === 'vertical' ? 'active' : ''}`}
             data-view="vertical"
           >
-            <List width={20} height={20} />
-            {/* using components from library phosphor-astro directly */}
+            <i class="ph ph-list" style="font-size:20px;" />
             List
           </button>
           <button
             class={`toggle-button ${viewLayout === 'grid' ? 'active' : ''}`}
             data-view="grid"
           >
-            <GridFour width={20} height={20} />
-            {/* using components from library phosphor-astro directly */}
+            <i class="ph ph-squares-four" style="font-size:20px;" />
             Grid
           </button>
         </div>
