@@ -46,7 +46,10 @@ const nonamePlaceholder = 'No Name';
     : undefined}
 >
   <div class="screenshot">
-    <ScreenshotDisplay screenshotUrl={screenshotUrl} alt={`Screenshot of ${url}`} />
+    <ScreenshotDisplay
+      screenshotUrl={screenshotUrl}
+      alt={`Screenshot of ${url}`}
+    />
   </div>
   <div class="content">
     <h3 class="name">{name || nonamePlaceholder}</h3>
@@ -116,6 +119,7 @@ const nonamePlaceholder = 'No Name';
   }
 
   .name {
+    line-height: 1.5;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
