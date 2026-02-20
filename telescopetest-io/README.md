@@ -24,7 +24,7 @@ You should now be able to run `npm run studio` to view local D1 data in Prisma S
 
 ## Migrations
 
-Prisma migrate does not support D1 yet, so you cannot follow the default prisma migrate workflows. Instead, migration files need to be created as follows.
+We use Prisma to generate SQL for migrations, and Wrangler to apply them. Prisma migrate does not fully support D1 yet, so you cannot follow the default prisma migrate workflows. Instead, migration need to be done as follows:
 
 #### Normal Use
 
@@ -50,6 +50,10 @@ This should fill your created file with the raw SQLite for your changes.
 Make sure you've followed all steps in Project Setup and Migrations -> Initial Local Setup.
 
 Then, you can run `npm run build` and then `npm run dev` to view the site with Astro's hot reload (instantly reflect changes) using the adapter for Cloudflare. Alternatively, you can run `npm run preview` to see Astro with Workers together in one step, but there's no hot reload.
+
+### Note about Workers AI (AI content review)
+
+One thing to note is that telescopetest-io uses Workers AI for AI content review on uploads. Wokers AI _always_ uses tokens that can incur costs, even in local/remote testing. AI content review is disabled locally by default. You can optionally enable AI content review (which may start costing money) by running the command `cp .dev.vars.example .dev.vars` and setting `ENABLE_AI_RATING=true`.
 
 ## Testing in Staging
 
