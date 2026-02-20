@@ -33,7 +33,7 @@ Then, you can run `npm run build` and then `npm run dev` to view the site with A
 
 ## DB Migrations
 
-Prisma migrate does not support D1 yet, so you cannot follow the default prisma migrate workflows. Instead, migration files need to be created as follows.
+We use Prisma to generate SQL for migrations, and Wrangler to apply them. Prisma migrate does not fully support D1 yet, so you cannot follow the default prisma migrate workflows. Instead, migration need to be done as follows:
 
 #### Normal Use
 
@@ -53,6 +53,10 @@ This should fill your created file with the raw SQLite for your changes.
 
 4. Run `npm run generate` to regenerate a Prisma Client that reflects your new changes in `schema.prisma`.
 5. Run `npm run migrate:local` to apply this new migration to your local database.
+
+### Note about Workers AI (AI content review)
+
+One thing to note is that telescopetest-io uses Workers AI for AI content review on uploads. Wokers AI _always_ uses tokens that can incur costs, even in local/remote testing. AI content review is disabled locally by default. You can optionally enable AI content review (which may start costing money) by running the command `cp .dev.vars.example .dev.vars` and setting `ENABLE_AI_RATING=true`.
 
 ## Testing in Staging
 
