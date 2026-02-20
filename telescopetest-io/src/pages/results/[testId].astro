@@ -21,7 +21,7 @@ if (test === null) {
 }
 
 // When AI rating is disabled, treat everything as safe
-const isUnknown = aiEnabled && (test.rating === ContentRating.UNKNOWN || test.rating === ContentRating.RATING);
+const isUnknown = aiEnabled && (test.rating === ContentRating.UNKNOWN || test.rating === ContentRating.IN_PROGRESS);
 const isUnsafe = aiEnabled && test.rating === ContentRating.UNSAFE;
 
 export const prerender = false;

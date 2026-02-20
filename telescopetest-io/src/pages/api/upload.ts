@@ -211,7 +211,7 @@ export const POST: APIRoute = async (context: APIContext) => {
 
     return response;
   } catch (error) {
-    // console.error('Upload error:', error);
+    console.error('Upload error:', error);
     return new Response(
       JSON.stringify({
         success: false,
