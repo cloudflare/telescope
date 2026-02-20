@@ -92,13 +92,14 @@ export const POST: APIRoute = async (context: APIContext) => {
     const env = context.locals.runtime.env;
     // Check if this exact content already exists in D1
     const prisma = getPrismaClient(context);
-    const existingTestId = await findTestIdByZipKey(prisma, zipKey);
-    if (existingTestId) {
+    const existing = await findTestIdByZipKey(prisma, zipKey);
+    if (existing) {
       return new Response(
         JSON.stringify({
           success: false,
           error: `Duplicate uploads are not allowed.`,
-          testId: existingTestId,
+          testId: existing.testId,
+          contentRating: existing.contentRating,
         }),
         {
           status: 409,
@@ -218,25 +219,20 @@ export const POST: APIRoute = async (context: APIContext) => {
     );
 
     // Rate the URL content via Workers AI — fire-and-forget after response is built
-    // Passes the already-unzipped files so the rater can use metrics.json and
-    // screenshot.png directly, instead of re-fetching the URL (which misses
-    // JS-rendered content on single-page apps).
-    if (env.AI) {
+    if (env.ENABLE_AI_RATING === 'true' && env.AI) {
       context.locals.runtime.ctx.waitUntil(
-        rateUrlContent(unzipped, env.AI).then(rating =>
-          updateContentRating(prisma, testId, rating),
-        ),
+        rateUrlContent(
+          env.AI,
+          testConfig.url,
+          unzipped['metrics.json'],
+          unzipped['screenshot.png'],
+        ).then(rating => updateContentRating(prisma, testId, rating)),
       );
     }
 
-    // no need to disconnect manually b/c using Workers
-
     return response;
   } catch (error) {
-    console.error('Upload error:', error);
-
-    // no need to disconnect manually b/c using Workers
-
+    // console.error('Upload error:', error);
     return new Response(
       JSON.stringify({
         success: false,

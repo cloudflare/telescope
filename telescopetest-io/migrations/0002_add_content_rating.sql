@@ -10,7 +10,7 @@ CREATE TABLE "new_tests" (
     "url" TEXT NOT NULL,
     "test_date" INTEGER NOT NULL,
     "browser" TEXT NOT NULL,
-    "content_rating" TEXT NOT NULL,
+    "content_rating" TEXT NOT NULL DEFAULT 'unknown',
     "created_at" INTEGER DEFAULT (unixepoch()),
     "updated_at" INTEGER DEFAULT (unixepoch())
 );
