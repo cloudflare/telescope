@@ -5,6 +5,7 @@
 
 import type { PrismaClient } from '@/generated/prisma/client';
 import type { TestConfig, Tests } from '@/lib/classes/TestConfig';
+import { ContentRating } from '@/lib/classes/TestConfig';
 
 /**
  * Create a new test in the database
@@ -23,31 +24,38 @@ export async function createTest(
       url: testConfig.url,
       test_date: testConfig.testDate,
       browser: testConfig.browser,
+      content_rating: ContentRating.UNKNOWN,
     },
   });
 }
 
 /**
  * Find a test by its zipKey (content hash)
- * Returns testId if found, null otherwise
+ * Returns testId and contentRating if found, null otherwise
  */
 export async function findTestIdByZipKey(
   prisma: PrismaClient,
   zipKey: string,
-): Promise<string | null> {
+): Promise<{ testId: string; contentRating: string } | null> {
   const test = await prisma.tests.findUnique({
     where: { zip_key: zipKey },
-    select: { test_id: true },
+    select: { test_id: true, content_rating: true },
   });
-  return test?.test_id ?? null;
+  if (!test) return null;
+  return { testId: test.test_id, contentRating: test.content_rating };
 }
 
 /**
- * Find all tests
- * Returns rows as Tests type
+ * Find all tests.
+ * When AI rating is enabled, only safe tests are returned.
+ * When AI rating is disabled, all tests are returned regardless of rating.
  */
-export async function getAllTests(prisma: PrismaClient): Promise<Tests[]> {
+export async function getAllTests(
+  prisma: PrismaClient,
+  aiEnabled: boolean,
+): Promise<Tests[]> {
   const rows = await prisma.tests.findMany({
+    where: aiEnabled ? { content_rating: ContentRating.SAFE } : undefined,
     select: {
       test_id: true,
       url: true,
@@ -55,8 +63,39 @@ export async function getAllTests(prisma: PrismaClient): Promise<Tests[]> {
       browser: true,
       name: true,
       description: true,
+      content_rating: true,
     },
     orderBy: { created_at: 'desc' },
   });
   return rows;
+}
+
+/**
+ * Get the content_rating and url for a single test.
+ * Used by the rating endpoint to check rating and re-trigger AI if still unknown.
+ */
+export async function getTestRating(
+  prisma: PrismaClient,
+  testId: string,
+): Promise<{ rating: string; url: string } | null> {
+  const row = await prisma.tests.findUnique({
+    where: { test_id: testId },
+    select: { content_rating: true, url: true },
+  });
+  if (!row) return null;
+  return { rating: row.content_rating, url: row.url };
+}
+
+/**
+ * Update the content_rating for a test using Workers AI classification
+ */
+export async function updateContentRating(
+  prisma: PrismaClient,
+  testId: string,
+  rating: ContentRating,
+): Promise<void> {
+  await prisma.tests.update({
+    where: { test_id: testId },
+    data: { content_rating: rating },
+  });
 }

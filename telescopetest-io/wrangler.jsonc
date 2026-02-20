@@ -27,6 +27,9 @@
   ],
   "env": {
     "development": {
+      "vars": {
+        "ENABLE_AI_RATING": "false",
+      },
       "assets": {
         "binding": "ASSETS",
         "directory": "./dist",
@@ -45,8 +48,14 @@
           "bucket_name": "results-bucket-development",
         },
       ],
+      "ai": {
+        "binding": "AI",
+      },
     },
     "staging": {
+      "vars": {
+        "ENABLE_AI_RATING": "true",
+      },
       "routes": [
         {
           "pattern": "staging.telescopetest.io",
@@ -71,8 +80,14 @@
           "bucket_name": "results-bucket-staging",
         },
       ],
+      "ai": {
+        "binding": "AI",
+      },
     },
     "production": {
+      "vars": {
+        "ENABLE_AI_RATING": "true",
+      },
       "routes": [
         {
           "pattern": "telescopetest.io",
@@ -97,6 +112,9 @@
           "bucket_name": "results-bucket",
         },
       ],
+      "ai": {
+        "binding": "AI",
+      },
     },
   },
 }

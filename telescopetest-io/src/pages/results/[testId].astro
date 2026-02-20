@@ -1,11 +1,28 @@
 ---
 import Page from '@/layouts/Page.astro';
+import { createPrismaClient } from '@/lib/prisma/client';
+import { getTestRating } from '@/lib/repositories/test-repository';
+import { ContentRating } from '@/lib/classes/TestConfig';
 
 const { testId } = Astro.params;
 
 if (!testId) {
   return Astro.redirect('/results');
 }
+
+const env = Astro.locals.runtime.env;
+const aiEnabled = env.ENABLE_AI_RATING === 'true';
+const prisma = createPrismaClient(env.TELESCOPE_DB);
+const test = await getTestRating(prisma, testId);
+
+// Test not found at all
+if (test === null) {
+  return Astro.redirect('/results');
+}
+
+// When AI rating is disabled, treat everything as safe
+const isUnknown = aiEnabled && (test.rating === ContentRating.UNKNOWN || test.rating === ContentRating.IN_PROGRESS);
+const isUnsafe = aiEnabled && test.rating === ContentRating.UNSAFE;
 
 export const prerender = false;
 ---
@@ -16,15 +33,116 @@ export const prerender = false;
     <h1>Test Results</h1>
     <p class="test-id">ID: {testId}</p>
   </div>
-  <div class="placeholder">
-    <p>Full test details coming later</p>
-    <p class="hint">
-      This page will display screenshots, videos, metrics, etc.
-    </p>
-  </div>
+
+  {isUnsafe && (
+    <div class="banner banner-unsafe">
+      <strong>This result cannot be displayed.</strong>
+      <p>
+        The content was rated unsafe by our AI content filter.
+        To view unsafe results, run telescopetest.io locally and upload there.
+      </p>
+    </div>
+  )}
+
+  {isUnknown && (
+    <div class="banner banner-pending" id="rating-pending">
+      <strong>Rating in progress...</strong>
+      <p>AI content rating is running. This page will update automatically.</p>
+    </div>
+    <div class="banner banner-pending" id="rating-timeout" style="display: none;">
+      <strong>Rating timed out.</strong>
+      <p>Content rating could not be completed. This result cannot be displayed.</p>
+    </div>
+  )}
+
+  {!isUnsafe && (
+    <div id="test-content" style={isUnknown ? 'display: none;' : ''}>
+      <div class="placeholder">
+        <p>Full test details coming later</p>
+        <p class="hint">
+          This page will display screenshots, videos, metrics, etc.
+        </p>
+      </div>
+    </div>
+  )}
 </Page>
 
+<script>
+  // Only poll when the pending banner is present (rating is unknown)
+  if (document.getElementById('rating-pending')) {
+    const INTERVAL_MS = 2000;
+    const TIMEOUT_MS = 60_000;
+    const start = Date.now();
+    const testId = window.location.pathname.split('/').at(-1);
+    const pendingBanner = document.getElementById('rating-pending');
+    const timeoutBanner = document.getElementById('rating-timeout');
+    const testContent = document.getElementById('test-content');
+    async function poll() {
+      if (Date.now() - start >= TIMEOUT_MS) {
+        if (pendingBanner) pendingBanner.style.display = 'none';
+        if (timeoutBanner) timeoutBanner.style.display = '';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/tests/${testId}/rating`);
+        const data: { rating: string } = await res.json();
+        if (data.rating === 'safe') {
+          if (pendingBanner) pendingBanner.style.display = 'none';
+          if (testContent) testContent.style.display = '';
+          return;
+        }
+        if (data.rating === 'unsafe') {
+          window.location.reload();
+          return;
+        }
+        setTimeout(poll, INTERVAL_MS);
+      } catch {
+        setTimeout(poll, INTERVAL_MS);
+      }
+    }
+    setTimeout(poll, INTERVAL_MS);
+  }
+</script>
+
 <style>
+  .banner {
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid;
+  }
+
+  .banner strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .banner p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .banner-unsafe {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+
+  .banner-unsafe strong {
+    color: rgba(239, 68, 68, 0.9);
+  }
+
+  .banner-pending {
+    background: rgba(251, 191, 36, 0.08);
+    border-color: rgba(251, 191, 36, 0.4);
+  }
+
+  .banner-pending strong {
+    color: rgba(251, 191, 36, 0.9);
+  }
+
   .detail-header {
     margin-bottom: 32px;
   }
