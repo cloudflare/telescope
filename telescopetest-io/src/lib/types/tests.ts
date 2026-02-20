@@ -12,9 +12,10 @@ export enum TestSource {
 }
 
 export enum ContentRating {
-  SAFE = 'safe',
-  UNSAFE = 'unsafe',
-  UNKNOWN = 'unknown',
+  SAFE = 'safe', // was rated, is safe
+  UNSAFE = 'unsafe', // was rated, is unsafe
+  UNKNOWN = 'unknown', // not yet rated, default on test creation, will prevent test from being listed if AI rating enabled
+  RATING = 'rating', // in process of running an AI rating, to retrigger/prevent spam
 }
 
 // Config.json structure from Telescope test archives

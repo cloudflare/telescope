@@ -17,7 +17,7 @@ model tests {
   url            String
   test_date      Int
   browser        String
-  content_rating String
+  content_rating String  @default("unknown")
   created_at     Int?    @default(dbgenerated("(unixepoch())"))
   updated_at     Int?    @default(dbgenerated("(unixepoch())"))
 
