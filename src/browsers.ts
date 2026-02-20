@@ -6,8 +6,8 @@ import type {
   LaunchOptions,
 } from './types.js';
 
-// should browsers be headless? defaults to false unless running in CI
-const headless = !!process.env.CI;
+// should browsers be headless? defaults to false unless running in CI or with explicitly setting HEADLESS=true
+const headless = !!process.env.HEADLESS || !!process.env.CI;
 
 type BrowserConfigs = Record<BrowserName, BrowserConfigEntry>;
 
@@ -111,10 +111,18 @@ class BrowserConfig {
   }
 
   static getBrowsers(): BrowserName[] {
+    const browsers = Object.keys(BrowserConfig.browserConfigs) as BrowserName[];
+
+    if (process.env.BROWSERS) {
+      return process.env.BROWSERS.split(',')
+        .map(browser => browser.trim())
+        .filter(browser =>
+          browsers.includes(browser as BrowserName),
+        ) as BrowserName[];
+    }
+
     // only run firefox in CI (for now)
-    return process.env.CI
-      ? ['firefox']
-      : (Object.keys(BrowserConfig.browserConfigs) as BrowserName[]);
+    return process.env.CI ? ['firefox'] : browsers;
   }
 
   addFirefoxPrefs(prefs: Record<string, string | number | boolean>): void {
