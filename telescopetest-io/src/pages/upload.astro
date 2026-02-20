@@ -111,6 +111,18 @@ import Page from '@/layouts/Page.astro';
       View Existing Test
     </a>
   </div>
+  <div
+    id="status-duplicate-unsafe"
+    class="test-status status-error"
+    style="display: none;"
+  >
+    <p><strong>Duplicate — result cannot be displayed.</strong></p>
+    <p>
+      This test has already been uploaded but was rated unsafe by our AI content
+      filter. To view unsafe results, run telescopetest.io locally and upload
+      there.
+    </p>
+  </div>
 </Page>
 
 <style>
@@ -265,6 +277,9 @@ import Page from '@/layouts/Page.astro';
   const statusDuplicate = document.getElementById(
     'status-duplicate',
   ) as HTMLElement;
+  const statusDuplicateUnsafe = document.getElementById(
+    'status-duplicate-unsafe',
+  ) as HTMLElement;
   const errorMessage = document.getElementById('error-message') as HTMLElement;
   const successTestId = document.getElementById(
     'success-test-id',
@@ -275,11 +290,13 @@ import Page from '@/layouts/Page.astro';
   const viewTestButton = document.getElementById(
     'view-test-button',
   ) as HTMLAnchorElement;
+
   function hideAllStatus() {
-    if (statusError) statusError.style.display = 'none';
-    if (statusUploading) statusUploading.style.display = 'none';
-    if (statusSuccess) statusSuccess.style.display = 'none';
-    if (statusDuplicate) statusDuplicate.style.display = 'none';
+    statusError.style.display = 'none';
+    statusUploading.style.display = 'none';
+    statusSuccess.style.display = 'none';
+    statusDuplicate.style.display = 'none';
+    statusDuplicateUnsafe.style.display = 'none';
   }
   // File input click handler
   fileUploadArea.addEventListener('click', () => {
@@ -331,14 +348,23 @@ import Page from '@/layouts/Page.astro';
       const result = (await response.json()) as {
         success?: boolean;
         testId?: string;
+        contentRating?: string;
         error?: string;
       };
       hideAllStatus();
       // Handle duplicate (409)
       if (response.status === 409 && result.testId) {
-        if (duplicateTestId) duplicateTestId.textContent = result.testId;
-        if (viewTestButton) viewTestButton.href = `/results/${result.testId}`;
-        if (statusDuplicate) statusDuplicate.style.display = 'block';
+        if (result.contentRating === 'unsafe') {
+          statusDuplicateUnsafe.style.display = 'block';
+        } else if (result.contentRating === 'unknown' || result.contentRating === 'rating') {
+          // Rating still in progress — redirect to result page which handles polling and re-triggering
+          window.location.href = `/results/${result.testId}`;
+        } else {
+          // safe — show the normal duplicate with a link
+          duplicateTestId.textContent = result.testId;
+          viewTestButton.href = `/results/${result.testId}`;
+          statusDuplicate.style.display = 'block';
+        }
         return;
       }
       // Handle other errors

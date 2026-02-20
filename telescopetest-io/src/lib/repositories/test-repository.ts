@@ -31,17 +31,18 @@ export async function createTest(
 
 /**
  * Find a test by its zipKey (content hash)
- * Returns testId if found, null otherwise
+ * Returns testId and contentRating if found, null otherwise
  */
 export async function findTestIdByZipKey(
   prisma: PrismaClient,
   zipKey: string,
-): Promise<string | null> {
+): Promise<{ testId: string; contentRating: string } | null> {
   const test = await prisma.tests.findUnique({
     where: { zip_key: zipKey },
-    select: { test_id: true },
+    select: { test_id: true, content_rating: true },
   });
-  return test?.test_id ?? null;
+  if (!test) return null;
+  return { testId: test.test_id, contentRating: test.content_rating };
 }
 
 /**
@@ -68,14 +69,16 @@ export async function getTestById(
 }
 
 /**
- * Find all tests that are safe or unrated (unknown).
- * Unsafe tests are excluded from the public results list.
+ * Find all tests.
+ * When AI rating is enabled, only safe tests are returned.
+ * When AI rating is disabled, all tests are returned regardless of rating.
  */
-export async function getAllTests(prisma: PrismaClient): Promise<Tests[]> {
+export async function getAllTests(
+  prisma: PrismaClient,
+  aiEnabled: boolean,
+): Promise<Tests[]> {
   const rows = await prisma.tests.findMany({
-    where: {
-      content_rating: ContentRating.SAFE,
-    },
+    where: aiEnabled ? { content_rating: ContentRating.SAFE } : undefined,
     select: {
       test_id: true,
       url: true,
@@ -91,18 +94,19 @@ export async function getAllTests(prisma: PrismaClient): Promise<Tests[]> {
 }
 
 /**
- * Get just the content_rating for a single test.
- * Used by the individual result page to check before rendering.
+ * Get the content_rating and url for a single test.
+ * Used by the rating endpoint to check rating and re-trigger AI if still unknown.
  */
 export async function getTestRating(
   prisma: PrismaClient,
   testId: string,
-): Promise<string | null> {
+): Promise<{ rating: string; url: string } | null> {
   const row = await prisma.tests.findUnique({
     where: { test_id: testId },
-    select: { content_rating: true },
+    select: { content_rating: true, url: true },
   });
-  return row?.content_rating ?? null;
+  if (!row) return null;
+  return { rating: row.content_rating, url: row.url };
 }
 
 /**

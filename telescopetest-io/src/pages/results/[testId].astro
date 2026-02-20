@@ -11,16 +11,18 @@ if (!testId) {
 }
 
 const env = Astro.locals.runtime.env;
+const aiEnabled = env.ENABLE_AI_RATING === 'true';
 const prisma = createPrismaClient(env.TELESCOPE_DB);
-const rating = await getTestRating(prisma, testId);
+const test = await getTestRating(prisma, testId);
 
 // Test not found at all
-if (rating === null) {
+if (test === null) {
   return Astro.redirect('/results');
 }
 
-const isUnknown = rating === ContentRating.UNKNOWN;
-const isUnsafe = rating === ContentRating.UNSAFE;
+// When AI rating is disabled, treat everything as safe
+const isUnknown = aiEnabled && (test.rating === ContentRating.UNKNOWN || test.rating === ContentRating.RATING);
+const isUnsafe = aiEnabled && test.rating === ContentRating.UNSAFE;
 
 export const prerender = false;
 ---
@@ -65,53 +67,42 @@ export const prerender = false;
   )}
 </Page>
 
-{isUnknown && (
-  <script define:vars={{ testId }}>
-    // Poll until rating resolves from 'unknown'
+<script>
+  // Only poll when the pending banner is present (rating is unknown)
+  if (document.getElementById('rating-pending')) {
     const INTERVAL_MS = 2000;
     const TIMEOUT_MS = 60_000;
     const start = Date.now();
-
+    const testId = window.location.pathname.split('/').at(-1);
     const pendingBanner = document.getElementById('rating-pending');
     const timeoutBanner = document.getElementById('rating-timeout');
     const testContent = document.getElementById('test-content');
-
     async function poll() {
       if (Date.now() - start >= TIMEOUT_MS) {
-        // Timed out — swap to timeout banner, keep content hidden, stop polling
         if (pendingBanner) pendingBanner.style.display = 'none';
         if (timeoutBanner) timeoutBanner.style.display = '';
         return;
       }
-
       try {
         const res = await fetch(`/api/tests/${testId}/rating`);
-        const data = await res.json();
-
+        const data: { rating: string } = await res.json();
         if (data.rating === 'safe') {
-          // Safe — hide pending banner, show content
           if (pendingBanner) pendingBanner.style.display = 'none';
           if (testContent) testContent.style.display = '';
           return;
         }
-
         if (data.rating === 'unsafe') {
-          // Unsafe — reload so server renders the unsafe banner
           window.location.reload();
           return;
         }
-
-        // Still unknown — poll again
         setTimeout(poll, INTERVAL_MS);
       } catch {
-        // Network blip — keep polling
         setTimeout(poll, INTERVAL_MS);
       }
     }
-
     setTimeout(poll, INTERVAL_MS);
-  </script>
-)}
+  }
+</script>
 
 <style>
   .banner {

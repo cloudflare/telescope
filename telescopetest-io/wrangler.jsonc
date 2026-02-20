@@ -27,6 +27,9 @@
   ],
   "env": {
     "development": {
+      "vars": {
+        "ENABLE_AI_RATING": "false",
+      },
       "assets": {
         "binding": "ASSETS",
         "directory": "./dist",
@@ -50,6 +53,9 @@
       },
     },
     "staging": {
+      "vars": {
+        "ENABLE_AI_RATING": "true",
+      },
       "routes": [
         {
           "pattern": "staging.telescopetest.io",
@@ -79,6 +85,9 @@
       },
     },
     "production": {
+      "vars": {
+        "ENABLE_AI_RATING": "true",
+      },
       "routes": [
         {
           "pattern": "telescopetest.io",
