@@ -15,7 +15,7 @@ export enum ContentRating {
   SAFE = 'safe', // was rated, is safe
   UNSAFE = 'unsafe', // was rated, is unsafe
   UNKNOWN = 'unknown', // not yet rated, default on test creation, will prevent test from being listed if AI rating enabled
-  RATING = 'rating', // in process of running an AI rating, to retrigger/prevent spam
+  IN_PROGRESS = 'in_progress', // in process of running an AI rating, prevents duplicate jobs
 }
 
 // Config.json structure from Telescope test archives

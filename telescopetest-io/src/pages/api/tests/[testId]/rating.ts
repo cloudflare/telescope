@@ -31,10 +31,10 @@ export const GET: APIRoute = async (context: APIContext) => {
     });
   }
   // If unknown and AI is enabled, mark as in-progress then re-trigger rating.
-  // Marking as RATING immediately prevents concurrent polls from firing duplicate jobs.
-  // The AI always resolves to safe or unsafe, so RATING is only ever transient.
+  // Marking as IN_PROGRESS immediately prevents concurrent polls from firing duplicate jobs.
+  // The AI always resolves to safe or unsafe, so IN_PROGRESS is only ever transient.
   if (test.rating === 'unknown' && env.ENABLE_AI_RATING === 'true' && env.AI) {
-    await updateContentRating(prisma, testId, ContentRating.RATING);
+    await updateContentRating(prisma, testId, ContentRating.IN_PROGRESS);
     context.locals.runtime.ctx.waitUntil(
       (async () => {
         const [metricsObj, screenshotObj] = await Promise.all([
@@ -60,7 +60,10 @@ export const GET: APIRoute = async (context: APIContext) => {
     );
   }
 
-  return new Response(JSON.stringify({ rating: test.rating }), {
+  // test.rating is still 'unknown' in memory even though we just wrote 'in_progress' to the DB — return the updated value instead of the stale one
+  const responseRating =
+    test.rating === 'unknown' ? ContentRating.IN_PROGRESS : test.rating;
+  return new Response(JSON.stringify({ rating: responseRating }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
