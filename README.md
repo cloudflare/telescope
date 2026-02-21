@@ -228,4 +228,4 @@ Our CI pipeline is set up to run tests on every push to the repository so you ca
 
 At this point, to limit the length of the tests and (to simplify compatibility with GitHub Actions) it runs tests in headless mode on `firefox` only.
 
-If you want to run the same configuration locally, you can run `CI=true npm test`.
+If you want to run the same configuration locally, you can run `CI=true npm test`. You can override the default headless CI mode by setting the `HEADLESS` environment variable to `false`. But you can't override a set of browsers to run tests on.
