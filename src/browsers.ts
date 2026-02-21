@@ -130,11 +130,16 @@ class BrowserConfig {
     }
 
     if (process.env.BROWSERS) {
-      return process.env.BROWSERS.split(',')
+      const envBrowsers = process.env.BROWSERS.split(',')
         .map(browser => browser.trim())
+        .filter(browser => browser.length > 0)
         .filter(browser =>
           configuredBrowsers.includes(browser as BrowserName),
         ) as BrowserName[];
+
+      if (envBrowsers.length > 0) {
+        return envBrowsers;
+      }
     }
 
     return configuredBrowsers;
