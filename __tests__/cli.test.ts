@@ -1,4 +1,5 @@
 import { spawnSync } from 'child_process';
+import { describe, it, expect, beforeAll } from 'vitest';
 
 import { retrieveHAR, retrieveMetrics } from './helpers.js';
 

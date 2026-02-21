@@ -1,4 +1,5 @@
 import { launchTest } from '../src/index.js';
+import { describe, test } from 'vitest';
 import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';

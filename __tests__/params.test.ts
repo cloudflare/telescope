@@ -1,4 +1,5 @@
 import { spawnSync } from 'child_process';
+import { describe, beforeAll, expect, it } from 'vitest';
 
 import { retrieveConfig } from './helpers.js';
 import type { SavedConfig } from '../src/types.js';

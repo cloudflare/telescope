@@ -1,5 +1,6 @@
 import { BrowserConfig } from '../src/browsers.js';
 import fs from 'fs';
+import { describe, expect, test } from 'vitest';
 import type { BrowserName } from '../src/types.js';
 
 const browsers = BrowserConfig.getBrowsers();
