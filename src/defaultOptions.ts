@@ -37,6 +37,8 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   auth: false,
   // Compress output to zip file (false = no zip)
   zip: false,
+  // URL to upload results as zip file (null = no upload)
+  uploadUrl: null,
   // Dry run (false = no dry run)
   dry: false,
 };

@@ -2,10 +2,16 @@ import { launchTest } from '../src/index.js';
 import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
 
 import { BrowserConfig } from '../src/browsers.js';
 import { expect } from '@playwright/test';
-import type { LaunchOptions, SuccessfulTestResult } from '../src/types.js';
+import type {
+  LaunchOptions,
+  SuccessfulTestResult,
+  TestResult,
+} from '../src/types.js';
 
 const browsers = BrowserConfig.getBrowsers();
 const resultsRoot = path.resolve('results');
@@ -133,7 +139,7 @@ describe.each(browsers)('Generated HTML artifacts (%s)', browser => {
         expect(fs.existsSync(indexPath)).toBe(true);
       }
     } finally {
-      if (!process.env.CI && result?.success) {
+      if (result?.success) {
         cleanup([path.resolve((result as SuccessfulTestResult).resultsPath)]);
       }
     }
@@ -162,7 +168,7 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
         expect(fs.existsSync(indexPath)).toBe(true);
       }
     } finally {
-      if (!process.env.CI && result?.success) {
+      if (result?.success) {
         cleanup([
           path.resolve((result as SuccessfulTestResult).resultsPath),
           indexPath,
@@ -170,4 +176,90 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
       }
     }
   }, 120000);
+});
+
+describe.each(browsers)('Upload zip for browsers (%s)', browser => {
+  describe.each([true, false])('Upload URL with zip: %s', zip => {
+    const server = setupServer(
+      http.post('https://api.example.com/upload', () => {
+        console.log('Mock server received upload request');
+        return HttpResponse.json({ url: 'https://mock-url.com/file' });
+      }),
+    );
+    beforeAll(() => server.listen()); // Establish API mocking before all tests
+    afterEach(() => server.resetHandlers()); // Reset any runtime handlers (prevents test cross-contamination)
+    afterAll(() => server.close()); // Clean up once all tests are done
+    test('POST when --uploadUrl is specified.', async () => {
+      let result: Awaited<ReturnType<typeof launchTest>> | undefined;
+      let zipfile: string = '';
+      try {
+        let config = {
+          url: 'https://www.example.com/',
+          browser,
+          uploadUrl: 'https://api.example.com/upload',
+          zip,
+        };
+        result = await launchTest(config);
+        zipfile = path.resolve(
+          resultsRoot,
+          `${(result as SuccessfulTestResult).testId}.zip`,
+        );
+
+        expect(result).toBeDefined();
+        expect(result.success).toBe(true);
+        expect(fs.existsSync(zipfile)).toBe(zip);
+      } finally {
+        cleanup([path.resolve((result as SuccessfulTestResult).resultsPath)]);
+        if (zip) {
+          cleanup([zipfile]);
+        }
+      }
+    });
+  });
+});
+
+describe.each(browsers)('Invalid url for browsers (%s)', browser => {
+  describe('Invalid upload URL', () => {
+    test('Error when invalid --uploadUrl is specified.', async () => {
+      const config = {
+        url: 'https://www.example.com/',
+        browser,
+        uploadUrl: 'invalid-url',
+      };
+
+      const result: TestResult = await launchTest(config);
+
+      expect(result).toBeDefined();
+      expect(result.success).toBe(false);
+    });
+  });
+});
+
+describe.each(browsers)('Zip results (%s)', browser => {
+  describe('Zip results', () => {
+    test('Zips results when --zip is specified.', async () => {
+      let result: Awaited<ReturnType<typeof launchTest>> | undefined;
+      let zipfile: string = '';
+      try {
+        result = await launchTest({
+          url: 'https://www.example.com/',
+          browser,
+          zip: true,
+        });
+
+        zipfile = path.resolve(
+          resultsRoot,
+          `${(result as SuccessfulTestResult).testId}.zip`,
+        );
+        expect(result).toBeDefined();
+        expect(result.success).toBe(true);
+        expect(fs.existsSync(zipfile)).toBe(true);
+      } finally {
+        cleanup([
+          path.resolve((result as SuccessfulTestResult).resultsPath),
+          zipfile,
+        ]);
+      }
+    }, 120000);
+  });
 });

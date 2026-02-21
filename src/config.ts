@@ -91,6 +91,17 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     }
   }
 
+  // Validate uploadUrl if provided
+  if (options.uploadUrl) {
+    try {
+      new URL(options.uploadUrl);
+    } catch (err) {
+      throw new Error(`--uploadUrl must be a valid URL`);
+    }
+
+    config.uploadUrl = options.uploadUrl;
+  }
+
   return config;
 }
 

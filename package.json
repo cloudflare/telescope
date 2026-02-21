@@ -53,6 +53,7 @@
     "commander": "^10.0.0",
     "ejs": "^3.1.10",
     "ffmpeg": "^0.0.4",
+    "msw": "^2.12.10",
     "playwright": "^1.57.0",
     "playwright-webkit": "^1.57.0"
   }

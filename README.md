@@ -44,6 +44,7 @@ Options:
   --openHtml                    Open HTML report in browser (requires --html) (default: false)
   --list                        Generate list of results in HTML (default: false)
   --zip                         Zip the results of the test into the results directory. (default: false)
+  --uploadUrl <string>          Upload results to URL. Must be a valid URL if provided. (default: null)
   --dry                         Dry run (do not run test, just save config and cleanup) (default: false)
   --help                        display help for command
 ```
