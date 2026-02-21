@@ -10,12 +10,12 @@ import type {
 // but can be overridden by explicitly setting HEADLESS variable to true or false
 const CI =
   process.env.CI !== undefined &&
-  process.env.CI.toLocaleLowerCase() !== 'false' &&
+  process.env.CI.toLowerCase() !== 'false' &&
   process.env.CI !== '0';
 
 const headless: boolean =
   process.env.HEADLESS !== undefined
-    ? process.env.HEADLESS.toLocaleLowerCase() === 'true'
+    ? process.env.HEADLESS.toLowerCase() === 'true'
     : CI;
 
 type BrowserConfigs = Record<BrowserName, BrowserConfigEntry>;
