@@ -7,7 +7,11 @@ import { http, HttpResponse } from 'msw';
 
 import { BrowserConfig } from '../src/browsers.js';
 import { expect } from '@playwright/test';
-import type { LaunchOptions, SuccessfulTestResult, TestResult } from '../src/types.js';
+import type {
+  LaunchOptions,
+  SuccessfulTestResult,
+  TestResult,
+} from '../src/types.js';
 
 const browsers = BrowserConfig.getBrowsers();
 const resultsRoot = path.resolve('results');
