@@ -288,6 +288,12 @@ export default function browserAgent(): void {
     )
     .addOption(
       new Option(
+        '--uploadUrl <string>',
+        'Upload zipped results to URL. Must be a valid URL if provided.',
+      ).default(DEFAULT_OPTIONS.uploadUrl),
+    )
+    .addOption(
+      new Option(
         '--dry',
         'Dry run (do not run test, just save config and cleanup)',
       ).default(DEFAULT_OPTIONS.dry),

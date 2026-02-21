@@ -172,6 +172,7 @@ export interface LaunchOptions {
   list?: boolean;
   overrideHost?: Record<string, string>;
   zip?: boolean;
+  uploadUrl?: string | null;
   dry?: boolean;
   command?: string[];
 }
@@ -196,6 +197,7 @@ export interface DefaultOptions {
   connectionType: ConnectionType;
   auth: HTTPCredentials | false;
   zip: boolean;
+  uploadUrl: string | null;
   dry: boolean;
 }
 
@@ -619,5 +621,6 @@ export interface CLIOptions {
   list?: boolean;
   overrideHost?: string;
   zip?: boolean;
+  uploadUrl?: string;
   dry?: boolean;
 }

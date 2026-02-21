@@ -91,6 +91,17 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     }
   }
 
+  if (options.uploadUrl) {
+    try {
+      new URL(options.uploadUrl);
+    } catch (err) {
+      throw new Error(
+        `Problem parsing "--uploadUrl" options - ${(err as Error).message}`,
+      );
+    }
+    config.uploadUrl = options.uploadUrl;
+  }
+
   return config;
 }
 

@@ -6,7 +6,10 @@ import {
   readFileSync,
   readdirSync,
   writeFileSync,
+  unlinkSync,
+  existsSync,
 } from 'fs';
+
 import path from 'path';
 import url from 'url';
 import { exec } from 'child_process';
@@ -690,6 +693,47 @@ class TestRunner {
         zip.writeZip(outputZip);
       } catch (err) {
         console.error('Error creating zip file:', err);
+      }
+    }
+
+    // handle uploading
+    if (this.options.uploadUrl) {
+      const outputZip = `./results/${this.TESTID}.zip`;
+      const tempZip = !this.options.zip;
+
+      try {
+        if (tempZip) {
+          const zip = new AdmZip();
+          zip.addLocalFolder(this.paths['results']);
+          zip.writeZip(outputZip);
+        }
+
+        const form = new FormData();
+        form.append(
+          'file',
+          new Blob([readFileSync(outputZip)], { type: 'application/zip' }),
+          `${this.TESTID}.zip`,
+        );
+
+        const response = await fetch(this.options.uploadUrl, {
+          method: 'POST',
+          body: form,
+        });
+
+        if (!response.ok) {
+          console.error(
+            `Error uploading zip file: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        if (tempZip) {
+          unlinkSync(outputZip);
+        }
+      } catch (err) {
+        if (tempZip && existsSync(outputZip)) {
+          unlinkSync(outputZip);
+        }
+        throw err;
       }
     }
 
