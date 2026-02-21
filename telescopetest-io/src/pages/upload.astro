@@ -1,0 +1,376 @@
+---
+import Page from '@/layouts/Page.astro';
+---
+
+<Page title="Upload Test Results">
+  <h1>Upload</h1>
+  <h2>
+    Upload an existing test result as a ZIP file to view it in the web UI.
+  </h2>
+  <div class="overview-section">
+    <form id="upload-form" class="upload-form">
+      <!-- Always sends "upload" as source-->
+      <input type="hidden" name="source" value="upload" />
+      <!-- File upload with drag-n-drop -->
+      <div class="form-group">
+        <label for="file-upload">
+          <span>ZIP File</span>
+          <span class="required">*</span>
+        </label>
+        <div class="file-upload-area" id="file-upload-area">
+          <input
+            type="file"
+            id="file-upload"
+            name="file"
+            accept=".zip"
+            style="display: none;"
+          />
+          <img
+            src="/upload.png"
+            alt="Upload file icon"
+            width="48"
+            height="48"
+          />
+          <p>Click to select a file or drag and drop</p>
+          <p class="file-upload-hint">Accepted formats: ZIP</p>
+          <p id="file-name" class="file-name" style="display: none;"></p>
+        </div>
+      </div>
+      <!-- Name input (optional) -->
+      <div class="form-group">
+        <label for="name">
+          <span>Name (optional)</span>
+        </label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          placeholder="Test Name"
+          maxlength="100"
+        />
+        <p class="form-help">Custom name for the test (max 100 characters)</p>
+      </div>
+      <!-- Description textarea (optional) -->
+      <div class="form-group">
+        <label for="description">
+          <span>Description (optional)</span>
+        </label>
+        <textarea
+          rows="3"
+          id="description"
+          name="description"
+          placeholder="Test Description"
+          maxlength="500"></textarea>
+        <p class="form-help">
+          Custom description for the test (max 500 characters)
+        </p>
+      </div>
+      <!-- Buttons -->
+      <div class="form-actions">
+        <button type="submit" class="button button-primary">Upload</button>
+        <button type="reset" class="button button-secondary">Reset</button>
+      </div>
+    </form>
+  </div>
+  <!-- Status messages (hidden by default, shown by JS) -->
+  <div
+    id="status-error"
+    class="test-status status-error"
+    style="display: none;"
+  >
+    <p id="error-message"></p>
+  </div>
+  <div
+    id="status-uploading"
+    class="test-status status-running"
+    style="display: none;"
+  >
+    <p>Uploading file...</p>
+  </div>
+  <div
+    id="status-success"
+    class="test-status status-success"
+    style="display: none;"
+  >
+    <p>Upload successful! Redirecting...</p>
+    <p>Test ID: <strong id="success-test-id"></strong></p>
+  </div>
+  <div
+    id="status-duplicate"
+    class="test-status status-warning"
+    style="display: none;"
+  >
+    <p>This test already exists, duplicate uploads are not allowed.</p>
+    <p>Test ID: <strong id="duplicate-test-id"></strong></p>
+    <a
+      href="#"
+      id="view-test-button"
+      class="button button-primary"
+      style="margin-top: 12px;"
+    >
+      View Existing Test
+    </a>
+  </div>
+</Page>
+
+<style>
+  .upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem; /* 20px */
+    margin-top: 1rem; /* 16px */
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem; /* 6px */
+  }
+
+  .form-group label {
+    font-size: 0.875rem; /* 14px */
+    color: var(--text);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem; /* 4px */
+  }
+
+  .form-group textarea {
+    font: inherit;
+    padding: 0.625rem 0.75rem; /* 10px 12px */
+    border-radius: 0.75rem; /* 12px */
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0);
+    color: var(--text);
+    font-size: 0.875rem; /* 14px */
+    resize: vertical;
+  }
+
+  .required {
+    color: rgba(239, 68, 68, 0.9);
+  }
+
+  .form-help {
+    font-size: 0.75rem; /* 12px */
+    color: var(--muted);
+    font-style: italic;
+    margin: 0;
+  }
+
+  .file-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 0.75rem; /* 12px */
+    padding: 2.5rem 1.25rem; /* 40px 20px */
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--panel);
+  }
+
+  .file-upload-area:hover {
+    border-color: rgba(125, 211, 252, 0.5);
+    background: rgba(125, 211, 252, 0.05);
+  }
+
+  .file-upload-area.dragover {
+    border-color: var(--brand);
+    background: rgba(125, 211, 252, 0.1);
+  }
+
+  .file-upload-hint {
+    font-size: 0.75rem; /* 12px */
+    color: var(--muted);
+  }
+
+  .file-name {
+    margin-top: 0.75rem; /* 12px */
+    padding: 0.5rem 0.75rem; /* 8px 12px */
+    background: rgba(125, 211, 252, 0.1);
+    border-radius: 0.375rem; /* 6px */
+    color: var(--brand);
+    font-weight: 500;
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
+  }
+
+  .form-group input[type='text'] {
+    font: inherit;
+    padding: 0.625rem 0.75rem; /* 10px 12px */
+    border-radius: 0.75rem; /* 12px */
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0);
+    color: var(--text);
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.75rem; /* 12px */
+    margin-top: 0.5rem; /* 8px */
+  }
+
+  .test-status {
+    margin-top: 1.5rem; /* 24px */
+    padding: 1rem; /* 16px */
+    border-radius: 0.5rem; /* 8px */
+    border: 1px solid var(--border);
+  }
+
+  .status-running {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: var(--color-warning);
+  }
+
+  .status-success {
+    background: rgba(74, 222, 128, 0.1);
+    border-color: var(--color-success);
+  }
+
+  .status-error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--color-danger);
+  }
+
+  .status-warning {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: var(--color-warning);
+  }
+
+  .overview-section {
+    margin: 1.5rem 0; /* 24px */
+    padding: 1.25rem; /* 20px */
+    background: var(--panel);
+    border-radius: 0.5rem; /* 8px */
+    border: 1px solid var(--border);
+  }
+</style>
+
+<script>
+  const form = document.getElementById('upload-form') as HTMLFormElement;
+  const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+  const fileUploadArea = document.getElementById(
+    'file-upload-area',
+  ) as HTMLElement;
+  const fileName = document.getElementById('file-name') as HTMLElement;
+  // Status elements
+  const statusError = document.getElementById('status-error') as HTMLElement;
+  const statusUploading = document.getElementById(
+    'status-uploading',
+  ) as HTMLElement;
+  const statusSuccess = document.getElementById(
+    'status-success',
+  ) as HTMLElement;
+  const statusDuplicate = document.getElementById(
+    'status-duplicate',
+  ) as HTMLElement;
+  const errorMessage = document.getElementById('error-message') as HTMLElement;
+  const successTestId = document.getElementById(
+    'success-test-id',
+  ) as HTMLElement;
+  const duplicateTestId = document.getElementById(
+    'duplicate-test-id',
+  ) as HTMLElement;
+  const viewTestButton = document.getElementById(
+    'view-test-button',
+  ) as HTMLAnchorElement;
+  function hideAllStatus() {
+    if (statusError) statusError.style.display = 'none';
+    if (statusUploading) statusUploading.style.display = 'none';
+    if (statusSuccess) statusSuccess.style.display = 'none';
+    if (statusDuplicate) statusDuplicate.style.display = 'none';
+  }
+  // File input click handler
+  fileUploadArea.addEventListener('click', () => {
+    fileInput.click();
+  });
+  // Drag and drop handlers
+  fileUploadArea.addEventListener('dragover', e => {
+    e.preventDefault();
+    fileUploadArea.classList.add('dragover');
+  });
+  fileUploadArea.addEventListener('dragleave', () => {
+    fileUploadArea.classList.remove('dragover');
+  });
+  // Display chosen filename
+  fileUploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    fileUploadArea.classList.remove('dragover');
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      fileInput.files = files;
+      updateFileName(files[0].name);
+    }
+  });
+  fileInput.addEventListener('change', e => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      updateFileName(target.files[0].name);
+    }
+  });
+  // Validate file selected
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!fileInput.files || fileInput.files.length === 0) {
+      hideAllStatus();
+      errorMessage.textContent = 'Error: Please select a file to upload';
+      statusError.style.display = 'block';
+      return;
+    }
+    // create FormData from form: file, source="upload", optional name & description
+    const formData = new FormData(form);
+    hideAllStatus();
+    statusUploading.style.display = 'block';
+    try {
+      // POST to API
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = (await response.json()) as {
+        success?: boolean;
+        testId?: string;
+        error?: string;
+      };
+      hideAllStatus();
+      // Handle duplicate (409)
+      if (response.status === 409 && result.testId) {
+        if (duplicateTestId) duplicateTestId.textContent = result.testId;
+        if (viewTestButton) viewTestButton.href = `/results/${result.testId}`;
+        if (statusDuplicate) statusDuplicate.style.display = 'block';
+        return;
+      }
+      // Handle other errors
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to upload file');
+      }
+      // Handle success - redirect to test page
+      if (result.testId) {
+        if (successTestId) successTestId.textContent = result.testId;
+        if (statusSuccess) statusSuccess.style.display = 'block';
+        fileName.style.display = 'none';
+
+        // Redirect after a brief delay to show success message
+        setTimeout(() => {
+          window.location.href = `/results/${result.testId}`;
+        }, 1000);
+      } else {
+        throw new Error('No test ID returned');
+      }
+    } catch (error) {
+      hideAllStatus();
+      errorMessage.textContent = `Error: ${(error as Error).message}`;
+      statusError.style.display = 'block';
+    }
+  });
+  // Reset button handler
+  form.addEventListener('reset', () => {
+    fileName.style.display = 'none';
+    hideAllStatus();
+  });
+  function updateFileName(name: string) {
+    fileName.textContent = `Selected: ${name}`;
+    fileName.style.display = 'block';
+  }
+</script>

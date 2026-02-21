@@ -1,0 +1,1752 @@
+---
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<!-- saved from url=(0025)https://telescopetest.io/ -->
+<html lang="en">
+  <head
+    ><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Cloudflare Telescope - Cross-Browser Performance Testing Agent
+    </title>
+    <meta
+      name="description"
+      content="Diagnostic performance testing across Chrome, Firefox, Safari, and Edge. Built by Cloudflare."
+    />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      :root {
+        --deep-purple: #1a0b2e;
+        --purple: #2d1b4e;
+        --magenta: #8b3a8c;
+        --pink: #d84a8c;
+        --orange: #ff6b35;
+        --gold: #f7b731;
+        --text-light: #e0e0e0;
+        --text-white: #ffffff;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+          Cantarell, sans-serif;
+        background: var(--deep-purple);
+        color: var(--text-light);
+        line-height: 1.6;
+        overflow-x: hidden;
+        cursor: default;
+        position: relative;
+      }
+
+      /* Custom cursor for interactive elements */
+      a,
+      button,
+      .interactive {
+        cursor: pointer;
+      }
+
+      /* Starfield Background with mouse interaction */
+      .stars {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: white;
+        border-radius: 50%;
+        animation: twinkle 3s infinite;
+        transition: transform 0.3s ease;
+      }
+
+      @keyframes twinkle {
+        0%,
+        100% {
+          opacity: 0.2;
+        }
+        50% {
+          opacity: 0.9;
+        }
+      }
+
+      /* Hero Section */
+      .hero {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 100px 20px 80px;
+        overflow: hidden;
+      }
+
+      /* Observatory Background */
+      .hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('/hero.webp');
+        background-size: contain;
+        background-position: center center;
+        background-repeat: no-repeat;
+        opacity: 0.9;
+        z-index: 1;
+        transition: transform 0.3s ease;
+      }
+
+      /* Radial gradient overlay */
+      .hero::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(26, 11, 46, 0.3) 0%,
+          rgba(26, 11, 46, 0.6) 50%,
+          rgba(26, 11, 46, 0.85) 100%
+        );
+        z-index: 2;
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 3;
+        max-width: 1000px;
+      }
+
+      /* Logo with interactive glow */
+      .logo {
+        font-size: 5rem;
+        font-weight: 900;
+        color: #ffffff;
+        margin-bottom: 30px;
+        letter-spacing: 3px;
+        line-height: 1.1;
+        text-transform: uppercase;
+        text-shadow:
+          0 0 40px rgba(255, 255, 255, 0.4),
+          0 0 80px rgba(255, 107, 53, 0.3),
+          0 4px 8px rgba(0, 0, 0, 0.9),
+          0 8px 16px rgba(0, 0, 0, 0.7),
+          0 12px 24px rgba(0, 0, 0, 0.5);
+        transition: transform 0.3s ease;
+      }
+
+      .logo:hover {
+        transform: scale(1.02);
+      }
+
+      .logo-cloudflare {
+        display: block;
+        font-size: 2.5rem;
+        letter-spacing: 8px;
+        font-weight: 700;
+        color: #ff6b35;
+        text-shadow:
+          0 0 30px rgba(255, 107, 53, 0.6),
+          0 4px 8px rgba(0, 0, 0, 0.9),
+          0 8px 16px rgba(0, 0, 0, 0.7);
+        transition: letter-spacing 0.3s ease;
+      }
+
+      .logo:hover .logo-cloudflare {
+        letter-spacing: 10px;
+      }
+
+      .logo-telescope {
+        display: block;
+        font-size: 5.5rem;
+        letter-spacing: 12px;
+        margin-top: 10px;
+        transition: letter-spacing 0.3s ease;
+      }
+
+      .logo:hover .logo-telescope {
+        letter-spacing: 16px;
+      }
+
+      .tagline {
+        font-size: 2rem;
+        color: #ffffff;
+        margin-bottom: 25px;
+        font-weight: 500;
+        letter-spacing: 1px;
+        line-height: 1.5;
+        text-shadow:
+          0 4px 8px rgba(0, 0, 0, 1),
+          0 8px 16px rgba(0, 0, 0, 0.8);
+        opacity: 0;
+        animation: fadeInUp 1s ease forwards 0.3s;
+      }
+
+      .subtitle {
+        font-size: 1.3rem;
+        color: var(--gold);
+        margin-bottom: 50px;
+        font-weight: 400;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.8;
+        text-shadow:
+          0 3px 6px rgba(0, 0, 0, 1),
+          0 6px 12px rgba(0, 0, 0, 0.8);
+        opacity: 0;
+        animation: fadeInUp 1s ease forwards 0.6s;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .hero-buttons {
+        display: flex;
+        gap: 25px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+        opacity: 0;
+        animation: fadeInUp 1s ease forwards 0.9s;
+      }
+
+      /* Interactive Buttons with Enhanced Effects */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 22px 50px;
+        font-size: 1.2rem;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: 700;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Ripple effect */
+      .btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition:
+          width 0.6s,
+          height 0.6s;
+      }
+
+      .btn:hover::before {
+        width: 120%;
+        height: 400px;
+      }
+
+      /* Sparkle effect on hover */
+      .btn::after {
+        content: '✨';
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        font-size: 1.5rem;
+        opacity: 0;
+        transform: scale(0) rotate(0deg);
+        transition: all 0.4s ease;
+      }
+
+      .btn:hover::after {
+        opacity: 1;
+        transform: scale(1) rotate(180deg);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #d84a8c, #ff6b35);
+        color: white;
+        box-shadow: 0 15px 40px rgba(216, 74, 140, 0.6);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-6px) scale(1.05);
+        box-shadow: 0 20px 60px rgba(216, 74, 140, 0.8);
+      }
+
+      .btn-primary:active {
+        transform: translateY(-3px) scale(1.02);
+      }
+
+      .btn-secondary {
+        background: rgba(26, 11, 46, 0.95);
+        border: 3px solid var(--gold);
+        color: var(--gold);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(45, 27, 78, 0.98);
+        transform: translateY(-6px) scale(1.05);
+        box-shadow: 0 20px 50px rgba(247, 183, 49, 0.5);
+        border-color: var(--orange);
+      }
+
+      .btn-secondary:active {
+        transform: translateY(-3px) scale(1.02);
+      }
+
+      /* Animated SVG icons in buttons */
+      .btn svg {
+        transition: transform 0.3s ease;
+      }
+
+      .btn:hover svg {
+        transform: scale(1.2) rotate(10deg);
+      }
+
+      /* Scroll indicator with pulse */
+      .scroll-indicator {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        animation: bounce 2.5s infinite;
+        z-index: 10;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+
+      .scroll-indicator:hover {
+        animation: none;
+        transform: translateX(-50%) scale(1.2);
+      }
+
+      @keyframes bounce {
+        0%,
+        20%,
+        50%,
+        80%,
+        100% {
+          transform: translateX(-50%) translateY(0);
+        }
+        40% {
+          transform: translateX(-50%) translateY(-15px);
+        }
+        60% {
+          transform: translateX(-50%) translateY(-8px);
+        }
+      }
+
+      .scroll-indicator svg {
+        width: 40px;
+        height: 40px;
+        color: var(--gold);
+        filter: drop-shadow(0 4px 12px rgba(247, 183, 49, 0.8));
+      }
+
+      /* Container */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Sections with entrance animations */
+      section {
+        margin: 100px 0;
+        padding: 70px 50px;
+        background: rgba(45, 27, 78, 0.6);
+        border-radius: 25px;
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(139, 58, 140, 0.3);
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+        position: relative;
+        opacity: 0;
+        transform: translateY(50px);
+        transition: all 0.6s ease;
+      }
+
+      section.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          var(--pink),
+          var(--orange),
+          var(--gold)
+        );
+        border-radius: 25px 25px 0 0;
+        animation: shimmer 3s ease-in-out infinite;
+      }
+
+      @keyframes shimmer {
+        0%,
+        100% {
+          opacity: 0.8;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      /* Floating emoji decorations */
+      section::after {
+        content: attr(data-emoji);
+        position: absolute;
+        top: -30px;
+        right: 40px;
+        font-size: 3rem;
+        opacity: 0.2;
+        animation: float 4s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-20px) rotate(10deg);
+        }
+      }
+
+      h2 {
+        font-size: 3rem;
+        margin-bottom: 35px;
+        background: linear-gradient(135deg, var(--orange), var(--gold));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        letter-spacing: 1px;
+        position: relative;
+        display: inline-block;
+      }
+
+      /* Underline animation on hover */
+      h2::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        width: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--pink), var(--orange));
+        transition: width 0.4s ease;
+        border-radius: 2px;
+      }
+
+      h2:hover::after {
+        width: 100%;
+      }
+
+      h3 {
+        font-size: 2rem;
+        margin: 40px 0 25px;
+        color: var(--pink);
+        font-weight: 700;
+        transition: color 0.3s ease;
+      }
+
+      h3:hover {
+        color: var(--orange);
+      }
+
+      /* Code Blocks with copy button */
+      .code-block {
+        background: rgba(26, 11, 46, 0.95);
+        border: 2px solid var(--magenta);
+        border-radius: 15px;
+        padding: 30px;
+        margin: 25px 0;
+        overflow-x: auto;
+        position: relative;
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
+        transition: all 0.3s ease;
+      }
+
+      .code-block:hover {
+        border-color: var(--orange);
+        box-shadow:
+          0 10px 30px rgba(255, 107, 53, 0.3),
+          inset 0 2px 10px rgba(0, 0, 0, 0.6);
+      }
+
+      .code-block::before {
+        content: '⚡';
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 2rem;
+        opacity: 0.3;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.6;
+          transform: scale(1.1);
+        }
+      }
+
+      /* Copy button for code blocks */
+      .copy-button {
+        position: absolute;
+        top: 15px;
+        right: 60px;
+        background: var(--pink);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 10;
+      }
+
+      .code-block:hover .copy-button {
+        opacity: 1;
+      }
+
+      .copy-button:hover {
+        background: var(--orange);
+        transform: scale(1.05);
+      }
+
+      .copy-button:active {
+        transform: scale(0.95);
+      }
+
+      .copy-button.copied {
+        background: #4caf50;
+      }
+
+      pre {
+        margin: 0;
+        font-family: 'Monaco', 'Courier New', monospace;
+        color: var(--gold);
+        font-size: 1rem;
+        line-height: 1.9;
+      }
+
+      /* Parameters Grid with stagger animation */
+      .params-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 25px;
+        margin: 40px 0;
+      }
+
+      .param-card {
+        background: rgba(26, 11, 46, 0.75);
+        padding: 30px;
+        border-radius: 15px;
+        border-left: 5px solid var(--pink);
+        transition: all 0.4s ease;
+        position: relative;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+
+      .param-card.visible {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      /* Sliding gradient effect */
+      .param-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(216, 74, 140, 0.15),
+          transparent
+        );
+        transition: left 0.6s;
+      }
+
+      .param-card:hover::before {
+        left: 100%;
+      }
+
+      .param-card:hover {
+        transform: translateX(8px) scale(1.02);
+        border-left-color: var(--orange);
+        box-shadow: 0 15px 40px rgba(255, 107, 53, 0.3);
+      }
+
+      /* Glowing dot indicator */
+      .param-card::after {
+        content: '';
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 8px;
+        height: 8px;
+        background: var(--gold);
+        border-radius: 50%;
+        box-shadow: 0 0 10px var(--gold);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .param-card:hover::after {
+        opacity: 1;
+        animation: ping 1.5s ease-in-out infinite;
+      }
+
+      @keyframes ping {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.5);
+          opacity: 0.5;
+        }
+      }
+
+      .param-name {
+        font-weight: 700;
+        color: var(--gold);
+        font-size: 1.15rem;
+        margin-bottom: 12px;
+        transition: transform 0.3s ease;
+      }
+
+      .param-card:hover .param-name {
+        transform: translateX(5px);
+      }
+
+      .param-desc {
+        color: var(--text-light);
+        font-size: 1rem;
+        line-height: 1.7;
+      }
+
+      /* Metrics List with 3D effect */
+      .metrics-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 30px;
+        margin: 40px 0;
+        perspective: 1000px;
+      }
+
+      .metric-item {
+        background: linear-gradient(
+          135deg,
+          rgba(139, 58, 140, 0.3),
+          rgba(216, 74, 140, 0.2)
+        );
+        padding: 40px;
+        border-radius: 18px;
+        border: 2px solid rgba(216, 74, 140, 0.4);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        text-align: center;
+        transform-style: preserve-3d;
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      .metric-item.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .metric-item:hover {
+        transform: translateY(-10px) rotateX(5deg) rotateY(5deg) scale(1.05);
+        box-shadow: 0 25px 60px rgba(216, 74, 140, 0.5);
+        border-color: var(--orange);
+      }
+
+      .metric-icon {
+        font-size: 3.5rem;
+        margin-bottom: 20px;
+        filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.4));
+        display: inline-block;
+        transition: transform 0.3s ease;
+      }
+
+      .metric-item:hover .metric-icon {
+        transform: scale(1.2) rotate(10deg);
+        animation: wiggle 0.5s ease;
+      }
+
+      @keyframes wiggle {
+        0%,
+        100% {
+          transform: scale(1.2) rotate(10deg);
+        }
+        25% {
+          transform: scale(1.2) rotate(5deg);
+        }
+        75% {
+          transform: scale(1.2) rotate(15deg);
+        }
+      }
+
+      .metric-title {
+        font-weight: 700;
+        color: var(--gold);
+        margin-bottom: 15px;
+        font-size: 1.3rem;
+      }
+
+      .metric-description {
+        color: var(--text-light);
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+
+      /* Feature Grid with hover reveal */
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 35px;
+        margin: 50px 0;
+      }
+
+      .feature-card {
+        background: linear-gradient(
+          135deg,
+          rgba(45, 27, 78, 0.8),
+          rgba(26, 11, 46, 0.8)
+        );
+        padding: 45px;
+        border-radius: 20px;
+        border: 2px solid rgba(216, 74, 140, 0.3);
+        text-align: center;
+        transition: all 0.4s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Radial gradient reveal */
+      .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: radial-gradient(
+          circle,
+          rgba(216, 74, 140, 0.3) 0%,
+          transparent 70%
+        );
+        transform: translate(-50%, -50%);
+        transition: all 0.6s ease;
+        border-radius: 50%;
+      }
+
+      .feature-card:hover::before {
+        width: 500px;
+        height: 500px;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-15px);
+        box-shadow: 0 30px 70px rgba(216, 74, 140, 0.5);
+        border-color: var(--orange);
+      }
+
+      .feature-icon {
+        font-size: 4rem;
+        margin-bottom: 25px;
+        display: block;
+        filter: drop-shadow(0 5px 15px rgba(255, 107, 53, 0.4));
+        transition: all 0.3s ease;
+      }
+
+      .feature-card:hover .feature-icon {
+        transform: scale(1.2) rotate(360deg);
+      }
+
+      .feature-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gold);
+        margin-bottom: 18px;
+        transition: color 0.3s ease;
+      }
+
+      .feature-card:hover .feature-title {
+        color: var(--orange);
+      }
+
+      .feature-desc {
+        color: var(--text-light);
+        line-height: 1.7;
+        font-size: 1.05rem;
+      }
+
+      .feature-desc a {
+        color: var(--gold);
+        text-decoration: underline;
+        font-weight: 700;
+        transition: all 0.3s ease;
+      }
+
+      .feature-desc a:hover {
+        color: var(--orange);
+        text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+      }
+
+      /* Footer */
+      footer {
+        text-align: center;
+        padding: 70px 0 50px;
+        color: var(--text-light);
+        opacity: 0.8;
+        border-top: 2px solid rgba(139, 58, 140, 0.3);
+        margin-top: 100px;
+        position: relative;
+      }
+
+      footer::before {
+        content: '⭐';
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 2rem;
+        animation: spin 10s linear infinite;
+      }
+
+      @keyframes spin {
+        from {
+          transform: translateX(-50%) rotate(0deg);
+        }
+        to {
+          transform: translateX(-50%) rotate(360deg);
+        }
+      }
+
+      footer p {
+        margin: 12px 0;
+        font-size: 1.05rem;
+      }
+
+      footer a {
+        color: var(--orange);
+        text-decoration: none;
+        transition: color 0.3s ease;
+      }
+
+      footer a:hover {
+        color: var(--gold);
+        text-decoration: underline;
+      }
+
+      /* Inline links in content */
+      section p a {
+        color: var(--orange);
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border-bottom: 2px solid transparent;
+      }
+
+      section p a:hover {
+        color: var(--gold);
+        border-bottom-color: var(--gold);
+      }
+
+      /* Tooltip */
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 200px;
+        background-color: rgba(26, 11, 46, 0.95);
+        color: var(--gold);
+        text-align: center;
+        border-radius: 8px;
+        padding: 10px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -100px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        border: 1px solid var(--pink);
+        font-size: 0.9rem;
+      }
+
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* Back to top button wrapper */
+      .back-to-top-wrapper {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 40px;
+        width: 50px;
+        pointer-events: none;
+        z-index: 1000;
+      }
+
+      /* Back to top button */
+      .back-to-top {
+        position: sticky;
+        top: calc(100vh - 90px);
+        margin-top: 110vh;
+        background: linear-gradient(135deg, var(--pink), var(--orange));
+        color: white;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        text-decoration: none;
+        cursor: pointer;
+        pointer-events: auto;
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease;
+        box-shadow: 0 10px 30px rgba(216, 74, 140, 0.6);
+      }
+
+      .back-to-top:hover {
+        transform: translateY(-5px) scale(1.1);
+        box-shadow: 0 15px 40px rgba(216, 74, 140, 0.8);
+      }
+
+      /* Responsive */
+      @media (max-width: 1024px) {
+        .logo-telescope {
+          font-size: 4.5rem;
+        }
+
+        .hero::before {
+          background-size: cover;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .logo-cloudflare {
+          font-size: 1.8rem;
+          letter-spacing: 4px;
+        }
+
+        .logo-telescope {
+          font-size: 3rem;
+          letter-spacing: 6px;
+        }
+
+        .tagline {
+          font-size: 1.5rem;
+        }
+
+        .subtitle {
+          font-size: 1.1rem;
+        }
+
+        h2 {
+          font-size: 2.2rem;
+        }
+
+        section {
+          padding: 50px 30px;
+          margin: 60px 0;
+        }
+
+        section::after {
+          font-size: 2rem;
+          right: 20px;
+        }
+
+        .params-grid,
+        .metrics-list,
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-buttons {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .btn {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .hero {
+          padding: 80px 20px 60px;
+        }
+
+        .hero::before {
+          background-size: cover;
+          background-position: center bottom;
+        }
+
+        .back-to-top-wrapper {
+          right: 20px;
+          width: 45px;
+        }
+
+        .back-to-top {
+          width: 45px;
+          height: 45px;
+        }
+      }
+
+      @keyframes sparkleAnim {
+        0% {
+          transform: scale(0);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(2);
+          opacity: 0;
+        }
+      }
+
+      .sparkle {
+        position: fixed;
+        width: 4px;
+        height: 4px;
+        background: white;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        animation: sparkleAnim 0.5s ease-out forwards;
+      }
+
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+
+        .hero::before,
+        .tagline,
+        .subtitle,
+        .hero-buttons,
+        .btn,
+        .btn svg,
+        .metric-icon,
+        .feature-icon,
+        .scroll-indicator,
+        section,
+        .param-card,
+        .param-name,
+        .metric-item,
+        .feature-card,
+        .back-to-top,
+        .star,
+        .logo,
+        .logo-cloudflare,
+        .logo-telescope,
+        footer::before,
+        .logo:hover {
+          transform: none !important;
+          opacity: 1 !important;
+          transition: none !important;
+          animation: none !important;
+        }
+
+        .logo:hover .logo-cloudflare{
+          letter-spacing: 8px;
+        }
+
+        .logo:hover .logo-telescope{
+          letter-spacing: 12px;
+        }
+
+        .scroll-indicator {
+          transform: translateX(-50%) !important;
+        }
+
+        section::after {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    
+
+    <!-- Starfield Background -->
+    <div class="stars" id="stars"></div>
+
+    <!-- Hero Section -->
+    <div class="hero" id="hero">
+      <div class="hero-content">
+        <h1 class="logo">
+          <span class="logo-cloudflare">CLOUDFLARE</span>
+          <span class="logo-telescope">TELESCOPE</span>
+        </h1>
+        <p class="tagline">A cross-browser performance testing agent</p>
+        <p class="subtitle">
+          Diagnostic performance testing across Chrome, Firefox, Safari, and
+          Edge. Built by Cloudflare for developers who demand precision.
+        </p>
+
+        <div class="hero-buttons">
+          <a
+            href="https://github.com/cloudflare/telescope"
+            target="_blank"
+            class="btn btn-primary"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              ></path>
+            </svg>
+            View on GitHub
+          </a>
+          <a
+            href="#how-to-run"
+            class="btn btn-secondary"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
+              ></path>
+            </svg>
+            Get Started
+          </a>
+        </div>
+      </div>
+
+      <a
+        class="scroll-indicator"
+        href="#why-telescope"
+        aria-label="Scroll to Why Telescope section"
+      >
+        <svg fill="currentColor" viewBox="0 0 24 24">
+          <path
+            d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z"
+            transform="rotate(90 12 12)"></path>
+        </svg>
+      </a>
+    </div>
+
+    <div class="container">
+      <!-- Features Overview -->
+      <section data-emoji="✨" id="why-telescope">
+        <h2>Why Cloudflare Telescope?</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <span class="feature-icon">🌐</span>
+            <h3 class="feature-title">Cross-Browser Testing</h3>
+            <p class="feature-desc">
+              Test performance across Chrome, Firefox, Safari, Edge, and their
+              variants with a single command.
+            </p>
+          </div>
+          <div class="feature-card">
+            <span class="feature-icon">📊</span>
+            <h3 class="feature-title">Comprehensive Metrics</h3>
+            <p class="feature-desc">
+              Collect detailed performance data including HAR files,
+              screenshots, videos, and timing metrics.
+            </p>
+          </div>
+          <div class="feature-card">
+            <span class="feature-icon">⚡</span>
+            <h3 class="feature-title">Easy Setup</h3>
+            <p class="feature-desc">
+              Run with npx - no manual installation. Dependencies install
+              automatically on first run.
+            </p>
+          </div>
+          <div class="feature-card">
+            <span class="feature-icon">💎</span>
+            <h3 class="feature-title">Open Source</h3>
+            <p class="feature-desc">
+              Free and open source under the <a
+                href="https://github.com/cloudflare/telescope?tab=License-1-ov-file"
+                target="_blank"
+                style="color: var(--gold); text-decoration: underline; font-weight: 700;"
+                >Apache 2.0 License</a
+              >. Contributions welcome from the community.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- How to Run Section -->
+      <section id="how-to-run" data-emoji="🚀">
+        <h2>How to Run a Test</h2>
+        <p>
+          Get started with Cloudflare Telescope by cloning the repository and
+          running your first test.
+        </p>
+
+        <h3>Step 1: Clone the Repository</h3>
+        <div class="code-block">
+          <button class="copy-button" onclick="copyCode(this)">Copy</button>
+          <pre><code>git clone https://github.com/cloudflare/telescope.git
+cd telescope</code></pre>
+        </div>
+
+        <h3>Step 2: Install Dependencies</h3>
+        <div class="code-block">
+          <button class="copy-button" onclick="copyCode(this)">Copy</button>
+          <pre><code>npm install</code></pre>
+        </div>
+        <p style="margin-top: 10px;">
+          <em
+            >This will install Playwright and all required browser binaries
+            (~700MB). This may take 2-5 minutes on first install.</em
+          >
+        </p>
+        <p style="margin-top: 10px;">
+          For detailed installation requirements and troubleshooting, see the <a
+            href="https://github.com/cloudflare/telescope?tab=readme-ov-file#installation"
+            target="_blank"
+            style="color: var(--orange); text-decoration: none; font-weight: 600;"
+            >official installation guide</a
+          >.
+        </p>
+
+        <h3>Step 3: Run Your First Test</h3>
+        <div class="code-block">
+          <button class="copy-button" onclick="copyCode(this)">Copy</button>
+          <pre><code>npx . -u https://example.com</code></pre>
+        </div>
+
+        <h3>With Custom Parameters</h3>
+        <div class="code-block">
+          <button class="copy-button" onclick="copyCode(this)">Copy</button>
+          <pre><code>npx . -u https://example.com \
+  -b firefox \
+  --width 1920 \
+  --height 1080 \
+  --timeout 50000</code></pre>
+        </div>
+
+        <h3>Advanced Example with Network Throttling</h3>
+        <div class="code-block">
+          <button class="copy-button" onclick="copyCode(this)">Copy</button>
+          <pre><code>npx . -u https://example.com \
+  -b chrome \
+  --connectionType 3g \
+  --cpuThrottle 4 \
+  --blockDomains ads.example.com,tracker.example.com</code></pre>
+        </div>
+
+        <h3>Testing with Custom Headers and Cookies</h3>
+        <div class="code-block">
+          <button class="copy-button" onclick="copyCode(this)">Copy</button>
+          <pre><code>npx . -u https://example.com \
+  -b edge \
+  -h '&lcub;"Authorization": "Bearer token123"}' \
+  -c '&lcub;"session": "abc123", "userId": "456"}'</code></pre>
+        </div>
+      </section>
+
+      <!-- Parameters Section -->
+      <section id="parameters" data-emoji="⚙️">
+        <h2>Configuration Parameters</h2>
+        <p>
+          Cloudflare Telescope provides extensive configuration options to
+          simulate various testing scenarios.
+        </p>
+
+        <div class="params-grid" id="paramsGrid">
+          <div class="param-card">
+            <div class="param-name">-u, --url &lt;url&gt;</div>
+            <div class="param-desc">
+              URL to run tests against. This is the target website you want to
+              analyze.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">-b, --browser &lt;browser&gt;</div>
+            <div class="param-desc">
+              Browser to test against. Options: chrome, chrome-beta, canary,
+              edge, safari, firefox (default: chrome)
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">-h, --headers &lt;object&gt;</div>
+            <div class="param-desc">
+              Custom headers to apply to requests. Useful for authentication or
+              custom API testing.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">-c, --cookies &lt;object&gt;</div>
+            <div class="param-desc">
+              Custom cookies to apply. Test authenticated pages or user-specific
+              scenarios.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--connectionType &lt;string&gt;</div>
+            <div class="param-desc">
+              Network throttling. Options: cable, dls, 4g, 3g, 3gfast, 3gslow,
+              2g, fios (default: false)
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--cpuThrottle &lt;int&gt;</div>
+            <div class="param-desc">
+              CPU throttling factor to simulate slower devices. Higher values =
+              more throttling.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--width / --height &lt;int&gt;</div>
+            <div class="param-desc">
+              Viewport dimensions in pixels (default: 1366x768). Test responsive
+              designs.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--blockDomains &lt;domains...&gt;</div>
+            <div class="param-desc">
+              Block specific domains during testing. Useful for excluding ads or
+              analytics.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--block &lt;substrings...&gt;</div>
+            <div class="param-desc">
+              Block URLs based on substring match. More granular control than
+              domain blocking.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--disableJS</div>
+            <div class="param-desc">
+              Disable JavaScript execution. Test how your site performs without
+              JS.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--timeout &lt;int&gt;</div>
+            <div class="param-desc">
+              Maximum test duration in milliseconds (default: 30000). Prevent
+              hanging tests.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--html</div>
+            <div class="param-desc">
+              Generate an HTML report of the test results for easy viewing.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--auth &lt;object&gt;</div>
+            <div class="param-desc">
+              Basic HTTP authentication credentials with username and password.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--frameRate &lt;int&gt;</div>
+            <div class="param-desc">
+              Filmstrip frame rate in FPS (default: 1). Higher values = smoother
+              filmstrips.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">-f, --flags &lt;string&gt;</div>
+            <div class="param-desc">
+              Comma-separated Chromium flags for advanced browser configuration.
+            </div>
+          </div>
+
+          <div class="param-card">
+            <div class="param-name">--firefoxPrefs &lt;object&gt;</div>
+            <div class="param-desc">
+              Firefox-specific user preferences (Firefox only).
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Test Results Section -->
+      <section id="test-results" data-emoji="📊">
+        <h2>What Telescope Collects</h2>
+        <p>
+          Each test generates comprehensive performance data stored in a
+          dedicated results folder with unique identifiers.
+        </p>
+
+        <div class="metrics-list" id="metricsList">
+          <div class="metric-item">
+            <div class="metric-icon">🎬</div>
+            <div class="metric-title">Video Recording</div>
+            <div class="metric-description">
+              Complete video showing page load progression from start to finish,
+              perfect for visual analysis.
+            </div>
+          </div>
+
+          <div class="metric-item">
+            <div class="metric-icon">📸</div>
+            <div class="metric-title">Screenshots</div>
+            <div class="metric-description">
+              Final page screenshot and filmstrip collection for frame-by-frame
+              load analysis.
+            </div>
+          </div>
+
+          <div class="metric-item">
+            <div class="metric-icon">📈</div>
+            <div class="metric-title">Performance Metrics</div>
+            <div class="metric-description">
+              Comprehensive timing metrics including FCP, LCP, TTI, and CLS
+              collected from the browser.
+            </div>
+          </div>
+
+          <div class="metric-item">
+            <div class="metric-icon">🌐</div>
+            <div class="metric-title">HAR File</div>
+            <div class="metric-description">
+              Complete network waterfall data in HAR format for detailed request
+              analysis.
+            </div>
+          </div>
+
+          <div class="metric-item">
+            <div class="metric-icon">⚡</div>
+            <div class="metric-title">Resource Timing</div>
+            <div class="metric-description">
+              Detailed Resource Timing API data for every asset loaded on the
+              page.
+            </div>
+          </div>
+
+          <div class="metric-item">
+            <div class="metric-icon">🔍</div>
+            <div class="metric-title">Console Output</div>
+            <div class="metric-description">
+              All console messages, warnings, and JavaScript errors captured
+              during page load.
+            </div>
+          </div>
+        </div>
+
+        <h3>Results Structure</h3>
+        <div class="code-block">
+          <button class="copy-button" onclick="copyCode(this)">Copy</button>
+          <pre><code>/results/
+  └── 2025-10-26_unique-id-123/
+      ├── console.json        # Console logs and errors
+      ├── metrics.json        # Performance metrics
+      ├── pageload.har        # Network waterfall
+      ├── resources.json      # Resource timing data
+      ├── screenshot.png      # Final screenshot
+      ├── video.mp4          # Page load video
+      └── /filmstrip/        # Frame-by-frame screenshots</code></pre>
+        </div>
+      </section>
+
+      <!-- Contributors Section -->
+      <section id="contributors" data-emoji="👥">
+        <h2>Leading Contributors</h2>
+        <p style="text-align: center; font-size: 1.2rem; margin-bottom: 40px;">
+          Cloudflare Telescope is built and maintained by talented developers
+          from around the world.
+        </p>
+
+        <div style="text-align: center; margin: 50px 0;">
+          <a
+            href="https://github.com/cloudflare/telescope/graphs/contributors"
+            target="_blank"
+            class="btn btn-primary"
+            style="display: inline-flex;"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              ></path>
+            </svg>
+            View All Contributors on GitHub
+          </a>
+        </div>
+
+        <div
+          style="background: rgba(26, 11, 46, 0.8); border-radius: 20px; padding: 40px; margin-top: 50px; border: 2px solid var(--magenta);"
+        >
+          <h3
+            style="text-align: center; color: var(--gold); margin-bottom: 30px;"
+          >
+            Want to Contribute?
+          </h3>
+          <p
+            style="text-align: center; font-size: 1.1rem; line-height: 1.8; max-width: 800px; margin: 0 auto;"
+          >
+            Telescope is an open-source project and welcomes contributions from
+            the community. Whether it's bug fixes, new features, documentation
+            improvements, or testing across different platforms - all
+            contributions are appreciated!
+          </p>
+          <div style="text-align: center; margin-top: 30px;">
+            <a
+              href="https://github.com/cloudflare/telescope"
+              target="_blank"
+              class="btn btn-secondary"
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                ></path>
+              </svg>
+              Contribute on GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer>
+        <p>
+          Built with ❤️ by <a href="https://www.cloudflare.com/" target="_blank"
+            >Cloudflare</a
+          >
+        </p>
+        <p>
+          © 2025 - {year} Cloudflare Telescope Project
+        </p>
+      </footer>
+    </div>
+
+    <!-- Back to Top Button -->
+    <div class="back-to-top-wrapper">
+      <a
+        class="back-to-top"
+        href="#hero"
+        aria-label="Back to top"
+      >
+        ↑
+      </a>
+    </div>
+    <div id="sparkle-template" class="sparkle" style="display: none"></div>
+    <div id="star-template" class="star" style="display: none"></div>
+
+    <script is:inline>
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Generate starfield
+      function createStars() {
+        const starTemplate = document.getElementById('star-template');
+        starTemplate.removeAttribute('id');
+
+        const starsContainer = document.getElementById('stars');
+        const starCount = 100;
+
+        for (let i = 0; i < starCount; i++) {
+          const star = starTemplate.cloneNode();
+          star.style.display = 'block';
+          star.style.left = Math.random() * 100 + '%';
+          star.style.top = Math.random() * 100 + '%';
+          star.style.animationDelay = Math.random() * 3 + 's';
+          starsContainer.appendChild(star);
+        }
+      }
+
+      // Intersection Observer for scroll animations
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -100px 0px',
+      };
+
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach((entry, index) => {
+          if (entry.isIntersecting) {
+            setTimeout(() => {
+              entry.target.classList.add('visible');
+            }, index * 100);
+          }
+        });
+      }, observerOptions);
+
+      // Observe sections
+      document.querySelectorAll('section').forEach(section => {
+        if (prefersReducedMotion) {
+          section.classList.add('visible');
+        } else {
+          observer.observe(section);
+        }
+      });
+
+      // Observe param cards with stagger
+      const paramCards = document.querySelectorAll('.param-card');
+      paramCards.forEach((card, index) => {
+        if (prefersReducedMotion) {
+          card.classList.add('visible');
+          return;
+        }
+        const cardObserver = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              setTimeout(() => {
+                entry.target.classList.add('visible');
+              }, index * 50);
+            }
+          });
+        }, observerOptions);
+        cardObserver.observe(card);
+      });
+
+      // Observe metric items
+      const metricItems = document.querySelectorAll('.metric-item');
+      metricItems.forEach((item, index) => {
+        if (prefersReducedMotion) {
+          item.classList.add('visible');
+          return;
+        }
+        const metricObserver = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              setTimeout(() => {
+                entry.target.classList.add('visible');
+              }, index * 100);
+            }
+          });
+        }, observerOptions);
+        metricObserver.observe(item);
+      });
+
+      // Copy code functionality
+      function copyCode(button) {
+        const codeBlock = button.nextElementSibling;
+        const code = codeBlock.textContent;
+
+        navigator.clipboard.writeText(code).then(() => {
+          button.textContent = 'Copied!';
+          button.classList.add('copied');
+
+          setTimeout(() => {
+            button.textContent = 'Copy';
+            button.classList.remove('copied');
+          }, 2000);
+        });
+      }
+
+      // Mouse trail effect (subtle stars)
+      document.addEventListener('mousemove', e => {
+        if (prefersReducedMotion) return;
+        // Create subtle sparkle occasionally
+        if (Math.random() > 0.98) {
+          createSparkle(e.clientX, e.clientY);
+        }
+      });
+
+      const sparkleTemplate = document.getElementById('sparkle-template');
+      sparkleTemplate.removeAttribute('id');
+
+      function createSparkle(x, y) {
+        const sparkle = sparkleTemplate.cloneNode();
+        sparkle.style.display = 'block';
+        sparkle.style.left = x + 'px';
+        sparkle.style.top = y + 'px';
+        document.body.appendChild(sparkle);
+
+        setTimeout(() => sparkle.remove(), 500);
+      }
+
+      // Initialize
+      createStars();
+    </script>
+  </body>
+</html>

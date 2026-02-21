@@ -1,0 +1,207 @@
+---
+const currentPath = Astro.url.pathname;
+
+const navItems = [
+  { label: 'Home', href: '/' },
+  { label: 'Results', href: '/results' },
+  { label: 'Upload', href: '/upload' },
+];
+---
+
+<header class="top-nav">
+  <div class="left">
+    <a class="brand" href="/">Telescope</a>
+    <nav>
+      <ul>
+        {
+          navItems.map(item => (
+            <li>
+              <a
+                class={currentPath === item.href ? 'active' : ''}
+                href={item.href}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+  <div class="actions">
+    <button class="theme-toggle" type="button" aria-label="Toggle theme"
+    ></button>
+    <a
+      class="gh"
+      href="https://github.com/cloudflare/telescope"
+      target="_blank"
+      rel="noreferrer"
+    >
+      GitHub ↗
+    </a>
+  </div>
+</header>
+
+<style>
+  header {
+    width: max(31.25rem, calc(100% - 4.25rem)); /* 500px, 68px */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 1.875rem; /* 30px */
+    margin: 1.25rem; /* 20px */
+    padding: 0 1.25rem; /* 20px */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--nav-bg);
+    backdrop-filter: blur(0.625rem); /* 10px */
+    border-radius: 0.5rem; /* 8px */
+  }
+
+  .left {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem; /* 14px */
+  }
+
+  .brand {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    text-decoration: none;
+    padding: 0.5rem 0.625rem; /* 8px 10px */
+    border-radius: 0.75rem; /* 12px */
+  }
+
+  nav ul {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem; /* 6px */
+    flex-wrap: wrap;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.5rem 0.625rem; /* 8px 10px */
+    border-radius: 0.75rem; /* 12px */
+    border: 1px solid transparent;
+    font-size: 0.875rem; /* 14px */
+  }
+
+  nav a:hover {
+    border-color: var(--border);
+    background: var(--panel);
+    color: var(--text);
+  }
+
+  nav a.active {
+    color: var(--text);
+    border-color: var(--brand-hover);
+    background: linear-gradient(135deg, var(--brand-bg), var(--brand-bg-alt));
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem; /* 14px */
+  }
+
+  .theme-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    padding: 0.375rem 0.625rem; /* 6px 10px */
+    border-radius: 0.75rem; /* 12px */
+    font-size: 1rem; /* 16px */
+    line-height: 1;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .theme-toggle::after {
+    content: '🌙';
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .theme-toggle::after {
+      content: '☀️';
+    }
+  }
+
+  :global([data-theme-override='dark']) .theme-toggle::after {
+    content: '☀️';
+  }
+
+  :global([data-theme-override='light']) .theme-toggle::after {
+    content: '🌙';
+  }
+
+  .theme-toggle:hover {
+    background: var(--panel);
+    border-color: var(--brand-hover);
+  }
+
+  .gh {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.5rem 0.625rem; /* 8px 10px */
+    border-radius: 0.75rem; /* 12px */
+    border: 1px solid var(--border);
+    font-size: 0.875rem; /* 14px */
+    white-space: nowrap;
+  }
+
+  .gh:hover {
+    color: var(--text);
+    border-color: var(--brand-hover);
+  }
+</style>
+
+<script>
+  function getCookie(name: string) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [cookieName, cookieValue] = cookie.split('=', 2).map(c => c.trim());
+      if (cookieName === name) return cookieValue;
+    }
+  }
+
+  function setCookie(name: string, value: string, days: number) {
+    const d = new Date();
+    d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+    const expires = d.toUTCString();
+    const secure = window.location.protocol === 'https:' ? ';Secure' : '';
+    document.cookie = `${name}=${value};expires=${expires};path=/;SameSite=Lax${secure}`;
+  }
+
+  const savedTheme = getCookie('theme-override');
+
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme-override', savedTheme);
+  }
+
+  const button = document.querySelector('.theme-toggle') as HTMLButtonElement;
+
+  if (button) {
+    button.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute(
+        'data-theme-override',
+      )
+        ? document.documentElement.getAttribute('data-theme-override') ===
+          'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+      const newTheme = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme-override', newTheme);
+      setCookie('theme-override', newTheme, 365);
+    });
+  }
+</script>

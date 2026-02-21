@@ -1,7 +1,0 @@
-{
-  "browser": "canary",
-  "url": "https://www.ca.gov/",
-  "customHeaders": {
-    "x-test": "playing"
-  }
-}
