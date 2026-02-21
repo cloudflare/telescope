@@ -195,3 +195,37 @@ if (result.success) {
 ```
 
 All CLI options are supported as object properties. See Parameters section for available options.
+
+## Contributing To This Project
+
+### Running Automated Tests
+
+To run automated code tests in this project, you can use the following command:
+
+```
+npm run test
+```
+
+#### Using Specific Browsers
+
+You can run tests with specific browsers by setting the `BROWSERS` environment variable. For example, to run tests with Chrome and Firefox, you can run:
+
+```
+BROWSERS=chrome,firefox npm run test
+```
+
+#### Running Tests In Headless Mode
+
+You can run tests in headless mode by setting the `HEADLESS` environment variable to `true`. For example:
+
+```
+HEADLESS=true npm run test
+```
+
+#### Our CI Pipeline
+
+Our CI pipeline is set up to run tests on every push to the repository so you can see results in your pull request.
+
+At this point, to limit the length of the tests and (to simplify compatibility with GitHub Actions) it runs tests in headless mode on `firefox` only.
+
+If you want to run the same configuration locally, you can run `CI=true npm test`.
