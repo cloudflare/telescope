@@ -7,7 +7,16 @@ import type {
 } from './types.js';
 
 // should browsers be headless? defaults to false unless running in CI
-const headless = !!process.env.CI;
+// but can be overridden by explicitly setting HEADLESS variable to true or false
+const CI =
+  process.env.CI !== undefined &&
+  process.env.CI.toLowerCase() !== 'false' &&
+  process.env.CI !== '0';
+
+const headless: boolean =
+  process.env.HEADLESS !== undefined
+    ? process.env.HEADLESS.toLowerCase() === 'true'
+    : CI;
 
 type BrowserConfigs = Record<BrowserName, BrowserConfigEntry>;
 
@@ -111,10 +120,29 @@ class BrowserConfig {
   }
 
   static getBrowsers(): BrowserName[] {
+    const configuredBrowsers = Object.keys(
+      BrowserConfig.browserConfigs,
+    ) as BrowserName[];
+
     // only run firefox in CI (for now)
-    return process.env.CI
-      ? ['firefox']
-      : (Object.keys(BrowserConfig.browserConfigs) as BrowserName[]);
+    if (CI) {
+      return ['firefox'];
+    }
+
+    if (process.env.BROWSERS) {
+      const envBrowsers = process.env.BROWSERS.split(',')
+        .map(browser => browser.trim())
+        .filter(browser => browser.length > 0)
+        .filter(browser =>
+          configuredBrowsers.includes(browser as BrowserName),
+        ) as BrowserName[];
+
+      if (envBrowsers.length > 0) {
+        return envBrowsers;
+      }
+    }
+
+    return configuredBrowsers;
   }
 
   addFirefoxPrefs(prefs: Record<string, string | number | boolean>): void {
