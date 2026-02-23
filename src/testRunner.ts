@@ -244,9 +244,11 @@ class TestRunner {
     this.setupConsoleMessages(page);
 
     if (this.options.overrideHost) {
-      this.setupHostOverrides(page, this.options.overrideHost);
+      await this.setupHostOverrides(page, this.options.overrideHost);
     }
 
+    // In Playwright, route handlers are executed in reverse order of registration (last registered handler runs first)
+    // delays would be set up first, then blocking
     // blocking would happen first, then delays
     await this.setupResponseDelays(page);
     await this.setupBlocking(page);
