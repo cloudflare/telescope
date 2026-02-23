@@ -1,5 +1,11 @@
 ---
 import Page from '@/layouts/Page.astro';
+import MetricsSection from '@/components/MetricsSection.astro';
+
+import { createPrismaClient } from '@/lib/prisma/client';
+import { getTestById } from '@/lib/repositories/test-repository';
+
+export const prerender = false;
 
 const { testId } = Astro.params;
 
@@ -7,34 +13,206 @@ if (!testId) {
   return Astro.redirect('/results');
 }
 
-export const prerender = false;
+const env = Astro.locals.runtime.env;
+const prisma = createPrismaClient(env.TELESCOPE_DB);
+const test = await getTestById(prisma, testId);
+
+if (!test) {
+  return Astro.redirect('/results');
+}
+
+// --- Screenshot ---
+const screenshotKey = `${testId}/screenshot.png`;
+const screenshotObj = await env.RESULTS_BUCKET.head(screenshotKey);
+const screenshotUrl = screenshotObj ? `/api/tests/${testId}/screenshot.png` : null;
+
+// --- Metrics ---
+interface MetricsJson {
+  navigationTiming?: {
+    responseStart?: number;
+    transferSize?: number;
+    encodedBodySize?: number;
+    duration?: number;
+  };
+  paintTiming?: Array<{ name: string; startTime: number }>;
+  largestContentfulPaint?: Array<{ startTime?: number }>;
+  layoutShifts?: Array<{ value?: number }>;
+}
+
+let metrics: MetricsJson | null = null;
+try {
+  const metricsObj = await env.RESULTS_BUCKET.get(`${testId}/metrics.json`);
+  if (metricsObj) {
+    metrics = await metricsObj.json<MetricsJson>();
+  }
+} catch {
+  // metrics unavailable — render without them
+}
+
+// Helper: round to 1 decimal place, return string or null
+function ms(val: number | undefined): string | null {
+  if (val === undefined || val === null) return null;
+  return Math.round(val).toString();
+}
+
+function round2(val: number | undefined): string | null {
+  if (val === undefined || val === null) return null;
+  return val.toFixed(2);
+}
+
+function kb(bytes: number | undefined): string | null {
+  if (bytes === undefined || bytes === null) return null;
+  return (bytes / 1024).toFixed(1);
+}
+
+// CWV values
+const fcpEntry = metrics?.paintTiming?.find(p => p.name === 'first-contentful-paint');
+const fcpMs = fcpEntry?.startTime;
+const lcpMs = metrics?.largestContentfulPaint?.[0]?.startTime;
+const clsValue = metrics?.layoutShifts?.reduce((sum, s) => sum + (s.value ?? 0), 0);
+
+// CWV ratings per Web Vitals thresholds
+function fcpRating(v: number | undefined): 'good' | 'needs-improvement' | 'poor' | undefined {
+  if (v === undefined) return undefined;
+  return v <= 1800 ? 'good' : v <= 3000 ? 'needs-improvement' : 'poor';
+}
+function lcpRating(v: number | undefined): 'good' | 'needs-improvement' | 'poor' | undefined {
+  if (v === undefined) return undefined;
+  return v <= 2500 ? 'good' : v <= 4000 ? 'needs-improvement' : 'poor';
+}
+function clsRating(v: number | undefined): 'good' | 'needs-improvement' | 'poor' | undefined {
+  if (v === undefined) return undefined;
+  return v <= 0.1 ? 'good' : v <= 0.25 ? 'needs-improvement' : 'poor';
+}
+
+// Perf metric values
+const ttfbMs = metrics?.navigationTiming?.responseStart;
+const transferBytes = metrics?.navigationTiming?.transferSize;
+const durationMs = metrics?.navigationTiming?.duration;
+
+// Formatted date
+const date = new Date(test.test_date * 1000);
+const formattedDate = date.toLocaleString('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZoneName: 'short',
+});
 ---
 
-<Page title={`Test ${testId}`}>
+<Page title={test.name ?? `Test ${testId}`}>
   <div class="detail-header">
     <a href="/results" class="back-link">← Back to all results</a>
-    <h1>Test Results</h1>
-    <p class="test-id">ID: {testId}</p>
+    <h1>{test.name ?? 'Test Results'}</h1>
+    {test.description && <h2>{test.description}</h2>}
   </div>
-  <div class="placeholder">
-    <p>Full test details coming later</p>
-    <p class="hint">
-      This page will display screenshots, videos, metrics, etc.
-    </p>
+
+  <div class="sections">
+
+    <!-- Test Info -->
+    <section class="info-section panel">
+      <h3>Test Info</h3>
+      <dl class="info-grid">
+        <div class="info-row">
+          <dt>URL</dt>
+          <dd><a href={test.url} target="_blank" rel="noopener noreferrer" class="url-link">{test.url}</a></dd>
+        </div>
+        <div class="info-row">
+          <dt>Browser</dt>
+          <dd class="capitalize">{test.browser}</dd>
+        </div>
+        <div class="info-row">
+          <dt>Date</dt>
+          <dd>{formattedDate}</dd>
+        </div>
+        <div class="info-row">
+          <dt>ID</dt>
+          <dd class="mono">{testId}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- Screenshot -->
+    <section class="screenshot-section panel">
+      <h3>Screenshot</h3>
+      {screenshotUrl ? (
+        <div class="screenshot-wrap">
+          <img
+            src={screenshotUrl}
+            alt={`Screenshot of ${test.url}`}
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      ) : (
+        <div class="screenshot-empty">
+          <p>No screenshot available.</p>
+        </div>
+      )}
+    </section>
+
+    <!-- Core Web Vitals -->
+    <MetricsSection
+      heading="Core Web Vitals"
+      metrics={[
+        {
+          label: 'LCP',
+          value: ms(lcpMs),
+          unit: 'ms',
+          rating: lcpRating(lcpMs),
+        },
+        {
+          label: 'FCP',
+          value: ms(fcpMs),
+          unit: 'ms',
+          rating: fcpRating(fcpMs),
+        },
+        {
+          label: 'CLS',
+          value: round2(clsValue),
+          rating: clsRating(clsValue),
+        },
+      ]}
+    />
+
+    <!-- Performance Metrics -->
+    <MetricsSection
+      heading="Performance Metrics"
+      metrics={[
+        {
+          label: 'TTFB',
+          value: ms(ttfbMs),
+          unit: 'ms',
+        },
+        {
+          label: 'Transfer Size',
+          value: kb(transferBytes),
+          unit: 'KB',
+        },
+        {
+          label: 'Page Load Time',
+          value: ms(durationMs),
+          unit: 'ms',
+        },
+      ]}
+    />
+
   </div>
 </Page>
 
 <style>
   .detail-header {
-    margin-bottom: 32px;
+    margin-bottom: 2rem; /* 32px */
   }
 
   .back-link {
     display: inline-block;
     color: var(--muted);
     text-decoration: none;
-    margin-bottom: 16px;
-    font-size: 14px;
+    margin-bottom: 1rem; /* 16px */
+    font-size: 0.875rem; /* 14px */
     transition: color 0.2s ease;
   }
 
@@ -42,30 +220,98 @@ export const prerender = false;
     color: var(--brand);
   }
 
-  .test-id {
-    font-family:
-      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-      'Courier New', monospace;
-    color: var(--muted);
-    font-size: 14px;
+  .sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* 24px */
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem; /* 12px */
+    padding: 1.25rem 1.5rem; /* 20px 24px */
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* 16px */
+  }
+
+  /* Info section */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); /* 288px */
+    gap: 0.75rem 1.5rem; /* 12px 24px */
     margin: 0;
   }
 
-  .placeholder {
-    padding: 60px;
-    text-align: center;
-    background: var(--panel);
-    border-radius: 12px;
-    border: 1px dashed var(--border);
+  .info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem; /* 4px */
   }
 
-  .placeholder p {
-    margin: 8px 0;
-    color: var(--text);
-  }
-
-  .hint {
+  dt {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 500;
     color: var(--muted);
-    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  dd {
+    font-size: 0.9375rem; /* 15px */
+    color: var(--text);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .url-link {
+    color: var(--brand);
+    text-decoration: none;
+  }
+
+  .url-link:hover {
+    text-decoration: underline;
+  }
+
+  .capitalize {
+    text-transform: capitalize;
+  }
+
+  .mono {
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
+    font-size: 0.8125rem; /* 13px */
+    color: var(--muted);
+  }
+
+  /* Screenshot section */
+  .screenshot-wrap {
+    border-radius: 0.5rem; /* 8px */
+    overflow: hidden;
+    border: 1px solid var(--border);
+    line-height: 0;
+  }
+
+  .screenshot-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .screenshot-empty {
+    padding: 2.5rem; /* 40px */
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: 0.5rem; /* 8px */
+    color: var(--muted);
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .screenshot-empty p {
+    margin: 0;
   }
 </style>
