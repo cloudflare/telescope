@@ -56,13 +56,14 @@ Telescope uses Playwright to control and manage individual browser engines:
 npx . -u https://www.example.com -b firefox
 ```
 
-And supports the following browsers:
+And supports the following browsers (using non-branded versions):
 
-- [Chrome](https://www.google.com/chrome/) - `chrome`
+- [Chromium](https://www.chromium.org/Home/)
+  - [Chrome](https://www.google.com/chrome/) - `chrome`
   - [Chrome Beta](https://www.google.com/chrome/beta/) - `chrome-beta`
   - [Chrome Canary](https://www.google.com/chrome/canary/) - `canary`
 - [Edge](https://www.microsoft.com/en-us/edge/) - `edge`
-- [Safari](https://www.apple.com/safari/) - `safari`
+- [Safari](https://www.apple.com/safari/)/[Webkit](https://webkit.org/) - `safari`
 - [Firefox](https://www.firefox.com/) - `firefox`
 
 ### Custom Timeout
@@ -168,7 +169,7 @@ npm run build
 
 ### Chrome, Firefox, and Safari
 
-Telescope will automatically run `npx playwright install` to install Chrome, Firefox, and Safari (webkit).
+Telescope will automatically run `npx playwright install` to install `chrome`, `firefox`, and `safari`.
 
 ### Microsoft Edge and Chrome-beta
 
