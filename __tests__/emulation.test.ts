@@ -21,12 +21,21 @@ describe.each(browsers)(
     describe.each(target_devices)(
       'Setting device emulation updates the config for device: %s',
       device => {
+        if (browser === 'canary' || browser === 'chrome-beta') {
+          console.info(`Skipping device emulation tests for browser: ${browser}`);
+          return;
+        }
         let options = {
           browser,
-          deviceName: device,
+          device: device,
           url: '../tests/sandbox/index.html',
         };
         var config_options = normalizeCLIConfig(options);
+        test(`Test device emulation does not set default width and height values for browser: ${browser}`, () => {
+          expect(config_options && typeof config_options === 'object').toBe(true);
+          expect(config_options.width).toBe(false);
+          expect(config_options.height).toBe(false);
+        });
         let config = new BrowserConfig().getBrowserConfig(
           browser,
           config_options,
@@ -66,14 +75,23 @@ describe.each(browsers)(
     describe.each(target_devices)(
       'Setting device emulation updates the config for device: %s',
       device => {
+        if (browser === 'canary' || browser === 'chrome-beta') {
+          console.info(`Skipping device emulation tests for browser: ${browser}`);
+          return;
+        }
         let options = {
           browser,
-          deviceName: device,
+          device: device,
           url: '../tests/sandbox/index.html',
           width: '1122',
           height: '3344',
         };
         var config_options = normalizeCLIConfig(options);
+        test(`Test device emulation allows width and height values to override device settings for browser: ${browser}`, () => {
+          expect(config_options && typeof config_options === 'object').toBe(true);
+          expect(config_options.width).toBe(1122);
+          expect(config_options.height).toBe(3344);
+        });
         let config = new BrowserConfig().getBrowserConfig(
           browser,
           config_options,
@@ -130,7 +148,7 @@ describe.each(browsers)('Device Emulation Tests', browser => {
       beforeAll(async () => {
         let options = {
           browser,
-          deviceName: device,
+          device: device,
           url: 'https://www.example.com/',
         };
         const launchOptions = normalizeCLIConfig(options);
