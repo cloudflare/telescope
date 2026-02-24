@@ -124,11 +124,12 @@ export type BrowserConfigEntry =
  * Full browser configuration with all runtime options
  */
 export interface BrowserConfigOptions {
+  agentExtra?: string;
   engine: PlaywrightEngine;
   channel?: BrowserChannel;
   headless: boolean;
   viewport: { width: number; height: number };
-  recordHar?: { path: string };
+  recordHar: { path: string };
   recordVideo: { dir: string; size: { width: number; height: number } };
   args?: string[];
   ignoreDefaultArgs?: string[];
@@ -141,8 +142,19 @@ export interface BrowserConfigOptions {
     log: (name: string, severity: string, message: string) => void;
   };
   userAgent?: string;
-  agentExtra?: string;
 }
+
+/**
+ * Simplified browser configuration
+ */
+export type SimplifiedBrowserConfigOptions = Omit<BrowserConfigOptions,
+  'agentExtra' |
+  'httpCredentials' |
+  'javaScriptEnabled' |
+  'logger' |
+  'recordHar' |
+  'recordVideo' |
+  'userAgent'>;
 
 // ============================================================================
 // Launch Options
@@ -512,6 +524,11 @@ export interface SavedConfig {
 // HAR Types
 // ============================================================================
 
+export interface HTTPHeader {
+  name: string;
+  value: string;
+}
+
 /**
  * HAR entry with extended timing data
  */
@@ -519,6 +536,7 @@ export interface HarEntry {
   request: {
     url: string;
     method: string;
+    headers: HTTPHeader[];
   };
   response: {
     status: number;

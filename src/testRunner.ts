@@ -21,6 +21,7 @@ import { log, logTimer, generateTestID } from './helpers.js';
 import AdmZip from 'adm-zip';
 import type {
   BrowserConfigOptions,
+  SimplifiedBrowserConfigOptions,
   LaunchOptions,
   TestPaths,
   ResultAssets,
@@ -74,14 +75,9 @@ class TestRunner {
     this.paths['filmstrip'] = this.paths.results + '/filmstrip';
     mkdirSync(this.paths['results'], { recursive: true });
 
-    if (this.selectedBrowser.recordHar) {
-      this.selectedBrowser.recordHar.path =
-        this.paths['results'] + '/pageload.har';
-    }
-
-    if (this.selectedBrowser.recordVideo) {
-      this.selectedBrowser.recordVideo.dir = this.paths['results'];
-    }
+    this.selectedBrowser.recordHar.path =
+      this.paths['results'] + '/pageload.har';
+    this.selectedBrowser.recordVideo.dir = this.paths['results'];
   }
 
   /**
@@ -176,13 +172,15 @@ class TestRunner {
     const browserType = playwright[engine];
 
     if (this.options.agentExtra) {
-      let simpleOptions = JSON.parse(JSON.stringify(this.selectedBrowser)); // Deep clone
-      delete simpleOptions.recordHar;
-      delete simpleOptions.recordVideo;
-      delete simpleOptions.logger;
-
-      simpleOptions.viewport.width = 1;
-      simpleOptions.viewport.height = 1;
+      let simpleOptions: SimplifiedBrowserConfigOptions = {
+        args: this.selectedBrowser.args,
+        channel: this.selectedBrowser.channel,
+        engine: this.selectedBrowser.engine,
+        firefoxUserPrefs: this.selectedBrowser.firefoxUserPrefs,
+        headless: this.selectedBrowser.headless,
+        ignoreDefaultArgs: this.selectedBrowser.ignoreDefaultArgs,
+        viewport: { height: 1, width: 1 },
+      };
 
       if (simpleOptions.args) {
         let idx = simpleOptions.args.indexOf('--metrics-recording-only');

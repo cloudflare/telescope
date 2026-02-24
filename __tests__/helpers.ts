@@ -4,6 +4,19 @@ import type { HarData, Metrics, SavedConfig } from '../src/types.js';
 
 type ResultType = 'result' | 'config' | 'metrics';
 
+function testDirectory(testId: string | undefined): string {
+  if (!testId) {
+    console.error('Invalid test id:', testId);
+    return '';
+  }
+
+  const rootPath = 'results/';
+  const safeTestPath = path.normalize(testId).replace(/^(\.\.(\/|\\|$))+/, '');
+  const filePath = path.join(rootPath, safeTestPath);
+
+  return filePath || '';
+}
+
 export function retrieveResults<T>(
   testId: string | undefined,
   fileName: string,
@@ -15,8 +28,12 @@ export function retrieveResults<T>(
   }
 
   const rootPath = 'results/';
-  const safeTestPath = path.normalize(testId).replace(/^(\.\.(\/|\\|$))+/, '');
-  const filePath = path.join(rootPath, safeTestPath, fileName);
+  const safeTestPath = testDirectory(testId);
+  if (!safeTestPath) {
+    console.error('Invalid test results directory');
+  }
+
+  const filePath = path.join(safeTestPath, fileName);
 
   if (filePath.indexOf(rootPath) !== 0) {
     console.error('Invalid test', resultType, filePath);
@@ -50,4 +67,11 @@ export function retrieveConfig(testId: string | undefined): SavedConfig | null {
 
 export function retrieveMetrics(testId: string | undefined): Metrics | null {
   return retrieveResults<Metrics>(testId, 'metrics.json', 'metrics');
+}
+
+export function cleanupTestDirectory(testId: string | undefined): void {
+  const path = testDirectory(testId);
+  if (path && fs.existsSync(path)) {
+    fs.rmSync(path, { recursive: true, force: true });
+  }
 }

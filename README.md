@@ -27,6 +27,7 @@ Options:
   -h, --headers <object>        Any custom headers to apply to requests
   -c, --cookies <object>        Any custom cookies to apply
   -f, --flags <string>          A comma separated list of Chromium flags to launch Chrome with. See: https://peter.sh/experiments/chromium-command-line-switches/
+  --agentExtra <string>         A string to append to the end of the default User-Agent. Takes precedence over --userAgent option.
   --blockDomains <domains...>   A comma separated list of domains to block (default: [])
   --block <substrings...>       A comma-delimited list of urls to block (based on a substring match) (default: [])
   --overrideHost <object>       Override the hostname of a URI with another host (Expects: {"example.com": "uat.example.com"})
@@ -43,6 +44,7 @@ Options:
   --html                        Generate HTML report (default: false)
   --openHtml                    Open HTML report in browser (requires --html) (default: false)
   --list                        Generate list of results in HTML (default: false)
+  --userAgent <string>          Set the browsers User-Agent
   --zip                         Zip the results of the test into the results directory. (default: false)
   --dry                         Dry run (do not run test, just save config and cleanup) (default: false)
   --help                        display help for command

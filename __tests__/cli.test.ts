@@ -1,11 +1,13 @@
 import { spawnSync } from 'child_process';
 
-import { retrieveHAR, retrieveMetrics } from './helpers.js';
+import { retrieveHAR, retrieveMetrics, cleanupTestDirectory } from './helpers.js';
 
 import { BrowserConfig } from '../src/browsers.js';
-import type { HarData, Metrics } from '../src/types.js';
+import type { HarData, Metrics, HTTPHeader } from '../src/types.js';
 
 const browsers = BrowserConfig.getBrowsers();
+const agentIE6 = 'Mozilla/5.0 (Windows; U; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727)';
+const regexTest = new RegExp(/ TELESCOPE_TEST$/);
 
 describe.each(browsers)('Basic Test: %s', browser => {
   let harJSON: HarData | null;
@@ -13,23 +15,27 @@ describe.each(browsers)('Basic Test: %s', browser => {
   let testId: string | undefined;
 
   beforeAll(() => {
-    const args = [
-      'node',
-      'dist/src/cli.js',
-      '--url',
-      'https://www.example.com',
-      '-b',
-      browser,
-    ];
+    try {
+      const args = [
+        'node',
+        'dist/src/cli.js',
+        '--url',
+        'https://www.example.com',
+        '-b',
+        browser,
+      ];
 
-    const output = spawnSync(args[0], args.slice(1));
-    const outputLogs = output.stdout.toString();
-    const match = outputLogs.match(/Test ID:(.*)/);
-    if (match && match.length > 1) {
-      testId = match[1].trim();
+      const output = spawnSync(args[0], args.slice(1));
+      const outputLogs = output.stdout.toString();
+      const match = outputLogs.match(/Test ID:(.*)/);
+      if (match && match.length > 1) {
+        testId = match[1].trim();
+      }
+      harJSON = retrieveHAR(testId);
+      metrics = retrieveMetrics(testId);
+    } finally {
+      cleanupTestDirectory(testId);
     }
-    harJSON = retrieveHAR(testId);
-    metrics = retrieveMetrics(testId);
   });
 
   it('runs the test and creates a test ID', async () => {
@@ -65,6 +71,120 @@ describe.each(browsers)('Basic Test: %s', browser => {
       expect(metrics?.navigationTiming).not.toHaveProperty(
         'finalResponseHeadersStart',
       );
+    }
+  });
+});
+
+describe.each(browsers)('Changed User Agent: %s', browser => {
+  let harJSON: HarData | null;
+  let testId: string | undefined;
+
+  beforeAll(() => {
+    try {
+      const args = [
+        'node',
+        'dist/src/cli.js',
+        '--url',
+        'https://www.example.com',
+        '--userAgent',
+        agentIE6,
+        '-b',
+        browser,
+      ];
+
+      const output = spawnSync(args[0], args.slice(1));
+      const outputLogs = output.stdout.toString();
+      const match = outputLogs.match(/Test ID:(.*)/);
+      if (match && match.length > 1) {
+        testId = match[1].trim();
+      }
+      harJSON = retrieveHAR(testId);
+    } finally {
+      cleanupTestDirectory(testId);
+    }
+  });
+
+  it('runs the test and creates a test ID', async () => {
+    expect(testId).toBeTruthy();
+  });
+
+  it('generates a Har file', async () => {
+    expect(harJSON).toBeTruthy();
+  });
+
+  it('User Agent Changed', async () => {
+    if (harJSON) {
+      const htmlUserAgent = harJSON
+        .log
+        .entries[0]
+        .request
+        .headers
+        .find((hdr: HTTPHeader) => hdr.name === 'User-Agent');
+
+      if (htmlUserAgent) {
+        expect(htmlUserAgent.value).toBe(agentIE6);
+      } else {
+        throw new Error('Missing User-Agent header');
+      }
+    } else {
+      throw new Error('Missing HAR file');
+    }
+  });
+});
+
+describe.each(browsers)('Add to User Agent: %s', browser => {
+  let harJSON: HarData | null;
+  let testId: string | undefined;
+
+  beforeAll(() => {
+    try {
+      const args = [
+        'node',
+        'dist/src/cli.js',
+        '--url',
+        'https://www.example.com',
+        '--agentExtra',
+        ' TELESCOPE_TEST',
+        '-b',
+        browser,
+      ];
+
+      const output = spawnSync(args[0], args.slice(1));
+      const outputLogs = output.stdout.toString();
+      const match = outputLogs.match(/Test ID:(.*)/);
+      if (match && match.length > 1) {
+        testId = match[1].trim();
+      }
+      harJSON = retrieveHAR(testId);
+    } finally {
+      cleanupTestDirectory(testId);
+    }
+  });
+
+  it('runs the test and creates a test ID', async () => {
+    expect(testId).toBeTruthy();
+  });
+
+  it('generates a Har file', async () => {
+    expect(harJSON).toBeTruthy();
+  });
+
+  it('Appended to User Agent', async () => {
+    if (harJSON) {
+      const htmlUserAgent = harJSON
+        .log
+        .entries[0]
+        .request
+        .headers
+        .find((hdr: HTTPHeader) => hdr.name === 'User-Agent');
+
+      if (htmlUserAgent) {
+        expect(htmlUserAgent.value).toMatch(regexTest);
+      } else {
+        throw new Error('Missing User-Agent header');
+      }
+    } else {
+      throw new Error('Missing HAR file');
     }
   });
 });

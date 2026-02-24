@@ -82,5 +82,16 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
     expect(config && typeof config === 'object').toBe(true);
   });
 
+  test('Set the User Agent the browser tells the website', () => {
+    const options = {
+      browser,
+      userAgent: 'Mozilla/5.0 (Windows; U; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727)',
+      url: '../tests/sandbox/index.html',
+    };
+    const config = new BrowserConfig().getBrowserConfig(browser, options);
+    expect(config && typeof config === 'object').toBe(true);
+    expect(config.userAgent === 'Mozilla/5.0 (Windows; U; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727)').toBe(true);
+  });
+
   //test for other options
 });
