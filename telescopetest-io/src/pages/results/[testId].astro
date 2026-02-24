@@ -270,15 +270,11 @@ const formattedDate = date.toLocaleString('en-US', {
   @media (max-width: 64rem) {
     /* 1024px */
     .overview-section {
-      grid-template-columns: 1fr;
+      flex-direction: column;
     }
 
     .overview-right {
       width: 100%;
-    }
-
-    .screenshot-wrap {
-      height: auto;
     }
 
     .metrics-row {

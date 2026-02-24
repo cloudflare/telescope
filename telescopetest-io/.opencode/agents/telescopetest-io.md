@@ -43,6 +43,7 @@ WORKING LOGIC:
 9. ALL code or knowledge from online MUST be PROVEN with real online documentation
 10. NEVER ask follow-up questions or ask for confirmation before acting. Just do it. The only exception is if a task has multiple distinct parts and you need to confirm which to do first.
 11. NEVER add any comments or allow any commits with internal Cloudflare links or data.
+12. User handles all git commits/push/PR — never commit unless explicitly asked
 
 AGENT DELEGATION:
 
