@@ -313,9 +313,9 @@ export default function browserAgent(): void {
     )
     .addOption(
       new Option(
-        '--deviceName <string>',
-        'Device name to use device emulation; devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
-      ).default(DEFAULT_OPTIONS.deviceName),
+        '--device <string>',
+        'Device to use device emulation; devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
+      ).default(DEFAULT_OPTIONS.device),
     )
     .parse(process.argv);
 

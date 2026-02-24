@@ -210,7 +210,6 @@ export interface DefaultOptions {
   delay: Record<string, number>;
   delayUsing: DelayMethod;
   device: CustomDeviceDescriptor | false;
-  deviceName: string | false;
 }
 
 // ============================================================================
@@ -637,7 +636,7 @@ export interface CLIOptions {
   dry?: boolean;
   delay?: string;
   delayUsing?: string;
-  deviceName?: string | false;
+  device?: string | false;
 }
 
 // ============================================================================

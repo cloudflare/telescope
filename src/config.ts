@@ -117,14 +117,16 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     config.uploadUrl = options.uploadUrl;
   }
   // Handle device emulation
-  if (options.deviceName) {
+  // the 'device' in options is the name of the device to emulate provided by the user
+  if (options.device) {
     const playwrightDevice =
-      devices[options.deviceName as keyof typeof devices];
+      devices[options.device as keyof typeof devices];
     if (!playwrightDevice) {
       throw new Error(
-        `Device "${options.deviceName}" not found in Playwright device list`,
+        `Device "${options.device}" not found in Playwright device list`,
       );
     }
+    // the 'device' in config is the playwright object with device metadata
     config.device = playwrightDevice as CustomDeviceDescriptor;
   }
 

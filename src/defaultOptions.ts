@@ -47,8 +47,6 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   dry: false,
   // Target device to emulate (false = no emulation)
   device: false,
-  // Target device name to emulate (false = no emulation)
-  deviceName: false,
 };
 
 /**
