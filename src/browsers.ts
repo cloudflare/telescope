@@ -132,13 +132,25 @@ class BrowserConfig {
     }
 
     if (process.env.BROWSERS) {
-      const envBrowsers = process.env.BROWSERS.split(',')
+      const requestedBrowsers = process.env.BROWSERS.split(',')
         .map(browser => browser.trim())
-        .filter(browser => browser.length > 0)
-        .filter(browser =>
-          configuredBrowsers.includes(browser as BrowserName),
-        ) as BrowserName[];
+        .filter(browser => browser.length > 0);
 
+      const envBrowsers = requestedBrowsers.filter(browser =>
+        configuredBrowsers.includes(browser as BrowserName),
+      ) as BrowserName[];
+
+      const invalidBrowsers = requestedBrowsers.filter(
+        browser => !configuredBrowsers.includes(browser as BrowserName),
+      );
+
+      if (invalidBrowsers.length > 0) {
+        console.warn(
+          `Ignoring unsupported browser name(s) from BROWSERS environment variable: ${invalidBrowsers.join(
+            ', ',
+          )}`,
+        );
+      }
       if (envBrowsers.length > 0) {
         return envBrowsers;
       }
