@@ -24,7 +24,9 @@ if (!test) {
 // --- Screenshot ---
 const screenshotKey = `${testId}/screenshot.png`;
 const screenshotObj = await env.RESULTS_BUCKET.head(screenshotKey);
-const screenshotUrl = screenshotObj ? `/api/tests/${testId}/screenshot.png` : null;
+const screenshotUrl = screenshotObj
+  ? `/api/tests/${testId}/screenshot.png`
+  : null;
 
 // --- Metrics ---
 interface MetricsJson {
@@ -66,21 +68,32 @@ function kb(bytes: number | undefined): string | null {
 }
 
 // CWV values
-const fcpEntry = metrics?.paintTiming?.find(p => p.name === 'first-contentful-paint');
+const fcpEntry = metrics?.paintTiming?.find(
+  p => p.name === 'first-contentful-paint',
+);
 const fcpMs = fcpEntry?.startTime;
 const lcpMs = metrics?.largestContentfulPaint?.[0]?.startTime;
-const clsValue = metrics?.layoutShifts?.reduce((sum, s) => sum + (s.value ?? 0), 0);
+const clsValue = metrics?.layoutShifts?.reduce(
+  (sum, s) => sum + (s.value ?? 0),
+  0,
+);
 
 // CWV ratings per Web Vitals thresholds
-function fcpRating(v: number | undefined): 'good' | 'needs-improvement' | 'poor' | undefined {
+function fcpRating(
+  v: number | undefined,
+): 'good' | 'needs-improvement' | 'poor' | undefined {
   if (v === undefined) return undefined;
   return v <= 1800 ? 'good' : v <= 3000 ? 'needs-improvement' : 'poor';
 }
-function lcpRating(v: number | undefined): 'good' | 'needs-improvement' | 'poor' | undefined {
+function lcpRating(
+  v: number | undefined,
+): 'good' | 'needs-improvement' | 'poor' | undefined {
   if (v === undefined) return undefined;
   return v <= 2500 ? 'good' : v <= 4000 ? 'needs-improvement' : 'poor';
 }
-function clsRating(v: number | undefined): 'good' | 'needs-improvement' | 'poor' | undefined {
+function clsRating(
+  v: number | undefined,
+): 'good' | 'needs-improvement' | 'poor' | undefined {
   if (v === undefined) return undefined;
   return v <= 0.1 ? 'good' : v <= 0.25 ? 'needs-improvement' : 'poor';
 }
@@ -105,113 +118,129 @@ const formattedDate = date.toLocaleString('en-US', {
 <Page title={test.name ?? `Test ${testId}`}>
   <div class="detail-header">
     <a href="/results" class="back-link">← Back to all results</a>
-    <h1>{test.name ?? 'Test Results'}</h1>
-    {test.description && <h2>{test.description}</h2>}
   </div>
 
   <div class="sections">
+    <!-- Overview Section: Info + Screenshot -->
+    <section class="overview-section">
+      <div class="overview-left">
+        <div class="title-section">
+          {test.name ? <h1>{test.name}</h1> : <h1 class="no-name">No Name</h1>}
+          {
+            test.description ? (
+              <h2>{test.description}</h2>
+            ) : (
+              <h2 class="no-description">No description</h2>
+            )
+          }
+        </div>
 
-    <!-- Test Info -->
-    <section class="info-section panel">
-      <h3>Test Info</h3>
-      <dl class="info-grid">
-        <div class="info-row">
-          <dt>URL</dt>
-          <dd><a href={test.url} target="_blank" rel="noopener noreferrer" class="url-link">{test.url}</a></dd>
+        <div class="info-panel panel">
+          <dl class="info-list">
+            <div class="info-row">
+              <dt>Date</dt>
+              <dd>{formattedDate}</dd>
+            </div>
+            <div class="info-row">
+              <dt>Browser</dt>
+              <dd class="capitalize">{test.browser}</dd>
+            </div>
+            <div class="info-row">
+              <dt>Test ID</dt>
+              <dd class="mono">{testId}</dd>
+            </div>
+            <div class="info-row">
+              <dt>URL</dt>
+              <dd class="url-wrap">
+                <a
+                  href={test.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="url-link">{test.url}</a>
+              </dd>
+            </div>
+          </dl>
         </div>
-        <div class="info-row">
-          <dt>Browser</dt>
-          <dd class="capitalize">{test.browser}</dd>
-        </div>
-        <div class="info-row">
-          <dt>Date</dt>
-          <dd>{formattedDate}</dd>
-        </div>
-        <div class="info-row">
-          <dt>ID</dt>
-          <dd class="mono">{testId}</dd>
-        </div>
-      </dl>
+      </div>
+
+      <div class="overview-right">
+        {
+          screenshotUrl ? (
+            <div class="screenshot-wrap">
+              <img
+                src={screenshotUrl}
+                alt={`Screenshot of ${test.url}`}
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          ) : (
+            <div class="screenshot-empty">
+              <p>No screenshot available.</p>
+            </div>
+          )
+        }
+      </div>
     </section>
 
-    <!-- Screenshot -->
-    <section class="screenshot-section panel">
-      <h3>Screenshot</h3>
-      {screenshotUrl ? (
-        <div class="screenshot-wrap">
-          <img
-            src={screenshotUrl}
-            alt={`Screenshot of ${test.url}`}
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
-      ) : (
-        <div class="screenshot-empty">
-          <p>No screenshot available.</p>
-        </div>
-      )}
-    </section>
+    <!-- Metrics Row -->
+    <div class="metrics-row">
+      <MetricsSection
+        heading="Core Web Vitals"
+        metrics={[
+          {
+            label: 'LCP',
+            value: ms(lcpMs),
+            unit: 'ms',
+            rating: lcpRating(lcpMs),
+          },
+          {
+            label: 'FCP',
+            value: ms(fcpMs),
+            unit: 'ms',
+            rating: fcpRating(fcpMs),
+          },
+          {
+            label: 'CLS',
+            value: round2(clsValue),
+            rating: clsRating(clsValue),
+          },
+        ]}
+      />
 
-    <!-- Core Web Vitals -->
-    <MetricsSection
-      heading="Core Web Vitals"
-      metrics={[
-        {
-          label: 'LCP',
-          value: ms(lcpMs),
-          unit: 'ms',
-          rating: lcpRating(lcpMs),
-        },
-        {
-          label: 'FCP',
-          value: ms(fcpMs),
-          unit: 'ms',
-          rating: fcpRating(fcpMs),
-        },
-        {
-          label: 'CLS',
-          value: round2(clsValue),
-          rating: clsRating(clsValue),
-        },
-      ]}
-    />
-
-    <!-- Performance Metrics -->
-    <MetricsSection
-      heading="Performance Metrics"
-      metrics={[
-        {
-          label: 'TTFB',
-          value: ms(ttfbMs),
-          unit: 'ms',
-        },
-        {
-          label: 'Transfer Size',
-          value: kb(transferBytes),
-          unit: 'KB',
-        },
-        {
-          label: 'Page Load Time',
-          value: ms(durationMs),
-          unit: 'ms',
-        },
-      ]}
-    />
-
+      <MetricsSection
+        heading="Performance Metrics"
+        metrics={[
+          {
+            label: 'TTFB',
+            value: ms(ttfbMs),
+            unit: 'ms',
+          },
+          {
+            label: 'Transfer Size',
+            value: kb(transferBytes),
+            unit: 'KB',
+          },
+          {
+            label: 'Page Load Time',
+            value: ms(durationMs),
+            unit: 'ms',
+          },
+        ]}
+      />
+    </div>
   </div>
 </Page>
 
 <style>
   .detail-header {
-    margin-bottom: 2rem; /* 32px */
+    margin-bottom: 1.5rem; /* 24px */
   }
 
   .back-link {
     display: inline-block;
     color: var(--muted);
     text-decoration: none;
-    margin-bottom: 1rem; /* 16px */
     font-size: 0.875rem; /* 14px */
     transition: color 0.2s ease;
   }
@@ -223,24 +252,66 @@ const formattedDate = date.toLocaleString('en-US', {
   .sections {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem; /* 24px */
+    gap: 2.5rem; /* 40px */
   }
 
   .panel {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 0.75rem; /* 12px */
-    padding: 1.25rem 1.5rem; /* 20px 24px */
-    display: flex;
-    flex-direction: column;
-    gap: 1rem; /* 16px */
+    padding: 1rem 1.25rem; /* 16px 20px */
   }
 
-  /* Info section */
-  .info-grid {
+  /* Overview section: two-column layout */
+  .overview-section {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); /* 288px */
-    gap: 0.75rem 1.5rem; /* 12px 24px */
+    grid-template-columns: 1fr auto;
+    gap: 2rem; /* 32px */
+    align-items: end;
+  }
+
+  .overview-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem; /* 40px - match sections gap */
+    min-width: 0;
+  }
+
+  .title-section {
+    padding-left: 1.25rem; /* 20px - match panel padding */
+  }
+
+  .title-section h1 {
+    margin: 0 0 0.25rem 0; /* 4px bottom */
+    font-size: 2rem; /* 32px */
+    font-weight: 700;
+  }
+
+  .title-section h1.no-name {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .title-section h2 {
+    margin: 0;
+    font-size: 1rem; /* 16px */
+    font-weight: 400;
+  }
+
+  .title-section h2.no-description {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .info-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* 12px */
     margin: 0;
   }
 
@@ -251,20 +322,24 @@ const formattedDate = date.toLocaleString('en-US', {
   }
 
   dt {
-    font-size: 0.75rem; /* 12px */
+    font-size: 0.6875rem; /* 11px */
     font-weight: 500;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
   }
 
   dd {
     font-size: 0.9375rem; /* 15px */
+    font-weight: 400;
     color: var(--text);
     margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.4;
+  }
+
+  .url-wrap {
+    overflow-wrap: break-word;
+    word-break: break-all;
   }
 
   .url-link {
@@ -285,15 +360,17 @@ const formattedDate = date.toLocaleString('en-US', {
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
       'Courier New', monospace;
     font-size: 0.8125rem; /* 13px */
-    color: var(--muted);
   }
 
-  /* Screenshot section */
+  .overview-right {
+    width: 25rem; /* 400px */
+  }
+
+  /* Screenshot */
   .screenshot-wrap {
-    border-radius: 0.5rem; /* 8px */
-    overflow: hidden;
     border: 1px solid var(--border);
     line-height: 0;
+    overflow: hidden;
   }
 
   .screenshot-wrap img {
@@ -305,13 +382,47 @@ const formattedDate = date.toLocaleString('en-US', {
   .screenshot-empty {
     padding: 2.5rem; /* 40px */
     text-align: center;
-    border: 1px dashed var(--border);
-    border-radius: 0.5rem; /* 8px */
+    border: 1px solid var(--border);
     color: var(--muted);
     font-size: 0.875rem; /* 14px */
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .screenshot-empty p {
     margin: 0;
+  }
+
+  /* Metrics row */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 3rem; /* 48px */
+    justify-content: start;
+  }
+
+  /* Responsive: stack on smaller screens */
+  @media (max-width: 64rem) {
+    /* 1024px */
+    .overview-section {
+      flex-direction: column;
+    }
+
+    .overview-right {
+      order: -1; /* Screenshot appears first on mobile */
+      width: 100%;
+      align-self: auto;
+    }
+
+    .screenshot-wrap {
+      height: auto;
+      align-items: center;
+    }
+
+    .metrics-row {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
