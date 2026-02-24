@@ -8,10 +8,12 @@ import type {
 
 // should browsers be headless? defaults to false unless running in CI
 // but can be overridden by explicitly setting HEADLESS variable to true or false
+const ciEnv = process.env.CI;
+const ciValue = ciEnv !== undefined ? ciEnv.toLowerCase() : undefined;
 const CI =
-  process.env.CI !== undefined &&
-  process.env.CI.toLowerCase() !== 'false' &&
-  process.env.CI !== '0';
+  ciValue !== undefined &&
+  ciValue !== 'false' &&
+  ciValue !== '0';
 
 const headless: boolean =
   process.env.HEADLESS !== undefined
