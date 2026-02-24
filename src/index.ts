@@ -309,6 +309,12 @@ export default function browserAgent(): void {
         'Dry run (do not run test, just save config and cleanup)',
       ).default(DEFAULT_OPTIONS.dry),
     )
+    .addOption(
+      new Option(
+        '--a11y <object>',
+        'Perform an accessibility test using Axe (Expects: {"tags": "best-practice"})',
+      ),
+    )
     .parse(process.argv);
 
   const cliOptions = program.opts() as CLIOptions;

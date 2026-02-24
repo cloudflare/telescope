@@ -178,6 +178,11 @@ export interface LaunchOptions {
   command?: string[];
   delay?: Record<string, number>;
   delayUsing?: DelayMethod;
+  a11y?: {
+    disable?: string[],
+    exclude?: string[],
+    tags: string[],
+  };
 }
 
 /**
@@ -630,4 +635,5 @@ export interface CLIOptions {
   dry?: boolean;
   delay?: string;
   delayUsing?: string;
+  a11y?: string;
 }
