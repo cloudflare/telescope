@@ -231,7 +231,9 @@ You can run tests with [specific browsers](#browser-support) by setting the `BRO
 BROWSERS=chrome,firefox npm run test
 ```
 
-Note: This option is ignored when [running in CI](#our-ci-pipeline).
+The same browser can be listed more than once; each occurrence will run as a separate test pass. This can be useful for debugging side effects of running multiple tests on the same browser or just long tests.
+
+Note: `BROWSERS` environment variable is ignored when [running in CI](#our-ci-pipeline).
 
 #### Running Tests In Headless Mode
 

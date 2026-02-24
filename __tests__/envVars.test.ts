@@ -128,6 +128,12 @@ describe('BROWSERS environment variable', () => {
     warnSpy.mockRestore();
   });
 
+  it('allows specifying the same browser multiple times, resulting in duplicate entries', async () => {
+    process.env.BROWSERS = 'firefox,firefox,chrome';
+    const { BrowserConfig } = await freshBrowserConfig();
+    expect(BrowserConfig.getBrowsers()).toEqual(['firefox', 'firefox', 'chrome']);
+  });
+
   it('BROWSERS is ignored when CI is set — always returns only firefox', async () => {
     process.env.CI = 'true';
     process.env.BROWSERS = 'chrome,safari';
