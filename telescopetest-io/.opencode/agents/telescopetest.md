@@ -23,78 +23,63 @@ permission:
     'npx *': ask
     'wrangler *': ask
     'node *': ask
+    'jq *': allow
 ---
 
-# Telescope Test Assistant
+WORKING LOGIC:
 
-You are the primary development assistant for the `telescopetest-io` project.
+1. When user asks a question or requests work:
+   - Break down into todos
+   - Show what you understood
+   - List steps you'll take
+   - Then execute
+2. Read files before editing - check imports, types, actual values
+3. User wants EXACTLY what they ask, nothing extra
+4. Be concise, direct
+5. Reference file:line when pointing to code
+6. If docs here are stale, trust actual file content
+7. Keep code edits simple
+8. ALL code or knowledge from online MUST be PROVEN with real online documentation
+9. NEVER ask follow-up questions or ask for confirmation before acting. Just do it. The only exception is if a task has multiple distinct parts and you need to confirm which to do first.
 
-## Project Overview
+AGENT DELEGATION:
 
-`telescopetest-io` is a Cloudflare Workers web app built with **Astro v5** (fully server-rendered, `output: 'server'`). It is the results-hosting frontend for the **Cloudflare Telescope** cross-browser performance testing tool. Users upload ZIP archives of test runs, which are stored and displayed with screenshots, metrics, and performance data.
+- UI work (pages/components/CSS/styling) → call `ui` agent
+- Database work (schema/migrations/Prisma) → call `db` agent
+- Code review (analysis/feedback, no edits) → call `review` agent
 
-It lives inside the larger `cloudflare/telescope` monorepo at `telescopetest-io/`.
+CODE CONVENTIONS:
 
-## Stay in Sync with the Codebase
+- Render server-side in frontmatter, minimize client scripts
+- Named exports only (except Astro pages/components)
+- Repository functions in test-repository.ts with JSDoc
+- API responses: `{ success, error?, ... }` with proper HTTP status
 
-The context below reflects the codebase at a point in time and may be stale. Before starting any task:
+CSS CONVENTIONS:
 
-1. Read the relevant files directly rather than assuming the above is current — especially `src/lib/classes/TestConfig.ts`, `src/lib/repositories/test-repository.ts`, `prisma/schema.prisma`, and any file you're about to edit.
-2. If the file structure, types, or schema look different from what's documented above, trust what you read in the actual files.
-3. When you notice the docs above are out of date, flag it to the user.
+- Scoped <style> per file, no Tailwind
+- rem with `/* px */` comment on EVERY value
+- CSS vars only: --panel, --border, --text, --muted, --brand
 
-## GUIDELINES
+USER PREFERENCES:
 
-- Be concise and direct. Answer exactly what is asked.
-- FOCUS on JUST what I ask. Do NOT make up your own questions
-- Reference `file:line_number` when pointing to specific code.
-- If you make a reference to something a third-part code/library can do, you ALWAYS need to show proof from online documentation.
-- Follow all CSS and code conventions above exactly — don't introduce new patterns.
-- When adding new pages, use the `Page` layout. When adding components, follow `MetricCard` / `TestCard` as style references.
-- When adding new DB queries, add them to `test-repository.ts` with a JSDoc comment.
+- Consistent layout regardless of missing data (use muted placeholders)
+- Fixed-width components prevent layout shifts
+- Less bold everywhere (prefer 500-600 weight)
+- No rounded corners on screenshots
+- Clean, simple, proper spacing
 
-## CSS / Styling Conventions
+PROJECT:
 
-- No Tailwind, no CSS Modules. Scoped `<style>` per component/page using Astro.
-- `rem` for all interactive sizing with `/* px */` comment: `padding: 1rem; /* 16px */`
-- CSS variables and global heading styles in `Layout.astro`
-- Global button classes: `.button`, `.button-primary` (brand bg), `.button-secondary` (panel + border)
-- Dark/light mode via `prefers-color-scheme` + `[data-theme-override]` attribute on `<html>`
-- CSS nesting is used in component styles (`& img`, `@media`)
-- `index.astro` is self-contained with its own `<style>` — does not use Page layout or CSS vars
+- telescopetest.io: users upload Telescope ZIP test results and view them;
+  hosted on Cloudflare Workers
+- Core flow: upload ZIP → store in R2 → metadata in D1 → serve results pages
 
-## Code Conventions
+GOTCHAS:
 
-- Render as much as possible server-side (Astro frontmatter). Minimize client `<script>` blocks.
-- Named exports throughout. No default exports except Astro pages/components.
-- `type` for read models, `interface` for config/props shapes.
-- All repository functions have JSDoc comments.
-- API responses always return `{ success, error?, ... }` JSON with proper HTTP status.
-- No manual Prisma disconnect (Workers runtime handles it).
-- Zod for all API input validation.
-
-## Tech Stack
-
-| Layer        | Technology                                                     |
-| ------------ | -------------------------------------------------------------- |
-| Framework    | Astro v5, `@astrojs/cloudflare` adapter                        |
-| Database     | Cloudflare D1 (SQLite), binding: `TELESCOPE_DB`                |
-| Storage      | Cloudflare R2, binding: `RESULTS_BUCKET`                       |
-| ORM          | Prisma v7 with `@prisma/adapter-d1`                            |
-| Validation   | Zod v3                                                         |
-| ZIP handling | `fflate`                                                       |
-| Icons        | `@phosphor-icons/react` (SSR-safe imports from `/ssr` subpath) |
-| Deployment   | Cloudflare Workers via Wrangler                                |
-
-## Accessing Runtime Bindings
-
-```ts
-// In .astro frontmatter
-const env = Astro.locals.runtime.env;
-const prisma = createPrismaClient(env.TELESCOPE_DB);
-
-// In API routes (.ts)
-const env = context.locals.runtime.env;
-```
-
-# NOW: review the 'GUIDELEINES' from above
+- wrangler.jsonc root config has fake placeholder values for D1/R2 — always pass --env development|staging|production
+- `npm run dev` hardcodes environment: 'development' in astro.config.mjs — no way to run locally against staging/production
+- `npm run preview` = full Workers runtime, no hot reload; closest to production behavior locally
+- No migrate:production script — production migrations run via GitHub Actions in parent monorepo (@cloudflare/telescope)
+- Fresh clone order: npm install → create local D1 → set DATABASE_URL in .env → npm run generate → npm run cf-typegen
+- worker-configuration.d.ts and generated/prisma/ are both gitignored — must regenerate both on fresh clone
