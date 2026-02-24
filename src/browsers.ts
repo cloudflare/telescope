@@ -10,10 +10,7 @@ import type {
 // but can be overridden by explicitly setting HEADLESS variable to true or false
 const ciEnv = process.env.CI;
 const ciValue = ciEnv !== undefined ? ciEnv.toLowerCase() : undefined;
-const CI =
-  ciValue !== undefined &&
-  ciValue !== 'false' &&
-  ciValue !== '0';
+const CI = ciValue !== undefined && ciValue !== 'false' && ciValue !== '0';
 
 const headless: boolean =
   process.env.HEADLESS !== undefined
@@ -132,8 +129,8 @@ class BrowserConfig {
     }
 
     if (process.env.BROWSERS) {
-      const requestedBrowsers = process.env.BROWSERS.split(',')
-        .map(browser => browser.trim())
+      const requestedBrowsers = process.env.BROWSERS.split(/[,\s]+/)
+        .map(browser => browser.trim().toLowerCase())
         .filter(browser => browser.length > 0);
 
       const envBrowsers = requestedBrowsers.filter(browser =>
@@ -151,9 +148,14 @@ class BrowserConfig {
           )}`,
         );
       }
-      if (envBrowsers.length > 0) {
-        return envBrowsers;
+
+      if (envBrowsers.length === 0) {
+        console.warn(
+          'No valid browsers specified in BROWSERS environment variable; returning an empty browser list.',
+        );
       }
+
+      return envBrowsers;
     }
 
     return configuredBrowsers;

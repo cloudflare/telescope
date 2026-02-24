@@ -48,6 +48,23 @@ Options:
   --help                        display help for command
 ```
 
+### Browser Support
+
+Telescope uses Playwright to control and manage individual browser engines:
+
+```
+npx . -u https://www.example.com -b firefox
+```
+
+And supports the following browsers:
+
+- [Chrome](https://www.google.com/chrome/) - `chrome`
+  - [Chrome Beta](https://www.google.com/chrome/beta/) - `chrome-beta`
+  - [Chrome Canary](https://www.google.com/chrome/canary/) - `canary`
+- [Edge](https://www.microsoft.com/en-us/edge/) - `edge`
+- [Safari](https://www.apple.com/safari/) - `safari`
+- [Firefox](https://www.firefox.com/) - `firefox`
+
 ### Custom Timeout
 
 You can set a custom timeout by passing the desired timeout in milliseconds using the `--timeout` parameter. Defaults to 30000, or 30 seconds.
@@ -151,7 +168,7 @@ npm run build
 
 ### Chrome, Firefox, and Safari
 
-Telescope uses Playwright to control and manage individual browser engines. Telescope will automatically run `npx playwright install` to install Chrome, Firefox, and Safari (webkit).
+Telescope will automatically run `npx playwright install` to install Chrome, Firefox, and Safari (webkit).
 
 ### Microsoft Edge and Chrome-beta
 
@@ -208,11 +225,13 @@ npm run test
 
 #### Using Specific Browsers
 
-You can run tests with specific browsers by setting the `BROWSERS` environment variable. For example, to run tests with Chrome and Firefox, you can run:
+You can run tests with [specific browsers](#browser-support) by setting the `BROWSERS` environment variable. For example, to run tests with Chrome and Firefox, you can run:
 
 ```
 BROWSERS=chrome,firefox npm run test
 ```
+
+Note: This option is ignored when [running in CI](#our-ci-pipeline).
 
 #### Running Tests In Headless Mode
 
@@ -228,4 +247,4 @@ Our CI pipeline is set up to run tests on every push to the repository so you ca
 
 At this point, to limit the length of the tests and (to simplify compatibility with GitHub Actions) it runs tests in headless mode on `firefox` only.
 
-If you want to run the same configuration locally, you can run `CI=true npm test`. You can override the default headless CI mode by setting the `HEADLESS` environment variable to `false`. But you can't override a set of browsers to run tests on.
+If you want to run the same configuration locally, you can run `CI=true npm test`. You can override the default headless CI mode by setting the `HEADLESS` environment variable to `false`. However, you can't override the set of browsers that the CI configuration runs (it will always run `firefox` only).
