@@ -56,5 +56,8 @@
     "msw": "^2.12.10",
     "playwright": "^1.58.2",
     "playwright-webkit": "^1.58.2"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
