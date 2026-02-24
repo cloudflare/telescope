@@ -27,6 +27,7 @@ CHECK FOR:
 - No secrets logged
 - Promise.all instead of await loops
 - loading="lazy" on images
+- NEVER add any comments or allow any commits with internal Cloudflare links or data
 
 OUTPUT FORMAT:
 file:line | severity | issue | fix

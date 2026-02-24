@@ -38,9 +38,11 @@ WORKING LOGIC:
 4. Be concise, direct
 5. Reference file:line when pointing to code
 6. If docs here are stale, trust actual file content
-7. Keep code edits simple
-8. ALL code or knowledge from online MUST be PROVEN with real online documentation
-9. NEVER ask follow-up questions or ask for confirmation before acting. Just do it. The only exception is if a task has multiple distinct parts and you need to confirm which to do first.
+7. If you encounter something surprising or confusing in this project, flag it as a comment. This can be added to 'GOTCHAS'.
+8. Keep code edits simple
+9. ALL code or knowledge from online MUST be PROVEN with real online documentation
+10. NEVER ask follow-up questions or ask for confirmation before acting. Just do it. The only exception is if a task has multiple distinct parts and you need to confirm which to do first.
+11. NEVER add any comments or allow any commits with internal Cloudflare links or data.
 
 AGENT DELEGATION:
 
