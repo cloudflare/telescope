@@ -188,13 +188,24 @@ export default function browserAgent(): void {
       new Option(
         '--blockDomains <domains...>',
         'A comma separated list of domains to block',
-      ).default(DEFAULT_OPTIONS.blockDomains),
+      ),
     )
     .addOption(
       new Option(
         '--block <substrings...>',
         'A comma-delimited list of urls to block (based on a substring match)',
-      ).default(DEFAULT_OPTIONS.block),
+      ),
+    )
+    .addOption(
+      new Option(
+        '--delay <object>',
+        'An object mapping request regexes to response delays. Example: \'{".css$": 2000, ".js$": 5000}\'',
+      ),
+    )
+    .addOption(
+      new Option('--delayUsing <string>', 'Method to use to delay responses')
+        .default(DEFAULT_OPTIONS.delayUsing)
+        .choices(['continue', 'fulfill']),
     )
     .addOption(
       new Option(
@@ -285,6 +296,12 @@ export default function browserAgent(): void {
         '--zip',
         'Zip the results of the test into the results directory.',
       ).default(DEFAULT_OPTIONS.zip),
+    )
+    .addOption(
+      new Option(
+        '--uploadUrl <string>',
+        'Upload zipped results to URL. Must be a valid URL if provided.',
+      ).default(DEFAULT_OPTIONS.uploadUrl),
     )
     .addOption(
       new Option(

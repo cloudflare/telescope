@@ -19,6 +19,10 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   blockDomains: [],
   // URL substrings to block (request blocking)
   block: [],
+  // Request regex with a corresponding response delay in ms
+  delay: {},
+  // Delay implementation method
+  delayUsing: 'continue',
   // Disable JavaScript execution
   disableJS: false,
   // Enable debug logging
@@ -37,6 +41,8 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   auth: false,
   // Compress output to zip file (false = no zip)
   zip: false,
+  // URL to upload results as zip file (null = no upload)
+  uploadUrl: null,
   // Dry run (false = no dry run)
   dry: false,
 };

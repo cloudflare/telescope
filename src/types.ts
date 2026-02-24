@@ -4,6 +4,7 @@
  */
 
 import type { BrowserContext, HTTPCredentials } from 'playwright';
+import type { DelayMethod } from './delay.js';
 
 // ============================================================================
 // Cookie Types
@@ -186,10 +187,13 @@ export interface LaunchOptions {
   list?: boolean;
   overrideHost?: Record<string, string>;
   zip?: boolean;
+  uploadUrl?: string | null;
   dry?: boolean;
   userAgent?: string;
   agentExtra?: string;
   command?: string[];
+  delay?: Record<string, number>;
+  delayUsing?: DelayMethod;
 }
 
 /**
@@ -212,7 +216,10 @@ export interface DefaultOptions {
   connectionType: ConnectionType;
   auth: HTTPCredentials | false;
   zip: boolean;
+  uploadUrl: string | null;
   dry: boolean;
+  delay: Record<string, number>;
+  delayUsing: DelayMethod;
 }
 
 // ============================================================================
@@ -524,6 +531,9 @@ export interface SavedConfig {
 // HAR Types
 // ============================================================================
 
+/**
+ * HTTP Header entry
+ */
 export interface HTTPHeader {
   name: string;
   value: string;
@@ -641,7 +651,10 @@ export interface CLIOptions {
   list?: boolean;
   overrideHost?: string;
   zip?: boolean;
+  uploadUrl?: string;
   dry?: boolean;
+  delay?: string;
+  delayUsing?: string;
   userAgent?: string;
   agentExtra?: string;
 }

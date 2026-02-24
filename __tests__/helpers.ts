@@ -1,8 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import type { HarData, Metrics, SavedConfig } from '../src/types.js';
+import type {
+  HarData,
+  Metrics,
+  ResourceTiming,
+  SavedConfig,
+} from '../src/types.js';
 
-type ResultType = 'result' | 'config' | 'metrics';
+type ResultType = 'result' | 'config' | 'metrics' | 'resources';
 
 function testDirectory(testId: string | undefined): string {
   if (!testId) {
@@ -74,4 +79,14 @@ export function cleanupTestDirectory(testId: string | undefined): void {
   if (path && fs.existsSync(path)) {
     fs.rmSync(path, { recursive: true, force: true });
   }
+}
+
+export function retrieveResources(
+  testId: string | undefined,
+): ResourceTiming[] | null {
+  return retrieveResults<ResourceTiming[]>(
+    testId,
+    'resources.json',
+    'resources',
+  );
 }

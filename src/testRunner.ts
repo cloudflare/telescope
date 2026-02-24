@@ -6,7 +6,10 @@ import {
   readFileSync,
   readdirSync,
   writeFileSync,
+  unlinkSync,
+  existsSync,
 } from 'fs';
+
 import path from 'path';
 import url from 'url';
 import { exec } from 'child_process';
@@ -39,6 +42,7 @@ import type {
   SavedConfig,
 } from './types.js';
 import type { BrowserContext, Page, Route, Request } from 'playwright';
+import { delayUsingFulfill, delayUsingContinue } from './delay.js';
 
 class TestRunner {
   args: string[] = [];
@@ -150,6 +154,43 @@ class TestRunner {
   }
 
   /**
+   * Set up response delays using the page.route handler
+   */
+  async setupResponseDelays(page: Page): Promise<void[]> {
+    if (!this.options.delay) {
+      return [];
+    }
+
+    return Promise.all(
+      Object.entries(this.options.delay).map(async ([regexString, delay]) => {
+        log(
+          `Adding a rule for delaying URLs matching '${regexString}' regex for ${delay} (using "${this.options.delayUsing}" method)`,
+        );
+
+        let regex: RegExp;
+        try {
+          regex = new RegExp(regexString, 'i');
+        } catch (error) {
+          const message =
+            `Invalid delay rule regex '${regexString}': ` +
+            (error instanceof Error ? error.message : String(error));
+          throw new Error(message);
+        }
+
+        if (this.options.delayUsing === 'fulfill') {
+          await page.route(regex, async (route: Route, request: Request) =>
+            delayUsingFulfill(route, request, regexString, delay),
+          );
+        } else if (this.options.delayUsing === 'continue') {
+          await page.route(regex, async (route: Route, request: Request) =>
+            delayUsingContinue(route, request, regexString, delay),
+          );
+        }
+      }),
+    );
+  }
+
+  /**
    * Creates a browser instance using the browser config for the browser to be tested
    * Also merges in any browser-specific settings
    */
@@ -240,10 +281,15 @@ class TestRunner {
     this.setupConsoleMessages(page);
 
     if (this.options.overrideHost) {
-      this.setupHostOverrides(page, this.options.overrideHost);
+      await this.setupHostOverrides(page, this.options.overrideHost);
     }
 
+    // In Playwright, route handlers are executed in reverse order of registration (last registered handler runs first)
+    // delays would be set up first, then blocking
+    // blocking would happen first, then delays
+    await this.setupResponseDelays(page);
     await this.setupBlocking(page);
+
     page.on('requestfinished', data => {
       const reqData: RequestData = {
         url: data.url(),
@@ -724,6 +770,47 @@ class TestRunner {
         zip.writeZip(outputZip);
       } catch (err) {
         console.error('Error creating zip file:', err);
+      }
+    }
+
+    // handle uploading
+    if (this.options.uploadUrl) {
+      const outputZip = `./results/${this.TESTID}.zip`;
+      const tempZip = !this.options.zip;
+
+      try {
+        if (tempZip) {
+          const zip = new AdmZip();
+          zip.addLocalFolder(this.paths['results']);
+          zip.writeZip(outputZip);
+        }
+
+        const form = new FormData();
+        form.append(
+          'file',
+          new Blob([readFileSync(outputZip)], { type: 'application/zip' }),
+          `${this.TESTID}.zip`,
+        );
+
+        const response = await fetch(this.options.uploadUrl, {
+          method: 'POST',
+          body: form,
+        });
+
+        if (!response.ok) {
+          console.error(
+            `Error uploading zip file: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        if (tempZip) {
+          unlinkSync(outputZip);
+        }
+      } catch (err) {
+        if (tempZip && existsSync(outputZip)) {
+          unlinkSync(outputZip);
+        }
+        throw err;
       }
     }
 

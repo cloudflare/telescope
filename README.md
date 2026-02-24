@@ -28,9 +28,10 @@ Options:
   -c, --cookies <object>        Any custom cookies to apply
   -f, --flags <string>          A comma separated list of Chromium flags to launch Chrome with. See: https://peter.sh/experiments/chromium-command-line-switches/
   --agentExtra <string>         A string to append to the end of the default User-Agent. Takes precedence over --userAgent option.
-  --blockDomains <domains...>   A comma separated list of domains to block (default: [])
-  --block <substrings...>       A comma-delimited list of urls to block (based on a substring match) (default: [])
-  --overrideHost <object>       Override the hostname of a URI with another host (Expects: {"example.com": "uat.example.com"})
+  --blockDomains <domains...>   A comma separated list of domains to block
+  --block <substrings...>       A comma-delimited list of urls to block (based on a substring match)
+  --delay <object>              An object mapping request regexes to response delays. Example: '{".css$": 2000, ".js$": 5000}'
+  --delayUsing <string>         Method to use to delay responses (choices: "continue", "fulfill", default: "continue")
   --firefoxPrefs <object>       Any Firefox User Preferences to apply (Firefox only). Example: '{"network.trr.mode": 2}'
   --cpuThrottle <int>           CPU throttling factor
   --connectionType <string>     Network connection type. By default, no throttling is applied. (choices: "cable", "dsl", "4g", "3g", "3gfast", "3gslow", "2g", "fios", default: false)
@@ -44,8 +45,10 @@ Options:
   --html                        Generate HTML report (default: false)
   --openHtml                    Open HTML report in browser (requires --html) (default: false)
   --list                        Generate list of results in HTML (default: false)
+  --overrideHost <object>       Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})
   --userAgent <string>          Set the browsers User-Agent
   --zip                         Zip the results of the test into the results directory. (default: false)
+  --uploadUrl <string>          Upload results to URL. Must be a valid URL if provided. (default: null)
   --dry                         Dry run (do not run test, just save config and cleanup) (default: false)
   --help                        display help for command
 ```
