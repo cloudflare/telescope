@@ -6,16 +6,31 @@ import type {
   LaunchOptions,
 } from './types.js';
 
-// should browsers be headless? defaults to false unless running in CI
-// but can be overridden by explicitly setting HEADLESS variable to true or false
-const ciEnv = process.env.CI;
-const ciValue = ciEnv !== undefined ? ciEnv.toLowerCase() : undefined;
-const CI = ciValue !== undefined && ciValue !== 'false' && ciValue !== '0';
+const TRUTHY_VALUES = new Set(['true', '1', 'yes', 'on']);
+const FALSY_VALUES = new Set(['false', '0', 'no', 'off']);
 
-const headless: boolean =
-  process.env.HEADLESS !== undefined
-    ? process.env.HEADLESS.toLowerCase() === 'true'
-    : CI;
+/**
+ * Parse an environment variable string as a boolean.
+ * Truthy values: 'true', '1', 'yes', 'on' (case-insensitive).
+ * Falsy values: 'false', '0', 'no', 'off' (case-insensitive).
+ * Unrecognised values fall back to `defaultValue`.
+ */
+function parseEnvBool(
+  value: string | undefined,
+  defaultValue: boolean,
+): boolean {
+  if (value === undefined) return defaultValue;
+  const lower = value.toLowerCase();
+  if (TRUTHY_VALUES.has(lower)) return true;
+  if (FALSY_VALUES.has(lower)) return false;
+  return defaultValue;
+}
+
+// should browsers be headless? defaults to false unless running in CI
+// but can be overridden by explicitly setting HEADLESS to any truthy/falsy value
+const CI = parseEnvBool(process.env.CI, false);
+
+const headless: boolean = parseEnvBool(process.env.HEADLESS, CI);
 
 type BrowserConfigs = Record<BrowserName, BrowserConfigEntry>;
 

@@ -1,10 +1,10 @@
 /**
- * Tests for BROWSERS and HEADLESS environment variable handling in src/browsers.ts.
+ * Tests for BROWSERS, HEADLESS, and CI environment variable handling in
+ * src/browsers.ts.
  *
- * Because the module evaluates CI, HEADLESS, and BROWSERS at load time (top-level
- * const), each group of tests must re-import the module after setting the desired
- * env vars. We use jest.resetModules() + a dynamic import() inside each test/
- * beforeEach to achieve true module isolation.
+ * Because the module evaluates these variables at load time (top-level const),
+ * each test must re-import the module after setting the desired env vars.
+ * jest.resetModules() + dynamic import() achieves true module isolation.
  */
 
 import { jest } from '@jest/globals';
@@ -19,12 +19,26 @@ import type { BrowserName } from '../src/types.js';
  * env-var reads in browsers.ts are re-evaluated against the current process.env.
  */
 async function freshBrowserConfig(): Promise<{
-  BrowserConfig: { getBrowsers(): BrowserName[]; browserConfigs: Record<string, { headless: boolean }> };
+  BrowserConfig: {
+    getBrowsers(): BrowserName[];
+    browserConfigs: Record<string, { headless: boolean }>;
+  };
 }> {
   jest.resetModules();
   return import('../src/browsers.js') as Promise<{
-    BrowserConfig: { getBrowsers(): BrowserName[]; browserConfigs: Record<string, { headless: boolean }> };
+    BrowserConfig: {
+      getBrowsers(): BrowserName[];
+      browserConfigs: Record<string, { headless: boolean }>;
+    };
   }>;
+}
+
+/** Assert that every browser config entry has headless === expected. */
+async function expectHeadless(expected: boolean): Promise<void> {
+  const { BrowserConfig } = await freshBrowserConfig();
+  for (const config of Object.values(BrowserConfig.browserConfigs)) {
+    expect(config.headless).toBe(expected);
+  }
 }
 
 const ALL_BROWSERS: BrowserName[] = [
@@ -36,6 +50,19 @@ const ALL_BROWSERS: BrowserName[] = [
   'edge',
 ];
 
+const TRUTHY_VALUES = ['true', '1', 'yes', 'on', 'TRUE', 'YES', 'ON'];
+const FALSY_VALUES = ['false', '0', 'no', 'off', 'FALSE', 'NO', 'OFF'];
+
+// ---------------------------------------------------------------------------
+// Shared env setup
+// ---------------------------------------------------------------------------
+
+function cleanEnv(): void {
+  delete process.env.CI;
+  delete process.env.BROWSERS;
+  delete process.env.HEADLESS;
+}
+
 // ---------------------------------------------------------------------------
 // BROWSERS env var — getBrowsers()
 // ---------------------------------------------------------------------------
@@ -45,9 +72,7 @@ describe('BROWSERS environment variable', () => {
 
   beforeEach(() => {
     process.env = { ...originalEnv };
-    delete process.env.CI;
-    delete process.env.BROWSERS;
-    delete process.env.HEADLESS;
+    cleanEnv();
   });
 
   afterEach(() => {
@@ -74,7 +99,11 @@ describe('BROWSERS environment variable', () => {
   it('handles spaces around browser names', async () => {
     process.env.BROWSERS = 'chrome, firefox, safari';
     const { BrowserConfig } = await freshBrowserConfig();
-    expect(BrowserConfig.getBrowsers()).toEqual(['chrome', 'firefox', 'safari']);
+    expect(BrowserConfig.getBrowsers()).toEqual([
+      'chrome',
+      'firefox',
+      'safari',
+    ]);
   });
 
   it('handles space-separated browser names (no commas)', async () => {
@@ -97,9 +126,7 @@ describe('BROWSERS environment variable', () => {
     const result = BrowserConfig.getBrowsers();
 
     expect(result).toEqual(['firefox']);
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('hotdog'),
-    );
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('hotdog'));
     warnSpy.mockRestore();
   });
 
@@ -131,7 +158,11 @@ describe('BROWSERS environment variable', () => {
   it('allows specifying the same browser multiple times, resulting in duplicate entries', async () => {
     process.env.BROWSERS = 'firefox,firefox,chrome';
     const { BrowserConfig } = await freshBrowserConfig();
-    expect(BrowserConfig.getBrowsers()).toEqual(['firefox', 'firefox', 'chrome']);
+    expect(BrowserConfig.getBrowsers()).toEqual([
+      'firefox',
+      'firefox',
+      'chrome',
+    ]);
   });
 
   it('BROWSERS is ignored when CI is set — always returns only firefox', async () => {
@@ -143,7 +174,7 @@ describe('BROWSERS environment variable', () => {
 });
 
 // ---------------------------------------------------------------------------
-// HEADLESS env var — headless flag on browserConfigs entries
+// HEADLESS env var
 // ---------------------------------------------------------------------------
 
 describe('HEADLESS environment variable', () => {
@@ -151,9 +182,7 @@ describe('HEADLESS environment variable', () => {
 
   beforeEach(() => {
     process.env = { ...originalEnv };
-    delete process.env.CI;
-    delete process.env.BROWSERS;
-    delete process.env.HEADLESS;
+    cleanEnv();
   });
 
   afterEach(() => {
@@ -161,43 +190,32 @@ describe('HEADLESS environment variable', () => {
   });
 
   it('defaults to false when neither CI nor HEADLESS is set', async () => {
-    const { BrowserConfig } = await freshBrowserConfig();
-    for (const config of Object.values(BrowserConfig.browserConfigs)) {
-      expect(config.headless).toBe(false);
-    }
+    await expectHeadless(false);
   });
 
-  it('is true when HEADLESS=true', async () => {
-    process.env.HEADLESS = 'true';
-    const { BrowserConfig } = await freshBrowserConfig();
-    for (const config of Object.values(BrowserConfig.browserConfigs)) {
-      expect(config.headless).toBe(true);
-    }
+  describe.each(TRUTHY_VALUES)('HEADLESS=%s enables headless', value => {
+    it('is true', async () => {
+      process.env.HEADLESS = value;
+      await expectHeadless(true);
+    });
   });
 
-  it('is false when HEADLESS=false, even if CI is set', async () => {
+  describe.each(FALSY_VALUES)('HEADLESS=%s disables headless', value => {
+    it('is false', async () => {
+      process.env.HEADLESS = value;
+      await expectHeadless(false);
+    });
+  });
+
+  it('unrecognised HEADLESS value falls back to false (no CI)', async () => {
+    process.env.HEADLESS = 'maybe';
+    await expectHeadless(false);
+  });
+
+  it('unrecognised HEADLESS value falls back to CI value (CI=true)', async () => {
     process.env.CI = 'true';
-    process.env.HEADLESS = 'false';
-    const { BrowserConfig } = await freshBrowserConfig();
-    for (const config of Object.values(BrowserConfig.browserConfigs)) {
-      expect(config.headless).toBe(false);
-    }
-  });
-
-  it('HEADLESS is case-insensitive (TRUE)', async () => {
-    process.env.HEADLESS = 'TRUE';
-    const { BrowserConfig } = await freshBrowserConfig();
-    for (const config of Object.values(BrowserConfig.browserConfigs)) {
-      expect(config.headless).toBe(true);
-    }
-  });
-
-  it('treats any non-"true" HEADLESS value as false', async () => {
-    process.env.HEADLESS = 'yes';
-    const { BrowserConfig } = await freshBrowserConfig();
-    for (const config of Object.values(BrowserConfig.browserConfigs)) {
-      expect(config.headless).toBe(false);
-    }
+    process.env.HEADLESS = 'maybe';
+    await expectHeadless(true);
   });
 });
 
@@ -210,61 +228,58 @@ describe('CI environment variable', () => {
 
   beforeEach(() => {
     process.env = { ...originalEnv };
-    delete process.env.CI;
-    delete process.env.BROWSERS;
-    delete process.env.HEADLESS;
+    cleanEnv();
   });
 
   afterEach(() => {
     process.env = originalEnv;
   });
 
-  it('CI=true restricts browsers to firefox only', async () => {
-    process.env.CI = 'true';
-    const { BrowserConfig } = await freshBrowserConfig();
-    expect(BrowserConfig.getBrowsers()).toEqual(['firefox']);
+  describe.each(TRUTHY_VALUES)('CI=%s', value => {
+    it('restricts browsers to firefox only', async () => {
+      process.env.CI = value;
+      const { BrowserConfig } = await freshBrowserConfig();
+      expect(BrowserConfig.getBrowsers()).toEqual(['firefox']);
+    });
+
+    it('enables headless mode', async () => {
+      process.env.CI = value;
+      await expectHeadless(true);
+    });
   });
 
-  it('CI=true enables headless mode', async () => {
-    process.env.CI = 'true';
-    const { BrowserConfig } = await freshBrowserConfig();
-    for (const config of Object.values(BrowserConfig.browserConfigs)) {
-      expect(config.headless).toBe(true);
-    }
+  describe.each(FALSY_VALUES)('CI=%s is treated as CI not being set', value => {
+    it('returns all browsers', async () => {
+      process.env.CI = value;
+      const { BrowserConfig } = await freshBrowserConfig();
+      expect(BrowserConfig.getBrowsers()).toEqual(ALL_BROWSERS);
+    });
+
+    it('headless is false', async () => {
+      process.env.CI = value;
+      await expectHeadless(false);
+    });
   });
 
-  it('CI=false is treated as CI not being set (all browsers, not headless)', async () => {
-    process.env.CI = 'false';
-    const { BrowserConfig } = await freshBrowserConfig();
-    expect(BrowserConfig.getBrowsers()).toEqual(ALL_BROWSERS);
-    for (const config of Object.values(BrowserConfig.browserConfigs)) {
-      expect(config.headless).toBe(false);
-    }
-  });
-
-  it('CI=0 is treated as CI not being set', async () => {
-    process.env.CI = '0';
-    const { BrowserConfig } = await freshBrowserConfig();
-    expect(BrowserConfig.getBrowsers()).toEqual(ALL_BROWSERS);
-    for (const config of Object.values(BrowserConfig.browserConfigs)) {
-      expect(config.headless).toBe(false);
-    }
-  });
-
-  it('HEADLESS=true overrides CI headless mode when CI is not set', async () => {
-    process.env.HEADLESS = 'true';
-    const { BrowserConfig } = await freshBrowserConfig();
-    for (const config of Object.values(BrowserConfig.browserConfigs)) {
-      expect(config.headless).toBe(true);
-    }
-  });
-
-  it('HEADLESS=false overrides headless even when CI is set', async () => {
+  it('HEADLESS overrides the headless flag set by CI (HEADLESS=false, CI=true)', async () => {
     process.env.CI = 'true';
     process.env.HEADLESS = 'false';
-    const { BrowserConfig } = await freshBrowserConfig();
-    for (const config of Object.values(BrowserConfig.browserConfigs)) {
-      expect(config.headless).toBe(false);
-    }
+    await expectHeadless(false);
+  });
+
+  it('HEADLESS overrides the headless flag set by CI (HEADLESS=0, CI=1)', async () => {
+    process.env.CI = '1';
+    process.env.HEADLESS = '0';
+    await expectHeadless(false);
+  });
+
+  it('HEADLESS enables headless independently of CI (HEADLESS=true, CI unset)', async () => {
+    process.env.HEADLESS = 'true';
+    await expectHeadless(true);
+  });
+
+  it('HEADLESS enables headless independently of CI (HEADLESS=1, CI unset)', async () => {
+    process.env.HEADLESS = '1';
+    await expectHeadless(true);
   });
 });
