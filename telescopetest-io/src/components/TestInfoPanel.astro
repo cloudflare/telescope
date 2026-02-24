@@ -1,0 +1,109 @@
+---
+export interface Props {
+  testId: string;
+  url: string;
+  browser: string;
+  formattedDate: string;
+}
+
+const { testId, url, browser, formattedDate } = Astro.props;
+---
+
+<div class="info-panel panel">
+  <dl class="info-list">
+    <div class="info-row">
+      <dt>Test Date</dt>
+      <dd>{formattedDate}</dd>
+    </div>
+    <div class="info-row">
+      <dt>Browser</dt>
+      <dd class="capitalize">{browser}</dd>
+    </div>
+    <div class="info-row">
+      <dt>Test ID</dt>
+      <dd class="mono">{testId}</dd>
+    </div>
+    <div class="info-row">
+      <dt>URL</dt>
+      <dd class="url-wrap">
+        <a href={url} target="_blank" rel="noopener noreferrer" class="url-link"
+          >{url}</a
+        >
+      </dd>
+    </div>
+  </dl>
+</div>
+
+<style>
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem; /* 12px */
+    padding: 1rem 1.25rem; /* 16px 20px */
+  }
+
+  .info-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* 12px */
+    margin: 0;
+  }
+
+  .info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem; /* 4px */
+  }
+
+  dt {
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  dd {
+    font-size: 0.9375rem; /* 15px */
+    font-weight: 400;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .url-wrap {
+    overflow-wrap: break-word;
+    word-break: break-all;
+  }
+
+  .url-link {
+    color: var(--brand);
+    text-decoration: none;
+  }
+
+  .url-link:hover {
+    text-decoration: underline;
+  }
+
+  .capitalize {
+    text-transform: capitalize;
+  }
+
+  .mono {
+    font-family:
+      ui-monospace,
+      SFMono-Regular,
+      Menlo,
+      Monaco,
+      Consolas,
+      'Liberation Mono',
+      'Courier New',
+      monospace;
+    font-size: 0.8125rem; /* 13px */
+  }
+</style>

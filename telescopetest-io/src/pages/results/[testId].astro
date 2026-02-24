@@ -1,9 +1,27 @@
 ---
 import Page from '@/layouts/Page.astro';
 import MetricsSection from '@/components/MetricsSection.astro';
+import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
+import TestInfoPanel from '@/components/TestInfoPanel.astro';
 
-import { createPrismaClient } from '@/lib/prisma/client';
+import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/test-repository';
+
+import type { MetricsJson } from '@/lib/metrics/types';
+import {
+  extractFcp,
+  extractLcp,
+  extractCls,
+  extractTtfb,
+  extractTransferSize,
+  extractDuration,
+} from '@/lib/metrics/extractors';
+import {
+  getFcpRating,
+  getLcpRating,
+  getClsRating,
+} from '@/lib/metrics/web-vitals';
+import { formatMs, formatDecimal, formatKb } from '@/lib/metrics/formatters';
 
 export const prerender = false;
 
@@ -14,7 +32,7 @@ if (!testId) {
 }
 
 const env = Astro.locals.runtime.env;
-const prisma = createPrismaClient(env.TELESCOPE_DB);
+const prisma = getPrismaClient(Astro);
 const test = await getTestById(prisma, testId);
 
 if (!test) {
@@ -29,18 +47,6 @@ const screenshotUrl = screenshotObj
   : null;
 
 // --- Metrics ---
-interface MetricsJson {
-  navigationTiming?: {
-    responseStart?: number;
-    transferSize?: number;
-    encodedBodySize?: number;
-    duration?: number;
-  };
-  paintTiming?: Array<{ name: string; startTime: number }>;
-  largestContentfulPaint?: Array<{ startTime?: number }>;
-  layoutShifts?: Array<{ value?: number }>;
-}
-
 let metrics: MetricsJson | null = null;
 try {
   const metricsObj = await env.RESULTS_BUCKET.get(`${testId}/metrics.json`);
@@ -51,57 +57,13 @@ try {
   // metrics unavailable — render without them
 }
 
-// Helper: round to 1 decimal place, return string or null
-function ms(val: number | undefined): string | null {
-  if (val === undefined || val === null) return null;
-  return Math.round(val).toString();
-}
-
-function round2(val: number | undefined): string | null {
-  if (val === undefined || val === null) return null;
-  return val.toFixed(2);
-}
-
-function kb(bytes: number | undefined): string | null {
-  if (bytes === undefined || bytes === null) return null;
-  return (bytes / 1024).toFixed(1);
-}
-
-// CWV values
-const fcpEntry = metrics?.paintTiming?.find(
-  p => p.name === 'first-contentful-paint',
-);
-const fcpMs = fcpEntry?.startTime;
-const lcpMs = metrics?.largestContentfulPaint?.[0]?.startTime;
-const clsValue = metrics?.layoutShifts?.reduce(
-  (sum, s) => sum + (s.value ?? 0),
-  0,
-);
-
-// CWV ratings per Web Vitals thresholds
-function fcpRating(
-  v: number | undefined,
-): 'good' | 'needs-improvement' | 'poor' | undefined {
-  if (v === undefined) return undefined;
-  return v <= 1800 ? 'good' : v <= 3000 ? 'needs-improvement' : 'poor';
-}
-function lcpRating(
-  v: number | undefined,
-): 'good' | 'needs-improvement' | 'poor' | undefined {
-  if (v === undefined) return undefined;
-  return v <= 2500 ? 'good' : v <= 4000 ? 'needs-improvement' : 'poor';
-}
-function clsRating(
-  v: number | undefined,
-): 'good' | 'needs-improvement' | 'poor' | undefined {
-  if (v === undefined) return undefined;
-  return v <= 0.1 ? 'good' : v <= 0.25 ? 'needs-improvement' : 'poor';
-}
-
-// Perf metric values
-const ttfbMs = metrics?.navigationTiming?.responseStart;
-const transferBytes = metrics?.navigationTiming?.transferSize;
-const durationMs = metrics?.navigationTiming?.duration;
+// Extract metric values
+const fcpMs = extractFcp(metrics);
+const lcpMs = extractLcp(metrics);
+const clsValue = extractCls(metrics);
+const ttfbMs = extractTtfb(metrics);
+const transferBytes = extractTransferSize(metrics);
+const durationMs = extractDuration(metrics);
 
 // Formatted date
 const date = new Date(test.test_date * 1000);
@@ -119,7 +81,6 @@ const formattedDate = date.toLocaleString('en-US', {
   <div class="detail-header">
     <a href="/results" class="back-link">← Back to all results</a>
   </div>
-
   <div class="sections">
     <!-- Overview Section: Info + Screenshot -->
     <section class="overview-section">
@@ -135,100 +96,75 @@ const formattedDate = date.toLocaleString('en-US', {
           }
         </div>
 
-        <div class="info-panel panel">
-          <dl class="info-list">
-            <div class="info-row">
-              <dt>Date</dt>
-              <dd>{formattedDate}</dd>
-            </div>
-            <div class="info-row">
-              <dt>Browser</dt>
-              <dd class="capitalize">{test.browser}</dd>
-            </div>
-            <div class="info-row">
-              <dt>Test ID</dt>
-              <dd class="mono">{testId}</dd>
-            </div>
-            <div class="info-row">
-              <dt>URL</dt>
-              <dd class="url-wrap">
-                <a
-                  href={test.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="url-link">{test.url}</a>
-              </dd>
-            </div>
-          </dl>
-        </div>
+        <TestInfoPanel
+          testId={testId}
+          url={test.url}
+          browser={test.browser}
+          formattedDate={formattedDate}
+        />
       </div>
 
       <div class="overview-right">
-        {
-          screenshotUrl ? (
-            <div class="screenshot-wrap">
-              <img
-                src={screenshotUrl}
-                alt={`Screenshot of ${test.url}`}
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-          ) : (
-            <div class="screenshot-empty">
-              <p>No screenshot available.</p>
-            </div>
-          )
-        }
+        <ScreenshotDisplay
+          screenshotUrl={screenshotUrl}
+          alt={`Screenshot of ${test.url}`}
+        />
       </div>
     </section>
 
     <!-- Metrics Row -->
-    <div class="metrics-row">
-      <MetricsSection
-        heading="Core Web Vitals"
-        metrics={[
-          {
-            label: 'LCP',
-            value: ms(lcpMs),
-            unit: 'ms',
-            rating: lcpRating(lcpMs),
-          },
-          {
-            label: 'FCP',
-            value: ms(fcpMs),
-            unit: 'ms',
-            rating: fcpRating(fcpMs),
-          },
-          {
-            label: 'CLS',
-            value: round2(clsValue),
-            rating: clsRating(clsValue),
-          },
-        ]}
-      />
-
-      <MetricsSection
-        heading="Performance Metrics"
-        metrics={[
-          {
-            label: 'TTFB',
-            value: ms(ttfbMs),
-            unit: 'ms',
-          },
-          {
-            label: 'Transfer Size',
-            value: kb(transferBytes),
-            unit: 'KB',
-          },
-          {
-            label: 'Page Load Time',
-            value: ms(durationMs),
-            unit: 'ms',
-          },
-        ]}
-      />
-    </div>
+    {
+      metrics ? (
+        <div class="metrics-row">
+          <MetricsSection
+            heading="Core Web Vitals"
+            metrics={[
+              {
+                label: 'LCP',
+                value: formatMs(lcpMs),
+                unit: 'ms',
+                rating: getLcpRating(lcpMs),
+              },
+              {
+                label: 'FCP',
+                value: formatMs(fcpMs),
+                unit: 'ms',
+                rating: getFcpRating(fcpMs),
+              },
+              {
+                label: 'CLS',
+                value: formatDecimal(clsValue),
+                rating: getClsRating(clsValue),
+              },
+            ]}
+          />
+          <MetricsSection
+            heading="Performance Metrics"
+            metrics={[
+              {
+                label: 'TTFB',
+                value: formatMs(ttfbMs),
+                unit: 'ms',
+              },
+              {
+                label: 'Transfer Size',
+                value: formatKb(transferBytes),
+                unit: 'KB',
+              },
+              {
+                label: 'Page Load Time',
+                value: formatMs(durationMs),
+                unit: 'ms',
+              },
+            ]}
+          />
+        </div>
+      ) : (
+        <div class="metrics-unavailable panel">
+          <p>Metrics unavailable for this test.</p>
+        </div>
+      )
+    }
   </div>
 </Page>
 
@@ -253,6 +189,7 @@ const formattedDate = date.toLocaleString('en-US', {
     display: flex;
     flex-direction: column;
     gap: 2.5rem; /* 40px */
+    width: fit-content;
   }
 
   .panel {
@@ -262,10 +199,9 @@ const formattedDate = date.toLocaleString('en-US', {
     padding: 1rem 1.25rem; /* 16px 20px */
   }
 
-  /* Overview section: two-column layout */
+  /* Overview section: match metrics width */
   .overview-section {
-    display: grid;
-    grid-template-columns: 1fr auto;
+    display: flex;
     gap: 2rem; /* 32px */
     align-items: end;
   }
@@ -275,6 +211,7 @@ const formattedDate = date.toLocaleString('en-US', {
     flex-direction: column;
     gap: 2.5rem; /* 40px - match sections gap */
     min-width: 0;
+    flex: 1;
   }
 
   .title-section {
@@ -303,99 +240,13 @@ const formattedDate = date.toLocaleString('en-US', {
     font-style: italic;
   }
 
-  .info-panel {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .info-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem; /* 12px */
-    margin: 0;
-  }
-
-  .info-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem; /* 4px */
-  }
-
-  dt {
-    font-size: 0.6875rem; /* 11px */
-    font-weight: 500;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  dd {
-    font-size: 0.9375rem; /* 15px */
-    font-weight: 400;
-    color: var(--text);
-    margin: 0;
-    line-height: 1.4;
-  }
-
-  .url-wrap {
-    overflow-wrap: break-word;
-    word-break: break-all;
-  }
-
-  .url-link {
-    color: var(--brand);
-    text-decoration: none;
-  }
-
-  .url-link:hover {
-    text-decoration: underline;
-  }
-
-  .capitalize {
-    text-transform: capitalize;
-  }
-
-  .mono {
-    font-family:
-      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-      'Courier New', monospace;
-    font-size: 0.8125rem; /* 13px */
-  }
-
   .overview-right {
     width: 25rem; /* 400px */
+    flex-shrink: 0;
   }
 
-  /* Screenshot */
-  .screenshot-wrap {
-    border: 1px solid var(--border);
-    line-height: 0;
-    overflow: hidden;
-  }
-
-  .screenshot-wrap img {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-
-  .screenshot-empty {
-    padding: 2.5rem; /* 40px */
-    text-align: center;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 0.875rem; /* 14px */
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .screenshot-empty p {
-    margin: 0;
-  }
-
-  /* Metrics row */
+  /* Metrics row - total width 66rem */
+  /* Calculation: (3 cards × 10rem + 2 gaps × 0.75rem) + 3rem gap + (3 cards × 10rem + 2 gaps × 0.75rem) = 66rem */
   .metrics-row {
     display: grid;
     grid-template-columns: auto auto;
@@ -403,26 +254,45 @@ const formattedDate = date.toLocaleString('en-US', {
     justify-content: start;
   }
 
+  /* Metrics unavailable */
+  .metrics-unavailable {
+    padding: 2.5rem; /* 40px */
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .metrics-unavailable p {
+    margin: 0;
+  }
+
   /* Responsive: stack on smaller screens */
   @media (max-width: 64rem) {
     /* 1024px */
     .overview-section {
-      flex-direction: column;
+      grid-template-columns: 1fr;
     }
 
     .overview-right {
-      order: -1; /* Screenshot appears first on mobile */
       width: 100%;
-      align-self: auto;
     }
 
     .screenshot-wrap {
       height: auto;
-      align-items: center;
     }
 
     .metrics-row {
       grid-template-columns: 1fr;
+      gap: 1.5rem; /* 24px */
+    }
+  }
+
+  /* Allow metrics to wrap on narrower screens */
+  @media (max-width: 48rem) {
+    /* 768px */
+    .metrics-row {
+      display: flex;
+      flex-direction: column;
     }
   }
 </style>
