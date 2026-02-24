@@ -7,39 +7,40 @@ tools:
   bash: false
 ---
 
-# Database Agent — telescopetest-io
+PROCESS:
 
-You are a database specialist for the `telescopetest-io` project. You focus on the D1 SQLite database, Prisma ORM, and repository layer.
+1. Read schema file + repository before changes
+2. Calculate what columns/queries actually need
+3. Check TestConfig.ts types match select fields
 
-## Stack
+KEY FILES:
 
-- **Database**: Cloudflare D1 (SQLite dialect), binding `TELESCOPE_DB`
-- **ORM**: Prisma v7 with `@prisma/adapter-d1`
-- **Schema file**: `prisma/schema.prisma`
-- **Generated types**: `generated/prisma/` (auto-generated, do not edit by hand)
-- **Migrations**: `migrations/0001_init.sql` (and any subsequent numbered files)
-- **Repository**: `src/lib/repositories/test-repository.ts`
-- **Client factory**: `src/lib/prisma/client.ts` — `createPrismaClient(db: D1Database)`
-- **Shared types**: `src/lib/classes/TestConfig.ts`
+- prisma/schema.prisma - schema definitions
+- src/lib/repositories/test-repository.ts - all DB access
+- src/lib/classes/TestConfig.ts - Types type definitions
+- src/lib/prisma/client.ts - getPrismaClient(Astro)
 
-## Repository Functions
+RULES:
 
-All DB access goes through `src/lib/repositories/test-repository.ts`. Every function must have a JSDoc comment.
+- All DB access in test-repository.ts with JSDoc
+- New migrations: migrations/0002\_\*.sql (sequential)
+- Migrations must be additive only (no DROP/rename)
+- Always explicit select - never findMany({})
+- After schema change: remind user to run npx prisma generate
+- Update TestConfig.ts Types when select changes
+- No manual disconnect (Workers handles it)
 
-## `Tests` Read Type
+STACK:
 
-The `Tests` type in `TestConfig.ts` defines what `getAllTests` and `getTestById` return.
+- D1 (SQLite) binding: TELESCOPE_DB
+- Prisma v7 with @prisma/adapter-d1
+- Import path: @/generated/prisma/client (NOT @prisma/client)
 
-If you add new columns to the select, update this type too.
+GOTCHAS:
 
-## Rules
-
-- New migrations get the next sequential number: `migrations/0002_*.sql`
-- Every migration file must be additive — never DROP or rename existing columns (Workers D1 has no rollback)
-- After changing `prisma/schema.prisma`, remind the user to run: `npx prisma generate`
-- New repository functions go in `test-repository.ts` with JSDoc
-- Update `TestConfig.ts` types to match any new selected fields
-- Use `findUnique` for PK/unique lookups, `findMany` for lists
-- Always use `select` explicitly — never `findMany({})` without a select
-- No manual Prisma disconnect needed (Workers runtime manages connections)
-- Reference `file:line_number` for all code pointers
+- datasource db has no url field — intentional, connection injected via PrismaD1 adapter at runtime
+- DATABASE_URL in .env is only for Prisma Studio and prisma migrate diff — never used at runtime
+- Dates (test_date, created_at) are Int (Unix seconds), not DateTime — no Prisma coercion, all manual conversion
+- updated_at only sets on INSERT via dbgenerated("unixepoch()"), never updates on subsequent writes
+- source column exists in DB but is not in any select or the Tests type — if adding it, update both Tests type in TestConfig.ts and every select in test-repository.ts
+- Migration stub must be created with wrangler first (npx wrangler d1 migrations create ...), then filled with prisma migrate diff — cannot use prisma migrate directly with D1
