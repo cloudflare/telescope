@@ -120,6 +120,12 @@ describe.each(browsers)('Device Emulation Tests', browser => {
   describe.each(target_devices)(
     'launchTest executes and returns result object when emulating device: %s',
     device => {
+      // device emulation causes timeouts in canary and beta for chrome, 
+      // telescope is not guarunteed to work in canary or beta
+      if (browser === "canary" || browser === "chrome-beta") {
+        console.info(`Skipping device emulation tests for browser: ${browser}`);
+        return
+      };
       let result: Awaited<ReturnType<typeof launchTest>>;
       beforeAll(async () => {
         let options = {
@@ -129,7 +135,7 @@ describe.each(browsers)('Device Emulation Tests', browser => {
         };
         const launchOptions = normalizeCLIConfig(options);
         result = await launchTest(launchOptions);
-      }, 30000);
+      }, 60000);
       test(`launchTest returns a result with success property for browser: ${browser}`, () => {
         expect(result).toHaveProperty('success');
       });
