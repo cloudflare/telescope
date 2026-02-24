@@ -73,7 +73,7 @@ class TestRunner {
   }
 
   setupPaths(testID: string): void {
-    this.paths['temporaryContext'] = './tmp/';
+    this.paths['temporaryContext'] = `./tmp/${testID}`;
     this.paths['results'] = './results/' + testID;
     this.paths['filmstrip'] = this.paths.results + '/filmstrip';
     mkdirSync(this.paths['results'], { recursive: true });
