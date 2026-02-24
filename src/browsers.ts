@@ -5,6 +5,7 @@ import type {
   BrowserConfigEntry,
   LaunchOptions,
 } from './types.js';
+import { DEFAULT_BROWSER_HEIGHT, DEFAULT_BROWSER_WIDTH } from './defaultOptions.js';
 
 const TRUTHY_VALUES = new Set(['true', '1', 'yes', 'on']);
 const FALSY_VALUES = new Set(['false', '0', 'no', 'off']);
@@ -278,6 +279,18 @@ class BrowserConfig {
     if (options.height) {
       browserConfig.viewport.height = options.height;
       browserConfig.recordVideo.size.height = options.height;
+    }
+
+    // if width and height are not set by the user
+    // and device is not set by the user
+    // use provided default values for viewport and video recording sizes
+    if (!options.width && ! options.device) {
+      browserConfig.viewport.width = DEFAULT_BROWSER_WIDTH;
+      browserConfig.recordVideo.size.width = DEFAULT_BROWSER_WIDTH;
+    }
+    if (!options.height && ! options.device) {
+      browserConfig.viewport.height = DEFAULT_BROWSER_HEIGHT;
+      browserConfig.recordVideo.size.height = DEFAULT_BROWSER_HEIGHT;
     }
 
     return browserConfig;

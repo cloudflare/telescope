@@ -165,8 +165,8 @@ export interface LaunchOptions {
   firefoxPrefs?: Record<string, string | number | boolean>;
   cpuThrottle?: number;
   connectionType?: ConnectionType;
-  width?: number;
-  height?: number;
+  width?: number | false;
+  height?: number | false;
   frameRate?: number;
   disableJS?: boolean;
   debug?: boolean;
@@ -190,8 +190,8 @@ export interface LaunchOptions {
  */
 export interface DefaultOptions {
   browser: BrowserName;
-  width: number;
-  height: number;
+  width: number | false;
+  height: number | false;
   frameRate: number;
   timeout: number;
   blockDomains: string[];
