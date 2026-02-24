@@ -56,13 +56,13 @@ Telescope uses Playwright to control and manage individual browser engines:
 npx . -u https://www.example.com -b firefox
 ```
 
-And supports the following browsers (using non-branded versions):
+And supports the following browsers:
 
 - [Chromium](https://www.chromium.org/Home/)
   - [Chrome](https://www.google.com/chrome/) - `chrome`
   - [Chrome Beta](https://www.google.com/chrome/beta/) - `chrome-beta`
   - [Chrome Canary](https://www.google.com/chrome/canary/) - `canary`
-- [Edge](https://www.microsoft.com/en-us/edge/) - `edge`
+  - [Edge](https://www.microsoft.com/en-us/edge/) - `edge`
 - [Safari](https://www.apple.com/safari/)/[Webkit](https://webkit.org/) - `safari`
 - [Firefox](https://www.firefox.com/) - `firefox`
 
