@@ -251,6 +251,8 @@ You can run tests in headless mode by setting the `HEADLESS` environment variabl
 HEADLESS=true npm run test
 ```
 
+**Note:** Headless mode does not work with device emulation.
+
 #### Our CI Pipeline
 
 Our CI pipeline is set up to run tests on every push to the repository so you can see results in your pull request.
