@@ -5,7 +5,7 @@ import type { ConfigJson, TestConfig } from '@/lib/classes/TestConfig';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
-import { generateTestId, TestSource } from '@/lib/classes/TestConfig';
+import { TestSource } from '@/lib/classes/TestConfig';
 import { getPrismaClient } from '@/lib/prisma/client';
 import {
   createTest,
@@ -41,6 +41,18 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
+}
+
+// Generate a test_id
+export function generateTestId(config_date: string): string {
+  const date_ob = new Date(config_date);
+  const date = date_ob.getDate().toString().padStart(2, '0');
+  const month = (date_ob.getMonth() + 1).toString().padStart(2, '0');
+  const year = date_ob.getFullYear();
+  const hour = date_ob.getHours().toString().padStart(2, '0');
+  const minute = date_ob.getMinutes().toString().padStart(2, '0');
+  const second = date_ob.getSeconds().toString().padStart(2, '0');
+  return `${year}_${month}_${date}_${hour}_${minute}_${second}_${crypto.randomUUID()}`;
 }
 
 export const POST: APIRoute = async (context: APIContext) => {
@@ -141,7 +153,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     // Build test configuration object
-    const testId = generateTestId();
+    const testId = generateTestId(config.date);
     const testConfig: TestConfig = {
       testId,
       zipKey,
