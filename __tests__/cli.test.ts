@@ -5,9 +5,10 @@ import { retrieveHAR, retrieveMetrics, cleanupTestDirectory } from './helpers.js
 import { BrowserConfig } from '../src/browsers.js';
 import type { HarData, Metrics, HTTPHeader } from '../src/types.js';
 
+import { expect } from '@jest/globals';
+import './endsWith.ts'; // Extending expect with endsWith method
+
 const browsers = BrowserConfig.getBrowsers();
-const agentIE6 = 'Mozilla/5.0 (Windows; U; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727)';
-const regexTest = new RegExp(/ TELESCOPE_TEST$/);
 
 describe.each(browsers)('Basic Test: %s', browser => {
   let harJSON: HarData | null;
@@ -76,6 +77,7 @@ describe.each(browsers)('Basic Test: %s', browser => {
 });
 
 describe.each(browsers)('Changed User Agent: %s', browser => {
+  const agentIE6 = 'Mozilla/5.0 (Windows; U; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727)';
   let harJSON: HarData | null;
   let testId: string | undefined;
 
@@ -133,6 +135,7 @@ describe.each(browsers)('Changed User Agent: %s', browser => {
 });
 
 describe.each(browsers)('Add to User Agent: %s', browser => {
+  const agentExtraText = ' TELESCOPE_TEST';
   let harJSON: HarData | null;
   let testId: string | undefined;
 
@@ -144,7 +147,7 @@ describe.each(browsers)('Add to User Agent: %s', browser => {
         '--url',
         'https://www.example.com',
         '--agentExtra',
-        ' TELESCOPE_TEST',
+        agentExtraText,
         '-b',
         browser,
       ];
@@ -179,7 +182,7 @@ describe.each(browsers)('Add to User Agent: %s', browser => {
         .find((hdr: HTTPHeader) => hdr.name === 'User-Agent');
 
       if (htmlUserAgent) {
-        expect(htmlUserAgent.value).toMatch(regexTest);
+        expect(htmlUserAgent.value).endsWith(agentExtraText);
       } else {
         throw new Error('Missing User-Agent header');
       }

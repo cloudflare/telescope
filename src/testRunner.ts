@@ -213,7 +213,7 @@ class TestRunner {
     const browserType = playwright[engine];
 
     if (this.options.agentExtra) {
-      let simpleOptions: SimplifiedBrowserConfigOptions = {
+      const simpleOptions: SimplifiedBrowserConfigOptions = {
         args: this.selectedBrowser.args,
         channel: this.selectedBrowser.channel,
         engine: this.selectedBrowser.engine,
@@ -224,7 +224,7 @@ class TestRunner {
       };
 
       if (simpleOptions.args) {
-        let idx = simpleOptions.args.indexOf('--metrics-recording-only');
+        const idx = simpleOptions.args.indexOf('--metrics-recording-only');
         if (idx > -1) {
           simpleOptions.args.splice(idx, 1);
         }

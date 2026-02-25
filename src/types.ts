@@ -125,7 +125,6 @@ export type BrowserConfigEntry =
  * Full browser configuration with all runtime options
  */
 export interface BrowserConfigOptions {
-  agentExtra?: string;
   engine: PlaywrightEngine;
   channel?: BrowserChannel;
   headless: boolean;
@@ -149,7 +148,6 @@ export interface BrowserConfigOptions {
  * Simplified browser configuration
  */
 export type SimplifiedBrowserConfigOptions = Omit<BrowserConfigOptions,
-  'agentExtra' |
   'httpCredentials' |
   'javaScriptEnabled' |
   'logger' |
