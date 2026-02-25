@@ -1,3 +1,4 @@
+// Helper functions to extract/calculate metrics
 import type { MetricsJson } from './types.js';
 
 /**

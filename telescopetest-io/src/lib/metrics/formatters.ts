@@ -1,3 +1,5 @@
+// Helper functions to format numbers as strings
+
 /**
  * Format a millisecond value as a string (rounded to nearest integer)
  * Returns null if value is undefined/null

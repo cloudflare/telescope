@@ -26,6 +26,7 @@ const { testId, url, browser, formattedDate } = Astro.props;
     <div class="info-row">
       <dt>URL</dt>
       <dd class="url-wrap">
+        <!-- rel="noopener noreferrer" for security/privacy -->
         <a href={url} target="_blank" rel="noopener noreferrer" class="url-link"
           >{url}</a
         >
@@ -96,14 +97,8 @@ const { testId, url, browser, formattedDate } = Astro.props;
 
   .mono {
     font-family:
-      ui-monospace,
-      SFMono-Regular,
-      Menlo,
-      Monaco,
-      Consolas,
-      'Liberation Mono',
-      'Courier New',
-      monospace;
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
     font-size: 0.8125rem; /* 13px */
   }
 </style>
