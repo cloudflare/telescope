@@ -1,6 +1,6 @@
 import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
-import type { ConfigJson, TestConfig } from '@/lib/classes/TestConfig';
+import type { TestConfig } from '@/lib/classes/TestConfig';
 
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
@@ -140,9 +140,28 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
+    const configSchema = z.object({
+      url: z.string(),
+      date: z.string(),
+      options: z.object({
+        browser: z.string(),
+      }),
+    });
+    type ConfigJson = z.infer<typeof configSchema>;
     let config: ConfigJson;
     try {
-      config = JSON.parse(configText);
+      const parsed = JSON.parse(configText);
+      const configResult = configSchema.safeParse(parsed);
+      if (!configResult.success) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Invalid config.json: ${configResult.error.issues.map(i => i.message).join(', ')}`,
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      config = configResult.data;
     } catch (error) {
       return new Response(
         JSON.stringify({

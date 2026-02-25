@@ -11,15 +11,6 @@ export enum TestSource {
   UNKNOWN = 'unknown',
 }
 
-// Config.json structure from Telescope test archives
-export interface ConfigJson {
-  url: string;
-  date: string;
-  options: {
-    browser: string;
-  };
-}
-
 // Return type from D1
 export type Tests = {
   test_id: string;
