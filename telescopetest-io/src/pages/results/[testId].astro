@@ -82,34 +82,31 @@ const formattedDate = date.toLocaleString('en-US', {
     <a href="/results" class="back-link">← Back to all results</a>
   </div>
   <div class="sections">
-    <!-- Overview Section: Info + Screenshot -->
+    <!-- Title and Description (Full Width) -->
+    <div class="title-section">
+      {test.name ? <h1>{test.name}</h1> : <h1 class="no-name">No Name</h1>}
+      {
+        test.description ? (
+          <h2>{test.description}</h2>
+        ) : (
+          <h2 class="no-description">No description</h2>
+        )
+      }
+    </div>
+
+    <!-- Info Panel + Screenshot (Side by Side) -->
     <section class="overview-section">
-      <div class="overview-left">
-        <div class="title-section">
-          {test.name ? <h1>{test.name}</h1> : <h1 class="no-name">No Name</h1>}
-          {
-            test.description ? (
-              <h2>{test.description}</h2>
-            ) : (
-              <h2 class="no-description">No description</h2>
-            )
-          }
-        </div>
+      <TestInfoPanel
+        testId={testId}
+        url={test.url}
+        browser={test.browser}
+        formattedDate={formattedDate}
+      />
 
-        <TestInfoPanel
-          testId={testId}
-          url={test.url}
-          browser={test.browser}
-          formattedDate={formattedDate}
-        />
-      </div>
-
-      <div class="overview-right">
-        <ScreenshotDisplay
-          screenshotUrl={screenshotUrl}
-          alt={`Screenshot of ${test.url}`}
-        />
-      </div>
+      <ScreenshotDisplay
+        screenshotUrl={screenshotUrl}
+        alt={`Screenshot of ${test.url}`}
+      />
     </section>
 
     <!-- Metrics Row -->
@@ -189,7 +186,6 @@ const formattedDate = date.toLocaleString('en-US', {
     display: flex;
     flex-direction: column;
     gap: 2.5rem; /* 40px */
-    width: fit-content;
   }
 
   .panel {
@@ -199,29 +195,13 @@ const formattedDate = date.toLocaleString('en-US', {
     padding: 1rem 1.25rem; /* 16px 20px */
   }
 
-  /* Overview section: match metrics width */
-  .overview-section {
-    display: flex;
-    gap: 2rem; /* 32px */
-    align-items: end;
-  }
-
-  .overview-left {
-    display: flex;
-    flex-direction: column;
-    gap: 2.5rem; /* 40px - match sections gap */
-    min-width: 0;
-    flex: 1;
-  }
-
-  .title-section {
-    padding-left: 1.25rem; /* 20px - match panel padding */
-  }
-
   .title-section h1 {
     margin: 0 0 0.25rem 0; /* 4px bottom */
     font-size: 2rem; /* 32px */
     font-weight: 700;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
   }
 
   .title-section h1.no-name {
@@ -233,6 +213,9 @@ const formattedDate = date.toLocaleString('en-US', {
     margin: 0;
     font-size: 1rem; /* 16px */
     font-weight: 400;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
   }
 
   .title-section h2.no-description {
@@ -240,18 +223,39 @@ const formattedDate = date.toLocaleString('en-US', {
     font-style: italic;
   }
 
-  .overview-right {
-    width: 25rem; /* 400px */
-    flex-shrink: 0;
+  /* Info panel + screenshot side by side - full width split */
+  .overview-section {
+    display: flex;
+    gap: 2rem; /* 32px */
+    align-items: stretch;
   }
 
-  /* Metrics row - total width 66rem */
-  /* Calculation: (3 cards × 10rem + 2 gaps × 0.75rem) + 3rem gap + (3 cards × 10rem + 2 gaps × 0.75rem) = 66rem */
+  .overview-section :global(.info-panel) {
+    flex: 2;
+    min-width: 0;
+  }
+
+  .overview-section :global(.screenshot-wrap),
+  .overview-section :global(.screenshot-empty) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .overview-section :global(.screenshot-wrap) {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .overview-section :global(.screenshot-wrap img) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  /* Metrics row */
   .metrics-row {
-    display: grid;
-    grid-template-columns: auto auto;
+    display: flex;
     gap: 3rem; /* 48px */
-    justify-content: start;
   }
 
   /* Metrics unavailable */
@@ -271,10 +275,6 @@ const formattedDate = date.toLocaleString('en-US', {
     /* 1024px */
     .overview-section {
       flex-direction: column;
-    }
-
-    .overview-right {
-      width: 100%;
     }
 
     .metrics-row {

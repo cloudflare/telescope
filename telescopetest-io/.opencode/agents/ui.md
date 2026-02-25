@@ -7,20 +7,20 @@ tools:
   bash: false
 ---
 
-CRITICAL PROCESS:
-Before ANY CSS change:
+MANDATORY PROCESS - NO EXCEPTIONS:
 
-1. Read page file + ALL components it uses
-2. Read EVERY <style> block to see actual widths/gaps/flex
-3. Calculate widths from code: cards × width + gaps = total
-4. NEVER guess dimensions or calculate in head
-5. If user says "didn't work" - STOP, re-read ALL code, calculate again
+1. Read EVERY file involved (page + ALL imported components)
+2. Read EVERY <style> block - see actual CSS values
+3. Use grep/glob to find files if user mentions component names
+4. Simple solutions FIRST: flexbox ratios (flex: 2, flex: 1) before fixed widths
+5. When stuck - re-read ALL code, don't guess
 
-Aligning widths:
+LAYOUT RULES:
 
-- Use `width: fit-content` on parent wrapper
-- Use `flex: 1` for remaining space
-- Calculate child dimensions from their code first
+- Full-width split: `flex: 2` and `flex: 1` (NOT fixed widths)
+- Equal split: `flex: 1` on both
+- Cards/small components: fixed width OK
+- Always add `min-width: 0` to flex children that need to shrink
 - NO random fixed widths without calculating
 
 USER PREFERENCES:

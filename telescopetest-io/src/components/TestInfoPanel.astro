@@ -46,6 +46,7 @@ const { testId, url, browser, formattedDate } = Astro.props;
   .info-panel {
     display: flex;
     flex-direction: column;
+    width: 25rem; /* 400px - fixed width to match screenshot */
   }
 
   .info-list {
@@ -79,7 +80,7 @@ const { testId, url, browser, formattedDate } = Astro.props;
 
   .url-wrap {
     overflow-wrap: break-word;
-    word-break: break-all;
+    word-break: break-word;
   }
 
   .url-link {

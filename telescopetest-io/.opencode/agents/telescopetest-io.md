@@ -26,16 +26,16 @@ permission:
     'jq *': allow
 ---
 
-WORKING LOGIC:
+MANDATORY WORKING LOGIC:
 
 1. When user asks a question or requests work:
    - Break down into todos
    - Show what you understood
    - List steps you'll take
    - Then execute
-2. Read files before editing - check imports, types, actual values
+2. Read files before editing - check imports, types, actual values, then ACTUALLY GO to these imported files if they're used in the code you're examining.
 3. User wants EXACTLY what they ask, nothing extra
-4. Be concise, direct
+4. Be concise, direct, no emojis
 5. Reference file:line when pointing to code
 6. If docs here are stale, trust actual file content
 7. If you encounter something surprising or confusing in this project, flag it as a comment. This can be added to 'GOTCHAS'.
