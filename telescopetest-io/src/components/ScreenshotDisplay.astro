@@ -10,7 +10,7 @@ const { screenshotUrl, alt } = Astro.props;
 {
   screenshotUrl ? (
     <div class="screenshot-wrap">
-      <img src={screenshotUrl} alt={alt} loading="lazy" decoding="async" />
+      <img src={screenshotUrl} alt={alt} fetchpriority="high" />
     </div>
   ) : (
     <div class="screenshot-empty">

@@ -20,6 +20,7 @@ import {
   getFcpRating,
   getLcpRating,
   getClsRating,
+  getTtfbRating,
 } from '@/lib/metrics/web-vitals';
 import { formatMs, formatDecimal, formatKb } from '@/lib/metrics/formatters';
 
@@ -46,6 +47,23 @@ const screenshotUrl = screenshotObj
   ? `/api/tests/${testId}/screenshot.png`
   : null;
 
+// --- Browser Version (from HAR) ---
+let harBrowser: { name: string; version: string } | null = null;
+try {
+  const harObj = await env.RESULTS_BUCKET.get(`${testId}/pageload.har`);
+  if (harObj) {
+    const har = await harObj.json<{
+      log: { browser: { name: string; version: string } };
+    }>();
+    harBrowser = har?.log?.browser ?? null;
+  }
+} catch {
+  console.error(
+    'Error with getting browser.name or browser.string, returning nothing',
+  );
+  // HAR unavailable — render without browser version
+}
+
 // --- Metrics ---
 let metrics: MetricsJson | null = null;
 try {
@@ -54,6 +72,7 @@ try {
     metrics = await metricsObj.json<MetricsJson>();
   }
 } catch {
+  console.error('Error with getting metrics.json, returning nothing');
   // metrics unavailable — render without them
 }
 
@@ -84,12 +103,14 @@ const formattedDate = date.toLocaleString('en-US', {
   <div class="sections">
     <!-- Title and Description (Full Width) -->
     <div class="title-section">
-      {test.name ? <h1>{test.name}</h1> : <h1 class="no-name">No Name</h1>}
+      {test.name ? <h1>{test.name}</h1> : <h1>{test.test_id}</h1>}
       {
-        test.description ? (
-          <h2>{test.description}</h2>
-        ) : (
-          <h2 class="no-description">No description</h2>
+        test.description && (
+          <details class="description-details">
+            <summary class="description-summary">
+              <h2 class="description-text">{test.description}</h2>
+            </summary>
+          </details>
         )
       }
     </div>
@@ -100,6 +121,7 @@ const formattedDate = date.toLocaleString('en-US', {
         testId={testId}
         url={test.url}
         browser={test.browser}
+        browserVersion={harBrowser?.version ?? null}
         formattedDate={formattedDate}
       />
 
@@ -123,12 +145,6 @@ const formattedDate = date.toLocaleString('en-US', {
                 rating: getLcpRating(lcpMs),
               },
               {
-                label: 'FCP',
-                value: formatMs(fcpMs),
-                unit: 'ms',
-                rating: getFcpRating(fcpMs),
-              },
-              {
                 label: 'CLS',
                 value: formatDecimal(clsValue),
                 rating: getClsRating(clsValue),
@@ -139,9 +155,16 @@ const formattedDate = date.toLocaleString('en-US', {
             heading="Performance Metrics"
             metrics={[
               {
+                label: 'FCP',
+                value: formatMs(fcpMs),
+                unit: 'ms',
+                rating: getFcpRating(fcpMs),
+              },
+              {
                 label: 'TTFB',
                 value: formatMs(ttfbMs),
                 unit: 'ms',
+                rating: getTtfbRating(ttfbMs),
               },
               {
                 label: 'Transfer Size',
@@ -199,28 +222,53 @@ const formattedDate = date.toLocaleString('en-US', {
     margin: 0 0 0.25rem 0; /* 4px bottom */
     font-size: 2rem; /* 32px */
     font-weight: 700;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
-  .title-section h1.no-name {
-    color: var(--muted);
-    font-style: italic;
+  .description-details {
+    margin: 0;
   }
 
-  .title-section h2 {
+  /* Hide the default triangle marker */
+  .description-summary {
+    list-style: none;
+    cursor: pointer;
+  }
+  .description-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .description-text {
     margin: 0;
     font-size: 1rem; /* 16px */
     font-weight: 400;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 
-  .title-section h2.no-description {
-    color: var(--muted);
-    font-style: italic;
+  /* When open, remove the clamp so all text shows */
+  .description-details[open] .description-text {
+    display: block;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    overflow: visible;
+  }
+
+  /* "more" / "less" indicator */
+  .description-summary::after {
+    content: ' more';
+    font-size: 0.8125rem; /* 13px */
+    color: var(--brand);
+    white-space: nowrap;
+  }
+  .description-details[open] .description-summary::after {
+    content: ' less';
   }
 
   /* Info panel + screenshot side by side - full width split */

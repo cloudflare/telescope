@@ -48,3 +48,14 @@ export function getClsRating(
 ): Rating | undefined {
   return getRating(value, 0.1, 0.25);
 }
+
+/**
+ * Get rating for Time to First Byte (TTFB) in milliseconds
+ * Good: ≤800ms, Needs Improvement: ≤1800ms, Poor: >1800ms
+ * Based on https://web.dev/articles/ttfb
+ */
+export function getTtfbRating(
+  ms: number | undefined | null,
+): Rating | undefined {
+  return getRating(ms, 800, 1800);
+}
