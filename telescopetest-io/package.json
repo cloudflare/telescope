@@ -15,18 +15,23 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
-    "astro": "^5.16.15",
-    "fflate": "^0.8.2",
+    "@astrojs/react": "^4.4.2",
+    "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-d1": "^7.3.0",
     "@prisma/client": "^7.3.0",
-    "phosphor-astro": "^2.1.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "astro": "^5.16.15",
+    "fflate": "^0.8.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "wrangler": "^4.61.0",
     "dotenv": "^17.2.4",
-    "prisma": "^7.3.0"
+    "prisma": "^7.3.0",
+    "wrangler": "^4.61.0"
   },
   "engines": {
     "node": ">=24",

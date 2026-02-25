@@ -17,14 +17,14 @@
     "telescope": "dist/src/cli.js"
   },
   "scripts": {
-    "build": "tsc && cp -r src/templates dist/src/ && mkdir -p dist/processors/templates && cp -r processors/templates/* dist/processors/templates/",
+    "build": "tsc && chmod +x dist/src/cli.js && cp -r src/templates dist/src/ && mkdir -p dist/processors/templates && cp -r processors/templates/* dist/processors/templates/",
     "dev": "tsc --watch",
     "start": "node dist/src/cli.js",
     "test": "vitest run",
     "test:ci": "export CI=true; npm test",
-    "testAction": "vitest run __tests__/browsers.test.js",
     "coverage": "vitest run --coverage",
     "clean": "rm -rf node_modules results dist",
+    "clean:results": "rm -rf results",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prettier": "npx prettier --write .",
@@ -52,6 +52,7 @@
     "commander": "^10.0.0",
     "ejs": "^3.1.10",
     "ffmpeg": "^0.0.4",
+    "msw": "^2.12.10",
     "playwright": "^1.57.0",
     "playwright-webkit": "^1.57.0"
   }
