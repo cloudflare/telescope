@@ -1,0 +1,80 @@
+---
+export interface Props {
+  label: string;
+  duration: number;
+  startTime?: number;
+  color?: string;
+  maxDuration: number;
+}
+
+const { label, duration, startTime = 0, color = 'var(--brand)', maxDuration } = Astro.props;
+
+// Calculate percentages for positioning
+const startPercent = (startTime / maxDuration) * 100;
+const widthPercent = (duration / maxDuration) * 100;
+
+// Format duration for display
+const formatDuration = (ms: number) => {
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
+};
+---
+
+<div class="timing-bar-container">
+  <div class="timing-label">
+    <span class="label-text">{label}</span>
+    <span class="label-duration">{formatDuration(duration)}</span>
+  </div>
+  <div class="timing-track">
+    <div
+      class="timing-fill"
+      style={`left: ${startPercent}%; width: ${widthPercent}%; background: ${color};`}
+    >
+    </div>
+  </div>
+</div>
+
+<style>
+  .timing-bar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* 8px */
+    margin-bottom: 1rem; /* 16px */
+  }
+
+  .timing-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .label-text {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .label-duration {
+    color: var(--muted);
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
+  }
+
+  .timing-track {
+    position: relative;
+    height: 1.5rem; /* 24px */
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.375rem; /* 6px */
+    overflow: hidden;
+  }
+
+  .timing-fill {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    border-radius: 0.25rem; /* 4px */
+    transition: all 0.3s ease;
+  }
+</style>
