@@ -106,11 +106,10 @@ const formattedDate = date.toLocaleString('en-US', {
       {test.name ? <h1>{test.name}</h1> : <h1>{test.test_id}</h1>}
       {
         test.description && (
-          <details class="description-details">
-            <summary class="description-summary">
-              <h2 class="description-text">{test.description}</h2>
-            </summary>
-          </details>
+          <div class="description-details">
+            <p class="description-text">{test.description}</p>
+            <button class="description-toggle" aria-expanded="false">more</button>
+          </div>
         )
       }
     </div>
@@ -228,47 +227,24 @@ const formattedDate = date.toLocaleString('en-US', {
     -webkit-line-clamp: 2;
   }
 
-  .description-details {
-    margin: 0;
-  }
-
-  /* Hide the default triangle marker */
-  .description-summary {
-    list-style: none;
-    cursor: pointer;
-  }
-  .description-summary::-webkit-details-marker {
-    display: none;
-  }
-
   .description-text {
-    margin: 0;
-    font-size: 1rem; /* 16px */
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
     font-weight: 400;
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 1;
+    word-break: break-all;
   }
 
-  /* When open, remove the clamp so all text shows */
-  .description-details[open] .description-text {
-    display: block;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    white-space: normal;
-    overflow: visible;
-  }
-
-  /* "more" / "less" indicator */
-  .description-summary::after {
-    content: ' more';
-    font-size: 0.8125rem; /* 13px */
+  .description-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.8125rem;
     color: var(--brand);
-    white-space: nowrap;
-  }
-  .description-details[open] .description-summary::after {
-    content: ' less';
+    cursor: pointer;
   }
 
   /* Info panel + screenshot side by side - full width split */
@@ -340,3 +316,23 @@ const formattedDate = date.toLocaleString('en-US', {
     }
   }
 </style>
+
+<script>
+  const toggle = document.querySelector('.description-toggle') as HTMLButtonElement | null;
+  const text = document.querySelector('.description-text') as HTMLElement | null;
+
+  if (toggle && text) {
+    toggle.addEventListener('click', () => {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      if (expanded) {
+        text.style.overflow = '';
+        text.style.webkitLineClamp = '';
+      } else {
+        text.style.overflow = 'visible';
+        text.style.webkitLineClamp = 'unset';
+      }
+      toggle.setAttribute('aria-expanded', String(!expanded));
+      toggle.textContent = expanded ? 'more' : 'less';
+    });
+  }
+</script>
