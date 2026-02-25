@@ -4,7 +4,7 @@
  *
  * Because the module evaluates these variables at load time (top-level const),
  * each test must re-import the module after setting the desired env vars.
- * jest.resetModules() + dynamic import() achieves true module isolation.
+ * vi.resetModules() + dynamic import() achieves true module isolation.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
