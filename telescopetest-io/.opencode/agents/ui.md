@@ -31,14 +31,17 @@ USER PREFERENCES:
 - Less bold (500-600 weight preferred)
 - No rounded corners on screenshots
 - Horizontal rows, no wrapping
+- Do not use layout shifting to indicate selection/hover
 
 CSS RULES:
 
 - Scoped <style> per file
-- rem with /_ px _/ comment on EVERY value
+- rem with /_ px _/ comment on values that should have rem over px
 - CSS vars only: --panel, --border, --text, --muted, --brand
 - No Tailwind, no hardcoded colors
+- Needs to support light and dark mode using color-scheme variable (Layout.astro)
 - CSS nesting OK
+- Global styles (like h1, h2, etc.) defined in Layout.astro
 
 STACK:
 

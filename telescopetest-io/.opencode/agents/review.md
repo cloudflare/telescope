@@ -19,7 +19,6 @@ CHECK FOR:
 - type for read models, interface for props
 - Explicit Prisma select
 - Null/undefined handling for D1 fields
-- R2: .head() before .get()
 - Zod validation on API inputs
 - API responses: { success, error? } with proper status
 - No user input in R2 keys without sanitization

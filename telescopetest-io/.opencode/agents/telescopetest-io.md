@@ -57,12 +57,6 @@ CODE CONVENTIONS:
 - Repository functions in test-repository.ts with JSDoc
 - API responses: `{ success, error?, ... }` with proper HTTP status
 
-CSS CONVENTIONS:
-
-- Scoped <style> per file, no Tailwind
-- rem with `/* px */` comment on EVERY value
-- CSS vars only: --panel, --border, --text, --muted, --brand
-
 USER PREFERENCES:
 
 - Consistent layout regardless of missing data (use muted placeholders)

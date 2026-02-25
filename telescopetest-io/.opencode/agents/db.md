@@ -41,6 +41,6 @@ GOTCHAS:
 - datasource db has no url field — intentional, connection injected via PrismaD1 adapter at runtime
 - DATABASE_URL in .env is only for Prisma Studio and prisma migrate diff — never used at runtime
 - Dates (test_date, created_at) are Int (Unix seconds), not DateTime — no Prisma coercion, all manual conversion
-- updated_at only sets on INSERT via dbgenerated("unixepoch()"), never updates on subsequent writes
+- created_at only sets on INSERT via dbgenerated("unixepoch()"), never updates on subsequent writes
 - source column exists in DB but is not in any select or the Tests type — if adding it, update both Tests type in TestConfig.ts and every select in test-repository.ts
 - Migration stub must be created with wrangler first (npx wrangler d1 migrations create ...), then filled with prisma migrate diff — cannot use prisma migrate directly with D1
