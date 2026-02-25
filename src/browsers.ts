@@ -6,8 +6,31 @@ import type {
   LaunchOptions,
 } from './types.js';
 
+const TRUTHY_VALUES = new Set(['true', '1', 'yes', 'on']);
+const FALSY_VALUES = new Set(['false', '0', 'no', 'off']);
+
+/**
+ * Parse an environment variable string as a boolean.
+ * Truthy values: 'true', '1', 'yes', 'on' (case-insensitive).
+ * Falsy values: 'false', '0', 'no', 'off' (case-insensitive).
+ * Unrecognised values fall back to `defaultValue`.
+ */
+function parseEnvBool(
+  value: string | undefined,
+  defaultValue: boolean,
+): boolean {
+  if (value === undefined) return defaultValue;
+  const lower = value.toLowerCase();
+  if (TRUTHY_VALUES.has(lower)) return true;
+  if (FALSY_VALUES.has(lower)) return false;
+  return defaultValue;
+}
+
 // should browsers be headless? defaults to false unless running in CI
-const headless = !!process.env.CI;
+// but can be overridden by explicitly setting HEADLESS to any truthy/falsy value
+const CI = parseEnvBool(process.env.CI, false);
+
+const headless: boolean = parseEnvBool(process.env.HEADLESS, CI);
 
 type BrowserConfigs = Record<BrowserName, BrowserConfigEntry>;
 
@@ -111,10 +134,46 @@ class BrowserConfig {
   }
 
   static getBrowsers(): BrowserName[] {
+    const configuredBrowsers = Object.keys(
+      BrowserConfig.browserConfigs,
+    ) as BrowserName[];
+
     // only run firefox in CI (for now)
-    return process.env.CI
-      ? ['firefox']
-      : (Object.keys(BrowserConfig.browserConfigs) as BrowserName[]);
+    if (CI) {
+      return ['firefox'];
+    }
+
+    if (process.env.BROWSERS) {
+      const requestedBrowsers = process.env.BROWSERS.split(/[,\s]+/)
+        .map(browser => browser.trim().toLowerCase())
+        .filter(browser => browser.length > 0);
+
+      const envBrowsers = requestedBrowsers.filter(browser =>
+        configuredBrowsers.includes(browser as BrowserName),
+      ) as BrowserName[];
+
+      const invalidBrowsers = requestedBrowsers.filter(
+        browser => !configuredBrowsers.includes(browser as BrowserName),
+      );
+
+      if (invalidBrowsers.length > 0) {
+        console.warn(
+          `Ignoring unsupported browser name(s) from BROWSERS environment variable: ${invalidBrowsers.join(
+            ', ',
+          )}`,
+        );
+      }
+
+      if (envBrowsers.length === 0) {
+        console.warn(
+          'No valid browsers specified in BROWSERS environment variable; returning an empty browser list.',
+        );
+      }
+
+      return envBrowsers;
+    }
+
+    return configuredBrowsers;
   }
 
   addFirefoxPrefs(prefs: Record<string, string | number | boolean>): void {

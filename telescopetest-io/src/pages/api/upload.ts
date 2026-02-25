@@ -1,12 +1,12 @@
 import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
-import type { ConfigJson, TestConfig } from '@/lib/classes/TestConfig';
+import type { TestConfig } from '@/lib/classes/TestConfig';
 
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
-import { generateTestId, TestSource } from '@/lib/classes/TestConfig';
-import { createPrismaClient } from '@/lib/prisma/client';
+import { TestSource } from '@/lib/classes/TestConfig';
+import { getPrismaClient } from '@/lib/prisma/client';
 import {
   createTest,
   findTestIdByZipKey,
@@ -43,6 +43,18 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   return hashHex;
 }
 
+// Generate a test_id
+export function generateTestId(config_date: string): string {
+  const date_ob = new Date(config_date);
+  const date = date_ob.getDate().toString().padStart(2, '0');
+  const month = (date_ob.getMonth() + 1).toString().padStart(2, '0');
+  const year = date_ob.getFullYear();
+  const hour = date_ob.getHours().toString().padStart(2, '0');
+  const minute = date_ob.getMinutes().toString().padStart(2, '0');
+  const second = date_ob.getSeconds().toString().padStart(2, '0');
+  return `${year}_${month}_${date}_${hour}_${minute}_${second}_${crypto.randomUUID()}`;
+}
+
 export const POST: APIRoute = async (context: APIContext) => {
   try {
     // Validate formData
@@ -76,18 +88,8 @@ export const POST: APIRoute = async (context: APIContext) => {
     const zipKey = await generateContentHash(buffer);
     // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
     const env = context.locals.runtime.env;
-    // Validate required bindings exist
-    if (!env.TELESCOPE_DB || !env.RESULTS_BUCKET) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Bindings not configured properly',
-        }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } },
-      );
-    }
     // Check if this exact content already exists in D1
-    const prisma = createPrismaClient(env.TELESCOPE_DB);
+    const prisma = getPrismaClient(context);
     const existingTestId = await findTestIdByZipKey(prisma, zipKey);
     if (existingTestId) {
       return new Response(
@@ -138,9 +140,28 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
+    const configSchema = z.object({
+      url: z.string(),
+      date: z.string(),
+      options: z.object({
+        browser: z.string(),
+      }),
+    });
+    type ConfigJson = z.infer<typeof configSchema>;
     let config: ConfigJson;
     try {
-      config = JSON.parse(configText);
+      const parsed = JSON.parse(configText);
+      const configResult = configSchema.safeParse(parsed);
+      if (!configResult.success) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Invalid config.json: ${configResult.error.issues.map(i => i.message).join(', ')}`,
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      config = configResult.data;
     } catch (error) {
       return new Response(
         JSON.stringify({
@@ -151,7 +172,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     // Build test configuration object
-    const testId = generateTestId();
+    const testId = generateTestId(config.date);
     const testConfig: TestConfig = {
       testId,
       zipKey,

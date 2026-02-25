@@ -4,7 +4,7 @@ import type { Tests } from '@/lib/classes/TestConfig';
 import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
 
-import { createPrismaClient } from '@/lib/prisma/client';
+import { getPrismaClient } from '@/lib/prisma/client';
 import { getAllTests } from '@/lib/repositories/test-repository';
 
 import { ListIcon, SquaresFourIcon } from '@phosphor-icons/react/ssr';
@@ -16,7 +16,7 @@ const viewLayout =
 
 // Fetch all tests from D1
 const env = Astro.locals.runtime.env;
-const prisma = createPrismaClient(env.TELESCOPE_DB);
+const prisma = getPrismaClient(Astro);
 const tests = await getAllTests(prisma);
 
 // get proper interface with screenshot
