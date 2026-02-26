@@ -31,3 +31,15 @@ declare module 'expect' {
     endsWith(ending: string): R;
   }
 }
+
+describe('Test endsWith', () => {
+  const testString = 'A quick brown fox jumps over the lazy dog';
+
+  it('Positive test', () => {
+    expect(testString).endsWith('dog');
+  });
+
+  it('Negative test', () => {
+    expect(testString).not.endsWith('cat');
+  });
+});
