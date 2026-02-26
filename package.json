@@ -20,7 +20,7 @@
     "build": "tsc && chmod +x dist/src/cli.js && cp -r src/templates dist/src/ && mkdir -p dist/processors/templates && cp -r processors/templates/* dist/processors/templates/",
     "dev": "tsc --watch",
     "start": "node dist/src/cli.js",
-    "test": "vitest run",
+    "test": "npm run build && vitest run",
     "test:ci": "export CI=true; npm test",
     "coverage": "vitest run --coverage",
     "clean": "rm -rf node_modules results dist",
