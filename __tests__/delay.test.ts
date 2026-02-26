@@ -95,7 +95,7 @@ describe.each(browsers)('Delaying response - %s', browser => {
       expect(resources).not.toBeNull();
 
       if (resources === null) {
-        return test.fails('Resources should not be null');
+        expect.fail('Resources should not be null');
       }
 
       const imageResources = resources.filter((r: ResourceTiming) =>
