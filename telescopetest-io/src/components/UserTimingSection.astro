@@ -1,0 +1,158 @@
+---
+import type { MetricsJson } from '@/lib/metrics/types';
+import { formatDuration } from '@/lib/metrics/formatters';
+
+export interface Props {
+  metrics: MetricsJson | null;
+}
+
+const { metrics } = Astro.props;
+
+const userTimings = metrics?.userTiming ?? [];
+
+// Filter out internal browser marks (js-parse-end, etc.) — these are noise
+const INTERNAL_MARK_PATTERNS = [/^js-parse-/, /^style-recalc-/, /^layout-shift-/, /^paint-/, /^first-/];
+
+const allMarks = userTimings.filter(t => t.entryType === 'mark');
+const measures = userTimings.filter(t => t.entryType === 'measure');
+const marks = allMarks.filter(t => !INTERNAL_MARK_PATTERNS.some(p => p.test(t.name)));
+const internalMarksCount = allMarks.length - marks.length;
+---
+
+<section class="user-timing-section panel">
+  <h3>User Timing</h3>
+  {userTimings.length > 0 ? (
+    <div class="timing-groups">
+      {measures.length > 0 && (
+        <div class="timing-group">
+          <h4>Measures</h4>
+          <div class="timing-table">
+            {measures.map(timing => (
+              <div class="timing-row">
+                <span class="timing-name">{timing.name}</span>
+                <span class="timing-meta">@ {formatDuration(timing.startTime)}</span>
+                <span class="timing-duration">{formatDuration(timing.duration)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {(marks.length > 0 || internalMarksCount > 0) && (
+        <div class="timing-group">
+          <h4>Marks</h4>
+          {marks.length > 0 ? (
+            <div class="timing-table">
+              {marks.map(timing => (
+                <div class="timing-row">
+                  <span class="timing-name">{timing.name}</span>
+                  <span class="timing-timestamp">{formatDuration(timing.startTime)}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {internalMarksCount > 0 && (
+            <p class="internal-marks-note">{internalMarksCount} internal browser mark{internalMarksCount !== 1 ? 's' : ''} hidden</p>
+          )}
+        </div>
+      )}
+    </div>
+  ) : (
+    <p class="no-data">No user timing data available</p>
+  )}
+</section>
+
+<style>
+  .user-timing-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .user-timing-section h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .timing-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .timing-group h4 {
+    margin: 0 0 0.375rem 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .timing-table {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    overflow: hidden;
+  }
+
+  .timing-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.3125rem 0.75rem;
+    font-size: 0.8125rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .timing-row:last-child {
+    border-bottom: none;
+  }
+
+  .timing-row:nth-child(even) {
+    background: var(--panel);
+  }
+
+  .timing-name {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .timing-meta {
+    color: var(--muted);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .timing-duration,
+  .timing-timestamp {
+    font-weight: 600;
+    color: var(--brand);
+    white-space: nowrap;
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
+  }
+
+  .internal-marks-note {
+    margin: 0.375rem 0 0 0;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .no-data {
+    color: var(--muted);
+    font-size: 0.875rem;
+    margin: 0;
+    padding: 1rem;
+    text-align: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+  }
+</style>

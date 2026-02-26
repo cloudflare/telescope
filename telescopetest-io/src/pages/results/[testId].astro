@@ -1,6 +1,9 @@
 ---
 import Page from '@/layouts/Page.astro';
 import MetricsSection from '@/components/MetricsSection.astro';
+import NavigationTimingSection from '@/components/NavigationTimingSection.astro';
+import ServerTimingSection from '@/components/ServerTimingSection.astro';
+import UserTimingSection from '@/components/UserTimingSection.astro';
 import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
 import TestInfoPanel from '@/components/TestInfoPanel.astro';
 
@@ -57,10 +60,8 @@ try {
     }>();
     harBrowser = har?.log?.browser ?? null;
   }
-} catch {
-  console.error(
-    'Error with getting browser.name or browser.string, returning nothing',
-  );
+} catch (err) {
+  console.error('Error reading HAR browser info:', err);
   // HAR unavailable — render without browser version
 }
 
@@ -71,8 +72,8 @@ try {
   if (metricsObj) {
     metrics = await metricsObj.json<MetricsJson>();
   }
-} catch {
-  console.error('Error with getting metrics.json, returning nothing');
+} catch (err) {
+  console.error('Error reading metrics.json:', err);
   // metrics unavailable — render without them
 }
 
@@ -130,7 +131,7 @@ const formattedDate = date.toLocaleString('en-US', {
       />
     </section>
 
-    <!-- Metrics Row -->
+    <!-- Core Web Vitals & Performance Metrics -->
     {
       metrics ? (
         <div class="metrics-row">
@@ -184,6 +185,15 @@ const formattedDate = date.toLocaleString('en-US', {
         </div>
       )
     }
+
+    <!-- Navigation Timing Visualization -->
+    {metrics && <NavigationTimingSection metrics={metrics} />}
+
+    <!-- Server Timing -->
+    {metrics && <ServerTimingSection metrics={metrics} />}
+
+    <!-- User Timing -->
+    {metrics && <UserTimingSection metrics={metrics} />}
   </div>
 </Page>
 

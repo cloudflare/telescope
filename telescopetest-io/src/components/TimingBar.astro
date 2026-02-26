@@ -1,4 +1,6 @@
 ---
+import { formatDuration } from '@/lib/metrics/formatters';
+
 export interface Props {
   label: string;
   duration: number;
@@ -9,22 +11,14 @@ export interface Props {
 
 const { label, duration, startTime = 0, color = 'var(--brand)', maxDuration } = Astro.props;
 
-// Calculate percentages for positioning
-const startPercent = (startTime / maxDuration) * 100;
-const widthPercent = (duration / maxDuration) * 100;
-
-// Format duration for display
-const formatDuration = (ms: number) => {
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  return `${(ms / 1000).toFixed(2)}s`;
-};
+// Calculate percentages for positioning — guard against division by zero
+const safeMax = maxDuration > 0 ? maxDuration : 1;
+const startPercent = (startTime / safeMax) * 100;
+const widthPercent = (duration / safeMax) * 100;
 ---
 
 <div class="timing-bar-container">
-  <div class="timing-label">
-    <span class="label-text">{label}</span>
-    <span class="label-duration">{formatDuration(duration)}</span>
-  </div>
+  <span class="timing-label" title={label}>{label}</span>
   <div class="timing-track">
     <div
       class="timing-fill"
@@ -32,30 +26,29 @@ const formatDuration = (ms: number) => {
     >
     </div>
   </div>
+  <span class="label-duration">{formatDuration(duration)}</span>
 </div>
 
 <style>
   .timing-bar-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem; /* 8px */
-    margin-bottom: 1rem; /* 16px */
+    display: grid;
+    grid-template-columns: 10rem 1fr 4rem;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .timing-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.875rem; /* 14px */
-  }
-
-  .label-text {
+    font-size: 0.8125rem;
     color: var(--text);
-    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .label-duration {
+    font-size: 0.8125rem;
     color: var(--muted);
+    text-align: right;
     font-family:
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
       'Courier New', monospace;
@@ -63,10 +56,10 @@ const formatDuration = (ms: number) => {
 
   .timing-track {
     position: relative;
-    height: 1.5rem; /* 24px */
+    height: 8px;
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 0.375rem; /* 6px */
+    border-radius: 4px;
     overflow: hidden;
   }
 
@@ -74,7 +67,6 @@ const formatDuration = (ms: number) => {
     position: absolute;
     top: 0;
     height: 100%;
-    border-radius: 0.25rem; /* 4px */
-    transition: all 0.3s ease;
+    border-radius: 3px;
   }
 </style>
