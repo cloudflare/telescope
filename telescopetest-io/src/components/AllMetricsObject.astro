@@ -1,0 +1,29 @@
+---
+import AllMetricsRow from './AllMetricsRow.astro';
+
+export interface Props {
+  data: Record<string, any>;
+  nested?: boolean;
+}
+
+const { data, nested = false } = Astro.props;
+---
+
+<div class:list={['metric-object', { nested }]}>
+  {Object.entries(data).map(([key, value]) => (
+    <AllMetricsRow label={key} value={value} />
+  ))}
+</div>
+
+<style>
+  .metric-object {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .metric-object.nested {
+    padding-left: 1rem;
+    margin-top: 0.25rem;
+  }
+</style>

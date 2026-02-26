@@ -1,13 +1,10 @@
 ---
 import Page from '@/layouts/Page.astro';
-import MetricsSection from '@/components/MetricsSection.astro';
-import NavigationTimingSection from '@/components/NavigationTimingSection.astro';
-import ServerTimingSection from '@/components/ServerTimingSection.astro';
-import UserTimingSection from '@/components/UserTimingSection.astro';
+import Summary from '@/components/Summary.astro';
 import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
 import TestInfoPanel from '@/components/TestInfoPanel.astro';
-import MetricsTabs from '@/components/MetricsTabs.astro';
-import RawMetricsDisplay from '@/components/RawMetricsDisplay.astro';
+import Tabs from '@/components/Tabs.astro';
+import AllMetrics from '@/components/AllMetrics.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/test-repository';
@@ -111,7 +108,9 @@ const formattedDate = date.toLocaleString('en-US', {
         test.description && (
           <div class="description-details">
             <p class="description-text">{test.description}</p>
-            <button class="description-toggle" aria-expanded="false">more</button>
+            <button class="description-toggle" aria-expanded="false">
+              more
+            </button>
           </div>
         )
       }
@@ -136,11 +135,10 @@ const formattedDate = date.toLocaleString('en-US', {
     <!-- Metrics Tabs -->
     {
       metrics ? (
-        <MetricsTabs>
+        <Tabs>
           <div slot="summary">
-            <!-- Core Web Vitals & Performance Metrics -->
             <div class="metrics-row">
-              <MetricsSection
+              <Summary
                 heading="Core Web Vitals"
                 metrics={[
                   {
@@ -156,7 +154,7 @@ const formattedDate = date.toLocaleString('en-US', {
                   },
                 ]}
               />
-              <MetricsSection
+              <Summary
                 heading="Performance Metrics"
                 metrics={[
                   {
@@ -184,21 +182,12 @@ const formattedDate = date.toLocaleString('en-US', {
                 ]}
               />
             </div>
-
-            <!-- Navigation Timing Visualization -->
-            <NavigationTimingSection metrics={metrics} />
-
-            <!-- Server Timing -->
-            <ServerTimingSection metrics={metrics} />
-
-            <!-- User Timing -->
-            <UserTimingSection metrics={metrics} />
           </div>
 
           <div slot="all-metrics">
-            <RawMetricsDisplay metrics={metrics} />
+            <AllMetrics metrics={metrics} />
           </div>
-        </MetricsTabs>
+        </Tabs>
       ) : (
         <div class="metrics-unavailable panel">
           <p>Metrics unavailable for this test.</p>
@@ -339,8 +328,12 @@ const formattedDate = date.toLocaleString('en-US', {
 </style>
 
 <script>
-  const toggle = document.querySelector('.description-toggle') as HTMLButtonElement | null;
-  const text = document.querySelector('.description-text') as HTMLElement | null;
+  const toggle = document.querySelector(
+    '.description-toggle',
+  ) as HTMLButtonElement | null;
+  const text = document.querySelector(
+    '.description-text',
+  ) as HTMLElement | null;
 
   if (toggle && text) {
     toggle.addEventListener('click', () => {

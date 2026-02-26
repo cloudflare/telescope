@@ -1,0 +1,178 @@
+---
+import type { MetricsJson } from '@/lib/metrics/types';
+import AllMetricsRow from './AllMetricsRow.astro';
+import AllMetricsObject from './AllMetricsObject.astro';
+import AllMetricsItem from './AllMetricsItem.astro';
+
+export interface Props {
+  metrics: MetricsJson | null;
+}
+
+const { metrics } = Astro.props;
+
+const nav = metrics?.navigationTiming;
+const { serverTiming, ...navRest } = (nav || {}) as any;
+---
+
+{
+  metrics && (
+    <div class="display">
+      {nav && (
+        <section class="section">
+          <h3>Navigation Timing</h3>
+          {Object.entries(navRest).map(([key, value]) => (
+            <AllMetricsRow label={key} value={value} />
+          ))}
+          {serverTiming && serverTiming.length > 0 && (
+            <>
+              <span class="label">serverTiming:</span>
+              <div class="nested">
+                {serverTiming.map((item: any) => (
+                  <AllMetricsItem>
+                    <AllMetricsRow label="name" value={item.name} />
+                    <AllMetricsRow label="duration" value={item.duration} />
+                    {item.description && <AllMetricsRow label="description" value={item.description} />}
+                  </AllMetricsItem>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {metrics.paintTiming && metrics.paintTiming.length > 0 && (
+        <section class="section">
+          <h3>Paint Timing</h3>
+          {metrics.paintTiming.map((item) => (
+            <AllMetricsItem>
+              <AllMetricsRow label="name" value={item.name} />
+              <AllMetricsRow label="entryType" value={item.entryType} />
+              <AllMetricsRow label="startTime" value={item.startTime} />
+              <AllMetricsRow label="duration" value={item.duration} />
+            </AllMetricsItem>
+          ))}
+        </section>
+      )}
+
+      {metrics.userTiming && metrics.userTiming.length > 0 && (
+        <section class="section">
+          <h3>User Timing</h3>
+          {metrics.userTiming.map((item) => (
+            <AllMetricsItem>
+              <AllMetricsRow label="name" value={item.name} />
+              <AllMetricsRow label="entryType" value={item.entryType} />
+              <AllMetricsRow label="startTime" value={item.startTime} />
+              <AllMetricsRow label="duration" value={item.duration} />
+            </AllMetricsItem>
+          ))}
+        </section>
+      )}
+
+      {metrics.largestContentfulPaint && metrics.largestContentfulPaint.length > 0 && (
+        <section class="section">
+          <h3>Largest Contentful Paint</h3>
+          {metrics.largestContentfulPaint.map((item) => (
+            <AllMetricsItem>
+              {item.name && <AllMetricsRow label="name" value={item.name} />}
+              {item.entryType && <AllMetricsRow label="entryType" value={item.entryType} />}
+              <AllMetricsRow label="startTime" value={item.startTime} />
+              <AllMetricsRow label="size" value={item.size} />
+              {item.url && <AllMetricsRow label="url" value={item.url} />}
+              {item.id && <AllMetricsRow label="id" value={item.id} />}
+              {item.loadTime !== undefined && <AllMetricsRow label="loadTime" value={item.loadTime} />}
+              {item.renderTime !== undefined && <AllMetricsRow label="renderTime" value={item.renderTime} />}
+              {
+                item.element && (
+                  <>
+                    <span class="label">element:</span>
+                    <div class="nested">
+                      {item.element.nodeName && <AllMetricsRow label="nodeName" value={item.element.nodeName} />}
+                      {item.element.outerHTML && (
+                        <AllMetricsRow label="outerHTML" value={item.element.outerHTML.substring(0, 100) + '...'} />
+                      )}
+                      {(item.element as any).src && <AllMetricsRow label="src" value={(item.element as any).src} />}
+                      {(item.element as any).currentSrc && (
+                        <AllMetricsRow label="currentSrc" value={(item.element as any).currentSrc} />
+                      )}
+                      {(item.element as any).content && <AllMetricsRow label="content" value={(item.element as any).content} />}
+                      {item.element.boundingRect && (
+                        <>
+                          <span class="label">boundingRect:</span>
+                          <AllMetricsObject data={item.element.boundingRect} nested />
+                        </>
+                      )}
+                    </div>
+                  </>
+                )
+              }
+            </AllMetricsItem>
+          ))}
+        </section>
+      )}
+
+      {metrics.layoutShifts && metrics.layoutShifts.length > 0 && (
+        <section class="section">
+          <h3>Layout Shifts</h3>
+          {metrics.layoutShifts.map((item: any) => (
+            <AllMetricsItem>
+              {item.name && <AllMetricsRow label="name" value={item.name} />}
+              {item.entryType && <AllMetricsRow label="entryType" value={item.entryType} />}
+              <AllMetricsRow label="startTime" value={item.startTime} />
+              <AllMetricsRow label="value" value={item.value} />
+              {item.hadRecentInput !== undefined && <AllMetricsRow label="hadRecentInput" value={item.hadRecentInput} />}
+              {item.lastInputTime !== undefined && <AllMetricsRow label="lastInputTime" value={item.lastInputTime} />}
+              {item.sources && item.sources.length > 0 && (
+                <>
+                  <span class="label">sources:</span>
+                  <div class="nested">
+                    {item.sources.map((source: any) => (
+                      <AllMetricsItem small>
+                        <span class="label">previousRect:</span>
+                        <AllMetricsObject data={source.previousRect} nested />
+                        <span class="label">currentRect:</span>
+                        <AllMetricsObject data={source.currentRect} nested />
+                      </AllMetricsItem>
+                    ))}
+                  </div>
+                </>
+              )}
+            </AllMetricsItem>
+          ))}
+        </section>
+      )}
+    </div>
+  )
+}
+
+<style>
+  .display {
+    padding: 0;
+  }
+
+  .section {
+    margin-bottom: 1.5rem;
+  }
+
+  .section:last-child {
+    margin-bottom: 0;
+  }
+
+  .section h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .nested {
+    padding-left: 1rem;
+    margin-top: 0.25rem;
+  }
+
+  .label {
+    display: block;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 0.8125rem;
+    margin-bottom: 0.25rem;
+  }
+</style>

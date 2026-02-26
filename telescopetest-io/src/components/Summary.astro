@@ -1,5 +1,5 @@
 ---
-import MetricCard from './MetricCard.astro';
+import SummaryCard from './SummaryCard.astro';
 
 export interface Props {
   heading: string;
@@ -18,7 +18,7 @@ const { heading, metrics } = Astro.props;
   <h3>{heading}</h3>
   <div class="metrics-grid">
     {metrics.map(m => (
-      <MetricCard
+      <SummaryCard
         label={m.label}
         value={m.value}
         unit={m.unit}
