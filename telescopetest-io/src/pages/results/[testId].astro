@@ -6,6 +6,8 @@ import ServerTimingSection from '@/components/ServerTimingSection.astro';
 import UserTimingSection from '@/components/UserTimingSection.astro';
 import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
 import TestInfoPanel from '@/components/TestInfoPanel.astro';
+import MetricsTabs from '@/components/MetricsTabs.astro';
+import RawMetricsDisplay from '@/components/RawMetricsDisplay.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/test-repository';
@@ -131,69 +133,78 @@ const formattedDate = date.toLocaleString('en-US', {
       />
     </section>
 
-    <!-- Core Web Vitals & Performance Metrics -->
+    <!-- Metrics Tabs -->
     {
       metrics ? (
-        <div class="metrics-row">
-          <MetricsSection
-            heading="Core Web Vitals"
-            metrics={[
-              {
-                label: 'LCP',
-                value: formatMs(lcpMs),
-                unit: 'ms',
-                rating: getLcpRating(lcpMs),
-              },
-              {
-                label: 'CLS',
-                value: formatDecimal(clsValue),
-                rating: getClsRating(clsValue),
-              },
-            ]}
-          />
-          <MetricsSection
-            heading="Performance Metrics"
-            metrics={[
-              {
-                label: 'FCP',
-                value: formatMs(fcpMs),
-                unit: 'ms',
-                rating: getFcpRating(fcpMs),
-              },
-              {
-                label: 'TTFB',
-                value: formatMs(ttfbMs),
-                unit: 'ms',
-                rating: getTtfbRating(ttfbMs),
-              },
-              {
-                label: 'Transfer Size',
-                value: formatKb(transferBytes),
-                unit: 'KB',
-              },
-              {
-                label: 'Page Load Time',
-                value: formatMs(durationMs),
-                unit: 'ms',
-              },
-            ]}
-          />
-        </div>
+        <MetricsTabs>
+          <div slot="summary">
+            <!-- Core Web Vitals & Performance Metrics -->
+            <div class="metrics-row">
+              <MetricsSection
+                heading="Core Web Vitals"
+                metrics={[
+                  {
+                    label: 'LCP',
+                    value: formatMs(lcpMs),
+                    unit: 'ms',
+                    rating: getLcpRating(lcpMs),
+                  },
+                  {
+                    label: 'CLS',
+                    value: formatDecimal(clsValue),
+                    rating: getClsRating(clsValue),
+                  },
+                ]}
+              />
+              <MetricsSection
+                heading="Performance Metrics"
+                metrics={[
+                  {
+                    label: 'FCP',
+                    value: formatMs(fcpMs),
+                    unit: 'ms',
+                    rating: getFcpRating(fcpMs),
+                  },
+                  {
+                    label: 'TTFB',
+                    value: formatMs(ttfbMs),
+                    unit: 'ms',
+                    rating: getTtfbRating(ttfbMs),
+                  },
+                  {
+                    label: 'Transfer Size',
+                    value: formatKb(transferBytes),
+                    unit: 'KB',
+                  },
+                  {
+                    label: 'Page Load Time',
+                    value: formatMs(durationMs),
+                    unit: 'ms',
+                  },
+                ]}
+              />
+            </div>
+
+            <!-- Navigation Timing Visualization -->
+            <NavigationTimingSection metrics={metrics} />
+
+            <!-- Server Timing -->
+            <ServerTimingSection metrics={metrics} />
+
+            <!-- User Timing -->
+            <UserTimingSection metrics={metrics} />
+          </div>
+
+          <div slot="all-metrics">
+            <RawMetricsDisplay metrics={metrics} />
+          </div>
+        </MetricsTabs>
       ) : (
         <div class="metrics-unavailable panel">
           <p>Metrics unavailable for this test.</p>
         </div>
       )
     }
-
-    <!-- Navigation Timing Visualization -->
-    {metrics && <NavigationTimingSection metrics={metrics} />}
-
-    <!-- Server Timing -->
-    {metrics && <ServerTimingSection metrics={metrics} />}
-
-    <!-- User Timing -->
-    {metrics && <UserTimingSection metrics={metrics} />}
   </div>
 </Page>
 

@@ -1,0 +1,37 @@
+---
+import type { MetricsJson } from '@/lib/metrics/types';
+
+export interface Props {
+  metrics: MetricsJson | null;
+}
+
+const { metrics } = Astro.props;
+---
+
+{metrics && (
+  <div class="raw-metrics">
+    <pre><code>{JSON.stringify(metrics, null, 2)}</code></pre>
+  </div>
+)}
+
+<style>
+  .raw-metrics {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+
+  pre {
+    margin: 0;
+    font-family: ui-monospace, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  code {
+    font-family: inherit;
+  }
+</style>
