@@ -1,5 +1,5 @@
 // Helper functions to extract/calculate metrics
-import type { MetricsJson } from './types.js';
+import type { MetricsJson } from '../types/results.js';
 
 /**
  * Extract First Contentful Paint (FCP) time in milliseconds

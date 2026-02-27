@@ -18,6 +18,8 @@ permission:
     'cat *': allow
     'grep *': allow
     'find *': allow
+    'sort *': allow
+    'tree *': allow
     'head *': allow
     'wc *': allow
     'npm *': ask

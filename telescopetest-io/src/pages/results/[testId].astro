@@ -7,9 +7,9 @@ import Tabs from '@/components/Tabs.astro';
 import AllMetrics from '@/components/AllMetrics.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
-import { getTestById } from '@/lib/repositories/test-repository';
+import { getTestById } from '@/lib/repositories/testRepository';
 
-import type { MetricsJson } from '@/lib/metrics/types';
+import type { MetricsJson } from '@/lib/types/results';
 import {
   extractFcp,
   extractLcp,
@@ -23,7 +23,7 @@ import {
   getLcpRating,
   getClsRating,
   getTtfbRating,
-} from '@/lib/metrics/web-vitals';
+} from '@/lib/metrics/ratings';
 import { formatMs, formatDecimal, formatKb } from '@/lib/metrics/formatters';
 
 export const prerender = false;
