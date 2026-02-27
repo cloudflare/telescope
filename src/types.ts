@@ -141,6 +141,10 @@ export interface BrowserConfigOptions {
     isEnabled: (name: string, severity: string) => boolean;
     log: (name: string, severity: string, message: string) => void;
   };
+  userAgent?: string;
+  deviceScaleFactor?: number;
+  isMobile?: boolean;
+  hasTouch?: boolean;
 }
 
 // ============================================================================
@@ -161,8 +165,8 @@ export interface LaunchOptions {
   firefoxPrefs?: Record<string, string | number | boolean>;
   cpuThrottle?: number;
   connectionType?: ConnectionType;
-  width?: number;
-  height?: number;
+  width?: number | false;
+  height?: number | false;
   frameRate?: number;
   disableJS?: boolean;
   debug?: boolean;
@@ -178,6 +182,7 @@ export interface LaunchOptions {
   command?: string[];
   delay?: Record<string, number>;
   delayUsing?: DelayMethod;
+  device?: CustomDeviceDescriptor | false;
 }
 
 /**
@@ -185,8 +190,8 @@ export interface LaunchOptions {
  */
 export interface DefaultOptions {
   browser: BrowserName;
-  width: number;
-  height: number;
+  width: number | false;
+  height: number | false;
   frameRate: number;
   timeout: number;
   blockDomains: string[];
@@ -204,6 +209,7 @@ export interface DefaultOptions {
   dry: boolean;
   delay: Record<string, number>;
   delayUsing: DelayMethod;
+  device: CustomDeviceDescriptor | false;
 }
 
 // ============================================================================
@@ -630,4 +636,58 @@ export interface CLIOptions {
   dry?: boolean;
   delay?: string;
   delayUsing?: string;
+  device?: string | false;
+}
+
+// ============================================================================
+// Device Emulation Types
+// ============================================================================
+
+/**
+ * Custom device descriptor type for configuring browser emulation settings.
+ * Based on Playwright's internal DeviceDescriptor type.
+ */
+export interface CustomDeviceDescriptor {
+  /**
+   * The viewport dimensions (width and height in pixels) for the emulated device.
+   * This controls the visible page area within the browser window.
+   */
+  viewport: {
+    /**
+     * Page width in pixels
+     */
+    width: number;
+    /**
+     * Page height in pixels
+     */
+    height: number;
+  };
+  /**
+   * The User-Agent string that will be sent with HTTP requests.
+   * This identifies the browser and device to web servers.
+   * Example: "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)..."
+   */
+  userAgent: string;
+  /**
+   * The device scale factor (DPR - Device Pixel Ratio).
+   * Represents the ratio between physical pixels and CSS pixels.
+   * Common values: 1 (standard displays), 2 (Retina/high-DPI), 3 (high-end mobile)
+   */
+  deviceScaleFactor: number;
+  /**
+   * Indicates whether the device is a mobile device.
+   * Affects meta viewport tag handling and touch event emulation.
+   * Set to true for mobile devices, false for desktop.
+   */
+  isMobile: boolean;
+  /**
+   * Indicates whether the device supports touch events.
+   * When true, enables touch event listeners and touch-specific behavior.
+   */
+  hasTouch: boolean;
+  /**
+   * The default browser engine to use for this device profile.
+   * Options: 'chromium', 'firefox', or 'webkit'
+   */
+  defaultBrowserType: 'chromium' | 'firefox' | 'webkit';
 }

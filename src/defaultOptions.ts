@@ -8,9 +8,9 @@ import type { DefaultOptions } from './types.js';
 export const DEFAULT_OPTIONS: DefaultOptions = {
   // Browser engine to use for testing
   browser: 'chrome',
-  // Viewport width and height in pixels
-  width: 1366,
-  height: 768,
+  // Viewport width and height in pixels (false = use defaults)
+  width: false,
+  height: false,
   // Filmstrip capture rate (frames per second)
   frameRate: 1,
   // Test timeout in milliseconds
@@ -45,4 +45,13 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   uploadUrl: null,
   // Dry run (false = no dry run)
   dry: false,
+  // Target device to emulate (false = no emulation)
+  device: false,
 };
+
+/**
+ * Default viewport values to be provided to browsers
+ * if width and height are not set by the user 
+ */
+export const DEFAULT_BROWSER_WIDTH = 1366;
+export const DEFAULT_BROWSER_HEIGHT = 768;

@@ -32,7 +32,7 @@
     "postinstall": "npx playwright install"
   },
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
+    "@playwright/test": "^1.58.2",
     "@types/adm-zip": "^0.5.7",
     "@types/ejs": "^3.1.5",
     "@types/jest": "^29.5.14",
@@ -54,7 +54,10 @@
     "ejs": "^3.1.10",
     "ffmpeg": "^0.0.4",
     "msw": "^2.12.10",
-    "playwright": "^1.57.0",
-    "playwright-webkit": "^1.57.0"
+    "playwright": "^1.58.2",
+    "playwright-webkit": "^1.58.2"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
