@@ -1,5 +1,5 @@
 ---
-description: Telescope Browser Agent open source project maintenance, code changes, testing, and contributions.
+description: Telescope Browser Agent for open source project maintenance, code changes, testing, and contributions.
 mode: primary
 ---
 
