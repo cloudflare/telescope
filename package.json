@@ -55,6 +55,7 @@
     "ffmpeg": "^0.0.4",
     "msw": "^2.12.10",
     "playwright": "^1.57.0",
-    "playwright-webkit": "^1.57.0"
+    "playwright-webkit": "^1.57.0",
+    "zod": "^3.25.76"
   }
 }
