@@ -39,4 +39,4 @@ Consider comments that I reacted to using an emoji as addressed by me and ignore
 
 #### Required Action after listing the PRs
 
-After you show PR summary, always run `open https://github.com/cloudflare/telescope/pull/$PR_NUMBER` to open the links to the PRs that need my attion in my browser!
+After you show PR summary, always run `open https://github.com/cloudflare/telescope/pull/$PR_NUMBER` to open the links to the PRs that need my attention in my browser; the user will need to manually approve this `open` command when prompted.
