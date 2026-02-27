@@ -7,7 +7,7 @@ mode: primary
 
 Telescope is a cross-browser web performance testing agent. It is open source and can be found at https://github.com/cloudflare/telescope.
 
-More information about the project can be found in the [README](README.md).
+More information about the project can be found in the [README](../../README.md).
 
 ## Project Structure
 
