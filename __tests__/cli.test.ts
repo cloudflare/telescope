@@ -5,9 +5,6 @@ import { retrieveHAR, retrieveMetrics, cleanupTestDirectory } from './helpers.js
 import { BrowserConfig } from '../src/browsers.js';
 import type { HarData, Metrics, HTTPHeader } from '../src/types.js';
 
-import { expect } from '@jest/globals';
-import './endsWith.ts'; // Extending expect with endsWith method
-
 const browsers = BrowserConfig.getBrowsers();
 
 describe.each(browsers)('Basic Test: %s', browser => {
@@ -182,7 +179,7 @@ describe.each(browsers)('Add to User Agent: %s', browser => {
         .find((hdr: HTTPHeader) => hdr.name === 'User-Agent');
 
       if (htmlUserAgent) {
-        expect(htmlUserAgent.value).endsWith(agentExtraText);
+        expect(htmlUserAgent.value.endsWith(agentExtraText)).toBe(true);
       } else {
         throw new Error('Missing User-Agent header');
       }
