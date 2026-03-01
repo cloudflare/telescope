@@ -1,8 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import type { HarData, Metrics, SavedConfig } from '../src/types.js';
+import type {
+  HarData,
+  Metrics,
+  ResourceTiming,
+  SavedConfig,
+} from '../src/types.js';
 
-type ResultType = 'result' | 'config' | 'metrics';
+type ResultType = 'result' | 'config' | 'metrics' | 'resources';
 
 export function retrieveResults<T>(
   testId: string | undefined,
@@ -50,4 +55,14 @@ export function retrieveConfig(testId: string | undefined): SavedConfig | null {
 
 export function retrieveMetrics(testId: string | undefined): Metrics | null {
   return retrieveResults<Metrics>(testId, 'metrics.json', 'metrics');
+}
+
+export function retrieveResources(
+  testId: string | undefined,
+): ResourceTiming[] | null {
+  return retrieveResults<ResourceTiming[]>(
+    testId,
+    'resources.json',
+    'resources',
+  );
 }

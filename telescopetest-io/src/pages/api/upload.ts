@@ -1,13 +1,18 @@
 import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
+import type { TestConfig } from '@/lib/classes/TestConfig';
 
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
-import { TestConfig, TestSource } from '@/lib/classes/TestConfig';
-import { D1TestStore } from '@/lib/d1/test-store/d1-test-store';
+import { TestSource } from '@/lib/classes/TestConfig';
+import { getPrismaClient } from '@/lib/prisma/client';
+import {
+  createTest,
+  findTestIdByZipKey,
+} from '@/lib/repositories/test-repository';
 
-export const prerender = false;
+// route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
 /**
  * Extract file list from ZIP archive
@@ -38,6 +43,18 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   return hashHex;
 }
 
+// Generate a test_id
+export function generateTestId(config_date: string): string {
+  const date_ob = new Date(config_date);
+  const date = date_ob.getDate().toString().padStart(2, '0');
+  const month = (date_ob.getMonth() + 1).toString().padStart(2, '0');
+  const year = date_ob.getFullYear();
+  const hour = date_ob.getHours().toString().padStart(2, '0');
+  const minute = date_ob.getMinutes().toString().padStart(2, '0');
+  const second = date_ob.getSeconds().toString().padStart(2, '0');
+  return `${year}_${month}_${date}_${hour}_${minute}_${second}_${crypto.randomUUID()}`;
+}
+
 export const POST: APIRoute = async (context: APIContext) => {
   try {
     // Validate formData
@@ -66,14 +83,14 @@ export const POST: APIRoute = async (context: APIContext) => {
     const buffer = await file.arrayBuffer();
     const unzipped = await getUnzipped(buffer);
     const files = Object.keys(unzipped);
-    // const files = Object.keys(unzipped).filter(name => !name.endsWith('/'));
-    // Generate content-based hash for unique R2 storage key
+    // Generate hash for unique R2 storage key
+    // TODO: make hash content-based, not ZIP based
     const zipKey = await generateContentHash(buffer);
     // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
     const env = context.locals.runtime.env;
-    const testStore = new D1TestStore(env.TELESCOPE_DB);
     // Check if this exact content already exists in D1
-    const existingTestId = await testStore.findTestIdByZipKey(zipKey);
+    const prisma = getPrismaClient(context);
+    const existingTestId = await findTestIdByZipKey(prisma, zipKey);
     if (existingTestId) {
       return new Response(
         JSON.stringify({
@@ -123,9 +140,28 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    let config;
+    const configSchema = z.object({
+      url: z.string(),
+      date: z.string(),
+      options: z.object({
+        browser: z.string(),
+      }),
+    });
+    type ConfigJson = z.infer<typeof configSchema>;
+    let config: ConfigJson;
     try {
-      config = JSON.parse(configText);
+      const parsed = JSON.parse(configText);
+      const configResult = configSchema.safeParse(parsed);
+      if (!configResult.success) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Invalid config.json: ${configResult.error.issues.map(i => i.message).join(', ')}`,
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      config = configResult.data;
     } catch (error) {
       return new Response(
         JSON.stringify({
@@ -135,11 +171,21 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // create testConfig (ts class) object
-    let testConfig = new TestConfig(config, zipKey, source, name, description);
-    // store the test config (metadata) in the db
+    // Build test configuration object
+    const testId = generateTestId(config.date);
+    const testConfig: TestConfig = {
+      testId,
+      zipKey,
+      name,
+      description,
+      source,
+      url: config.url,
+      testDate: Math.floor(new Date(config.date).getTime() / 1000),
+      browser: config.options.browser,
+    };
+    // Store test metadata in database
     try {
-      await testStore.createTestFromConfig(testConfig);
+      await createTest(prisma, testConfig);
     } catch (error) {
       return new Response(
         JSON.stringify({
@@ -149,16 +195,18 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    const testId = testConfig.test_id; // generated in constructor
     // store all unzipped files in R2 with {testId}/{filename} format
-    // storing with {testId}/ for future expansion to multiple users
     for (const filename of files) {
       await env.RESULTS_BUCKET.put(`${testId}/${filename}`, unzipped[filename]);
     }
+
+    // no need to disconnect manually b/c using Workers
+
+    // return success
     return new Response(
       JSON.stringify({
         success: true,
-        testId: testId, // returned to upload.astro on success
+        testId: testId,
         message: 'Upload processed successfully',
       }),
       {
@@ -168,6 +216,9 @@ export const POST: APIRoute = async (context: APIContext) => {
     );
   } catch (error) {
     console.error('Upload error:', error);
+
+    // no need to disconnect manually b/c using Workers
+
     return new Response(
       JSON.stringify({
         success: false,

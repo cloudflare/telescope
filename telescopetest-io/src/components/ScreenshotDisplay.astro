@@ -1,0 +1,50 @@
+---
+export interface Props {
+  screenshotUrl: string | null;
+  alt: string;
+}
+
+const { screenshotUrl, alt } = Astro.props;
+---
+
+{
+  screenshotUrl ? (
+    <div class="screenshot-wrap">
+      <img src={screenshotUrl} alt={alt} fetchpriority="high" />
+    </div>
+  ) : (
+    <div class="screenshot-empty">
+      <p>No screenshot available.</p>
+    </div>
+  )
+}
+
+<style>
+  .screenshot-wrap {
+    border: 1px solid var(--border);
+    line-height: 0;
+    overflow: hidden;
+  }
+
+  .screenshot-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .screenshot-empty {
+    padding: 2.5rem; /* 40px */
+    text-align: center;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.875rem; /* 14px */
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .screenshot-empty p {
+    margin: 0;
+  }
+</style>
