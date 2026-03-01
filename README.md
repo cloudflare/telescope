@@ -27,9 +27,10 @@ Options:
   -h, --headers <object>        Any custom headers to apply to requests
   -c, --cookies <object>        Any custom cookies to apply
   -f, --flags <string>          A comma separated list of Chromium flags to launch Chrome with. See: https://peter.sh/experiments/chromium-command-line-switches/
-  --blockDomains <domains...>   A comma separated list of domains to block (default: [])
-  --block <substrings...>       A comma-delimited list of urls to block (based on a substring match) (default: [])
-  --overrideHost <object>       Override the hostname of a URI with another host (Expects: {"example.com": "uat.example.com"})
+  --blockDomains <domains...>   A comma separated list of domains to block
+  --block <substrings...>       A comma-delimited list of urls to block (based on a substring match)
+  --delay <object>              An object mapping request regexes to response delays. Example: '{".css$": 2000, ".js$": 5000}'
+  --delayUsing <string>         Method to use to delay responses (choices: "continue", "fulfill", default: "continue")
   --firefoxPrefs <object>       Any Firefox User Preferences to apply (Firefox only). Example: '{"network.trr.mode": 2}'
   --cpuThrottle <int>           CPU throttling factor
   --connectionType <string>     Network connection type. By default, no throttling is applied. (choices: "cable", "dsl", "4g", "3g", "3gfast", "3gslow", "2g", "fios", default: false)
@@ -43,10 +44,30 @@ Options:
   --html                        Generate HTML report (default: false)
   --openHtml                    Open HTML report in browser (requires --html) (default: false)
   --list                        Generate list of results in HTML (default: false)
+  --overrideHost <object>       Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})
   --zip                         Zip the results of the test into the results directory. (default: false)
+  --uploadUrl <string>          Upload results to URL. Must be a valid URL if provided. (default: null)
   --dry                         Dry run (do not run test, just save config and cleanup) (default: false)
   --help                        display help for command
 ```
+
+### Browser Support
+
+Telescope uses Playwright to control and manage individual browser engines:
+
+```
+npx . -u https://www.example.com -b firefox
+```
+
+And supports the following browsers:
+
+- [Chromium](https://www.chromium.org/Home/)
+  - [Chrome](https://www.google.com/chrome/) - `chrome`
+  - [Chrome Beta](https://www.google.com/chrome/beta/) - `chrome-beta`
+  - [Chrome Canary](https://www.google.com/chrome/canary/) - `canary`
+  - [Edge](https://www.microsoft.com/en-us/edge/) - `edge`
+- [Safari](https://www.apple.com/safari/)/[Webkit](https://webkit.org/) - `safari`
+- [Firefox](https://www.firefox.com/) - `firefox`
 
 ### Custom Timeout
 
@@ -140,17 +161,18 @@ npx . -u https://newsletter.www.example.com/admin -b safari --auth '{"username":
 
 ### NPM dependencies
 
-After checking out the code, you need to install all the dependencies:
+After checking out the code, you need to install all the dependencies and build the project:
 
 ```
 npm install
+npm run build
 ```
 
 ### Browsers
 
 ### Chrome, Firefox, and Safari
 
-Telescope uses Playwright to control and manage individual browser engines. Telescope will automatically run `npx playwright install` to install Chrome, Firefox, and Safari (webkit).
+Telescope will automatically run `npx playwright install` to install `chrome`, `firefox`, and `safari`.
 
 ### Microsoft Edge and Chrome-beta
 
@@ -194,3 +216,41 @@ if (result.success) {
 ```
 
 All CLI options are supported as object properties. See Parameters section for available options.
+
+## Contributing To This Project
+
+### Running Automated Tests
+
+To run automated code tests in this project, you can use the following command:
+
+```
+npm run test
+```
+
+#### Using Specific Browsers
+
+You can run tests with [specific browsers](#browser-support) by setting the `BROWSERS` environment variable. For example, to run tests with Chrome and Firefox, you can run:
+
+```
+BROWSERS=chrome,firefox npm run test
+```
+
+The same browser can be listed more than once; each occurrence will run as a separate test pass. This can be useful for debugging side effects of running multiple tests on the same browser or just long tests.
+
+Note: `BROWSERS` environment variable is ignored when [running in CI](#our-ci-pipeline).
+
+#### Running Tests In Headless Mode
+
+You can run tests in headless mode by setting the `HEADLESS` environment variable to `true`. For example:
+
+```
+HEADLESS=true npm run test
+```
+
+#### Our CI Pipeline
+
+Our CI pipeline is set up to run tests on every push to the repository so you can see results in your pull request.
+
+At this point, to limit the length of the tests and (to simplify compatibility with GitHub Actions) it runs tests in headless mode on `firefox` only.
+
+If you want to run the same configuration locally, you can run `CI=true npm test`. You can override the default headless CI mode by setting the `HEADLESS` environment variable to `false`. However, you can't override the set of browsers that the CI configuration runs (it will always run `firefox` only).

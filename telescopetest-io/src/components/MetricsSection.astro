@@ -1,0 +1,43 @@
+---
+import MetricCard from './MetricCard.astro';
+
+export interface Props {
+  heading: string;
+  metrics: Array<{
+    label: string;
+    value: string | null;
+    unit?: string;
+    rating?: 'good' | 'needs-improvement' | 'poor';
+  }>;
+}
+
+const { heading, metrics } = Astro.props;
+---
+
+<section class="metrics-section">
+  <h3>{heading}</h3>
+  <div class="metrics-grid">
+    {metrics.map(m => (
+      <MetricCard
+        label={m.label}
+        value={m.value}
+        unit={m.unit}
+        rating={m.rating}
+      />
+    ))}
+  </div>
+</section>
+
+<style>
+  .metrics-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* 16px */
+  }
+
+  .metrics-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem; /* 12px */
+  }
+</style>

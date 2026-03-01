@@ -3,6 +3,7 @@ const currentPath = Astro.url.pathname;
 
 const navItems = [
   { label: 'Home', href: '/' },
+  { label: 'Results', href: '/results' },
   { label: 'Upload', href: '/upload' },
 ];
 ---
@@ -28,9 +29,8 @@ const navItems = [
     </nav>
   </div>
   <div class="actions">
-    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
-      🌙
-    </button>
+    <button class="theme-toggle" type="button" aria-label="Toggle theme"
+    ></button>
     <a
       class="gh"
       href="https://github.com/cloudflare/telescope"
@@ -44,29 +44,25 @@ const navItems = [
 
 <style>
   header {
-    width: max(500px, calc(100% - 68px));
+    width: max(31.25rem, calc(100% - 4.25rem)); /* 500px, 68px */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 30px;
-    margin: 20px;
-    padding: 0 20px;
+    height: 1.875rem; /* 30px */
+    margin: 1.25rem; /* 20px */
+    padding: 0 1.25rem; /* 20px */
     position: sticky;
     top: 0;
     z-index: 10;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    border-radius: 8px;
-  }
-
-  :global([data-theme='dark']) header {
-    background: rgba(15, 15, 15, 0.9);
+    background: var(--nav-bg);
+    backdrop-filter: blur(0.625rem); /* 10px */
+    border-radius: 0.5rem; /* 8px */
   }
 
   .left {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 0.875rem; /* 14px */
   }
 
   .brand {
@@ -74,14 +70,14 @@ const navItems = [
     letter-spacing: -0.02em;
     color: var(--text);
     text-decoration: none;
-    padding: 8px 10px;
-    border-radius: 12px;
+    padding: 0.5rem 0.625rem; /* 8px 10px */
+    border-radius: 0.75rem; /* 12px */
   }
 
   nav ul {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 0.375rem; /* 6px */
     flex-wrap: wrap;
     list-style: none;
     padding: 0;
@@ -91,10 +87,10 @@ const navItems = [
   nav a {
     color: var(--muted);
     text-decoration: none;
-    padding: 8px 10px;
-    border-radius: 12px;
+    padding: 0.5rem 0.625rem; /* 8px 10px */
+    border-radius: 0.75rem; /* 12px */
     border: 1px solid transparent;
-    font-size: 14px;
+    font-size: 0.875rem; /* 14px */
   }
 
   nav a:hover {
@@ -112,7 +108,7 @@ const navItems = [
   .actions {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 0.875rem; /* 14px */
   }
 
   .theme-toggle {
@@ -120,14 +116,32 @@ const navItems = [
     border: 1px solid var(--border);
     color: var(--text);
     cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 12px;
-    font-size: 16px;
+    padding: 0.375rem 0.625rem; /* 6px 10px */
+    border-radius: 0.75rem; /* 12px */
+    font-size: 1rem; /* 16px */
     line-height: 1;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .theme-toggle::after {
+    content: '🌙';
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .theme-toggle::after {
+      content: '☀️';
+    }
+  }
+
+  :global([data-theme-override='dark']) .theme-toggle::after {
+    content: '☀️';
+  }
+
+  :global([data-theme-override='light']) .theme-toggle::after {
+    content: '🌙';
   }
 
   .theme-toggle:hover {
@@ -138,10 +152,10 @@ const navItems = [
   .gh {
     color: var(--muted);
     text-decoration: none;
-    padding: 8px 10px;
-    border-radius: 12px;
+    padding: 0.5rem 0.625rem; /* 8px 10px */
+    border-radius: 0.75rem; /* 12px */
     border: 1px solid var(--border);
-    font-size: 14px;
+    font-size: 0.875rem; /* 14px */
     white-space: nowrap;
   }
 
@@ -152,19 +166,42 @@ const navItems = [
 </style>
 
 <script>
-  const savedTheme = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-  document.documentElement.setAttribute('data-theme', theme);
+  function getCookie(name: string) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [cookieName, cookieValue] = cookie.split('=', 2).map(c => c.trim());
+      if (cookieName === name) return cookieValue;
+    }
+  }
+
+  function setCookie(name: string, value: string, days: number) {
+    const d = new Date();
+    d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+    const expires = d.toUTCString();
+    const secure = window.location.protocol === 'https:' ? ';Secure' : '';
+    document.cookie = `${name}=${value};expires=${expires};path=/;SameSite=Lax${secure}`;
+  }
+
+  const savedTheme = getCookie('theme-override');
+
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme-override', savedTheme);
+  }
+
   const button = document.querySelector('.theme-toggle') as HTMLButtonElement;
+
   if (button) {
-    button.textContent = theme === 'dark' ? '☀️' : '🌙';
     button.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme');
-      const newTheme = current === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-      button.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+      const isDark = document.documentElement.getAttribute(
+        'data-theme-override',
+      )
+        ? document.documentElement.getAttribute('data-theme-override') ===
+          'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+      const newTheme = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme-override', newTheme);
+      setCookie('theme-override', newTheme, 365);
     });
   }
 </script>
