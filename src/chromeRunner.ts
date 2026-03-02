@@ -1,6 +1,6 @@
 import { TestRunner } from './testRunner.js';
 import { log } from './helpers.js';
-import type { BrowserConfigOptions, LaunchOptions } from './types.js';
+import type { BrowserConfigOptions, LaunchOptions, PriorityInfo } from './types.js';
 import type { BrowserContext, Page, CDPSession } from 'playwright';
 
 class ChromeRunner extends TestRunner {
@@ -26,16 +26,16 @@ class ChromeRunner extends TestRunner {
       const fullURL = request.url + (request.urlFragment || '');
       const resourceType = type || 'Other';
 
-      if (occasion.priorities[fullURL]) {
+      if (occasion.priorities[fullURL as keyof PriorityInfo]) {
         occasion.priorities[fullURL].push({
           requestId: requestId,
-          initial_priority: request.initialPriority,
+          initialPriority: request.initialPriority,
           resourceType: resourceType
         });
       } else {
-        occasion.priorities[fullURL] = [{
+        occasion.priorities[fullURL as keyof PriorityInfo] = [{
           requestId: requestId,
-          initial_priority: request.initialPriority,
+          initialPriority: request.initialPriority,
           resourceType: resourceType
         }];
       }
@@ -44,7 +44,7 @@ class ChromeRunner extends TestRunner {
     client.on('Network.resourceChangedPriority', (params) => {
       const { requestId, newPriority } = params;
 
-      occasion.new_priorities[requestId] = newPriority;
+      occasion.newPriorities[requestId] = newPriority;
     });
 
     if (this.options.cpuThrottle) {

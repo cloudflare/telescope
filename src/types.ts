@@ -440,6 +440,18 @@ export interface ResourceTiming {
   decodedBodySize: number;
 }
 
+/**
+ * Request priority information
+ */
+export type PriorityObject = {
+  requestId: string,
+  initialPriority: string,
+  resourceType: string,
+};
+export interface PriorityInfo {
+  [key: string]: PriorityObject[];
+}
+
 // ============================================================================
 // Console Message
 // ============================================================================
@@ -538,6 +550,9 @@ export interface HarEntry {
   _dns_end?: number;
   _connect_start?: number;
   _connect_end?: number;
+  _initialPriority?: string;
+  _priority?: string;
+  _resourceType?: string;
   _secure_start?: number;
   _secure_end?: number;
   _request_start?: number;

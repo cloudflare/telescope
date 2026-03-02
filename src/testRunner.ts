@@ -36,6 +36,7 @@ import type {
   LCPEvent,
   LayoutShift,
   NavigationTiming,
+  PriorityInfo,
   FilmstripFrame,
   ConnectionType,
   SavedConfig,
@@ -48,10 +49,10 @@ class TestRunner {
   consoleMessages: ConsoleMessage[] = [];
   browserConfig: BrowserConfigOptions;
   metrics?: Metrics;
-  new_priorities?: = {};
+  newPriorities: Record<string, string> = {};
   resourceTimings: ResourceTiming[] = [];
   paths: TestPaths = {} as TestPaths;
-  priorities: = {};
+  priorities: PriorityInfo = {} as PriorityInfo;
   requests: RequestData[] = [];
   resultAssets: ResultAssets = {
     filmstripFiles: [],
@@ -822,28 +823,28 @@ class TestRunner {
           updatedObject._is_lcp = true;
         }
 
-        if (this.priorities[request.url]) {
+        if (this.priorities && this.priorities[request.url]) {
           const priority_obj = this.priorities[request.url].shift();
-          updatedObject._initialPriority = priority_obj.initial_priority;
+          if (priority_obj) {
+            updatedObject._initialPriority = priority_obj.initialPriority;
 
-          if (priority_obj.resourceType) {
-            updatedObject._resourceType = priority_obj.resourceType;
-          }
+            if (priority_obj.resourceType) {
+              updatedObject._resourceType = priority_obj.resourceType;
+            }
 
-          if (this.new_priorities[priority_obj.requestId]) {
-            updatedObject._priority = this.new_priorities[priority_obj.requestId];
-          } else {
-            updatedObject._priority = updatedObject._initialPriority;
+            if (this.newPriorities && this.newPriorities[priority_obj.requestId]) {
+              updatedObject._priority = this.newPriorities[priority_obj.requestId];
+            } else {
+              updatedObject._priority = updatedObject._initialPriority;
+            }
           }
-        } else {
-          console.log(request.url + ' is missing its initial priority');
         }
 
         // replace the object at the specified index with the updated object
         harEntries.splice(indexToUpdate, 1, updatedObject);
       }
     }
-    console.table(this.priorities);
+
     return harEntries;
   }
 
