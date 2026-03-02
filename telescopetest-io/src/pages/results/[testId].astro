@@ -1,6 +1,6 @@
 ---
 import Page from '@/layouts/Page.astro';
-import MetricCard from '@/components/MetricCard.astro';
+import MetricsSection from '@/components/MetricsSection.astro';
 import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
 import TestInfoPanel from '@/components/TestInfoPanel.astro';
 import Tabs from '@/components/Tabs.astro';
@@ -10,8 +10,8 @@ import Resources from '@/components/Resources.astro';
 import Console from '@/components/Console.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
-import { getTestById, getTestRating } from '@/lib/repositories/testRepository';
-import { ContentRating } from '@/generated/prisma/client';
+import { getTestById } from '@/lib/repositories/test-repository';
+import { ContentRating } from '@/lib/classes/TestConfig';
 
 import type { MetricsJson } from '@/lib/types/metrics';
 import type { ResourceTiming } from '@/lib/types/resources';
@@ -41,14 +41,9 @@ if (!test) {
   return Astro.redirect('/results');
 }
 
-const rating = await getTestRating(prisma, testId);
-if (rating === null) {
-  return Astro.redirect('/results');
-}
-
 // When AI rating is disabled, treat everything as safe
-const isUnknown = aiEnabled && (test.rating === ContentRating.UNKNOWN || test.rating === ContentRating.IN_PROGRESS);
-const isUnsafe = aiEnabled && test.rating === ContentRating.UNSAFE;
+const isUnknown = aiEnabled && (test.content_rating === ContentRating.UNKNOWN || test.content_rating === ContentRating.IN_PROGRESS);
+const isUnsafe = aiEnabled && test.content_rating === ContentRating.UNSAFE;
 
 
 // --- Screenshot ---
@@ -159,8 +154,7 @@ const formattedDate = date.toLocaleString('en-US', {
     </div>
   )}
 
-
-        {!isUnsafe && (
+  {!isUnsafe && !isUnknown && (
     <>
       <div class="title-section">
         {test.name ? <h1>{test.name}</h1> : <h1>{test.test_id}</h1>}
@@ -291,8 +285,7 @@ const formattedDate = date.toLocaleString('en-US', {
         const res = await fetch(`/api/tests/${testId}/rating`);
         const data: { rating: string } = await res.json();
         if (data.rating === 'safe') {
-          if (pendingBanner) pendingBanner.style.display = 'none';
-          if (testContent) testContent.style.display = '';
+          window.location.reload();
           return;
         }
         if (data.rating === 'unsafe') {
