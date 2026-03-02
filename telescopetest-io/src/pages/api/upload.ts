@@ -1,16 +1,16 @@
 import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
-import type { TestConfig } from '@/lib/classes/TestConfig';
+import type { TestConfig } from '@/lib/types/tests';
 
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
-import { TestSource } from '@/lib/classes/TestConfig';
+import { TestSource } from '@/lib/types/tests';
 import { getPrismaClient } from '@/lib/prisma/client';
 import {
   createTest,
   findTestIdByZipKey,
-} from '@/lib/repositories/test-repository';
+} from '@/lib/repositories/testRepository';
 
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 

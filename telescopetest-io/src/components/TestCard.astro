@@ -1,4 +1,6 @@
 ---
+import ScreenshotDisplay from './ScreenshotDisplay.astro';
+
 export interface Props {
   testId: string;
   url: string;
@@ -27,18 +29,7 @@ const nonamePlaceholder = 'No Name';
 
 <a href={`/results/${testId}`} class="card">
   <div class="screenshot">
-    {
-      screenshotUrl ? (
-        <img
-          src={screenshotUrl}
-          alt={`Screenshot of ${url}`}
-          loading="lazy"
-          decoding="async"
-        />
-      ) : (
-        <p>Screenshot not found.</p>
-      )
-    }
+    <ScreenshotDisplay screenshotUrl={screenshotUrl} alt={`Screenshot of ${url}`} />
   </div>
   <div class="content">
     <h3 class="name">{name || nonamePlaceholder}</h3>
@@ -80,18 +71,7 @@ const nonamePlaceholder = 'No Name';
     width: 100%;
     aspect-ratio: 16 / 10;
     background: var(--background);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     overflow: hidden;
-    color: var(--muted);
-    font-size: 0.875rem; /* 14px */
-
-    & img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
 
     @media (max-width: 48rem) { /* 768px */
       width: 100%;
@@ -115,7 +95,6 @@ const nonamePlaceholder = 'No Name';
   }
 
   .name {
-    max-height: 1.125rem; /* 18px */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

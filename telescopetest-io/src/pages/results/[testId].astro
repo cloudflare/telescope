@@ -1,5 +1,32 @@
 ---
 import Page from '@/layouts/Page.astro';
+import Summary from '@/components/Summary.astro';
+import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
+import TestInfoPanel from '@/components/TestInfoPanel.astro';
+import Tabs from '@/components/Tabs.astro';
+import AllMetrics from '@/components/AllMetrics.astro';
+
+import { getPrismaClient } from '@/lib/prisma/client';
+import { getTestById } from '@/lib/repositories/testRepository';
+
+import type { MetricsJson } from '@/lib/types/results';
+import {
+  extractFcp,
+  extractLcp,
+  extractCls,
+  extractTtfb,
+  extractTransferSize,
+  extractDuration,
+} from '@/lib/metrics/extractors';
+import {
+  getFcpRating,
+  getLcpRating,
+  getClsRating,
+  getTtfbRating,
+} from '@/lib/metrics/ratings';
+import { formatMs, formatDecimal, formatKb } from '@/lib/metrics/formatters';
+
+export const prerender = false;
 
 const { testId } = Astro.params;
 
@@ -7,34 +34,179 @@ if (!testId) {
   return Astro.redirect('/results');
 }
 
-export const prerender = false;
+const env = Astro.locals.runtime.env;
+const prisma = getPrismaClient(Astro);
+const test = await getTestById(prisma, testId);
+
+if (!test) {
+  return Astro.redirect('/results');
+}
+
+// --- Screenshot ---
+const screenshotKey = `${testId}/screenshot.png`;
+const screenshotObj = await env.RESULTS_BUCKET.head(screenshotKey);
+const screenshotUrl = screenshotObj
+  ? `/api/tests/${testId}/screenshot.png`
+  : null;
+
+// --- Browser Version (from HAR) ---
+let harBrowser: { name: string; version: string } | null = null;
+try {
+  const harObj = await env.RESULTS_BUCKET.get(`${testId}/pageload.har`);
+  if (harObj) {
+    const har = await harObj.json<{
+      log: { browser: { name: string; version: string } };
+    }>();
+    harBrowser = har?.log?.browser ?? null;
+  }
+} catch (err) {
+  console.error('Error reading HAR browser info:', err);
+  // HAR unavailable — render without browser version
+}
+
+// --- Metrics ---
+let metrics: MetricsJson | null = null;
+try {
+  const metricsObj = await env.RESULTS_BUCKET.get(`${testId}/metrics.json`);
+  if (metricsObj) {
+    metrics = await metricsObj.json<MetricsJson>();
+  }
+} catch (err) {
+  console.error('Error reading metrics.json:', err);
+  // metrics unavailable — render without them
+}
+
+// Extract metric values
+const fcpMs = extractFcp(metrics);
+const lcpMs = extractLcp(metrics);
+const clsValue = extractCls(metrics);
+const ttfbMs = extractTtfb(metrics);
+const transferBytes = extractTransferSize(metrics);
+const durationMs = extractDuration(metrics);
+
+// Formatted date
+const date = new Date(test.test_date * 1000);
+const formattedDate = date.toLocaleString('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZoneName: 'short',
+});
 ---
 
-<Page title={`Test ${testId}`}>
+<Page title={test.name ?? `Test ${testId}`}>
   <div class="detail-header">
     <a href="/results" class="back-link">← Back to all results</a>
-    <h1>Test Results</h1>
-    <p class="test-id">ID: {testId}</p>
   </div>
-  <div class="placeholder">
-    <p>Full test details coming later</p>
-    <p class="hint">
-      This page will display screenshots, videos, metrics, etc.
-    </p>
+  <div class="sections">
+    <!-- Title and Description (Full Width) -->
+    <div class="title-section">
+      {test.name ? <h1>{test.name}</h1> : <h1>{test.test_id}</h1>}
+      {
+        test.description && (
+          <div class="description-details">
+            <p class="description-text">{test.description}</p>
+            <button class="description-toggle" aria-expanded="false">
+              more
+            </button>
+          </div>
+        )
+      }
+    </div>
+
+    <!-- Info Panel + Screenshot (Side by Side) -->
+    <section class="overview-section">
+      <TestInfoPanel
+        testId={testId}
+        url={test.url}
+        browser={test.browser}
+        browserVersion={harBrowser?.version ?? null}
+        formattedDate={formattedDate}
+      />
+
+      <ScreenshotDisplay
+        screenshotUrl={screenshotUrl}
+        alt={`Screenshot of ${test.url}`}
+      />
+    </section>
+
+    <!-- Metrics Tabs -->
+    {
+      metrics ? (
+        <Tabs>
+          <div slot="summary">
+            <div class="metrics-row">
+              <Summary
+                heading="Core Web Vitals"
+                metrics={[
+                  {
+                    label: 'LCP',
+                    value: formatMs(lcpMs),
+                    unit: 'ms',
+                    rating: getLcpRating(lcpMs),
+                  },
+                  {
+                    label: 'CLS',
+                    value: formatDecimal(clsValue),
+                    rating: getClsRating(clsValue),
+                  },
+                ]}
+              />
+              <Summary
+                heading="Performance Metrics"
+                metrics={[
+                  {
+                    label: 'FCP',
+                    value: formatMs(fcpMs),
+                    unit: 'ms',
+                    rating: getFcpRating(fcpMs),
+                  },
+                  {
+                    label: 'TTFB',
+                    value: formatMs(ttfbMs),
+                    unit: 'ms',
+                    rating: getTtfbRating(ttfbMs),
+                  },
+                  {
+                    label: 'Transfer Size',
+                    value: formatKb(transferBytes),
+                    unit: 'KB',
+                  },
+                  {
+                    label: 'Page Load Time',
+                    value: formatMs(durationMs),
+                    unit: 'ms',
+                  },
+                ]}
+              />
+            </div>
+          </div>
+
+          <div slot="all-metrics">
+            <AllMetrics metrics={metrics} />
+          </div>
+        </Tabs>
+      ) : (
+        <div class="metrics-unavailable panel">
+          <p>Metrics unavailable for this test.</p>
+        </div>
+      )
+    }
   </div>
 </Page>
 
 <style>
   .detail-header {
-    margin-bottom: 32px;
+    margin-bottom: 1.5rem; /* 24px */
   }
 
   .back-link {
     display: inline-block;
     color: var(--muted);
     text-decoration: none;
-    margin-bottom: 16px;
-    font-size: 14px;
+    font-size: 0.875rem; /* 14px */
     transition: color 0.2s ease;
   }
 
@@ -42,30 +214,139 @@ export const prerender = false;
     color: var(--brand);
   }
 
-  .test-id {
-    font-family:
-      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-      'Courier New', monospace;
+  .sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem; /* 12px */
+    padding: 1rem 1.25rem; /* 16px 20px */
+  }
+
+  .title-section h1 {
+    margin: 0 0 0.25rem 0; /* 4px bottom */
+    font-size: 2rem; /* 32px */
+    font-weight: 700;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .description-text {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 400;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    word-break: break-all;
+  }
+
+  .description-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.8125rem;
+    color: var(--brand);
+    cursor: pointer;
+  }
+
+  /* Info panel + screenshot side by side - full width split */
+  .overview-section {
+    display: flex;
+    gap: 2rem; /* 32px */
+    align-items: stretch;
+  }
+
+  .overview-section :global(.info-panel) {
+    flex: 2;
+    min-width: 0;
+  }
+
+  .overview-section :global(.screenshot-wrap),
+  .overview-section :global(.screenshot-empty) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .overview-section :global(.screenshot-wrap) {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .overview-section :global(.screenshot-wrap img) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  /* Metrics row */
+  .metrics-row {
+    display: flex;
+    gap: 3rem; /* 48px */
+  }
+
+  /* Metrics unavailable */
+  .metrics-unavailable {
+    padding: 2.5rem; /* 40px */
+    text-align: center;
     color: var(--muted);
-    font-size: 14px;
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .metrics-unavailable p {
     margin: 0;
   }
 
-  .placeholder {
-    padding: 60px;
-    text-align: center;
-    background: var(--panel);
-    border-radius: 12px;
-    border: 1px dashed var(--border);
+  /* Responsive: stack on smaller screens */
+  @media (max-width: 64rem) {
+    /* 1024px */
+    .overview-section {
+      flex-direction: column;
+    }
+
+    .metrics-row {
+      grid-template-columns: 1fr;
+      gap: 1.5rem; /* 24px */
+    }
   }
 
-  .placeholder p {
-    margin: 8px 0;
-    color: var(--text);
-  }
-
-  .hint {
-    color: var(--muted);
-    font-size: 14px;
+  /* Allow metrics to wrap on narrower screens */
+  @media (max-width: 48rem) {
+    /* 768px */
+    .metrics-row {
+      display: flex;
+      flex-direction: column;
+    }
   }
 </style>
+
+<script>
+  const toggle = document.querySelector(
+    '.description-toggle',
+  ) as HTMLButtonElement | null;
+  const text = document.querySelector(
+    '.description-text',
+  ) as HTMLElement | null;
+
+  if (toggle && text) {
+    toggle.addEventListener('click', () => {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      if (expanded) {
+        text.style.overflow = '';
+        text.style.webkitLineClamp = '';
+      } else {
+        text.style.overflow = 'visible';
+        text.style.webkitLineClamp = 'unset';
+      }
+      toggle.setAttribute('aria-expanded', String(!expanded));
+      toggle.textContent = expanded ? 'more' : 'less';
+    });
+  }
+</script>
