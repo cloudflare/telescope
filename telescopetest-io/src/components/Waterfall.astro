@@ -287,45 +287,67 @@ const { testId, hasHar } = Astro.props;
   .col-dur  { width: 5.5rem; text-align: right; }
   .col-wf   { position: relative; }
 
-  /* ── Rows (JS-generated, styled via :global) ────────────────────────────── */
-  :global(.wf-row) {
+  /* ── Ruler & overlay (static elements, scoped) ─────────────────────────── */
+  .col-wf { position: relative; }
+  .wf-ruler {
+    position: relative;
+    width: 100%;
+    height: 1.25rem;
+    overflow: hidden;
+  }
+  .wf-events-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+  }
+</style>
+
+<!-- Styles for JS-created elements — must be global, no Astro scope hash applied -->
+<style is:global>
+  /* ── Rows ───────────────────────────────────────────────────────────────── */
+  .wf-row {
     border-bottom: 1px solid var(--border);
     cursor: pointer;
     transition: background 0.1s;
   }
-  :global(.wf-row:last-child) { border-bottom: none; }
-  :global(.wf-row:hover)      { background: var(--panel); }
+  .wf-row:last-child { border-bottom: none; }
+  .wf-row:hover      { background: var(--panel); }
 
-  :global(.wf-row.row--blocking)       { background: var(--wf-row-blocking-bg); }
-  :global(.wf-row.row--blocking:hover) { background: var(--wf-row-blocking-bg-hover); }
-  :global(.wf-row.row--critical)       { background: var(--wf-row-critical-bg); }
-  :global(.wf-row.row--critical:hover) { background: var(--wf-row-critical-bg-hover); }
-  :global(.wf-row.row--open)           { background: var(--wf-row-open-bg); }
+  .wf-row.row--blocking       { background: var(--wf-row-blocking-bg); }
+  .wf-row.row--blocking:hover { background: var(--wf-row-blocking-bg-hover); }
+  .wf-row.row--critical       { background: var(--wf-row-critical-bg); }
+  .wf-row.row--critical:hover { background: var(--wf-row-critical-bg-hover); }
+  .wf-row.row--open           { background: var(--wf-row-open-bg); }
 
-  :global(.wf-row td) {
+  .wf-row td {
     padding: 0 0.625rem;
     vertical-align: middle;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  :global(.td-idx)            { text-align: center; color: var(--muted); font-size: 0.75rem; }
-  :global(.td-url)            { font-size: 0.775rem; }
-  :global(.td-url .url-domain){ color: var(--text); }
-  :global(.td-url .url-path)  { color: var(--muted); }
-  :global(.td-stat)           { text-align: center; }
-  :global(.td-stat.s2xx)      { color: var(--color-success); }
-  :global(.td-stat.s3xx)      { color: var(--color-warning); }
-  :global(.td-stat.s4xx)      { color: var(--color-danger); }
-  :global(.td-stat.s5xx)      { color: var(--color-danger); }
-  :global(.td-size)           { text-align: right; }
-  :global(.td-dur)            { text-align: right; }
+  .td-idx            { text-align: center; color: var(--muted); font-size: 0.75rem; }
+  .td-url            { font-size: 0.775rem; }
+  .td-url .url-domain{ color: var(--text); }
+  .td-url .url-path  { color: var(--muted); }
+  .td-stat           { text-align: center; }
+  .td-stat.s2xx      { color: var(--color-success); }
+  .td-stat.s3xx      { color: var(--color-warning); }
+  .td-stat.s4xx      { color: var(--color-danger); }
+  .td-stat.s5xx      { color: var(--color-danger); }
+  .td-size           { text-align: right; }
+  .td-dur            { text-align: right; }
 
-  /* ── Timeline bar cell ──────────────────────────────────────────────────── */
-  :global(.td-wf)      { padding: 0 0.5rem; }
-  :global(.wf-bar-wrap){ position: relative; width: 100%; }
+  /* ── Timeline bars ──────────────────────────────────────────────────────── */
+  .td-wf       { padding: 0 0.5rem; }
+  .wf-bar-wrap { position: relative; width: 100%; }
 
-  :global(.wb) {
+  .wb {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
@@ -333,37 +355,30 @@ const { testId, hasHar } = Astro.props;
     min-width: 1.5px;
   }
 
-  :global(.wb--blocked) { background: var(--wf-blocked); }
-  :global(.wb--dns)     { background: var(--wf-dns); }
-  :global(.wb--connect) { background: var(--wf-connect); }
-  :global(.wb--ssl)     { background: var(--wf-ssl); }
-  :global(.wb--send)    { background: var(--wf-send); }
-  :global(.wb--wait)    { background: var(--wf-wait); }
+  .wb--blocked { background: var(--wf-blocked); }
+  .wb--dns     { background: var(--wf-dns); }
+  .wb--connect { background: var(--wf-connect); }
+  .wb--ssl     { background: var(--wf-ssl); }
+  .wb--send    { background: var(--wf-send); }
+  .wb--wait    { background: var(--wf-wait); }
 
-  :global(.wb--html-light)  { background: var(--wf-html-light); }
-  :global(.wb--html-dark)   { background: var(--wf-html-dark); }
-  :global(.wb--js-light)    { background: var(--wf-js-light); }
-  :global(.wb--js-dark)     { background: var(--wf-js-dark); }
-  :global(.wb--css-light)   { background: var(--wf-css-light); }
-  :global(.wb--css-dark)    { background: var(--wf-css-dark); }
-  :global(.wb--image-light) { background: var(--wf-image-light); }
-  :global(.wb--image-dark)  { background: var(--wf-image-dark); }
-  :global(.wb--font-light)  { background: var(--wf-font-light); }
-  :global(.wb--font-dark)   { background: var(--wf-font-dark); }
-  :global(.wb--video-light) { background: var(--wf-video-light); }
-  :global(.wb--video-dark)  { background: var(--wf-video-dark); }
-  :global(.wb--other-light) { background: var(--wf-other-light); }
-  :global(.wb--other-dark)  { background: var(--wf-other-dark); }
+  .wb--html-light  { background: var(--wf-html-light); }
+  .wb--html-dark   { background: var(--wf-html-dark); }
+  .wb--js-light    { background: var(--wf-js-light); }
+  .wb--js-dark     { background: var(--wf-js-dark); }
+  .wb--css-light   { background: var(--wf-css-light); }
+  .wb--css-dark    { background: var(--wf-css-dark); }
+  .wb--image-light { background: var(--wf-image-light); }
+  .wb--image-dark  { background: var(--wf-image-dark); }
+  .wb--font-light  { background: var(--wf-font-light); }
+  .wb--font-dark   { background: var(--wf-font-dark); }
+  .wb--video-light { background: var(--wf-video-light); }
+  .wb--video-dark  { background: var(--wf-video-dark); }
+  .wb--other-light { background: var(--wf-other-light); }
+  .wb--other-dark  { background: var(--wf-other-dark); }
 
-  /* ─�� Ruler ──────────────────────────────────────────────────────────────── */
-  .col-wf { position: relative; }
-  :global(.wf-ruler) {
-    position: relative;
-    width: 100%;
-    height: 1.25rem;
-    overflow: hidden;
-  }
-  :global(.wf-tick) {
+  /* ── Ruler ticks ────────────────────────────────────────────────────────── */
+  .wf-tick {
     position: absolute;
     top: 0;
     transform: translateX(-50%);
@@ -374,7 +389,7 @@ const { testId, hasHar } = Astro.props;
     line-height: 1;
     padding-top: 0.2rem;
   }
-  :global(.wf-tick::before) {
+  .wf-tick::before {
     content: '';
     display: block;
     width: 1px;
@@ -383,25 +398,15 @@ const { testId, hasHar } = Astro.props;
     margin: 0 auto 2px;
   }
 
-  /* ── Event lines overlay ────────────────────────────────────────────────── */
-  :global(.wf-events-overlay) {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 2;
-    overflow: hidden;
-  }
-  :global(.wf-event-line) {
+  /* ── Event lines ────────────────────────────────────────────────────────── */
+  .wf-event-line {
     position: absolute;
     top: 0;
     bottom: 0;
     width: 2px;
     opacity: 0.75;
   }
-  :global(.wf-event-line::after) {
+  .wf-event-line::after {
     content: attr(data-label);
     position: absolute;
     top: 2px;
@@ -412,11 +417,11 @@ const { testId, hasHar } = Astro.props;
     font-weight: 600;
     color: inherit;
   }
-  :global(.wf-event--dcl)  { background: #d060d0; color: #d060d0; }
-  :global(.wf-event--load) { background: #4060d0; color: #4060d0; }
+  .wf-event--dcl  { background: #d060d0; color: #d060d0; }
+  .wf-event--load { background: #4060d0; color: #4060d0; }
 
   /* ── Filter chips ────────────────────────────────────────────────────────── */
-  :global(.wf-filter-btn) {
+  .wf-filter-btn {
     font-size: 0.75rem;
     font-weight: 500;
     padding: 0.175rem 0.5rem;
@@ -427,21 +432,21 @@ const { testId, hasHar } = Astro.props;
     cursor: pointer;
     transition: background 0.12s, color 0.12s, border-color 0.12s;
   }
-  :global(.wf-filter-btn.active) {
+  .wf-filter-btn.active {
     background: var(--brand);
     border-color: var(--brand);
     color: #fff;
   }
 
   /* ── Side panels ─────────────────────────────────────────────────────────── */
-  :global(.wf-panel) {
+  .wf-panel {
     margin-top: 0.5rem;
     border: 1px solid var(--border);
     border-radius: 0.75rem;
     background: var(--panel);
     overflow: hidden;
   }
-  :global(.wf-panel-header) {
+  .wf-panel-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -449,7 +454,7 @@ const { testId, hasHar } = Astro.props;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
   }
-  :global(.wf-panel-title) {
+  .wf-panel-title {
     flex: 1;
     min-width: 0;
     font-size: 0.8125rem;
@@ -459,7 +464,7 @@ const { testId, hasHar } = Astro.props;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  :global(.wf-panel-close) {
+  .wf-panel-close {
     flex-shrink: 0;
     background: none;
     border: none;
@@ -471,21 +476,21 @@ const { testId, hasHar } = Astro.props;
     border-radius: 0.25rem;
     transition: color 0.12s;
   }
-  :global(.wf-panel-close:hover) { color: var(--text); }
+  .wf-panel-close:hover { color: var(--text); }
 
-  :global(.wf-panel-body) {
+  .wf-panel-body {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
-  :global(.wf-panel-section) {
+  .wf-panel-section {
     padding: 0.75rem 0.875rem;
     border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
   }
-  :global(.wf-panel-section:nth-child(even))      { border-right: none; }
-  :global(.wf-panel-section:nth-last-child(-n+2)) { border-bottom: none; }
+  .wf-panel-section:nth-child(even)      { border-right: none; }
+  .wf-panel-section:nth-last-child(-n+2) { border-bottom: none; }
 
-  :global(.wf-section-title) {
+  .wf-section-title {
     font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -494,15 +499,15 @@ const { testId, hasHar } = Astro.props;
     margin-bottom: 0.5rem;
   }
 
-  :global(.wf-info-row) {
+  .wf-info-row {
     display: flex;
     justify-content: space-between;
     gap: 0.5rem;
     font-size: 0.8rem;
     padding: 0.175rem 0;
   }
-  :global(.wf-info-key) { color: var(--muted); white-space: nowrap; }
-  :global(.wf-info-val) {
+  .wf-info-key { color: var(--muted); white-space: nowrap; }
+  .wf-info-val {
     color: var(--text);
     text-align: right;
     word-break: break-all;
@@ -510,7 +515,7 @@ const { testId, hasHar } = Astro.props;
     font-variant-numeric: tabular-nums;
   }
 
-  :global(.wf-timing-row) {
+  .wf-timing-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -518,40 +523,40 @@ const { testId, hasHar } = Astro.props;
     font-size: 0.8rem;
     padding: 0.175rem 0;
   }
-  :global(.wf-timing-label) {
+  .wf-timing-label {
     display: flex;
     align-items: center;
     gap: 0.375rem;
     color: var(--muted);
   }
-  :global(.wf-timing-swatch) {
+  .wf-timing-swatch {
     width: 0.75rem;
     height: 0.75rem;
     border-radius: 2px;
     flex-shrink: 0;
   }
-  :global(.wf-timing-val) {
+  .wf-timing-val {
     color: var(--text);
     font-variant-numeric: tabular-nums;
   }
-  :global(.wf-timing-total) {
+  .wf-timing-total {
     border-top: 1px solid var(--border);
     margin-top: 0.25rem;
     padding-top: 0.25rem;
     font-weight: 600;
   }
 
-  :global(.wf-headers-table) {
+  .wf-headers-table {
     width: 100%;
     font-size: 0.775rem;
     border-collapse: collapse;
   }
-  :global(.wf-headers-table td) {
+  .wf-headers-table td {
     padding: 0.15rem 0;
     vertical-align: top;
     word-break: break-all;
   }
-  :global(.wf-headers-table td:first-child) {
+  .wf-headers-table td:first-child {
     width: 38%;
     color: var(--muted);
     font-weight: 500;
