@@ -3,9 +3,9 @@ import { getPrismaClient } from '@/lib/prisma/client';
 import {
   getTestRating,
   updateContentRating,
-} from '@/lib/repositories/test-repository';
+} from '@/lib/repositories/testRepository';
 import { rateUrlContent } from '@/lib/ai/ai-content-rater';
-import { ContentRating } from '@/lib/classes/TestConfig';
+import { ContentRating } from '@/lib/types/tests';
 
 /**
  * GET /api/tests/:testId/rating
@@ -43,10 +43,14 @@ export const GET: APIRoute = async (context: APIContext) => {
         ]);
         const [metricsBytes, screenshotBytes] = await Promise.all([
           metricsObj
-            ? metricsObj.arrayBuffer().then(b => new Uint8Array(b))
+            ? metricsObj
+                .arrayBuffer()
+                .then((b: ArrayBuffer) => new Uint8Array(b))
             : Promise.resolve(undefined),
           screenshotObj
-            ? screenshotObj.arrayBuffer().then(b => new Uint8Array(b))
+            ? screenshotObj
+                .arrayBuffer()
+                .then((b: ArrayBuffer) => new Uint8Array(b))
             : Promise.resolve(undefined),
         ]);
         const rating = await rateUrlContent(
