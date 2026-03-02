@@ -1,11 +1,11 @@
 ---
-import type { Tests } from '@/lib/classes/TestConfig';
+import type { Tests } from '@/lib/types/tests';
 
 import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
-import { getAllTests } from '@/lib/repositories/test-repository';
+import { getAllTests } from '@/lib/repositories/testRepository';
 
 import { ListIcon, SquaresFourIcon } from '@phosphor-icons/react/ssr';
 

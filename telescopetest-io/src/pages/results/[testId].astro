@@ -1,13 +1,15 @@
 ---
 import Page from '@/layouts/Page.astro';
-import MetricsSection from '@/components/MetricsSection.astro';
+import Summary from '@/components/Summary.astro';
 import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
 import TestInfoPanel from '@/components/TestInfoPanel.astro';
+import Tabs from '@/components/Tabs.astro';
+import AllMetrics from '@/components/AllMetrics.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
-import { getTestById } from '@/lib/repositories/test-repository';
+import { getTestById } from '@/lib/repositories/testRepository';
 
-import type { MetricsJson } from '@/lib/metrics/types';
+import type { MetricsJson } from '@/lib/types/results';
 import {
   extractFcp,
   extractLcp,
@@ -21,7 +23,7 @@ import {
   getLcpRating,
   getClsRating,
   getTtfbRating,
-} from '@/lib/metrics/web-vitals';
+} from '@/lib/metrics/ratings';
 import { formatMs, formatDecimal, formatKb } from '@/lib/metrics/formatters';
 
 export const prerender = false;
@@ -57,10 +59,8 @@ try {
     }>();
     harBrowser = har?.log?.browser ?? null;
   }
-} catch {
-  console.error(
-    'Error with getting browser.name or browser.string, returning nothing',
-  );
+} catch (err) {
+  console.error('Error reading HAR browser info:', err);
   // HAR unavailable — render without browser version
 }
 
@@ -71,8 +71,8 @@ try {
   if (metricsObj) {
     metrics = await metricsObj.json<MetricsJson>();
   }
-} catch {
-  console.error('Error with getting metrics.json, returning nothing');
+} catch (err) {
+  console.error('Error reading metrics.json:', err);
   // metrics unavailable — render without them
 }
 
@@ -108,7 +108,9 @@ const formattedDate = date.toLocaleString('en-US', {
         test.description && (
           <div class="description-details">
             <p class="description-text">{test.description}</p>
-            <button class="description-toggle" aria-expanded="false">more</button>
+            <button class="description-toggle" aria-expanded="false">
+              more
+            </button>
           </div>
         )
       }
@@ -130,54 +132,62 @@ const formattedDate = date.toLocaleString('en-US', {
       />
     </section>
 
-    <!-- Metrics Row -->
+    <!-- Metrics Tabs -->
     {
       metrics ? (
-        <div class="metrics-row">
-          <MetricsSection
-            heading="Core Web Vitals"
-            metrics={[
-              {
-                label: 'LCP',
-                value: formatMs(lcpMs),
-                unit: 'ms',
-                rating: getLcpRating(lcpMs),
-              },
-              {
-                label: 'CLS',
-                value: formatDecimal(clsValue),
-                rating: getClsRating(clsValue),
-              },
-            ]}
-          />
-          <MetricsSection
-            heading="Performance Metrics"
-            metrics={[
-              {
-                label: 'FCP',
-                value: formatMs(fcpMs),
-                unit: 'ms',
-                rating: getFcpRating(fcpMs),
-              },
-              {
-                label: 'TTFB',
-                value: formatMs(ttfbMs),
-                unit: 'ms',
-                rating: getTtfbRating(ttfbMs),
-              },
-              {
-                label: 'Transfer Size',
-                value: formatKb(transferBytes),
-                unit: 'KB',
-              },
-              {
-                label: 'Page Load Time',
-                value: formatMs(durationMs),
-                unit: 'ms',
-              },
-            ]}
-          />
-        </div>
+        <Tabs>
+          <div slot="summary">
+            <div class="metrics-row">
+              <Summary
+                heading="Core Web Vitals"
+                metrics={[
+                  {
+                    label: 'LCP',
+                    value: formatMs(lcpMs),
+                    unit: 'ms',
+                    rating: getLcpRating(lcpMs),
+                  },
+                  {
+                    label: 'CLS',
+                    value: formatDecimal(clsValue),
+                    rating: getClsRating(clsValue),
+                  },
+                ]}
+              />
+              <Summary
+                heading="Performance Metrics"
+                metrics={[
+                  {
+                    label: 'FCP',
+                    value: formatMs(fcpMs),
+                    unit: 'ms',
+                    rating: getFcpRating(fcpMs),
+                  },
+                  {
+                    label: 'TTFB',
+                    value: formatMs(ttfbMs),
+                    unit: 'ms',
+                    rating: getTtfbRating(ttfbMs),
+                  },
+                  {
+                    label: 'Transfer Size',
+                    value: formatKb(transferBytes),
+                    unit: 'KB',
+                  },
+                  {
+                    label: 'Page Load Time',
+                    value: formatMs(durationMs),
+                    unit: 'ms',
+                  },
+                ]}
+              />
+            </div>
+          </div>
+
+          <div slot="all-metrics">
+            <AllMetrics metrics={metrics} />
+          </div>
+        </Tabs>
       ) : (
         <div class="metrics-unavailable panel">
           <p>Metrics unavailable for this test.</p>
@@ -207,7 +217,7 @@ const formattedDate = date.toLocaleString('en-US', {
   .sections {
     display: flex;
     flex-direction: column;
-    gap: 2.5rem; /* 40px */
+    gap: 1rem;
   }
 
   .panel {
@@ -318,8 +328,12 @@ const formattedDate = date.toLocaleString('en-US', {
 </style>
 
 <script>
-  const toggle = document.querySelector('.description-toggle') as HTMLButtonElement | null;
-  const text = document.querySelector('.description-text') as HTMLElement | null;
+  const toggle = document.querySelector(
+    '.description-toggle',
+  ) as HTMLButtonElement | null;
+  const text = document.querySelector(
+    '.description-text',
+  ) as HTMLElement | null;
 
   if (toggle && text) {
     toggle.addEventListener('click', () => {

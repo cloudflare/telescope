@@ -36,7 +36,7 @@ USER PREFERENCES:
 CSS RULES:
 
 - Scoped <style> per file
-- rem with /_ px _/ comment on values that should have rem over px
+- rem on values that should have rem over px
 - CSS vars only: --panel, --border, --text, --muted, --brand
 - No Tailwind, no hardcoded colors
 - Needs to support light and dark mode using color-scheme variable (Layout.astro)

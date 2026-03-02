@@ -1,0 +1,36 @@
+---
+import type { MetricsJson } from '@/lib/types/results';
+import NavigationTiming from './metrics/NavigationTiming.astro';
+import PaintTiming from './metrics/PaintTiming.astro';
+import UserTiming from './metrics/UserTiming.astro';
+import LargestContentfulPaint from './metrics/LargestContentfulPaint.astro';
+import LayoutShifts from './metrics/LayoutShifts.astro';
+
+export interface Props {
+  metrics: MetricsJson | null;
+}
+
+const { metrics } = Astro.props;
+---
+
+{
+  metrics && (
+    <div class="metrics-display">
+      <NavigationTiming nav={metrics.navigationTiming} />
+      <PaintTiming paintTiming={metrics.paintTiming} />
+      <UserTiming userTiming={metrics.userTiming} />
+      <LargestContentfulPaint
+        largestContentfulPaint={metrics.largestContentfulPaint}
+      />
+      <LayoutShifts layoutShifts={metrics.layoutShifts} />
+    </div>
+  )
+}
+
+<style>
+  .metrics-display {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+</style>

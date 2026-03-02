@@ -1,0 +1,138 @@
+---
+import type { LCPEvent } from '@/lib/types/results';
+import { formatMetricValue } from '@/lib/metrics/formatters';
+import AllMetricsRow from '../AllMetricsRow.astro';
+import MetricsSection from './MetricsSection.astro';
+
+export interface Props {
+  largestContentfulPaint: LCPEvent[] | null | undefined;
+}
+
+const { largestContentfulPaint } = Astro.props;
+const isEmpty = !largestContentfulPaint || largestContentfulPaint.length === 0;
+---
+
+<MetricsSection
+  title="Largest Contentful Paint"
+  isEmpty={isEmpty}
+  emptyMessage="No largest contentful paint data"
+>
+  {
+    largestContentfulPaint?.map(item => (
+      <div class="lcp-item">
+        <div class="grid">
+          {item.name && <AllMetricsRow label="name" value={item.name} />}
+          {item.entryType && (
+            <AllMetricsRow label="entryType" value={item.entryType} />
+          )}
+          <AllMetricsRow
+            label="startTime"
+            value={formatMetricValue('startTime', item.startTime)}
+          />
+          <AllMetricsRow
+            label="size"
+            value={formatMetricValue('size', item.size)}
+          />
+          {item.url && <AllMetricsRow label="url" value={item.url} />}
+          {item.id && <AllMetricsRow label="id" value={item.id} />}
+          {item.loadTime !== undefined && (
+            <AllMetricsRow
+              label="loadTime"
+              value={formatMetricValue('loadTime', item.loadTime)}
+            />
+          )}
+          {item.renderTime !== undefined && (
+            <AllMetricsRow
+              label="renderTime"
+              value={formatMetricValue('renderTime', item.renderTime)}
+            />
+          )}
+        </div>
+        {item.element && (
+          <div class="element-group">
+            <h4>Element</h4>
+            <div class="grid">
+              {item.element.nodeName && (
+                <AllMetricsRow label="nodeName" value={item.element.nodeName} />
+              )}
+              {(item.element as any).src && (
+                <AllMetricsRow label="src" value={(item.element as any).src} />
+              )}
+              {(item.element as any).currentSrc && (
+                <AllMetricsRow
+                  label="currentSrc"
+                  value={(item.element as any).currentSrc}
+                />
+              )}
+              {item.element.outerHTML && (
+                <AllMetricsRow
+                  label="outerHTML"
+                  value={item.element.outerHTML.substring(0, 100) + '...'}
+                />
+              )}
+            </div>
+            {item.element.boundingRect && (
+              <>
+                <h5>Bounding Rect</h5>
+                <div class="rect-grid">
+                  {Object.entries(item.element.boundingRect).map(
+                    ([key, value]) => (
+                      <AllMetricsRow
+                        label={key}
+                        value={formatMetricValue(key, value)}
+                      />
+                    ),
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    ))
+  }
+</MetricsSection>
+
+<style>
+  .lcp-item {
+    margin-top: 0.5rem;
+  }
+
+  .lcp-item:first-of-type {
+    margin-top: 0;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .element-group {
+    margin-top: 0.625rem;
+    padding: 0.625rem;
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .element-group h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .element-group h5 {
+    margin: 0.625rem 0 0.375rem 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .rect-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+  }
+</style>

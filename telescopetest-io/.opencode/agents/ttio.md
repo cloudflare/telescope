@@ -1,5 +1,5 @@
 ---
-description: Primary assistant for the telescopetest-io project. Use for general development, feature work, debugging, and questions about this codebase.
+description: Assistant for the telescopetest-io project. Use for general development, feature work, debugging, and questions about this codebase.
 model: anthropic/claude-sonnet-4-5-20250929
 mode: primary
 permission:
@@ -18,6 +18,9 @@ permission:
     'cat *': allow
     'grep *': allow
     'find *': allow
+    'sort *': allow
+    'tree *': allow
+    'head *': allow
     'wc *': allow
     'npm *': ask
     'npx *': ask
