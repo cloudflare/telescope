@@ -11,7 +11,7 @@ import {
   createTest,
   findTestIdByZipKey,
   updateContentRating,
-} from '@/lib/repositories/test-repository';
+} from '@/lib/repositories/testRepository';
 import { rateUrlContent } from '@/lib/ai/ai-content-rater';
 
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`

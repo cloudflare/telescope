@@ -4,8 +4,8 @@
  */
 
 import type { PrismaClient } from '@/generated/prisma/client';
-import type { TestConfig, Tests } from '@/lib/classes/TestConfig';
-import { ContentRating } from '@/lib/classes/TestConfig';
+import type { TestConfig, Tests } from '@/lib/types/tests';
+import { ContentRating } from '@/lib/types/tests';
 
 /**
  * Create a new test in the database
