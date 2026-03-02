@@ -1,11 +1,11 @@
 ---
-// Simple tabs component for switching between Summary and All Metrics
 ---
 
 <div class="tabs-container">
   <div class="tabs-header">
     <button class="tab-btn active" data-tab="summary">Summary</button>
     <button class="tab-btn" data-tab="all-metrics">All Metrics</button>
+    <button class="tab-btn" data-tab="waterfall">Waterfall</button>
   </div>
   <div class="tabs-content">
     <div class="tab-pane active" data-pane="summary">
@@ -13,6 +13,9 @@
     </div>
     <div class="tab-pane" data-pane="all-metrics">
       <slot name="all-metrics" />
+    </div>
+    <div class="tab-pane" data-pane="waterfall">
+      <slot name="waterfall" />
     </div>
   </div>
 </div>
@@ -61,16 +64,14 @@
 </style>
 
 <script>
-  const buttons = document.querySelectorAll('.tab-btn');
-  const panes = document.querySelectorAll('.tab-pane');
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
+  const panes   = document.querySelectorAll<HTMLElement>('.tab-pane');
 
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = btn.dataset.tab;
-      
       buttons.forEach(b => b.classList.remove('active'));
       panes.forEach(p => p.classList.remove('active'));
-      
       btn.classList.add('active');
       document.querySelector(`[data-pane="${tab}"]`)?.classList.add('active');
     });
