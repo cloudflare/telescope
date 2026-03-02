@@ -1,5 +1,7 @@
 FROM --platform=linux/amd64 node:24-bookworm
 
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
 # Install system dependencies for Playwright browsers and ffmpeg
 RUN apt-get update && apt-get install -y \
     ffmpeg \
@@ -40,8 +42,8 @@ RUN apt-get update && apt-get install -y \
 
 # Create non-root user for running Chrome securely (with sandbox enabled)
 RUN groupadd -r telescope && useradd -r -g telescope -G audio,video telescope \
-    && mkdir -p /home/telescope \
-    && chown -R telescope:telescope /home/telescope
+    && mkdir -p /home/telescope ${PLAYWRIGHT_BROWSERS_PATH} \
+    && chown -R telescope:telescope /home/telescope ${PLAYWRIGHT_BROWSERS_PATH}
 
 # Set working directory
 WORKDIR /app
@@ -64,7 +66,7 @@ RUN npm run build
 
 # Create results directory and set ownership for non-root user
 RUN mkdir -p /app/results /app/tmp /app/recordings \
-    && chown -R telescope:telescope /app
+    && chown -R telescope:telescope /app ${PLAYWRIGHT_BROWSERS_PATH}
 
 # Switch to non-root user for running Chrome with sandbox enabled
 USER telescope
