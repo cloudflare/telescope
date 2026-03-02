@@ -1,5 +1,5 @@
 import type { APIContext, APIRoute } from 'astro';
-import { createPrismaClient } from '@/lib/prisma/client';
+import { getPrismaClient } from '@/lib/prisma/client';
 import {
   getTestRating,
   updateContentRating,
@@ -22,7 +22,7 @@ export const GET: APIRoute = async (context: APIContext) => {
     });
   }
   const env = context.locals.runtime.env;
-  const prisma = createPrismaClient(env.TELESCOPE_DB);
+  const prisma = getPrismaClient(context);
   const test = await getTestRating(prisma, testId);
   if (test === null) {
     return new Response(JSON.stringify({ error: 'Test not found' }), {
