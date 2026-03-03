@@ -6,9 +6,40 @@ import type {
 import { formatDuration } from './formatters';
 
 /**
+ * Extract domain from URL
+ */
+export function getDomain(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return 'unknown';
+  }
+}
+
+/**
+ * Map resource file type to waterfall color key for consistent styling
+ */
+export function getWaterfallColorKey(type: string): string {
+  const typeMap: Record<string, string> = {
+    document: 'html',
+    script: 'js',
+    stylesheet: 'css',
+    image: 'image',
+    font: 'font',
+    video: 'video',
+  };
+  return typeMap[type] ?? 'other';
+}
+
+/**
  * Get file type from resource URL and initiator type
  */
 export function getFileType(resource: ResourceTiming): string {
+  if (
+    resource.initiatorType === 'navigation' ||
+    resource.entryType === 'navigation'
+  )
+    return 'document';
   const url = resource.name;
   if (url.includes('.js')) return 'script';
   if (url.includes('.css')) return 'stylesheet';
@@ -31,17 +62,6 @@ export function getFileType(resource: ResourceTiming): string {
  */
 export function getStatusCode(resource: ResourceTiming): number {
   return resource.responseStatus || 200;
-}
-
-/**
- * Get domain from URL
- */
-export function getDomain(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return 'unknown';
-  }
 }
 
 /**

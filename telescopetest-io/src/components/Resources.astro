@@ -1,5 +1,6 @@
 ---
 import type {ResourceTiming, EnrichedResource, TypeStats} from '@/lib/types/resources';
+import type {NavigationTiming} from '@/lib/types/results';
 import Summary from './Summary.astro';
 import MetricsSection from './metrics/MetricsSection.astro';
 import {
@@ -13,22 +14,55 @@ import {
   formatBytes,
   formatDuration,
   shortenUrl,
-  calculateTimingWidth
+  calculateTimingWidth,
+  getWaterfallColorKey,
 } from '@/lib/utils/resources';
 
 export interface Props {
   resources: ResourceTiming[];
+  url: string;
+  navigationTiming?: NavigationTiming;
 }
 
-const {resources} = Astro.props;
+const {resources, url, navigationTiming} = Astro.props;
 
-const summary = calculateSummary(resources);
-const typeBreakdown = calculateTypeBreakdown(resources);
-const enrichedResources = enrichResources(resources);
-const uniqueTypes = getUniqueTypes(resources);
-const uniqueStatuses = getUniqueStatuses(resources);
-const uniqueDomains = getUniqueDomains(resources);
-const uniqueProtocols = getUniqueProtocols(resources);
+// Prepend a synthetic HTML document entry derived from navigationTiming when available
+const allResources: ResourceTiming[] = navigationTiming
+  ? [
+      {
+        name: url,
+        entryType: 'navigation',
+        startTime: 0,
+        duration: navigationTiming.duration,
+        initiatorType: 'navigation',
+        deliveryType: navigationTiming.deliveryType,
+        nextHopProtocol: navigationTiming.nextHopProtocol,
+        renderBlockingStatus: navigationTiming.renderBlockingStatus,
+        fetchStart: navigationTiming.fetchStart,
+        domainLookupStart: navigationTiming.domainLookupStart,
+        domainLookupEnd: navigationTiming.domainLookupEnd,
+        connectStart: navigationTiming.connectStart,
+        connectEnd: navigationTiming.connectEnd,
+        secureConnectionStart: navigationTiming.secureConnectionStart,
+        requestStart: navigationTiming.requestStart,
+        responseStart: navigationTiming.responseStart,
+        responseEnd: navigationTiming.responseEnd,
+        transferSize: navigationTiming.transferSize ?? 0,
+        encodedBodySize: navigationTiming.encodedBodySize ?? 0,
+        decodedBodySize: navigationTiming.decodedBodySize ?? 0,
+        responseStatus: navigationTiming.responseStatus,
+      },
+      ...resources,
+    ]
+  : resources;
+
+const summary = calculateSummary(allResources);
+const typeBreakdown = calculateTypeBreakdown(allResources);
+const enrichedResources = enrichResources(allResources);
+const uniqueTypes = getUniqueTypes(allResources);
+const uniqueStatuses = getUniqueStatuses(allResources);
+const uniqueDomains = getUniqueDomains(allResources);
+const uniqueProtocols = getUniqueProtocols(allResources);
 
 const hasTimingData = (resource: EnrichedResource) => resource.requestStart > 0 || resource.responseStart > 0;
 const hasSegment = (start: number, end: number) => start > 0 && end > 0;
@@ -139,6 +173,7 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
       <table class="resources-table">
         <thead>
           <tr>
+            <th class="col-seq">#</th>
             <th>URL</th>
             <th>Status</th>
             <th>Type</th>
@@ -147,19 +182,23 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
           </tr>
         </thead>
         <tbody id="resources-tbody">
-          {enrichedResources.map((resource) => (
+          {enrichedResources.map((resource, index) => (
             <tr class:list={['resource-row', {blocking: resource.isBlocking}]} data-resource={JSON.stringify(resource)}>
+              <td class="col-seq">{index + 1}</td>
               <td class="url-cell" title={resource.name}>
                 {resource.isBlocking && <span class="blocking-badge">BLOCKING</span>}
                 {shortenUrl(resource.name)}
               </td>
               <td>{resource.statusCode}</td>
-              <td>{resource.fileType}</td>
+              <td class="type-cell">
+                <span class="type-swatch" data-type={getWaterfallColorKey(resource.fileType)}></span>
+                {resource.fileType}
+              </td>
               <td>{formatBytes(resource.transferSize)}</td>
               <td>{formatDuration(resource.duration)}</td>
             </tr>
             <tr class="detail-row" style="display: none;">
-              <td colspan="5">
+              <td colspan="6">
                 <div class="resource-details">
                   <div class="detail-grid">
                     <div class="detail-item">
@@ -396,12 +435,44 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
     color: var(--text);
   }
 
+  .resource-row td.col-seq,
+  .resources-table th.col-seq {
+    width: 3rem;
+    text-align: right;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    padding-left: 0.25rem;
+    padding-right: 0.5rem;
+  }
+
   .url-cell {
     max-width: 400px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  .type-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .type-swatch {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 0.125rem;
+    flex-shrink: 0;
+  }
+
+  .type-swatch[data-type="html"]  { background: #4a7ec8; }
+  .type-swatch[data-type="js"]    { background: #c8a040; }
+  .type-swatch[data-type="css"]   { background: #4a9850; }
+  .type-swatch[data-type="image"] { background: #8050b8; }
+  .type-swatch[data-type="font"]  { background: #c83820; }
+  .type-swatch[data-type="video"] { background: #2a8048; }
+  .type-swatch[data-type="other"] { background: #787878; }
 
   .blocking-badge {
     display: inline-block;

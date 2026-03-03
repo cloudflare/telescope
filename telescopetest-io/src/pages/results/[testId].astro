@@ -225,8 +225,8 @@ const formattedDate = date.toLocaleString('en-US', {
 
       <div slot="resources">
         {
-          resources.length > 0 ? (
-            <Resources resources={resources} />
+          resources.length > 0 || metrics?.navigationTiming ? (
+            <Resources resources={resources} url={test.url} navigationTiming={metrics?.navigationTiming} />
           ) : (
             <div class="resources-unavailable">
               <p>Resources data unavailable for this test.</p>
