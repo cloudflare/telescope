@@ -17,7 +17,7 @@ This is how to set up the project. These steps are neccessary for local testing.
 Once you've finished the steps above, run these to set up Prisma, the ORM we're with D1. This is a [preview feature](https://www.prisma.io/docs/orm/overview/databases/cloudflare-d1#migration-workflows) that Prisma has been building out since 2024.
 
 1. Make sure you have the local `telescope-db-development` table (step 3 above).
-2. Copy the relative path (without telescopetest-io/) of this local `.sqlite` file in the folder `.wrangler/state/v3/d1/miniflare... ` and put this into a new `.env` file at the root of the `telescopetest-io` project as `DATABASE_URL="file:{{relative_path}}`.
+2. Copy the relative path (without telescopetest-io/) of this local `.sqlite` file in the folder `.wrangler/state/v3/d1/miniflare... ` and put this into a new `.env` file at the root of the `telescopetest-io` project as `DATABASE_URL="file:{{relative_path}}"`.
 3. Run `npm run generate` to generate a Prisma Client.
 
 You should now be able to run `npm run studio` to view local D1 data in Prisma Studio, as well as create migrations.
