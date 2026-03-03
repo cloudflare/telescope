@@ -37,6 +37,7 @@ import type {
   LCPEvent,
   LayoutShift,
   NavigationTiming,
+  PriorityInfo,
   FilmstripFrame,
   ConnectionType,
   SavedConfig,
@@ -49,8 +50,10 @@ class TestRunner {
   consoleMessages: ConsoleMessage[] = [];
   browserConfig: BrowserConfigOptions;
   metrics?: Metrics;
+  newPriorities: Record<string, string> = {};
   resourceTimings: ResourceTiming[] = [];
   paths: TestPaths = {} as TestPaths;
+  priorities: PriorityInfo = {} as PriorityInfo;
   requests: RequestData[] = [];
   resultAssets: ResultAssets = {
     filmstripFiles: [],
@@ -860,10 +863,29 @@ class TestRunner {
         if (request.url == lcpURL) {
           updatedObject._is_lcp = true;
         }
+
+        if (this.priorities && this.priorities[request.url]) {
+          const priority_obj = this.priorities[request.url].shift();
+          if (priority_obj) {
+            updatedObject._initialPriority = priority_obj.initialPriority;
+
+            if (priority_obj.resourceType) {
+              updatedObject._resourceType = priority_obj.resourceType;
+            }
+
+            if (this.newPriorities && this.newPriorities[priority_obj.requestId]) {
+              updatedObject._priority = this.newPriorities[priority_obj.requestId];
+            } else {
+              updatedObject._priority = updatedObject._initialPriority;
+            }
+          }
+        }
+
         // replace the object at the specified index with the updated object
         harEntries.splice(indexToUpdate, 1, updatedObject);
       }
     }
+
     return harEntries;
   }
 
