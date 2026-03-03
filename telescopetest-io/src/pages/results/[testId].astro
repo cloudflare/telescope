@@ -5,6 +5,7 @@ import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
 import TestInfoPanel from '@/components/TestInfoPanel.astro';
 import Tabs from '@/components/Tabs.astro';
 import AllMetrics from '@/components/AllMetrics.astro';
+import Waterfall from '@/components/Waterfall.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/testRepository';
@@ -49,11 +50,13 @@ const screenshotUrl = screenshotObj
   ? `/api/tests/${testId}/screenshot.png`
   : null;
 
-// --- Browser Version (from HAR) ---
+// --- HAR (browser version + existence check for Waterfall) ---
 let harBrowser: { name: string; version: string } | null = null;
+let hasHar = false;
 try {
   const harObj = await env.RESULTS_BUCKET.get(`${testId}/pageload.har`);
   if (harObj) {
+    hasHar = true;
     const har = await harObj.json<{
       log: { browser: { name: string; version: string } };
     }>();
@@ -132,68 +135,76 @@ const formattedDate = date.toLocaleString('en-US', {
       />
     </section>
 
-    <!-- Metrics Tabs -->
-    {
-      metrics ? (
-        <Tabs>
-          <div slot="summary">
-            <div class="metrics-row">
-              <Summary
-                heading="Core Web Vitals"
-                metrics={[
-                  {
-                    label: 'LCP',
-                    value: formatMs(lcpMs),
-                    unit: 'ms',
-                    rating: getLcpRating(lcpMs),
-                  },
-                  {
-                    label: 'CLS',
-                    value: formatDecimal(clsValue),
-                    rating: getClsRating(clsValue),
-                  },
-                ]}
-              />
-              <Summary
-                heading="Performance Metrics"
-                metrics={[
-                  {
-                    label: 'FCP',
-                    value: formatMs(fcpMs),
-                    unit: 'ms',
-                    rating: getFcpRating(fcpMs),
-                  },
-                  {
-                    label: 'TTFB',
-                    value: formatMs(ttfbMs),
-                    unit: 'ms',
-                    rating: getTtfbRating(ttfbMs),
-                  },
-                  {
-                    label: 'Transfer Size',
-                    value: formatKb(transferBytes),
-                    unit: 'KB',
-                  },
-                  {
-                    label: 'Page Load Time',
-                    value: formatMs(durationMs),
-                    unit: 'ms',
-                  },
-                ]}
-              />
-            </div>
+    <!-- Metrics + Waterfall Tabs -->
+    <Tabs>
+      <div slot="summary">
+        {metrics ? (
+          <div class="metrics-row">
+            <Summary
+              heading="Core Web Vitals"
+              metrics={[
+                {
+                  label: 'LCP',
+                  value: formatMs(lcpMs),
+                  unit: 'ms',
+                  rating: getLcpRating(lcpMs),
+                },
+                {
+                  label: 'CLS',
+                  value: formatDecimal(clsValue),
+                  rating: getClsRating(clsValue),
+                },
+              ]}
+            />
+            <Summary
+              heading="Performance Metrics"
+              metrics={[
+                {
+                  label: 'FCP',
+                  value: formatMs(fcpMs),
+                  unit: 'ms',
+                  rating: getFcpRating(fcpMs),
+                },
+                {
+                  label: 'TTFB',
+                  value: formatMs(ttfbMs),
+                  unit: 'ms',
+                  rating: getTtfbRating(ttfbMs),
+                },
+                {
+                  label: 'Transfer Size',
+                  value: formatKb(transferBytes),
+                  unit: 'KB',
+                },
+                {
+                  label: 'Page Load Time',
+                  value: formatMs(durationMs),
+                  unit: 'ms',
+                },
+              ]}
+            />
           </div>
+        ) : (
+          <div class="metrics-unavailable panel">
+            <p>Metrics unavailable for this test.</p>
+          </div>
+        )}
+      </div>
 
-          <div slot="all-metrics">
-            <AllMetrics metrics={metrics} />
+      <div slot="all-metrics">
+        {metrics ? (
+          <AllMetrics metrics={metrics} />
+        ) : (
+          <div class="metrics-unavailable panel">
+            <p>Metrics unavailable for this test.</p>
           </div>
-        </Tabs>
-      ) : (
-        <div class="metrics-unavailable panel">
-          <p>Metrics unavailable for this test.</p>
-        </div>
-      )
-    }
+        )}
+      </div>
+
+      <div slot="waterfall">
+        <Waterfall testId={testId} hasHar={hasHar} />
+      </div>
+    </Tabs>
   </div>
 </Page>
 
