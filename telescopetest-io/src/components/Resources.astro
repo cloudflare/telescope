@@ -484,6 +484,8 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
   }
 
   function applyFilters() {
+    const scrollY = window.scrollY; // prevent scroll from jumping when clicking filters 
+    
     const selectedTypes = getSelectedValues(typeFilter);
     const selectedStatuses = getSelectedValues(statusFilter);
     const selectedDomains = getSelectedValues(domainFilter);
@@ -507,6 +509,8 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
         detailRow.style.display = 'none';
       }
     });
+    
+    window.scrollTo(0, scrollY);
   }
 
   typeFilter.addEventListener('change', applyFilters);
