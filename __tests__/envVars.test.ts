@@ -4,10 +4,10 @@
  *
  * Because the module evaluates these variables at load time (top-level const),
  * each test must re-import the module after setting the desired env vars.
- * jest.resetModules() + dynamic import() achieves true module isolation.
+ * vi.resetModules() + dynamic import() achieves true module isolation.
  */
 
-import { jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { BrowserName } from '../src/types.js';
 
 // ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ async function freshBrowserConfig(): Promise<{
     browserConfigs: Record<string, { headless: boolean }>;
   };
 }> {
-  jest.resetModules();
+  vi.resetModules();
   return import('../src/browsers.js') as Promise<{
     BrowserConfig: {
       getBrowsers(): BrowserName[];
@@ -120,7 +120,7 @@ describe('BROWSERS environment variable', () => {
 
   it('filters out invalid browser names and warns', async () => {
     process.env.BROWSERS = 'firefox,hotdog';
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { BrowserConfig } = await freshBrowserConfig();
 
     const result = BrowserConfig.getBrowsers();
@@ -132,7 +132,7 @@ describe('BROWSERS environment variable', () => {
 
   it('returns an empty array and warns when all BROWSERS values are invalid', async () => {
     process.env.BROWSERS = 'hotdog,notabrowser';
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { BrowserConfig } = await freshBrowserConfig();
 
     const result = BrowserConfig.getBrowsers();
@@ -146,7 +146,7 @@ describe('BROWSERS environment variable', () => {
 
   it('does not warn when all BROWSERS values are valid', async () => {
     process.env.BROWSERS = 'chrome,firefox';
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { BrowserConfig } = await freshBrowserConfig();
 
     BrowserConfig.getBrowsers();

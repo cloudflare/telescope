@@ -1,4 +1,5 @@
 import { spawnSync } from 'child_process';
+import { describe, it, expect, beforeAll } from 'vitest';
 
 import { retrieveHAR, retrieveMetrics, cleanupTestDirectory } from './helpers.js';
 
@@ -54,8 +55,12 @@ describe.each(browsers)('Basic Test: %s', browser => {
     expect(metrics?.navigationTiming.startTime).toBeGreaterThanOrEqual(0);
   });
 
-  it(`captures fIRS and fRHS only in chromium browsers`, async () => {
-    if (BrowserConfig.browserConfigs[browser].engine === 'chromium') {
+  it(`captures fIRS and fRHS only in chromium and webkit browsers`, async () => {
+    if (
+      ['chromium', 'webkit'].includes(
+        BrowserConfig.browserConfigs[browser].engine,
+      )
+    ) {
       expect(
         metrics?.navigationTiming.firstInterimResponseStart,
       ).toBeGreaterThanOrEqual(0);
