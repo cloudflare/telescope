@@ -34,7 +34,7 @@ export function resourceType(entry: HarEntry): string {
   return 'other';
 }
 
-// ── Critical path & blocking ─────────────────────────────────────────────────
+// ── Blocking ─────────────────────────────────────────────────────────────────
 
 /** True when a request was queued/blocked for more than 100 ms. */
 export function isBlocking(entry: HarEntry): boolean {
@@ -54,19 +54,6 @@ export function computeTotalMs(entries: HarEntry[]): number {
     const end = +new Date(e.startedDateTime) - origin + e.time;
     return end > max ? end : max;
   }, 0);
-}
-
-/**
- * Simple critical-path approximation: the top 20% of entries by duration.
- * Returns a Set of original entry indexes.
- */
-export function criticalIndexes(entries: HarEntry[]): Set<number> {
-  if (!entries.length) return new Set();
-  const sorted = entries
-    .map((e, i) => ({ i, t: e.time }))
-    .sort((a, b) => b.t - a.t);
-  const top = Math.max(1, Math.ceil(sorted.length * 0.2));
-  return new Set(sorted.slice(0, top).map(x => x.i));
 }
 
 /** Returns ['all', ...sorted unique resource types] for the given entries. */

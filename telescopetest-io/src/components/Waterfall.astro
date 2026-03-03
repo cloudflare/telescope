@@ -43,10 +43,9 @@ const { testId, hasHar } = Astro.props;
     <!-- Toolbar -->
     <div class="wf-toolbar">
       <div class="wf-filters" id="wf-filters" role="group" aria-label="Filter by resource type"></div>
-      <label class="wf-toggle">
-        <input type="checkbox" id="wf-critical-toggle" />
-        Critical path only
-      </label>
+      <button class="wf-toggle-cols" id="wf-toggle-cols" aria-expanded="false" aria-controls="wf-table">
+        Show columns
+      </button>
     </div>
 
     <!-- Table — thead is static, tbody filled by JS -->
@@ -58,12 +57,12 @@ const { testId, hasHar } = Astro.props;
           <tr>
             <th class="col-idx"  scope="col">#</th>
             <th class="col-url"  scope="col">URL</th>
-            <th class="col-meth" scope="col">Method</th>
-            <th class="col-prot" scope="col">Protocol</th>
-            <th class="col-stat" scope="col">Status</th>
-            <th class="col-type" scope="col">Type</th>
-            <th class="col-size" scope="col">Size</th>
-            <th class="col-dur"  scope="col">Duration</th>
+            <th class="col-meth col-info" scope="col">Method</th>
+            <th class="col-prot col-info" scope="col">Protocol</th>
+            <th class="col-stat col-info" scope="col">Status</th>
+            <th class="col-type col-info" scope="col">Type</th>
+            <th class="col-size col-info" scope="col">Size</th>
+            <th class="col-dur col-info" scope="col">Duration</th>
             <th class="col-wf"   scope="col">
               <!-- Ruler — tick marks injected by JS -->
               <div class="wf-ruler" id="wf-ruler" aria-hidden="true"></div>
@@ -111,8 +110,6 @@ const { testId, hasHar } = Astro.props;
     /* Row highlight tints */
     --wf-row-blocking-bg:       rgba(239, 68,  68,  0.05);
     --wf-row-blocking-bg-hover: rgba(239, 68,  68,  0.10);
-    --wf-row-critical-bg:       rgba( 34, 197,  94, 0.05);
-    --wf-row-critical-bg-hover: rgba( 34, 197,  94, 0.10);
     --wf-row-open-bg:           rgba( 14, 165, 233, 0.07);
   }
 
@@ -239,17 +236,27 @@ const { testId, hasHar } = Astro.props;
     flex-wrap: wrap;
     flex: 1;
   }
-  .wf-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
+  .wf-toggle-cols {
     font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 0.2rem 0.625rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--border);
+    background: var(--panel);
     color: var(--muted);
     cursor: pointer;
-    user-select: none;
     white-space: nowrap;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
   }
-  .wf-toggle input { cursor: pointer; }
+  .wf-toggle-cols:hover {
+    background: var(--bg);
+    color: var(--text);
+  }
+  .wf-toggle-cols[aria-expanded='true'] {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+  }
 
   /* ── Table ──────────────────────────────────────────────────────────────── */
   .wf-table-wrap {
@@ -287,8 +294,16 @@ const { testId, hasHar } = Astro.props;
   .col-dur  { width: 5.5rem; text-align: right; }
   .col-wf   { position: relative; }
 
+  /* ── Info columns hidden state ──────────────────────────────────────────── */
+  .wf-table.cols-collapsed .col-info {
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
   /* ── Ruler & overlay (static elements, scoped) ─────────────────────────── */
-  .col-wf { position: relative; }
   .wf-ruler {
     position: relative;
     width: 100%;
@@ -320,8 +335,6 @@ const { testId, hasHar } = Astro.props;
 
   .wf-row.row--blocking       { background: var(--wf-row-blocking-bg); }
   .wf-row.row--blocking:hover { background: var(--wf-row-blocking-bg-hover); }
-  .wf-row.row--critical       { background: var(--wf-row-critical-bg); }
-  .wf-row.row--critical:hover { background: var(--wf-row-critical-bg-hover); }
   .wf-row.row--open           { background: var(--wf-row-open-bg); }
 
   .wf-row td {
@@ -342,6 +355,15 @@ const { testId, hasHar } = Astro.props;
   .td-stat.s5xx      { color: var(--color-danger); }
   .td-size           { text-align: right; }
   .td-dur            { text-align: right; }
+
+  /* Info td cells collapse alongside their <th> counterparts */
+  .wf-table.cols-collapsed .td-info {
+    width: 0;
+    min-width: 0;
+    padding: 0 !important;
+    overflow: hidden;
+    white-space: nowrap;
+  }
 
   /* ── Timeline bars ──────────────────────────────────────────────────────── */
   .td-wf       { padding: 0 0.5rem; }
@@ -576,7 +598,6 @@ const { testId, hasHar } = Astro.props;
     resourceType,
     isBlocking,
     computeTotalMs,
-    criticalIndexes,
     uniqueTypes,
     pageEvents,
     fmtEventLabel,
@@ -586,9 +607,7 @@ const { testId, hasHar } = Astro.props;
 
   // ── State ────────────────────────────────────────────────────────────────
   let allEntries: HarEntry[] = [];
-  let criticalSet: Set<number> = new Set();
   let activeFilters = new Set<string>(['all']);
-  let showCritical = false;
   const openPanels = new Map<number, HTMLElement>();
   let pageTimings: HarPageTimings = {};
   let totalMs = 0;
@@ -797,7 +816,6 @@ const { testId, hasHar } = Astro.props;
     for (let i = 0; i < allEntries.length; i++) {
       const entry = allEntries[i];
       if (!activeFilters.has('all') && !activeFilters.has(resourceType(entry))) continue;
-      if (showCritical && !criticalSet.has(i)) continue;
       visIdx++;
       const type = resourceType(entry);
       const { barH } = typeConfig(type);
@@ -806,9 +824,8 @@ const { testId, hasHar } = Astro.props;
       const { domain, path } = parseUrl(entry.request.url);
       const rowClasses = [
         'wf-row',
-        isBlocking(entry)  ? 'row--blocking' : '',
-        criticalSet.has(i) ? 'row--critical' : '',
-        openPanels.has(i)  ? 'row--open'     : '',
+        isBlocking(entry) ? 'row--blocking' : '',
+        openPanels.has(i) ? 'row--open'     : '',
       ].filter(Boolean).join(' ');
       const statusCls = status >= 500 ? 's5xx' : status >= 400 ? 's4xx' : status >= 300 ? 's3xx' : 's2xx';
       const tr = el('tr', { className: rowClasses });
@@ -821,12 +838,12 @@ const { testId, hasHar } = Astro.props;
       const tdUrl = el('td');
       tdUrl.title = entry.request.url;
       tdUrl.appendChild(urlSpan);
-      const tdMeth = el('td', {}, entry.request.method);
-      const tdProt = el('td', {}, entry.request.httpVersion);
-      const tdStat = el('td', { className: `td-stat ${statusCls}` }, String(status));
-      const tdType = el('td', {}, type);
-      const tdSize = el('td', { className: 'td-size' }, fmtSize(size));
-      const tdDur = el('td', { className: 'td-dur' }, fmtMs(entry.time));
+      const tdMeth = el('td', { className: 'td-info' }, entry.request.method);
+      const tdProt = el('td', { className: 'td-info' }, entry.request.httpVersion);
+      const tdStat = el('td', { className: `td-stat td-info ${statusCls}` }, String(status));
+      const tdType = el('td', { className: 'td-info' }, type);
+      const tdSize = el('td', { className: 'td-size td-info' }, fmtSize(size));
+      const tdDur = el('td', { className: 'td-dur td-info' }, fmtMs(entry.time));
       tr.append(tdIdx, tdUrl, tdMeth, tdProt, tdStat, tdType, tdSize, tdDur);
       tr.appendChild(makeTimelineCell(entry));
       tr.addEventListener('click', () => togglePanel(i, entry));
@@ -848,7 +865,6 @@ const { testId, hasHar } = Astro.props;
       allEntries = har.log.entries ?? [];
       if (!allEntries.length) throw new Error('No entries in HAR file');
       pageTimings = har.log.pages?.[0]?.pageTimings ?? {};
-      criticalSet = criticalIndexes(allEntries);
       totalMs = computeTotalMs(allEntries);
       originMs = +new Date(allEntries[0].startedDateTime);
       loadingEl.hidden = true;
@@ -860,9 +876,22 @@ const { testId, hasHar } = Astro.props;
         if (lastTh.offsetWidth > 0) { ro.disconnect(); renderEventLines(); }
       });
       ro.observe(lastTh);
-      document.getElementById('wf-critical-toggle')!.addEventListener('change', e => {
-        showCritical = (e.target as HTMLInputElement).checked;
-        renderRows();
+
+      // Info columns are collapsed by default; toggle button expands/collapses them
+      const table = document.getElementById('wf-table')!;
+      const toggleColsBtn = document.getElementById('wf-toggle-cols') as HTMLButtonElement;
+      table.classList.add('cols-collapsed');
+      toggleColsBtn.addEventListener('click', () => {
+        const expanded = toggleColsBtn.getAttribute('aria-expanded') === 'true';
+        if (expanded) {
+          table.classList.add('cols-collapsed');
+          toggleColsBtn.setAttribute('aria-expanded', 'false');
+          toggleColsBtn.textContent = 'Show columns';
+        } else {
+          table.classList.remove('cols-collapsed');
+          toggleColsBtn.setAttribute('aria-expanded', 'true');
+          toggleColsBtn.textContent = 'Hide columns';
+        }
         renderEventLines();
       });
     } catch (err) {
