@@ -1,5 +1,7 @@
 ---
 import type {ResourceTiming, EnrichedResource, TypeStats} from '@/lib/types/resources';
+import Summary from './Summary.astro';
+import MetricsSection from './metrics/MetricsSection.astro';
 import {
   calculateSummary,
   calculateTypeBreakdown,
@@ -27,63 +29,63 @@ const uniqueTypes = getUniqueTypes(resources);
 const uniqueStatuses = getUniqueStatuses(resources);
 const uniqueDomains = getUniqueDomains(resources);
 const uniqueProtocols = getUniqueProtocols(resources);
+
+const hasTimingData = (resource: EnrichedResource) => resource.requestStart > 0 || resource.responseStart > 0;
+const hasSegment = (start: number, end: number) => start > 0 && end > 0;
 ---
 
 <div class="resources-container">
   <!-- Summary Cards -->
-  <div class="summary-section">
-    <div class="metric-card">
-      <p class="label">Total Resources</p>
-      <p class="value">{summary.totalResources}</p>
-    </div>
-    <div class="metric-card">
-      <p class="label">Blocking Resources</p>
-      <p class="value" class:list={[{blocking: summary.blockingResources > 0}]}>
-        {summary.blockingResources}
-      </p>
-    </div>
-    <div class="metric-card">
-      <p class="label">Transfer Size</p>
-      <p class="value">{formatBytes(summary.totalTransferSize)}</p>
-    </div>
-    <div class="metric-card">
-      <p class="label">Decoded Size</p>
-      <p class="value">{formatBytes(summary.totalDecodedSize)}</p>
-    </div>
-  </div>
+  <Summary
+    heading="Resources Summary"
+    metrics={[
+      {
+        label: 'Total Resources',
+        value: summary.totalResources.toString()
+      },
+      {
+        label: 'Blocking',
+        value: summary.blockingResources.toString(),
+        rating: summary.blockingResources > 0 ? 'poor' : undefined
+      },
+      {
+        label: 'Transfer Size',
+        value: formatBytes(summary.totalTransferSize)
+      },
+      {
+        label: 'Decoded Size',
+        value: formatBytes(summary.totalDecodedSize)
+      }
+    ]}
+  />
 
   <!-- File Type Breakdown -->
-  <div class="breakdown-section">
-    <h4>File Type Breakdown</h4>
+  <MetricsSection title="File Type Breakdown">
     <div class="breakdown-grid">
-      {Object.entries(typeBreakdown).map(([type, stats]) => {
-        const s = stats as TypeStats;
-        return (
-          <div class="breakdown-card">
-            <p class="type-label">{type}</p>
-            <div class="type-stats">
-              <div class="stat-item">
-                <span class="stat-label">Count:</span>
-                <span class="stat-value">{s.count}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Transfer:</span>
-                <span class="stat-value">{formatBytes(s.transferSize)}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Decoded:</span>
-                <span class="stat-value">{formatBytes(s.decodedSize)}</span>
-              </div>
+      {Object.entries(typeBreakdown).map(([type, stats]) => (
+        <div class="breakdown-card">
+          <p class="type-label">{type}</p>
+          <div class="type-stats">
+            <div class="stat-item">
+              <span class="stat-label">Count:</span>
+              <span class="stat-value">{(stats as TypeStats).count}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Transfer:</span>
+              <span class="stat-value">{formatBytes((stats as TypeStats).transferSize)}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Decoded:</span>
+              <span class="stat-value">{formatBytes((stats as TypeStats).decodedSize)}</span>
             </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
-  </div>
+  </MetricsSection>
 
   <!-- Filters -->
-  <div class="filters-section">
-    <h4>Filters</h4>
+  <MetricsSection title="Filters">
     <div class="filters-grid">
       <div class="filter-group">
         <label>File Type</label>
@@ -123,92 +125,104 @@ const uniqueProtocols = getUniqueProtocols(resources);
       </div>
     </div>
     <button id="clear-filters" class="clear-btn">Clear Filters</button>
-  </div>
+  </MetricsSection>
 
   <!-- Resources Table -->
-  <div class="table-section">
-    <table class="resources-table">
-      <thead>
-        <tr>
-          <th>URL</th>
-          <th>Status</th>
-          <th>Type</th>
-          <th>Size</th>
-          <th>Duration</th>
-        </tr>
-      </thead>
-      <tbody id="resources-tbody">
-        {enrichedResources.map((resource) => (
-          <tr class:list={['resource-row', {blocking: resource.isBlocking}]} data-resource={JSON.stringify(resource)}>
-            <td class="url-cell" title={resource.name}>
-              {shortenUrl(resource.name)}
-            </td>
-            <td>{resource.statusCode}</td>
-            <td>{resource.fileType}</td>
-            <td>{formatBytes(resource.transferSize)}</td>
-            <td>{formatDuration(resource.duration)}</td>
+  <MetricsSection title="Resources">
+    <div class="table-wrapper">
+      <table class="resources-table">
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Status</th>
+            <th>Type</th>
+            <th>Size</th>
+            <th>Duration</th>
           </tr>
-          <tr class="detail-row" style="display: none;">
-            <td colspan="5">
-              <div class="resource-details">
-                <div class="detail-grid">
-                  <div class="detail-item">
-                    <span class="detail-label">Full URL:</span>
-                    <span class="detail-value">{resource.name}</span>
+        </thead>
+        <tbody id="resources-tbody">
+          {enrichedResources.map((resource) => (
+            <tr class:list={['resource-row', {blocking: resource.isBlocking}]} data-resource={JSON.stringify(resource)}>
+              <td class="url-cell" title={resource.name}>
+                {shortenUrl(resource.name)}
+              </td>
+              <td>{resource.statusCode}</td>
+              <td>{resource.fileType}</td>
+              <td>{formatBytes(resource.transferSize)}</td>
+              <td>{formatDuration(resource.duration)}</td>
+            </tr>
+            <tr class="detail-row" style="display: none;">
+              <td colspan="5">
+                <div class="resource-details">
+                  <div class="detail-grid">
+                    <div class="detail-item">
+                      <span class="detail-label">Full URL:</span>
+                      <span class="detail-value">{resource.name}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Start Time:</span>
+                      <span class="detail-value">{formatDuration(resource.startTime)}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Duration:</span>
+                      <span class="detail-value">{formatDuration(resource.duration)}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Protocol:</span>
+                      <span class="detail-value">{resource.protocol}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Transfer Size:</span>
+                      <span class="detail-value">{formatBytes(resource.transferSize)}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Decoded Size:</span>
+                      <span class="detail-value">{formatBytes(resource.decodedBodySize)}</span>
+                    </div>
                   </div>
-                  <div class="detail-item">
-                    <span class="detail-label">Start Time:</span>
-                    <span class="detail-value">{formatDuration(resource.startTime)}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="detail-label">Duration:</span>
-                    <span class="detail-value">{formatDuration(resource.duration)}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="detail-label">Protocol:</span>
-                    <span class="detail-value">{resource.protocol}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="detail-label">Transfer Size:</span>
-                    <span class="detail-value">{formatBytes(resource.transferSize)}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="detail-label">Decoded Size:</span>
-                    <span class="detail-value">{formatBytes(resource.decodedBodySize)}</span>
-                  </div>
+                  {hasTimingData(resource) && (
+                    <div class="timing-viz">
+                      <span class="timing-label">Timing:</span>
+                      <div class="timing-bar">
+                        {hasSegment(resource.domainLookupStart, resource.domainLookupEnd) && (
+                          <div 
+                            class="timing-segment dns" 
+                            style={`width: ${calculateTimingWidth(resource.domainLookupStart, resource.domainLookupEnd, resource.duration)}`}
+                            title={`DNS: ${formatDuration(resource.domainLookupEnd - resource.domainLookupStart)}`}
+                          ></div>
+                        )}
+                        {hasSegment(resource.connectStart, resource.connectEnd) && (
+                          <div 
+                            class="timing-segment connect" 
+                            style={`width: ${calculateTimingWidth(resource.connectStart, resource.connectEnd, resource.duration)}`}
+                            title={`Connect: ${formatDuration(resource.connectEnd - resource.connectStart)}`}
+                          ></div>
+                        )}
+                        {hasSegment(resource.requestStart, resource.responseStart) && (
+                          <div 
+                            class="timing-segment request" 
+                            style={`width: ${calculateTimingWidth(resource.requestStart, resource.responseStart, resource.duration)}`}
+                            title={`Request: ${formatDuration(resource.responseStart - resource.requestStart)}`}
+                          ></div>
+                        )}
+                        {hasSegment(resource.responseStart, resource.responseEnd) && (
+                          <div 
+                            class="timing-segment response" 
+                            style={`width: ${calculateTimingWidth(resource.responseStart, resource.responseEnd, resource.duration)}`}
+                            title={`Response: ${formatDuration(resource.responseEnd - resource.responseStart)}`}
+                          ></div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div class="timing-viz">
-                  <span class="timing-label">Timing:</span>
-                  <div class="timing-bar">
-                    <div 
-                      class="timing-segment dns" 
-                      style={`width: ${calculateTimingWidth(resource.domainLookupStart, resource.domainLookupEnd, resource.duration)}`}
-                      title={`DNS: ${formatDuration(resource.domainLookupEnd - resource.domainLookupStart)}`}
-                    ></div>
-                    <div 
-                      class="timing-segment connect" 
-                      style={`width: ${calculateTimingWidth(resource.connectStart, resource.connectEnd, resource.duration)}`}
-                      title={`Connect: ${formatDuration(resource.connectEnd - resource.connectStart)}`}
-                    ></div>
-                    <div 
-                      class="timing-segment request" 
-                      style={`width: ${calculateTimingWidth(resource.requestStart, resource.responseStart, resource.duration)}`}
-                      title={`Request: ${formatDuration(resource.responseStart - resource.requestStart)}`}
-                    ></div>
-                    <div 
-                      class="timing-segment response" 
-                      style={`width: ${calculateTimingWidth(resource.responseStart, resource.responseEnd, resource.duration)}`}
-                      title={`Response: ${formatDuration(resource.responseEnd - resource.responseStart)}`}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </MetricsSection>
 </div>
 
 <style>
@@ -218,51 +232,6 @@ const uniqueProtocols = getUniqueProtocols(resources);
     gap: 1.5rem;
   }
 
-  .summary-section {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .metric-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 0.75rem;
-    padding: 1rem 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-    min-width: 7rem;
-  }
-
-  .label {
-    font-size: 0.6875rem;
-    font-weight: 500;
-    color: var(--muted);
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .value {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0;
-    color: var(--text);
-  }
-
-  .value.blocking {
-    color: var(--color-danger);
-  }
-
-  .breakdown-section h4,
-  .filters-section h4 {
-    margin: 0 0 0.75rem 0;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--text);
-  }
-
   .breakdown-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -270,9 +239,9 @@ const uniqueProtocols = getUniqueProtocols(resources);
   }
 
   .breakdown-card {
-    background: var(--panel);
+    background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     padding: 0.75rem;
   }
 
@@ -303,13 +272,6 @@ const uniqueProtocols = getUniqueProtocols(resources);
   .stat-value {
     color: var(--text);
     font-weight: 500;
-  }
-
-  .filters-section {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 0.75rem;
-    padding: 1rem;
   }
 
   .filters-grid {
@@ -357,11 +319,8 @@ const uniqueProtocols = getUniqueProtocols(resources);
     opacity: 0.85;
   }
 
-  .table-section {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 0.75rem;
-    overflow: hidden;
+  .table-wrapper {
+    overflow-x: auto;
   }
 
   .resources-table {
@@ -520,40 +479,31 @@ const uniqueProtocols = getUniqueProtocols(resources);
   const clearBtn = document.getElementById('clear-filters') as HTMLButtonElement;
   const tbody = document.getElementById('resources-tbody') as HTMLElement;
 
-  function applyFilters() {
-    const selectedTypes = Array.from(typeFilter.selectedOptions).map(o => o.value).filter(v => v);
-    const selectedStatuses = Array.from(statusFilter.selectedOptions).map(o => o.value).filter(v => v);
-    const selectedDomains = Array.from(domainFilter.selectedOptions).map(o => o.value).filter(v => v);
-    const selectedProtocols = Array.from(protocolFilter.selectedOptions).map(o => o.value).filter(v => v);
+  function getSelectedValues(select: HTMLSelectElement) {
+    return Array.from(select.selectedOptions).map(o => o.value).filter(v => v);
+  }
 
-    const rows = tbody.querySelectorAll('.resource-row');
-    rows.forEach((row) => {
+  function applyFilters() {
+    const selectedTypes = getSelectedValues(typeFilter);
+    const selectedStatuses = getSelectedValues(statusFilter);
+    const selectedDomains = getSelectedValues(domainFilter);
+    const selectedProtocols = getSelectedValues(protocolFilter);
+
+    tbody.querySelectorAll('.resource-row').forEach((row) => {
       const dataStr = row.getAttribute('data-resource');
       if (!dataStr) return;
       
       const resource = JSON.parse(dataStr);
-      
-      let show = true;
-      
-      if (selectedTypes.length > 0 && !selectedTypes.includes(resource.fileType)) {
-        show = false;
-      }
-      
-      if (selectedStatuses.length > 0 && !selectedStatuses.includes(String(resource.statusCode))) {
-        show = false;
-      }
-      
-      if (selectedDomains.length > 0 && !selectedDomains.includes(resource.domain)) {
-        show = false;
-      }
-      
-      if (selectedProtocols.length > 0 && !selectedProtocols.includes(resource.protocol)) {
-        show = false;
-      }
+      const show = (
+        (selectedTypes.length === 0 || selectedTypes.includes(resource.fileType)) &&
+        (selectedStatuses.length === 0 || selectedStatuses.includes(String(resource.statusCode))) &&
+        (selectedDomains.length === 0 || selectedDomains.includes(resource.domain)) &&
+        (selectedProtocols.length === 0 || selectedProtocols.includes(resource.protocol))
+      );
       
       (row as HTMLElement).style.display = show ? '' : 'none';
       const detailRow = row.nextElementSibling as HTMLElement;
-      if (detailRow && detailRow.classList.contains('detail-row')) {
+      if (detailRow?.classList.contains('detail-row')) {
         detailRow.style.display = 'none';
       }
     });
