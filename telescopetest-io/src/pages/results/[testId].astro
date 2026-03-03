@@ -6,11 +6,13 @@ import TestInfoPanel from '@/components/TestInfoPanel.astro';
 import Tabs from '@/components/Tabs.astro';
 import AllMetrics from '@/components/AllMetrics.astro';
 import Waterfall from '@/components/Waterfall.astro';
+import Resources from '@/components/Resources.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/testRepository';
 
 import type { MetricsJson } from '@/lib/types/results';
+import type { ResourceTiming } from '@/lib/types/resources';
 import {
   extractFcp,
   extractLcp,
@@ -18,14 +20,14 @@ import {
   extractTtfb,
   extractTransferSize,
   extractDuration,
-} from '@/lib/metrics/extractors';
+} from '@/lib/utils/extractors';
 import {
   getFcpRating,
   getLcpRating,
   getClsRating,
   getTtfbRating,
-} from '@/lib/metrics/ratings';
-import { formatMs, formatDecimal, formatKb } from '@/lib/metrics/formatters';
+} from '@/lib/utils/ratings';
+import { formatMs, formatDecimal, formatKb } from '@/lib/utils/formatters';
 
 export const prerender = false;
 
@@ -77,6 +79,18 @@ try {
 } catch (err) {
   console.error('Error reading metrics.json:', err);
   // metrics unavailable — render without them
+}
+
+// --- Resources ---
+let resources: ResourceTiming[] = [];
+try {
+  const resourcesObj = await env.RESULTS_BUCKET.get(`${testId}/resources.json`);
+  if (resourcesObj) {
+    resources = await resourcesObj.json<ResourceTiming[]>();
+  }
+} catch (err) {
+  console.error('Error reading resources.json:', err);
+  // resources unavailable — render without them
 }
 
 // Extract metric values
@@ -138,71 +152,87 @@ const formattedDate = date.toLocaleString('en-US', {
     <!-- Metrics + Waterfall Tabs -->
     <Tabs>
       <div slot="summary">
-        {metrics ? (
-          <div class="metrics-row">
-            <Summary
-              heading="Core Web Vitals"
-              metrics={[
-                {
-                  label: 'LCP',
-                  value: formatMs(lcpMs),
-                  unit: 'ms',
-                  rating: getLcpRating(lcpMs),
-                },
-                {
-                  label: 'CLS',
-                  value: formatDecimal(clsValue),
-                  rating: getClsRating(clsValue),
-                },
-              ]}
-            />
-            <Summary
-              heading="Performance Metrics"
-              metrics={[
-                {
-                  label: 'FCP',
-                  value: formatMs(fcpMs),
-                  unit: 'ms',
-                  rating: getFcpRating(fcpMs),
-                },
-                {
-                  label: 'TTFB',
-                  value: formatMs(ttfbMs),
-                  unit: 'ms',
-                  rating: getTtfbRating(ttfbMs),
-                },
-                {
-                  label: 'Transfer Size',
-                  value: formatKb(transferBytes),
-                  unit: 'KB',
-                },
-                {
-                  label: 'Page Load Time',
-                  value: formatMs(durationMs),
-                  unit: 'ms',
-                },
-              ]}
-            />
-          </div>
-        ) : (
-          <div class="metrics-unavailable panel">
-            <p>Metrics unavailable for this test.</p>
-          </div>
-        )}
+        {
+          metrics ? (
+            <div class="metrics-row">
+              <Summary
+                heading="Core Web Vitals"
+                metrics={[
+                  {
+                    label: 'LCP',
+                    value: formatMs(lcpMs),
+                    unit: 'ms',
+                    rating: getLcpRating(lcpMs),
+                  },
+                  {
+                    label: 'CLS',
+                    value: formatDecimal(clsValue),
+                    rating: getClsRating(clsValue),
+                  },
+                ]}
+              />
+              <Summary
+                heading="Performance Metrics"
+                metrics={[
+                  {
+                    label: 'FCP',
+                    value: formatMs(fcpMs),
+                    unit: 'ms',
+                    rating: getFcpRating(fcpMs),
+                  },
+                  {
+                    label: 'TTFB',
+                    value: formatMs(ttfbMs),
+                    unit: 'ms',
+                    rating: getTtfbRating(ttfbMs),
+                  },
+                  {
+                    label: 'Transfer Size',
+                    value: formatKb(transferBytes),
+                    unit: 'KB',
+                  },
+                  {
+                    label: 'Page Load Time',
+                    value: formatMs(durationMs),
+                    unit: 'ms',
+                  },
+                ]}
+              />
+            </div>
+          ) : (
+            <div class="metrics-unavailable panel">
+              <p>Metrics unavailable for this test.</p>
+            </div>
+          )
+        }
       </div>
 
       <div slot="all-metrics">
-        {metrics ? (
-          <AllMetrics metrics={metrics} />
-        ) : (
-          <div class="metrics-unavailable panel">
-            <p>Metrics unavailable for this test.</p>
-          </div>
-        )}
+        {
+          metrics ? (
+            <AllMetrics metrics={metrics} />
+          ) : (
+            <div class="metrics-unavailable panel">
+              <p>Metrics unavailable for this test.</p>
+            </div>
+          )
+        }
       </div>
 
       <div slot="waterfall">
         <Waterfall testId={testId} hasHar={hasHar} />
+      </div>
+
+      <div slot="resources">
+        {
+          resources.length > 0 ? (
+            <Resources resources={resources} />
+          ) : (
+            <div class="resources-unavailable">
+              <p>Resources data unavailable for this test.</p>
+            </div>
+          )
+        }
       </div>
     </Tabs>
   </div>
@@ -312,6 +342,18 @@ const formattedDate = date.toLocaleString('en-US', {
   }
 
   .metrics-unavailable p {
+    margin: 0;
+  }
+
+  /* Resources unavailable */
+  .resources-unavailable {
+    padding: 2.5rem; /* 40px */
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .resources-unavailable p {
     margin: 0;
   }
 
