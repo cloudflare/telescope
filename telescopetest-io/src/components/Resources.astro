@@ -1,0 +1,645 @@
+---
+import type {ResourceTiming, EnrichedResource, TypeStats} from '@/lib/types/resources';
+import type {NavigationTiming} from '@/lib/types/results';
+import Summary from './Summary.astro';
+import MetricsSection from './metrics/MetricsSection.astro';
+import {
+  calculateSummary,
+  calculateTypeBreakdown,
+  enrichResources,
+  getUniqueTypes,
+  getUniqueStatuses,
+  getUniqueDomains,
+  getUniqueProtocols,
+  formatBytes,
+  formatDuration,
+  shortenUrl,
+  calculateTimingWidth,
+  getWaterfallColorKey,
+} from '@/lib/utils/resources';
+
+export interface Props {
+  resources: ResourceTiming[];
+  url: string;
+  navigationTiming?: NavigationTiming;
+}
+
+const {resources, url, navigationTiming} = Astro.props;
+
+// Prepend a synthetic HTML document entry derived from navigationTiming when available
+const allResources: ResourceTiming[] = navigationTiming
+  ? [
+      {
+        name: url,
+        entryType: 'navigation',
+        startTime: 0,
+        duration: navigationTiming.duration,
+        initiatorType: 'navigation',
+        deliveryType: navigationTiming.deliveryType,
+        nextHopProtocol: navigationTiming.nextHopProtocol,
+        renderBlockingStatus: navigationTiming.renderBlockingStatus,
+        fetchStart: navigationTiming.fetchStart,
+        domainLookupStart: navigationTiming.domainLookupStart,
+        domainLookupEnd: navigationTiming.domainLookupEnd,
+        connectStart: navigationTiming.connectStart,
+        connectEnd: navigationTiming.connectEnd,
+        secureConnectionStart: navigationTiming.secureConnectionStart,
+        requestStart: navigationTiming.requestStart,
+        responseStart: navigationTiming.responseStart,
+        responseEnd: navigationTiming.responseEnd,
+        transferSize: navigationTiming.transferSize ?? 0,
+        encodedBodySize: navigationTiming.encodedBodySize ?? 0,
+        decodedBodySize: navigationTiming.decodedBodySize ?? 0,
+        responseStatus: navigationTiming.responseStatus,
+      },
+      ...resources,
+    ]
+  : resources;
+
+const summary = calculateSummary(allResources);
+const typeBreakdown = calculateTypeBreakdown(allResources);
+const enrichedResources = enrichResources(allResources);
+const uniqueTypes = getUniqueTypes(allResources);
+const uniqueStatuses = getUniqueStatuses(allResources);
+const uniqueDomains = getUniqueDomains(allResources);
+const uniqueProtocols = getUniqueProtocols(allResources);
+
+const hasTimingData = (resource: EnrichedResource) => resource.requestStart > 0 || resource.responseStart > 0;
+const hasSegment = (start: number, end: number) => start > 0 && end > 0;
+---
+
+<div class="resources-container">
+  <!-- Summary Cards -->
+  <Summary
+    heading="Resources Summary"
+    metrics={[
+      {
+        label: 'Total Resources',
+        value: summary.totalResources.toString()
+      },
+      {
+        label: 'Blocking',
+        value: summary.blockingResources.toString(),
+        rating: summary.blockingResources > 0 ? 'poor' : undefined
+      },
+      {
+        label: 'Transfer Size',
+        value: formatBytes(summary.totalTransferSize)
+      },
+      {
+        label: 'Decoded Size',
+        value: formatBytes(summary.totalDecodedSize)
+      }
+    ]}
+  />
+
+  <!-- File Type Breakdown -->
+  <MetricsSection title="File Type Breakdown">
+    <div class="breakdown-grid">
+      {Object.entries(typeBreakdown).map(([type, stats]) => (
+        <div class="breakdown-card">
+          <p class="type-label">{type}</p>
+          <div class="type-stats">
+            <div class="stat-item">
+              <span class="stat-label">Count:</span>
+              <span class="stat-value">{(stats as TypeStats).count}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Transfer:</span>
+              <span class="stat-value">{formatBytes((stats as TypeStats).transferSize)}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Decoded:</span>
+              <span class="stat-value">{formatBytes((stats as TypeStats).decodedSize)}</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </MetricsSection>
+
+  <!-- Filters -->
+  <MetricsSection title="Filters">
+    <div class="filters-row">
+      <label class="checkbox-filter">
+        <input type="checkbox" id="filter-blocking" />
+        <span>Show only blocking resources</span>
+      </label>
+    </div>
+    <div class="filters-grid">
+      <div class="filter-group">
+        <label>File Type</label>
+        <select id="filter-type" multiple size="4">
+          <option value="">All Types</option>
+          {uniqueTypes.map(type => (
+            <option value={type}>{type}</option>
+          ))}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Status</label>
+        <select id="filter-status" multiple size="4">
+          <option value="">All Statuses</option>
+          {uniqueStatuses.map(status => (
+            <option value={status.toString()}>{status}</option>
+          ))}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Domain</label>
+        <select id="filter-domain" multiple size="4">
+          <option value="">All Domains</option>
+          {uniqueDomains.map(domain => (
+            <option value={domain}>{domain}</option>
+          ))}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Protocol</label>
+        <select id="filter-protocol" multiple size="4">
+          <option value="">All Protocols</option>
+          {uniqueProtocols.map(protocol => (
+            <option value={protocol}>{protocol}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+    <button id="clear-filters" class="clear-btn">Clear Filters</button>
+  </MetricsSection>
+
+  <!-- Resources Table -->
+  <MetricsSection title="Resources">
+    <div class="table-wrapper">
+      <table class="resources-table">
+        <thead>
+          <tr>
+            <th class="col-seq">#</th>
+            <th>URL</th>
+            <th>Status</th>
+            <th>Type</th>
+            <th>Size</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody id="resources-tbody">
+          {enrichedResources.map((resource, index) => (
+            <tr class:list={['resource-row', {blocking: resource.isBlocking}]} data-resource={JSON.stringify(resource)}>
+              <td class="col-seq">{index + 1}</td>
+              <td class="url-cell" title={resource.name}>
+                {resource.isBlocking && <span class="blocking-badge">BLOCKING</span>}
+                {shortenUrl(resource.name)}
+              </td>
+              <td>{resource.statusCode}</td>
+              <td class="type-cell">
+                <span class="type-swatch" data-type={getWaterfallColorKey(resource.fileType)}></span>
+                {resource.fileType}
+              </td>
+              <td>{formatBytes(resource.transferSize)}</td>
+              <td>{formatDuration(resource.duration)}</td>
+            </tr>
+            <tr class="detail-row" style="display: none;">
+              <td colspan="6">
+                <div class="resource-details">
+                  <div class="detail-grid">
+                    <div class="detail-item">
+                      <span class="detail-label">Full URL:</span>
+                      <span class="detail-value">{resource.name}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Start Time:</span>
+                      <span class="detail-value">{formatDuration(resource.startTime)}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Duration:</span>
+                      <span class="detail-value">{formatDuration(resource.duration)}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Protocol:</span>
+                      <span class="detail-value">{resource.protocol}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Transfer Size:</span>
+                      <span class="detail-value">{formatBytes(resource.transferSize)}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Decoded Size:</span>
+                      <span class="detail-value">{formatBytes(resource.decodedBodySize)}</span>
+                    </div>
+                  </div>
+                  {hasTimingData(resource) && (
+                    <div class="timing-viz">
+                      <span class="timing-label">Timing:</span>
+                      <div class="timing-bar">
+                        {hasSegment(resource.domainLookupStart, resource.domainLookupEnd) && (
+                          <div 
+                            class="timing-segment dns" 
+                            style={`width: ${calculateTimingWidth(resource.domainLookupStart, resource.domainLookupEnd, resource.duration)}`}
+                            title={`DNS: ${formatDuration(resource.domainLookupEnd - resource.domainLookupStart)}`}
+                          ></div>
+                        )}
+                        {hasSegment(resource.connectStart, resource.connectEnd) && (
+                          <div 
+                            class="timing-segment connect" 
+                            style={`width: ${calculateTimingWidth(resource.connectStart, resource.connectEnd, resource.duration)}`}
+                            title={`Connect: ${formatDuration(resource.connectEnd - resource.connectStart)}`}
+                          ></div>
+                        )}
+                        {hasSegment(resource.requestStart, resource.responseStart) && (
+                          <div 
+                            class="timing-segment request" 
+                            style={`width: ${calculateTimingWidth(resource.requestStart, resource.responseStart, resource.duration)}`}
+                            title={`Request: ${formatDuration(resource.responseStart - resource.requestStart)}`}
+                          ></div>
+                        )}
+                        {hasSegment(resource.responseStart, resource.responseEnd) && (
+                          <div 
+                            class="timing-segment response" 
+                            style={`width: ${calculateTimingWidth(resource.responseStart, resource.responseEnd, resource.duration)}`}
+                            title={`Response: ${formatDuration(resource.responseEnd - resource.responseStart)}`}
+                          ></div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </MetricsSection>
+</div>
+
+<style>
+  .resources-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .breakdown-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .type-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--text);
+    text-transform: capitalize;
+  }
+
+  .type-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+  }
+
+  .stat-label {
+    color: var(--muted);
+  }
+
+  .stat-value {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .filters-row {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .checkbox-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .checkbox-filter input[type="checkbox"] {
+    cursor: pointer;
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .filter-group label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .filter-group select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--text);
+    font-family: inherit;
+  }
+
+  .clear-btn {
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .clear-btn:hover {
+    opacity: 0.85;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .resources-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .resources-table thead {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .resources-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .resource-row {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .resource-row:hover {
+    background: var(--brand-bg);
+  }
+
+  .resource-row.blocking {
+    background: rgba(239, 68, 68, 0.05);
+  }
+
+  .resource-row.blocking:hover {
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  .resource-row td {
+    padding: 0.75rem 1rem;
+    color: var(--text);
+  }
+
+  .resource-row td.col-seq,
+  .resources-table th.col-seq {
+    width: 3rem;
+    text-align: right;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    padding-left: 0.25rem;
+    padding-right: 0.5rem;
+  }
+
+  .url-cell {
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .type-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .type-swatch {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 0.125rem;
+    flex-shrink: 0;
+  }
+
+  .type-swatch[data-type="html"]  { background: #4a7ec8; }
+  .type-swatch[data-type="js"]    { background: #c8a040; }
+  .type-swatch[data-type="css"]   { background: #4a9850; }
+  .type-swatch[data-type="image"] { background: #8050b8; }
+  .type-swatch[data-type="font"]  { background: #c83820; }
+  .type-swatch[data-type="video"] { background: #2a8048; }
+  .type-swatch[data-type="other"] { background: #787878; }
+
+  .blocking-badge {
+    display: inline-block;
+    background: var(--color-danger);
+    color: white;
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    margin-right: 0.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .detail-row td {
+    padding: 0;
+    background: var(--bg);
+  }
+
+  .resource-details {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .detail-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .detail-value {
+    font-size: 0.875rem;
+    color: var(--text);
+    word-break: break-all;
+  }
+
+  .timing-viz {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .timing-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .timing-bar {
+    display: flex;
+    height: 1.5rem;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .timing-segment {
+    height: 100%;
+    transition: opacity 0.2s;
+  }
+
+  .timing-segment:hover {
+    opacity: 0.8;
+  }
+
+  .timing-segment.dns {
+    background: #22c55e;
+  }
+
+  .timing-segment.connect {
+    background: #eab308;
+  }
+
+  .timing-segment.request {
+    background: #3b82f6;
+  }
+
+  .timing-segment.response {
+    background: #8b5cf6;
+  }
+</style>
+
+<script>
+  const resourceRows = document.querySelectorAll('.resource-row');
+  resourceRows.forEach((row) => {
+    row.addEventListener('click', () => {
+      const detailRow = row.nextElementSibling as HTMLElement;
+      if (detailRow && detailRow.classList.contains('detail-row')) {
+        const isVisible = detailRow.style.display !== 'none';
+        detailRow.style.display = isVisible ? 'none' : 'table-row';
+      }
+    });
+  });
+
+  const typeFilter = document.getElementById('filter-type') as HTMLSelectElement;
+  const statusFilter = document.getElementById('filter-status') as HTMLSelectElement;
+  const domainFilter = document.getElementById('filter-domain') as HTMLSelectElement;
+  const protocolFilter = document.getElementById('filter-protocol') as HTMLSelectElement;
+  const blockingFilter = document.getElementById('filter-blocking') as HTMLInputElement;
+  const clearBtn = document.getElementById('clear-filters') as HTMLButtonElement;
+  const tbody = document.getElementById('resources-tbody') as HTMLElement;
+
+  function getSelectedValues(select: HTMLSelectElement) {
+    return Array.from(select.selectedOptions).map(o => o.value).filter(v => v);
+  }
+
+  function applyFilters() {
+    const scrollY = window.scrollY;
+    
+    const selectedTypes = getSelectedValues(typeFilter);
+    const selectedStatuses = getSelectedValues(statusFilter);
+    const selectedDomains = getSelectedValues(domainFilter);
+    const selectedProtocols = getSelectedValues(protocolFilter);
+    const onlyBlocking = blockingFilter.checked;
+
+    tbody.querySelectorAll('.resource-row').forEach((row) => {
+      const dataStr = row.getAttribute('data-resource');
+      if (!dataStr) return;
+      
+      const resource = JSON.parse(dataStr);
+      const show = (
+        (selectedTypes.length === 0 || selectedTypes.includes(resource.fileType)) &&
+        (selectedStatuses.length === 0 || selectedStatuses.includes(String(resource.statusCode))) &&
+        (selectedDomains.length === 0 || selectedDomains.includes(resource.domain)) &&
+        (selectedProtocols.length === 0 || selectedProtocols.includes(resource.protocol)) &&
+        (!onlyBlocking || resource.isBlocking)
+      );
+      
+      (row as HTMLElement).style.display = show ? '' : 'none';
+      const detailRow = row.nextElementSibling as HTMLElement;
+      if (detailRow?.classList.contains('detail-row')) {
+        detailRow.style.display = 'none';
+      }
+    });
+    
+    window.scrollTo(0, scrollY);
+  }
+
+  typeFilter.addEventListener('change', applyFilters);
+  statusFilter.addEventListener('change', applyFilters);
+  domainFilter.addEventListener('change', applyFilters);
+  protocolFilter.addEventListener('change', applyFilters);
+  blockingFilter.addEventListener('change', applyFilters);
+
+  clearBtn.addEventListener('click', () => {
+    typeFilter.selectedIndex = -1;
+    statusFilter.selectedIndex = -1;
+    domainFilter.selectedIndex = -1;
+    protocolFilter.selectedIndex = -1;
+    blockingFilter.checked = false;
+    applyFilters();
+  });
+</script>
