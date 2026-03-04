@@ -5,8 +5,12 @@ permissions:
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'telescopetest-io/**'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'telescopetest-io/**'
 
 jobs:
   test:
