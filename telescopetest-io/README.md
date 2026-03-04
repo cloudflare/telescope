@@ -4,7 +4,13 @@ This is the website for users to upload and view Telescope ZIP results. This is 
 
 ## Project Setup
 
-To set up for local development, you need to initialize a few things:
+To set up for local development, you need to install project dependencies:
+
+```
+npm install
+```
+
+And initialize a few things:
 
 - create local database (will prompt you to confirm that you want to perform the DB migrations)
 - generate Prisma client (in `generated/prisma` folder)
