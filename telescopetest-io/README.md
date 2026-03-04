@@ -17,7 +17,7 @@ To accomplish all that, you can simply run:
 npm run dev:setup
 ```
 
-Now you should now be able to use the appication, run `npm run studio` to view local D1 data in Prisma Studio and create migrations.
+You should now be able to use the application and run `npm run studio` to view local D1 data in Prisma Studio and create migrations.
 
 ## Running Locally
 
