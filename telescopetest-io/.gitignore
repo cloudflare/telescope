@@ -33,4 +33,4 @@ pnpm-debug.log*
 worker-configuration.d.ts
 
 # prisma 
-/generated/prisma
+/generated
