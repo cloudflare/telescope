@@ -29,8 +29,18 @@ const navItems = [
     </nav>
   </div>
   <div class="actions">
-    <button class="theme-toggle" type="button" aria-label="Toggle theme"
-    ></button>
+    <div class="theme-switch-wrapper">
+      <span class="theme-icon">☀️</span>
+      <label class="theme-toggle" title="Toggle theme">
+        <input
+          type="checkbox"
+          id="theme-toggle-input"
+          aria-label="Toggle theme"
+        />
+        <span class="slider"></span>
+      </label>
+      <span class="theme-icon">🌙</span>
+    </div>
     <a
       class="gh"
       href="https://github.com/cloudflare/telescope"
@@ -111,41 +121,66 @@ const navItems = [
     gap: 0.875rem; /* 14px */
   }
 
-  .theme-toggle {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    cursor: pointer;
-    padding: 0.375rem 0.625rem; /* 6px 10px */
-    border-radius: 0.75rem; /* 12px */
-    font-size: 1rem; /* 16px */
-    line-height: 1;
-    transition: all 0.2s ease;
+  .theme-switch-wrapper {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.25rem; /* 4px */
   }
 
-  .theme-toggle::after {
-    content: '🌙';
+  .theme-icon {
+    font-size: 0.875rem; /* 14px */
+    user-select: none;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .theme-toggle::after {
-      content: '☀️';
-    }
+  .theme-toggle {
+    position: relative;
+    display: inline-block;
+    width: 2.25rem; /* 36px */
+    height: 1.25rem; /* 20px */
   }
 
-  :global([data-theme-override='dark']) .theme-toggle::after {
-    content: '☀️';
+  .theme-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
   }
 
-  :global([data-theme-override='light']) .theme-toggle::after {
-    content: '🌙';
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--panel);
+    transition: 0.3s;
+    border-radius: 1.25rem; /* 20px */
+    border: 1px solid var(--border);
   }
 
-  .theme-toggle:hover {
-    background: var(--panel);
+  .slider:before {
+    position: absolute;
+    content: '';
+    height: 0.875rem; /* 14px */
+    width: 0.875rem; /* 14px */
+    left: 0.125rem; /* 2px */
+    bottom: 0.125rem; /* 2px */
+    background-color: var(--text);
+    transition: 0.3s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider {
+    background-color: var(--brand-bg);
+    border-color: var(--brand);
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(1rem); /* 16px */
+    background-color: var(--brand);
+  }
+
+  .theme-toggle:hover .slider {
     border-color: var(--brand-hover);
   }
 
@@ -188,18 +223,22 @@ const navItems = [
     document.documentElement.setAttribute('data-theme-override', savedTheme);
   }
 
-  const button = document.querySelector('.theme-toggle') as HTMLButtonElement;
+  const themeInput = document.querySelector(
+    '#theme-toggle-input',
+  ) as HTMLInputElement;
 
-  if (button) {
-    button.addEventListener('click', () => {
-      const isDark = document.documentElement.getAttribute(
-        'data-theme-override',
-      )
-        ? document.documentElement.getAttribute('data-theme-override') ===
-          'dark'
-        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (themeInput) {
+    // Set initial state
+    const isDark = document.documentElement.getAttribute(
+      'data-theme-override',
+    )
+      ? document.documentElement.getAttribute('data-theme-override') === 'dark'
+      : window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-      const newTheme = isDark ? 'light' : 'dark';
+    themeInput.checked = isDark;
+
+    themeInput.addEventListener('change', () => {
+      const newTheme = themeInput.checked ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme-override', newTheme);
       setCookie('theme-override', newTheme, 365);
     });
