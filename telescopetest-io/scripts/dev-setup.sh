@@ -22,7 +22,7 @@ fi
 
 # 4. Apply migrations to the local D1 database
 echo "Applying migrations to local D1 database..."
-npx wrangler d1 migrations apply telescope-db-development --local --env development
+npm run migrate:local
 
 # 5. Generate Prisma Client
 echo "Generating Prisma Client..."
