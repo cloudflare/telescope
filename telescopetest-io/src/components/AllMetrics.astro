@@ -1,36 +1,483 @@
 ---
-import type { MetricsJson } from '@/lib/types/results';
-import NavigationTiming from './metrics/NavigationTiming.astro';
-import PaintTiming from './metrics/PaintTiming.astro';
-import UserTiming from './metrics/UserTiming.astro';
-import LargestContentfulPaint from './metrics/LargestContentfulPaint.astro';
-import LayoutShifts from './metrics/LayoutShifts.astro';
+import type {
+  MetricsJson,
+  ServerTiming,
+  UserTiming,
+} from '@/lib/types/metrics';
+import MetricCard from '@/components/MetricCard.astro';
+import Section from '@/components/Section.astro';
+import { getLcp, getCls } from '@/lib/utils/cwv';
+import { formatDuration } from '@/lib/utils/formatters';
 
 export interface Props {
   metrics: MetricsJson | null;
 }
 
 const { metrics } = Astro.props;
+
+// ── CWV ──────────────────────────────────────────────────────────────────────
+const lcp = getLcp(metrics);
+const cls = getCls(metrics);
+
+// ── Navigation timing chart ───────────────────────────────────────────────────
+const nav = metrics?.navigationTiming;
+
+type Segment = {
+  label: string;
+  durationMs: number;
+  left: string;
+  width: string;
+  color: string;
+};
+
+const BAR_COLORS: Record<string, string> = {
+  Redirect: '#a78bfa',
+  'DNS Lookup': '#60a5fa',
+  'TCP Connect': '#34d399',
+  TLS: '#fbbf24',
+  'Request / TTFB': '#f97316',
+  'Response Download': '#22d3ee',
+  'DOM Processing': '#818cf8',
+  'Load Event': '#fb7185',
+};
+
+let navSegments: Segment[] = [];
+let navAxisLabels: { left: string; label: string }[] = [];
+
+if (nav) {
+  const base = nav.fetchStart ?? 0;
+  const total = Math.max((nav.loadEventEnd ?? nav.duration ?? 0) - base, 1);
+
+  function pct(ms: number) {
+    return `${Math.max(0, Math.min(100, (ms / total) * 100)).toFixed(3)}%`;
+  }
+  function addSeg(label: string, s: number | undefined, e: number | undefined) {
+    if (s === undefined || e === undefined) return;
+    const dur = e - s;
+    if (dur <= 0) return;
+    navSegments.push({
+      label,
+      durationMs: Math.round(dur),
+      left: pct(s - base),
+      width: pct(dur),
+      color: BAR_COLORS[label] ?? '#94a3b8',
+    });
+  }
+
+  if ((nav.redirectEnd ?? 0) > (nav.redirectStart ?? 0)) {
+    addSeg('Redirect', nav.redirectStart, nav.redirectEnd);
+  }
+  addSeg('DNS Lookup', nav.domainLookupStart, nav.domainLookupEnd);
+  addSeg(
+    'TCP Connect',
+    nav.connectStart,
+    nav.secureConnectionStart &&
+      nav.secureConnectionStart > (nav.connectStart ?? 0)
+      ? nav.secureConnectionStart
+      : nav.connectEnd,
+  );
+  if (nav.secureConnectionStart && nav.secureConnectionStart > 0) {
+    addSeg('TLS', nav.secureConnectionStart, nav.connectEnd);
+  }
+  addSeg('Request / TTFB', nav.requestStart, nav.responseStart);
+  addSeg('Response Download', nav.responseStart, nav.responseEnd);
+  addSeg('DOM Processing', nav.responseEnd, nav.domContentLoadedEventEnd);
+  addSeg('Load Event', nav.loadEventStart, nav.loadEventEnd);
+
+  navAxisLabels = [0, 0.25, 0.5, 0.75, 1].map(f => ({
+    left: `${(f * 100).toFixed(1)}%`,
+    label: `${Math.round(f * total)} ms`,
+  }));
+}
+
+// ── Server timing ─────────────────────────────────────────────────────────────
+const serverTiming: ServerTiming[] = nav?.serverTiming ?? [];
+
+// ── User timing ───────────────────────────────────────────────────────────────
+const userTiming: UserTiming[] = metrics?.userTiming ?? [];
+const measures = userTiming.filter(u => u.entryType === 'measure');
+const marks = userTiming.filter(u => u.entryType === 'mark');
 ---
 
 {
   metrics && (
-    <div class="metrics-display">
-      <NavigationTiming nav={metrics.navigationTiming} />
-      <PaintTiming paintTiming={metrics.paintTiming} />
-      <UserTiming userTiming={metrics.userTiming} />
-      <LargestContentfulPaint
-        largestContentfulPaint={metrics.largestContentfulPaint}
+    <div class="all-metrics">
+      {/* ── Core Web Vitals ───────────────────────────────────────────────── */}
+      <MetricCard
+        heading="Core Web Vitals"
+        metrics={[
+          {
+            label: 'LCP',
+            value: lcp.formatted,
+            unit: 'ms',
+            rating: lcp.rating,
+          },
+          { label: 'CLS', value: cls.formatted, rating: cls.rating },
+        ]}
       />
-      <LayoutShifts layoutShifts={metrics.layoutShifts} />
+
+      {/* ── Navigation Timing ─────────────────────────────────────────────── */}
+      <Section
+        title="Navigation Timing"
+        isEmpty={!nav}
+        emptyMessage="No navigation timing data"
+      >
+        {nav && (
+          <div class="nav-body">
+            {nav.name && (
+              <div class="nav-url-row">
+                <span class="nav-url-label">URL</span>
+                <span class="nav-url-value">{nav.name}</span>
+              </div>
+            )}
+            <div class="nav-chart">
+              {navSegments.map(s => (
+                <div class="nav-row">
+                  <div class="nav-row-label">{s.label}</div>
+                  <div class="nav-track">
+                    <div
+                      class="nav-bar"
+                      style={`left:${s.left}; width:${s.width}; background:${s.color};`}
+                    >
+                      <span class="nav-bar-ms">{s.durationMs} ms</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div class="nav-axis">
+                {navAxisLabels.map((t, i) => (
+                  <span
+                    class="nav-tick"
+                    style={`left:${t.left}; ${i === navAxisLabels.length - 1 ? 'transform:translateX(-100%)' : i > 0 ? 'transform:translateX(-50%)' : ''}`}
+                  >
+                    {t.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </Section>
+
+      {/* ── Server Timing ─────────────────────────────────────────────────── */}
+      <Section
+        title="Server Timing"
+        isEmpty={serverTiming.length === 0}
+        emptyMessage="No server timing data — the server did not send a Server-Timing header"
+      >
+        <div class="st-grid">
+          {serverTiming.map(item => (
+            <div class="st-card">
+              <div class="st-name">{item.name}</div>
+              <div class="st-duration">{Math.round(item.duration)} ms</div>
+              {item.description && (
+                <div class="st-desc">{item.description}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* ── User Timing ───────────────────────────────────────────────────── */}
+      <Section
+        title="User Timing"
+        isEmpty={userTiming.length === 0}
+        emptyMessage="No user timing data — the page did not emit any performance.mark() or performance.measure() entries"
+      >
+        {measures.length > 0 && (
+          <div class="ut-subsection">
+            <div class="ut-subheading">Measures</div>
+            <div class="ut-measures">
+              {measures.map(m => (
+                <div class="ut-measure-card">
+                  <div class="ut-measure-name">{m.name}</div>
+                  <div class="ut-measure-value">
+                    {formatDuration(m.duration)}
+                  </div>
+                  <div class="ut-measure-meta">
+                    start: {Math.round(m.startTime)} ms
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {marks.length > 0 && (
+          <div
+            class:list={[
+              'ut-subsection',
+              { 'ut-subsection--top-border': measures.length > 0 },
+            ]}
+          >
+            <div class="ut-subheading">
+              Marks
+              <span class="ut-count">{marks.length}</span>
+            </div>
+            <div class="ut-marks-table">
+              <div class="ut-marks-header">
+                <span>Name</span>
+                <span class="ut-col-r">Start</span>
+              </div>
+              {marks.map(m => (
+                <div class="ut-marks-row">
+                  <span class="ut-mark-name">{m.name}</span>
+                  <span class="ut-col-r ut-mark-time">
+                    {Math.round(m.startTime)} ms
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Section>
     </div>
   )
 }
 
 <style>
-  .metrics-display {
+  .all-metrics {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.5rem;
+  }
+
+  /* ── Navigation timing chart ── */
+  .nav-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .nav-url-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.5rem 0.625rem;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .nav-url-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .nav-url-value {
+    font-size: 0.75rem;
+    color: var(--text);
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  .nav-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3125rem;
+  }
+
+  .nav-row {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .nav-row-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav-track {
+    position: relative;
+    height: 1.5rem;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .nav-bar {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    border-radius: 3px;
+    min-width: 2px;
+    display: flex;
+    align-items: center;
+    padding: 0 0.3rem;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .nav-bar-ms {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.6);
+    white-space: nowrap;
+  }
+
+  .nav-axis {
+    position: relative;
+    height: 1rem;
+    margin-left: calc(9rem + 0.625rem);
+    margin-top: 0.125rem;
+  }
+
+  .nav-tick {
+    position: absolute;
+    font-size: 0.5625rem;
+    color: var(--muted);
+    white-space: nowrap;
+    line-height: 1;
+    top: 0;
+  }
+
+  /* ── Server timing ── */
+  .st-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: 0.5rem;
+  }
+  .st-card {
+    padding: 0.625rem 0.75rem;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  .st-name {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .st-duration {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .st-desc {
+    font-size: 0.6875rem;
+    color: var(--muted);
+  }
+
+  /* ── User timing ── */
+  .ut-subsection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .ut-subsection--top-border {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .ut-subheading {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .ut-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.07);
+    border-radius: 9999px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0.1em 0.5em;
+    color: var(--muted);
+  }
+
+  /* Measures */
+  .ut-measures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .ut-measure-card {
+    flex: 1 1 9rem;
+    min-width: 9rem;
+    max-width: 16rem;
+    padding: 0.625rem 0.75rem;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .ut-measure-name {
+    font-size: 0.6875rem;
+    color: var(--muted);
+    word-break: break-word;
+    line-height: 1.3;
+  }
+  .ut-measure-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .ut-measure-meta {
+    font-size: 0.625rem;
+    color: var(--muted);
+  }
+
+  /* Marks table */
+  .ut-marks-table {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 0.6875rem;
+  }
+  .ut-marks-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    padding: 0.375rem 0.625rem;
+    background: rgba(0, 0, 0, 0.04);
+    font-weight: 600;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .ut-marks-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    padding: 0.3125rem 0.625rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .ut-marks-row:last-child {
+    border-bottom: none;
+  }
+  .ut-marks-row:nth-child(even) {
+    background: rgba(0, 0, 0, 0.015);
+  }
+  .ut-col-r {
+    text-align: right;
+  }
+  .ut-mark-name {
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.4;
+  }
+  .ut-mark-time {
+    white-space: nowrap;
+    color: var(--muted);
+    font-weight: 500;
   }
 </style>

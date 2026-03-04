@@ -1,8 +1,8 @@
 ---
 import type {ResourceTiming, EnrichedResource, TypeStats} from '@/lib/types/resources';
-import type {NavigationTiming} from '@/lib/types/results';
-import Summary from './Summary.astro';
-import MetricsSection from './metrics/MetricsSection.astro';
+import type {NavigationTiming} from '@/lib/types/metrics';
+import MetricCard from './MetricCard.astro';
+import Section from './Section.astro';
 import {
   calculateSummary,
   calculateTypeBreakdown,
@@ -70,7 +70,7 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
 
 <div class="resources-container">
   <!-- Summary Cards -->
-  <Summary
+  <MetricCard
     heading="Resources Summary"
     metrics={[
       {
@@ -94,7 +94,7 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
   />
 
   <!-- File Type Breakdown -->
-  <MetricsSection title="File Type Breakdown">
+  <Section title="File Type Breakdown">
     <div class="breakdown-grid">
       {Object.entries(typeBreakdown).map(([type, stats]) => (
         <div class="breakdown-card">
@@ -116,10 +116,10 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
         </div>
       ))}
     </div>
-  </MetricsSection>
+  </Section>
 
   <!-- Filters -->
-  <MetricsSection title="Filters">
+  <Section title="Filters">
     <div class="filters-row">
       <label class="checkbox-filter">
         <input type="checkbox" id="filter-blocking" />
@@ -165,10 +165,10 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
       </div>
     </div>
     <button id="clear-filters" class="clear-btn">Clear Filters</button>
-  </MetricsSection>
+  </Section>
 
   <!-- Resources Table -->
-  <MetricsSection title="Resources">
+  <Section title="Resources">
     <div class="table-wrapper">
       <table class="resources-table">
         <thead>
@@ -268,7 +268,7 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
         </tbody>
       </table>
     </div>
-  </MetricsSection>
+  </Section>
 </div>
 
 <style>
