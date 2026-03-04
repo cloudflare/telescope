@@ -13,8 +13,13 @@ echo "Setting up .env file..."
 SQLITE_FILE=$(find .wrangler/state/v3/d1/miniflare-D1DatabaseObject -name "*.sqlite" | head -n 1)
 if [ -n "$SQLITE_FILE" ]; then
   # Use relative path as per README
-  echo "DATABASE_URL=\"file:$SQLITE_FILE\"" > .env
-  echo ".env file created with DATABASE_URL=\"file:$SQLITE_FILE\""
+  if [ -f .env ]; then
+    # Preserve other environment variables by removing any existing DATABASE_URL entries
+    grep -v '^DATABASE_URL=' .env > .env.tmp
+    mv .env.tmp .env
+  fi
+  echo "DATABASE_URL=\"file:$SQLITE_FILE\"" >> .env
+  echo ".env file updated with DATABASE_URL=\"file:$SQLITE_FILE\""
 else
   echo "Error: Could not find sqlite file in .wrangler/state/v3/d1/miniflare-D1DatabaseObject"
   exit 1
