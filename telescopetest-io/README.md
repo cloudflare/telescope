@@ -6,7 +6,7 @@ This is the website for users to upload and view Telescope ZIP results. This is 
 
 To set up for local development, you need to initialize a few things:
 
-- create local database (will prompty you to confirm that you want to perform the DB migrations)
+- create local database (will prompt you to confirm that you want to perform the DB migrations)
 - generate Prisma client (in `generated/prisma` folder)
 - create R2 bucket (might prompt you to log into your Cloudflare account)
 - generate TypeScript types to match wrangler configuration (`worker-configuration.d.ts`)
