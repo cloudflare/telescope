@@ -4,6 +4,7 @@ import { createServer, type Server } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { beforeAll, afterAll, describe, expect, test } from 'vitest';
 
 import type { BrowserName } from '../src/types.js';
 import type { DelayMethod } from '../src/delay.js';
@@ -94,7 +95,7 @@ describe.each(browsers)('Delaying response - %s', browser => {
       expect(resources).not.toBeNull();
 
       if (resources === null) {
-        return fail('Resources should not be null');
+        expect.fail('Resources should not be null');
       }
 
       const imageResources = resources.filter((r: ResourceTiming) =>

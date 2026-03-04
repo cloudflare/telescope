@@ -60,6 +60,12 @@ CODE CONVENTIONS:
 - Named exports only (except Astro pages/components)
 - Repository functions in test-repository.ts with JSDoc
 - API responses: `{ success, error?, ... }` with proper HTTP status
+- No blank lines inside function bodies — blank lines between top-level declarations only
+- No column-alignment padding in variable declarations (no `const foo    = x`)
+- Client-side utilities (pure functions, types) go in `src/lib/<feature>/` — no inline redeclaration in script blocks
+- Astro `<script>` blocks use ESM imports from `src/lib/`; Vite bundles them for the browser
+- HAR types live in `src/lib/types/har.ts` — never redeclare them inline in a script block
+- `type` for read/data models; `interface` for component Props
 
 USER PREFERENCES:
 
