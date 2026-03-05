@@ -67,7 +67,7 @@ export function uniqueTypes(entries: HarEntry[]): string[] {
 
 /** Format a page-timing value as a human-readable label, e.g. "DCL 1.23s". */
 export function fmtEventLabel(label: string, ms: number): string {
-  return `${label} ${ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${Math.round(ms)}ms`}`;
+  return `${label} ${Math.round(ms)}ms`;
 }
 
 /** Extract DCL and Load events from HAR page timings, filtered to valid values. */

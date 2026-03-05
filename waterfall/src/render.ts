@@ -109,10 +109,7 @@ function renderRuler(totalMs: number): string {
     targets[targets.length - 1])!;
   const ticks: string[] = [];
   for (let ms = interval; ms < totalMs; ms += interval) {
-    const label =
-      ms >= 1000
-        ? `${(ms / 1000).toFixed(ms % 1000 === 0 ? 0 : 1)}s`
-        : `${ms}ms`;
+    const label = `${parseFloat((ms / 1000).toFixed(3))}s`;
     ticks.push(
       `<span class="wf-tick" style="left:${((ms / totalMs) * 100).toFixed(4)}%">${esc(label)}</span>`,
     );
@@ -278,10 +275,7 @@ function renderRow(
 
   return `<li class="${rowClasses}" ${dataAttrs}>
       <span class="wf-cell wf-cell--idx">${visIdx}</span>
-      <span class="wf-cell wf-cell--url" title="${esc(entry.request.url)}">
-        <span class="wf-url-domain">${esc(domain)}</span>
-        ${pathCell}
-      </span>
+      <span class="wf-cell wf-cell--url" title="${esc(entry.request.url)}"><span class="wf-url-domain">${esc(domain)}</span>${pathCell}</span>
       <span class="wf-cell wf-cell--info">${esc(entry.request.method)}</span>
       <span class="wf-cell wf-cell--info">${esc(entry.request.httpVersion)}</span>
       <span class="wf-cell wf-cell--info wf-cell--stat ${statusCls}">${status}</span>

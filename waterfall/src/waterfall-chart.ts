@@ -822,10 +822,7 @@ export class WaterfallChart extends HTMLElement {
     for (let ms = interval; ms < this._totalMs; ms += interval) {
       const tick = el('span', { className: 'wf-tick' });
       tick.style.left = `${(ms / this._totalMs) * 100}%`;
-      tick.textContent =
-        ms >= 1000
-          ? `${(ms / 1000).toFixed(ms % 1000 === 0 ? 0 : 1)}s`
-          : `${ms}ms`;
+      tick.textContent = `${parseFloat((ms / 1000).toFixed(3))}s`;
       this._rulerEl.appendChild(tick);
     }
   }
@@ -901,7 +898,7 @@ export class WaterfallChart extends HTMLElement {
         String(visIdx),
       );
 
-      // URL (domain + path stacked)
+      // URL (domain + path inline)
       const cellUrl = el('span', { className: 'wf-cell wf-cell--url' });
       cellUrl.title = entry.request.url;
       cellUrl.appendChild(el('span', { className: 'wf-url-domain' }, domain));
