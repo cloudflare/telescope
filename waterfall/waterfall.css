@@ -315,6 +315,7 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 .wf-list-wrap {
   position: relative;
   overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--wf-border);
   border-radius: 0.75rem;
 }
@@ -351,6 +352,7 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   position: relative;
   padding-bottom: 0;
   border-left: 1px solid var(--wf-border);
+  overflow: visible;
 }
 
 /* ── Column grid variables ───────────────────────────────────────────────────
@@ -638,17 +640,33 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 }
 
 /* ── Event-line overlay ──────────────────────────────────────────────────────
-   Absolutely positioned over the full .wf-list-wrap, pointer-events off.
+   The overlay lives inside .wf-col-header--timeline so its width equals the
+   timeline column width. left:X% on children therefore aligns exactly with
+   ruler ticks and bar positions in both CSS-only and JS-upgraded modes.
+   The overlay extends downward over the full list via a large fixed height;
+   .wf-list-wrap clips it with overflow-y:hidden.
    --------------------------------------------------------------------------- */
+
+.wf-grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--wf-border);
+  opacity: 0.6;
+}
+
 .wf-events-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  /* JS sets --wf-overlay-h on .wf-list-wrap to the wrap's exact offsetHeight.
+     The 9999px fallback is only used in the CSS-only (no-JS) case and is
+     clipped by .wf-list-wrap overflow-y:hidden. */
+  height: var(--wf-overlay-h, 9999px);
   pointer-events: none;
   z-index: 2;
-  overflow: hidden;
 }
 .wf-event-line {
   position: absolute;

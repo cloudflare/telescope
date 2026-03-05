@@ -181,7 +181,9 @@ export class WaterfallChart extends HTMLElement {
     this._colHeadersEl = this.querySelector('.wf-col-headers') as HTMLElement;
     this._listEl = this.querySelector('.wf-list') as HTMLOListElement;
     this._rulerEl = this.querySelector('.wf-ruler') as HTMLElement;
-    this._overlayEl = this.querySelector('.wf-events-overlay') as HTMLElement;
+    this._overlayEl = this.querySelector(
+      '.wf-col-header--timeline .wf-events-overlay',
+    ) as HTMLElement;
     this._filtersEl = this.querySelector('.wf-filters') as HTMLElement;
     this._toggleBtn = this.querySelector(
       '.wf-toggle-cols',
@@ -422,17 +424,17 @@ export class WaterfallChart extends HTMLElement {
     toolbar.append(this._filtersEl, this._toggleBtn);
 
     // ── List wrapper ──────────────────────────────────────────────────────────
+
+    // Column header row
+    this._rulerEl = el('div', { className: 'wf-ruler', 'aria-hidden': 'true' });
     this._overlayEl = el('div', {
       className: 'wf-events-overlay',
       'aria-hidden': 'true',
     });
-
-    // Column header row
-    this._rulerEl = el('div', { className: 'wf-ruler', 'aria-hidden': 'true' });
     const timelineHeader = el('div', {
       className: 'wf-col-header wf-col-header--timeline',
     });
-    timelineHeader.appendChild(this._rulerEl);
+    timelineHeader.append(this._rulerEl, this._overlayEl);
 
     this._colHeadersEl = el('div', {
       className: 'wf-col-headers',
@@ -463,7 +465,7 @@ export class WaterfallChart extends HTMLElement {
     this._listEl.setAttribute('aria-label', 'Network requests');
 
     this._listWrapEl = el('div', { className: 'wf-list-wrap' });
-    this._listWrapEl.append(this._overlayEl, this._colHeadersEl, this._listEl);
+    this._listWrapEl.append(this._colHeadersEl, this._listEl);
 
     // ── State messages ────────────────────────────────────────────────────────
     this._loadingEl = el(
@@ -814,12 +816,19 @@ export class WaterfallChart extends HTMLElement {
 
   // ── Ruler ─────────────────────────────────────────────────────────────────
 
-  private _renderRuler() {
-    this._rulerEl.innerHTML = '';
+  private _tickPositions(): number[] {
     const targets = [50, 100, 200, 250, 500, 1000, 2000, 5000] as const;
     const interval: number = (targets.find((t) => t >= this._totalMs / 8) ??
       targets[targets.length - 1])!;
-    for (let ms = interval; ms < this._totalMs; ms += interval) {
+    const positions: number[] = [];
+    for (let ms = interval; ms < this._totalMs; ms += interval)
+      positions.push(ms);
+    return positions;
+  }
+
+  private _renderRuler() {
+    this._rulerEl.innerHTML = '';
+    for (const ms of this._tickPositions()) {
       const tick = el('span', { className: 'wf-tick' });
       tick.style.left = `${(ms / this._totalMs) * 100}%`;
       tick.textContent = `${parseFloat((ms / 1000).toFixed(3))}s`;
@@ -831,22 +840,33 @@ export class WaterfallChart extends HTMLElement {
 
   private _renderEventLines() {
     this._overlayEl.innerHTML = '';
-    // Measure the timeline column header to get its pixel position
-    const timelineHeader = this._colHeadersEl.querySelector(
-      '.wf-col-header--timeline',
-    ) as HTMLElement | null;
-    if (!timelineHeader) return;
-    const pad = parseFloat(getComputedStyle(timelineHeader).paddingLeft) || 8;
-    const innerLeft = timelineHeader.offsetLeft + pad;
-    const innerWidth = timelineHeader.offsetWidth - pad * 2;
-    if (innerWidth <= 0) return;
+    if (this._totalMs <= 0) return;
+
+    // The overlay lives inside .wf-col-header--timeline, so its width equals
+    // the timeline column width. left:X% therefore aligns with ruler ticks and
+    // bar positions — same coordinate space, no measurement needed.
+
+    // Size the overlay to exactly match the list-wrap height so it doesn't
+    // extend beyond the component boundary.
+    this._listWrapEl.style.setProperty(
+      '--wf-overlay-h',
+      `${this._listWrapEl.offsetHeight}px`,
+    );
+
+    // Grid lines — one per ruler tick, rendered first (behind event lines)
+    for (const ms of this._tickPositions()) {
+      const gridLine = el('div', { className: 'wf-grid-line' });
+      gridLine.style.left = `${(ms / this._totalMs) * 100}%`;
+      this._overlayEl.appendChild(gridLine);
+    }
+
     for (const { ms, cls, label } of pageEvents(
       this._pageTimings,
       this._totalMs,
     )) {
       const line = el('div', { className: `wf-event-line ${cls}` });
       line.dataset.label = fmtEventLabel(label, ms);
-      line.style.left = `${innerLeft + (ms / this._totalMs) * innerWidth}px`;
+      line.style.left = `${(ms / this._totalMs) * 100}%`;
       this._overlayEl.appendChild(line);
     }
   }
