@@ -5,6 +5,7 @@ import Section from '@/components/Section.astro';
 import { getLcp, getCls } from '@/lib/utils/cwv';
 import { formatDuration } from '@/lib/utils/formatters';
 import { getTtfb } from '@/lib/utils/extractors';
+import { buildNavTimingDiagram } from '@/lib/utils/navTiming';
 
 export interface Props {
   metrics: MetricsJson | null;
@@ -15,492 +16,288 @@ const { metrics } = Astro.props;
 const lcp  = getLcp(metrics);
 const cls  = getCls(metrics);
 const ttfb = getTtfb(metrics);
+const nav  = metrics?.navigationTiming;
 
-const nav = metrics?.navigationTiming;
+// Diagram layout constants
+const AXIS_FRACS = [0, 0.25, 0.5, 0.75, 1];
+const SEG_GAP_PX = 2;
+const LANE_STEP  = 1.4;                  // rem per tick lane
+const LANE_TOP   = [0, LANE_STEP, LANE_STEP * 2, LANE_STEP * 3];
+const TICK_ROW_H = LANE_STEP * 4 + 0.6; // total tick-row height (rem)
 
-const ttfbField =
-  nav?.firstInterimResponseStart && nav.firstInterimResponseStart > 0
-    ? 'firstInterimResponseStart'
-    : nav?.finalResponseHeadersStart && nav.finalResponseHeadersStart > 0
-      ? 'finalResponseHeadersStart'
-      : 'responseStart';
+const diagram = nav ? buildNavTimingDiagram(nav) : null;
+const {
+  totalMs          = 1,
+  frTicks          = [],
+  pageTicks        = [],
+  frSpans          = [],
+  pageSegs         = [],
+  frLegend         = [],
+  pageLegend       = [],
+  ttfbMarker       = null,
+  hasFuzzyDom      = false,
+  navTimestampRows = [],
+} = diagram ?? {};
 
-// Tick: a vertical stem + label anchored at an exact % position on the timeline.
-// align='left'  → label text flows rightward  (used when leftPct ≤ 75)
-// align='right' → label text flows leftward   (used when leftPct > 75, transform translateX(-100%))
-type Tick = { field: string; leftPct: number; msRel: number; lane: number; align: 'left' | 'right' };
-type Span = { label: string; ms: number; leftPct: number; widthPct: number; color: string };
-// Page-scoped segments: DOM is one bar with a gradient left edge; Load Event is separate
-type PageSeg = { label: string; ms: number; leftPct: number; widthPct: number; bg: string };
-// TTFB marker on the FR bar
-type TtfbMarker = { leftPct: number; ms: number };
-
-let frTicks:  Tick[] = [];
-let pageTicks: Tick[] = [];
-let frSpans:  Span[] = [];
-let pageSegs: PageSeg[] = [];
-let ttfbMarker: TtfbMarker | null = null;
-let totalMs = 1;
-let navTimestampRows: { field: string; msRaw: number; msRel: number; note?: string }[] = [];
-let hasFuzzyDom = false;
-
-  const AXIS_FRACS = [0, 0.25, 0.5, 0.75, 1];
-  // Pixel gap between adjacent bar segments (applied as right-side inset on non-last segments)
-  const SEG_GAP_PX = 2;
-
-  // Build a tick at a specific % position. Lane cycles 0-3 across the list.
-  let _laneCounter = 0;
-  function makeTick(field: string, leftPct: number, msRel: number): Tick {
-    return {
-      field,
-      leftPct,
-      msRel,
-      lane: _laneCounter++ % 4,
-      align: leftPct > 75 ? 'right' : 'left',
-    };
-  }
-
-// Legend data computed after spans are built
-type LegendItem = { label: string; ms: number; color: string; note?: string; secondary?: string };
-let frLegend: LegendItem[] = [];
-let pageLegend: LegendItem[] = [];
-
-if (nav) {
-  const base = nav.fetchStart ?? 0;
-  totalMs = Math.max((nav.loadEventEnd ?? nav.duration ?? 0) - base, 1);
-
-  const pct = (ts: number | undefined): number => {
-    if (ts === undefined) return 0;
-    return Math.max(0, Math.min(100, ((ts - base) / totalMs) * 100));
-  };
-
-  const durPct = (s: number, e: number): number =>
-    Math.max(0, Math.min(100 - pct(s), ((e - s) / totalMs) * 100));
-
-  const hasRedirect = (nav.redirectEnd ?? 0) > (nav.redirectStart ?? 0);
-  const hasTls = (nav.secureConnectionStart ?? 0) > 0;
-
-  // Tick generation is deferred until after spans are built,
-  // so we can derive positions directly from computed span boundaries.
-
-  // ── First-request spans ──
-  const addFrSpan = (label: string, s: number | undefined, e: number | undefined, color: string) => {
-    if (s === undefined || e === undefined || e <= s) return;
-    frSpans.push({ label, ms: Math.round(e - s), leftPct: pct(s), widthPct: durPct(s, e), color });
-  };
-  if (hasRedirect) addFrSpan('Redirect', nav.redirectStart, nav.redirectEnd, '#a0a0a0');
-  addFrSpan('DNS', nav.domainLookupStart, nav.domainLookupEnd, '#1a6b52');
-  const tcpEnd = hasTls ? nav.secureConnectionStart : nav.connectEnd;
-  addFrSpan('TCP', nav.connectStart, tcpEnd, '#e07820');
-  if (hasTls) addFrSpan('TLS', nav.secureConnectionStart, nav.connectEnd, '#7b3fb0');
-  addFrSpan('Request',  nav.requestStart,  nav.responseStart, '#c8b432');
-  addFrSpan('Response', nav.responseStart, nav.responseEnd,   '#4a90d9');
-
-  frLegend = frSpans.map(s => ({ label: s.label, ms: s.ms, color: s.color }));
-  // Add TTFB as a plain legend item (amber swatch, ms value, secondary field name)
-  frLegend.push({ label: 'TTFB', ms: Math.round(ttfb.value ?? 0), color: '#f59e0b', secondary: `via ${ttfbField}` });
-
-  // ── First-request ticks (derived from span boundaries) ──
-  // Each span contributes a start tick (at leftPct) and an end tick (at leftPct + widthPct).
-  // Duplicate positions are deduplicated so adjacent segments share one tick.
-  {
-    const seen = new Set<string>();
-    const addFrTick = (field: string, leftPct: number, msRel: number) => {
-      const key = leftPct.toFixed(2);
-      if (seen.has(key)) return;
-      seen.add(key);
-      frTicks.push(makeTick(field, leftPct, msRel));
-    };
-
-    // fetchStart is always the first tick (0%)
-    addFrTick('fetchStart', 0, 0);
-
-    // For each span: start tick uses the segment label's source field, end tick uses the next boundary
-    const frBoundaryFields: Record<string, { start: string; end: string }> = {
-      'Redirect': { start: 'redirectStart',      end: 'redirectEnd' },
-      'DNS':      { start: 'domainLookupStart',   end: 'domainLookupEnd' },
-      'TCP':      { start: 'connectStart',        end: hasTls ? 'secureConnectionStart' : 'connectEnd' },
-      'TLS':      { start: 'secureConnectionStart', end: 'connectEnd' },
-      'Request':  { start: 'requestStart',        end: 'responseStart' },
-      'Response': { start: 'responseStart',       end: 'responseEnd' },
-    };
-
-    for (const span of frSpans) {
-      const fields = frBoundaryFields[span.label];
-      if (!fields) continue;
-      // Start tick at left edge
-      const startTs = nav[fields.start as keyof typeof nav] as number | undefined;
-      if (startTs !== undefined) addFrTick(fields.start, span.leftPct, Math.round(startTs - base));
-      // End tick at right edge (leftPct + widthPct = right side of the colored bar)
-      const endTs = nav[fields.end as keyof typeof nav] as number | undefined;
-      const endPct = span.leftPct + span.widthPct;
-      if (endTs !== undefined) addFrTick(fields.end, endPct, Math.round(endTs - base));
-    }
-  }
-
-  // TTFB marker position on the FR bar (at the ttfb timestamp)
-  {
-    const ttfbTs =
-      nav.firstInterimResponseStart && nav.firstInterimResponseStart > 0 ? nav.firstInterimResponseStart
-      : nav.finalResponseHeadersStart && nav.finalResponseHeadersStart > 0 ? nav.finalResponseHeadersStart
-      : nav.responseStart;
-    if (ttfbTs !== undefined) {
-      ttfbMarker = { leftPct: pct(ttfbTs), ms: Math.round(ttfbTs - base) };
-    }
-  }
-
-  // ── Page-scoped segments ──
-  // DOM: one bar spanning responseStart → domComplete.
-  // The left edge is "fuzzy" — DOM parsing started somewhere between responseStart and responseEnd.
-  // Visualise this as a gradient: transparent → solid blue over the responseStart→responseEnd region,
-  // then solid blue from responseEnd → domComplete.
-  if (nav.responseStart !== undefined && nav.domComplete !== undefined && nav.domComplete > nav.responseStart) {
-    const domTotalMs = Math.round(nav.domComplete - nav.responseStart);
-    const fuzzyEndTs = nav.responseEnd ?? nav.responseStart;
-    const fuzzyFrac = nav.domComplete > fuzzyEndTs
-      ? ((fuzzyEndTs - nav.responseStart) / (nav.domComplete - nav.responseStart)) * 100
-      : 0;
-    hasFuzzyDom = fuzzyFrac > 0;
-
-    const domBg = hasFuzzyDom
-      ? `linear-gradient(to right, rgba(74,126,200,0) 0%, rgba(74,126,200,0.45) ${(fuzzyFrac * 0.5).toFixed(1)}%, #4a7ec8 ${fuzzyFrac.toFixed(1)}%, #4a7ec8 100%)`
-      : '#4a7ec8';
-
-    pageSegs.push({
-      label: 'DOM',
-      ms: domTotalMs,
-      leftPct: pct(nav.responseStart),
-      widthPct: durPct(nav.responseStart, nav.domComplete),
-      bg: domBg,
-    });
-
-    pageLegend.push({ label: 'DOM', ms: domTotalMs, color: '#4a7ec8', note: hasFuzzyDom ? '*' : undefined });
-  }
-
-  if (nav.loadEventStart !== undefined && nav.loadEventEnd !== undefined && nav.loadEventEnd > nav.loadEventStart) {
-    const leMs = Math.round(nav.loadEventEnd - nav.loadEventStart);
-    pageSegs.push({
-      label: 'Load Event',
-      ms: leMs,
-      leftPct: pct(nav.loadEventStart),
-      widthPct: durPct(nav.loadEventStart, nav.loadEventEnd),
-      bg: '#fb7185',
-    });
-    pageLegend.push({ label: 'Load Event', ms: leMs, color: '#fb7185' });
-  }
-
-  // ── Page-scoped ticks (derived from span boundaries + interior milestones) ──
-  {
-    const seen = new Set<string>();
-    const addPageTick = (field: string, ts: number | undefined) => {
-      if (ts === undefined || ts <= 0) return;
-      const leftPct = pct(ts);
-      const key = leftPct.toFixed(2);
-      if (seen.has(key)) return;
-      seen.add(key);
-      pageTicks.push(makeTick(field, leftPct, Math.round(ts - base)));
-    };
-
-    // DOM span boundaries
-    addPageTick('responseStart', nav.responseStart);
-    addPageTick('domComplete',   nav.domComplete);
-
-    // Interior DOM milestones
-    addPageTick('domInteractive',             nav.domInteractive);
-    addPageTick('domContentLoadedEventStart', nav.domContentLoadedEventStart);
-    addPageTick('domContentLoadedEventEnd',   nav.domContentLoadedEventEnd);
-
-    // Load Event span boundaries
-    addPageTick('loadEventStart', nav.loadEventStart);
-    addPageTick('loadEventEnd',   nav.loadEventEnd);
-  }
-
-  // ── Raw timestamp table ──
-  const tsEntries: { field: string; ms: number | undefined; note?: string }[] = [
-    { field: 'fetchStart',                 ms: nav.fetchStart },
-    { field: 'redirectStart',              ms: nav.redirectStart },
-    { field: 'redirectEnd',                ms: nav.redirectEnd },
-    { field: 'domainLookupStart',          ms: nav.domainLookupStart },
-    { field: 'domainLookupEnd',            ms: nav.domainLookupEnd },
-    { field: 'connectStart',               ms: nav.connectStart },
-    { field: 'secureConnectionStart',      ms: nav.secureConnectionStart },
-    { field: 'connectEnd',                 ms: nav.connectEnd },
-    { field: 'requestStart',               ms: nav.requestStart },
-    ...(nav.firstInterimResponseStart && nav.firstInterimResponseStart > 0
-      ? [{ field: 'firstInterimResponseStart', ms: nav.firstInterimResponseStart, note: 'used for TTFB' }]
-      : nav.finalResponseHeadersStart && nav.finalResponseHeadersStart > 0
-        ? [{ field: 'finalResponseHeadersStart', ms: nav.finalResponseHeadersStart, note: 'used for TTFB' }]
-        : []),
-    { field: 'responseStart', ms: nav.responseStart, note: ttfbField === 'responseStart' ? 'used for TTFB' : undefined },
-    { field: 'responseEnd',                ms: nav.responseEnd },
-    { field: 'domInteractive',             ms: nav.domInteractive },
-    { field: 'domContentLoadedEventStart', ms: nav.domContentLoadedEventStart },
-    { field: 'domContentLoadedEventEnd',   ms: nav.domContentLoadedEventEnd },
-    { field: 'domComplete',                ms: nav.domComplete },
-    { field: 'loadEventStart',             ms: nav.loadEventStart },
-    { field: 'loadEventEnd',               ms: nav.loadEventEnd },
-  ];
-  navTimestampRows = tsEntries
-    .filter((r): r is typeof r & { ms: number } => r.ms !== undefined && r.ms > 0)
-    .map(r => ({ field: r.field, msRaw: Math.round(r.ms), msRel: Math.round(r.ms - base), note: r.note }));
-}
-
-// ── Server timing ─────────────────────────────────────────────────────────────
+// Server / User timing
 const serverTiming: ServerTiming[] = nav?.serverTiming ?? [];
-
-// ── User timing ───────────────────────────────────────────────────────────────
-const userTiming: UserTiming[] = metrics?.userTiming ?? [];
+const userTiming:   UserTiming[]   = metrics?.userTiming ?? [];
 const measures = userTiming.filter(u => u.entryType === 'measure');
 const marks    = userTiming.filter(u => u.entryType === 'mark');
-
-// Lane vertical offsets in rem — 4 lanes so ticks are well separated
-// Lane 0 = tallest (label at very top), lane 3 = shortest (label just above bar)
-const LANE_STEP = 1.4; // rem per lane
-const LANE_TOP = [0, LANE_STEP, LANE_STEP * 2, LANE_STEP * 3]; // [0, 1.4, 2.8, 4.2]
-const TICK_ROW_H = LANE_STEP * 4 + 0.6; // 6.2rem total
-
-const ttfbColor = ttfb.rating === 'good' ? '#16a34a' : ttfb.rating === 'needs-improvement' ? '#d97706' : '#dc2626';
 ---
 
-{metrics && (
-  <div class="all-metrics">
+{
+  metrics && (
+    <div class="all-metrics">
+      <MetricCard
+        heading="Core Web Vitals"
+        metrics={[
+          { label: 'LCP', value: lcp.formatted, unit: 'ms', rating: lcp.rating },
+          { label: 'CLS', value: cls.formatted, rating: cls.rating },
+        ]}
+      />
 
-    <MetricCard
-      heading="Core Web Vitals"
-      metrics={[
-        { label: 'LCP', value: lcp.formatted, unit: 'ms', rating: lcp.rating },
-        { label: 'CLS', value: cls.formatted, rating: cls.rating },
-      ]}
-    />
+      <Section
+        title="Navigation Timing"
+        isEmpty={!nav}
+        emptyMessage="No navigation timing data"
+      >
+        {nav && (
+          <div class="nav-body">
+            {nav.name && (
+              <div class="nav-url-row">
+                <span class="nav-url-label">URL</span>
+                <span class="nav-url-value">{nav.name}</span>
+              </div>
+            )}
 
-    <Section title="Navigation Timing" isEmpty={!nav} emptyMessage="No navigation timing data">
-      {nav && (
-        <div class="nav-body">
+            <div class="nt-diagram" id="nt-diagram">
+              {/* ── First Request ── */}
+              <div class="nt-group-label">First Request</div>
 
-          {/* URL */}
-          {nav.name && (
-            <div class="nav-url-row">
-              <span class="nav-url-label">URL</span>
-              <span class="nav-url-value">{nav.name}</span>
-            </div>
-          )}
+              <div class="nt-tick-row" style={`height:${TICK_ROW_H}rem`}>
+                {frTicks.map(t => {
+                  const stemColor = t.color ?? 'var(--border)';
+                  const textColor = t.color ?? 'var(--muted)';
+                  const stem = <div style={`width:1px; align-self:stretch; background:${stemColor}; flex-shrink:0;`} />;
+                  const label = (
+                    <div style={t.align === 'right' ? 'text-align:right;' : ''}>
+                      <div style={`font-size:0.625rem; font-family:monospace; color:${textColor}; white-space:nowrap; line-height:1.2; font-weight:${t.color ? '700' : '400'};`}>{t.field}</div>
+                      <div style={`font-size:0.5625rem; color:${textColor}; white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;`}>{t.msRel} ms</div>
+                    </div>
+                  );
+                  return (
+                    <div
+                      class="nt-tick"
+                      data-group={t.group ?? ''}
+                      style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:${LANE_TOP[t.lane]}rem; bottom:0; display:flex; flex-direction:row; align-items:flex-start; gap:2px; pointer-events:none; ${t.align === 'right' ? 'transform:translateX(-100%);' : ''}`}
+                    >
+                      {t.align === 'right' ? <>{label}{stem}</> : <>{stem}{label}</>}
+                    </div>
+                  );
+                })}
+              </div>
 
-          <div class="nt-diagram">
+              <div class="nt-bar-row">
+                {AXIS_FRACS.map(f => (
+                  <div style={`position:absolute; inset:0 auto 0 ${(f * 100).toFixed(1)}%; width:1px; background:var(--border);`} />
+                ))}
+                {frSpans.map((s, i, arr) => (
+                  <div
+                    style={`position:absolute; inset:0 auto 0 ${s.leftPct.toFixed(3)}%; width:calc(${s.widthPct.toFixed(3)}% - ${i < arr.length - 1 ? SEG_GAP_PX : 0}px); background:${s.color}; border-radius:2px; min-width:2px; z-index:1;`}
+                    title={`${s.label}: ${s.ms} ms`}
+                  />
+                ))}
+                {ttfbMarker && (
+                  <div style={`position:absolute; inset:0 auto 0 ${ttfbMarker.leftPct.toFixed(3)}%; width:2px; background:rgba(245,158,66,0.7); z-index:2;`} />
+                )}
+              </div>
 
-            {/* ── First Request tick row (above bar) ── */}
-            <div class="nt-group-label">First Request</div>
-            <div class="nt-tick-row" style={`height:${TICK_ROW_H}rem; overflow:visible;`}>
-              {frTicks.map(t => {
-                // Stem is always at t.leftPct exactly (no offset needed — positions are pre-computed from span boundaries)
-                const labelTransform = t.align === 'right' ? 'translateX(-100%)' : 'none';
-                return (
-                  <div style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:${LANE_TOP[t.lane]}rem; bottom:0; display:flex; flex-direction:column; pointer-events:none;`}>
-                    <span style={`font-size:0.5625rem; font-family:monospace; color:var(--muted); white-space:nowrap; line-height:1.2; transform:${labelTransform};`}>{t.field}</span>
-                    <span style={`font-size:0.5rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2; transform:${labelTransform};`}>{t.msRel} ms</span>
-                    <div style="width:1px; flex:1; min-height:0.25rem; background:rgba(0,0,0,0.2); margin-top:0.1rem;" />
-                  </div>
-                );
-              })}
-            </div>
+              {/* ── Page-scoped ── */}
+              <div class="nt-group-label" style="padding-top:0.4rem;">Page-scoped</div>
 
-            {/* First Request bar */}
-            <div class="nt-bar-row">
-              {AXIS_FRACS.map(f => (
-                <div style={`position:absolute; top:0; bottom:0; left:${(f*100).toFixed(1)}%; width:1px; background:rgba(0,0,0,0.08); z-index:0;`} />
-              ))}
-              {frSpans.map((s, i, arr) => (
-                <div
-                  style={`position:absolute; top:0; height:100%; left:${s.leftPct.toFixed(3)}%; width:calc(${s.widthPct.toFixed(3)}% - ${i < arr.length - 1 ? SEG_GAP_PX : 0}px); background:${s.color}; border-radius:2px; min-width:2px; z-index:1;`}
-                  title={`${s.label}: ${s.ms} ms`}
-                />
-              ))}
-              {/* TTFB marker line + label */}
-              {ttfbMarker && (
-                <div style={`position:absolute; top:0; bottom:0; left:${ttfbMarker.leftPct.toFixed(3)}%; width:2px; background:rgba(245,158,66,0.9); z-index:2; border-radius:1px;`}>
-                  <span style="position:absolute; bottom:calc(100% + 2px); left:50%; transform:translateX(-50%); font-size:0.4375rem; font-weight:700; white-space:nowrap; color:#92400e; background:rgba(245,158,66,0.15); border:1px solid rgba(245,158,66,0.4); border-radius:3px; padding:0.05em 0.3em; pointer-events:none;">
-                    TTFB {ttfb.formatted}
-                  </span>
-                </div>
-              )}
-            </div>
+              <div class="nt-bar-row">
+                {AXIS_FRACS.map(f => (
+                  <div style={`position:absolute; inset:0 auto 0 ${(f * 100).toFixed(1)}%; width:1px; background:var(--border);`} />
+                ))}
+                {pageSegs.map((s, i, arr) => (
+                  <div
+                    style={`position:absolute; inset:0 auto 0 ${s.leftPct.toFixed(3)}%; width:calc(${s.widthPct.toFixed(3)}% - ${i < arr.length - 1 ? SEG_GAP_PX : 0}px); background:${s.bg}; border-radius:2px; min-width:3px; z-index:1;`}
+                    title={`${s.label}: ${s.ms} ms`}
+                  />
+                ))}
+              </div>
 
-            {/* ── Page-scoped — bar immediately below, ticks go BELOW bar ── */}
-            <div class="nt-group-label" style="padding-top:0.4rem;">Page-scoped</div>
+              <div class="nt-tick-row" style={`height:${TICK_ROW_H}rem`}>
+                {pageTicks.map(t => {
+                  const stem = <div style="width:1px; align-self:stretch; background:var(--border); flex-shrink:0;" />;
+                  const label = (
+                    <div style={`display:flex; flex-direction:column; justify-content:flex-end; padding-top:${LANE_TOP[t.lane]}rem; ${t.align === 'right' ? 'text-align:right;' : ''}`}>
+                      <div style="font-size:0.625rem; font-family:monospace; color:var(--muted); white-space:nowrap; line-height:1.2;">{t.field}</div>
+                      <div style="font-size:0.5625rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;">{t.msRel} ms</div>
+                    </div>
+                  );
+                  return (
+                    <div
+                      class="nt-tick"
+                      data-group={t.group ?? ''}
+                      style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:0; display:flex; flex-direction:row; align-items:stretch; gap:2px; pointer-events:none; ${t.align === 'right' ? 'transform:translateX(-100%);' : ''}`}
+                    >
+                      {t.align === 'right' ? <>{label}{stem}</> : <>{stem}{label}</>}
+                    </div>
+                  );
+                })}
+              </div>
 
-            {/* Page-scoped bar */}
-            <div class="nt-bar-row">
-              {AXIS_FRACS.map(f => (
-                <div style={`position:absolute; top:0; bottom:0; left:${(f*100).toFixed(1)}%; width:1px; background:rgba(0,0,0,0.08); z-index:0;`} />
-              ))}
-              {pageSegs.map((s, i, arr) => (
-                <div
-                  style={`position:absolute; top:0; height:100%; left:${s.leftPct.toFixed(3)}%; width:calc(${s.widthPct.toFixed(3)}% - ${i < arr.length - 1 ? SEG_GAP_PX : 0}px); background:${s.bg}; border-radius:2px; min-width:3px; z-index:1;`}
-                  title={`${s.label}: ${s.ms} ms`}
-                />
-              ))}
-            </div>
-
-            {/* Page-scoped tick row ��� BELOW the bar, stems grow downward */}
-            <div class="nt-tick-row-below" style={`height:${TICK_ROW_H}rem; overflow:visible;`}>
-              {pageTicks.map(t => {
-                const stemHeight = (LANE_TOP[t.lane] + 0.6).toFixed(2);
-                const labelTransform = t.align === 'right' ? 'translateX(-100%)' : 'none';
-                return (
-                  <div style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:0; display:flex; flex-direction:column; pointer-events:none;`}>
-                    <div style={`width:1px; height:${stemHeight}rem; background:rgba(0,0,0,0.2);`} />
-                    <span style={`font-size:0.5625rem; font-family:monospace; color:var(--muted); white-space:nowrap; line-height:1.2; transform:${labelTransform};`}>{t.field}</span>
-                    <span style={`font-size:0.5rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2; transform:${labelTransform};`}>{t.msRel} ms</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* ── Time axis ── */}
-            <div class="nt-axis">
-              {AXIS_FRACS.map((f, i, arr) => {
-                const isLast = i === arr.length - 1;
-                return (
-                  <div class={`nt-axis-tick${isLast ? ' nt-axis-tick--last' : ''}`} style={`left:${(f*100).toFixed(1)}%`}>
+              {/* ── Time axis ── */}
+              <div class="nt-axis">
+                {AXIS_FRACS.map((f, i, arr) => (
+                  <div
+                    class={`nt-axis-tick${i === arr.length - 1 ? ' nt-axis-tick--last' : ''}`}
+                    style={`left:${(f * 100).toFixed(1)}%`}
+                  >
                     <div class="nt-axis-tick-line" />
                     <span class={`nt-axis-label${i === 0 ? '' : i === arr.length - 1 ? ' nt-axis-label--right' : ' nt-axis-label--center'}`}>
                       {Math.round(f * totalMs)} ms
                     </span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
 
-          </div>
-
-          {/* ── Legend — after axis, before timestamps ── */}
-          <div class="nt-legend">
-            <span class="nt-legend-section">First Request</span>
-            {frLegend.map(item => (
-              <div class="nt-legend-item">
-                <span class="nt-legend-swatch" style={`background:${item.color}`} />
-                <span class="nt-legend-name">{item.label}</span>
-                <span class="nt-legend-ms">{item.ms} ms</span>
-                {item.secondary && <span class="nt-legend-secondary">{item.secondary}</span>}
-              </div>
-            ))}
-            <span class="nt-legend-section nt-legend-section--gap">Page-scoped</span>
-            {pageLegend.map(item => (
-              <div class="nt-legend-item">
-                <span class="nt-legend-swatch" style={`background:${item.color}`} />
-                <span class="nt-legend-name">{item.label}{item.note && <span class="nt-legend-note"> {item.note}</span>}</span>
-                <span class="nt-legend-ms">{item.ms} ms</span>
-              </div>
-            ))}
-          </div>
-          {hasFuzzyDom && (
-            <p class="nt-fuzzy-note">* DOM left edge is approximate — parsing begins somewhere between responseStart and responseEnd.</p>
-          )}
-
-          <details class="nt-timestamps">
-            <summary class="nt-timestamps-summary">All timestamps</summary>
-            <div class="nt-ts-table">
-              <div class="nt-ts-header">
-                <span>Field</span>
-                <span>ms (absolute)</span>
-                <span>ms (from fetchStart)</span>
-              </div>
-              {navTimestampRows.map(r => (
-                <div class="nt-ts-row">
-                  <span class="nt-ts-field">
-                    {r.field}
-                    {r.note && <span class="nt-ts-note"> ({r.note})</span>}
+            {/* ── Legend ── */}
+            <div class="nt-legend" id="nt-legend">
+              <div class="nt-legend-heading">Legend</div>
+              <span class="nt-legend-section">First Request</span>
+              {frLegend.map(item => (
+                <button class="nt-legend-item" data-group={item.label} data-color={item.color} type="button">
+                  <span class="nt-legend-swatch" style={`background:${item.color}`} />
+                  <span class="nt-legend-name">{item.label}</span>
+                  <span class="nt-legend-ms">{item.ms} ms</span>
+                  {item.secondary && <span class="nt-legend-secondary">{item.secondary}</span>}
+                </button>
+              ))}
+              <span class="nt-legend-section nt-legend-section--gap">Page-scoped</span>
+              {pageLegend.map(item => (
+                <button class="nt-legend-item" data-group={item.label} data-color={item.color} type="button">
+                  <span class="nt-legend-swatch" style={`background:${item.color}`} />
+                  <span class="nt-legend-name">
+                    {item.label}
+                    {item.note && <span class="nt-legend-note"> {item.note}</span>}
                   </span>
-                  <span class="nt-ts-val">{r.msRaw} ms</span>
-                  <span class="nt-ts-val">{r.msRel} ms</span>
-                </div>
+                  <span class="nt-legend-ms">{item.ms} ms</span>
+                </button>
               ))}
             </div>
-          </details>
 
-        </div>
-      )}
-    </Section>
+            {hasFuzzyDom && (
+              <p class="nt-fuzzy-note">
+                * DOM left edge is approximate — parsing begins somewhere between responseStart and responseEnd.
+              </p>
+            )}
 
-    <Section
-      title="Server Timing"
-      isEmpty={serverTiming.length === 0}
-      emptyMessage="No server timing data — the server did not send a Server-Timing header"
-    >
-      <details class="tlist" open>
-        <summary class="tlist-summary">
-          <span class="tlist-label">Entries</span>
-          <span class="tlist-count">{serverTiming.length}</span>
-        </summary>
-        <div class="tlist-table">
-          <div class="tlist-header tlist-header--desc">
-            <span>Name</span>
-            <span>Description</span>
-            <span class="col-r">Duration</span>
+            <details class="nt-timestamps">
+              <summary class="nt-timestamps-summary">All timestamps</summary>
+              <div class="nt-ts-table">
+                <div class="nt-ts-header">
+                  <span>Field</span>
+                  <span>ms (from fetchStart)</span>
+                </div>
+                {navTimestampRows.map(r => (
+                  <div class="nt-ts-row">
+                    <span class="nt-ts-field">
+                      {r.field}
+                      {r.note && <span class="nt-ts-note"> ({r.note})</span>}
+                    </span>
+                    <span class="nt-ts-val">{r.msRel} ms</span>
+                  </div>
+                ))}
+              </div>
+            </details>
           </div>
-          {serverTiming.map(item => (
-            <div class="tlist-row tlist-row--desc">
-              <span class="tlist-name">{item.name}</span>
-              <span class="tlist-secondary">{item.description ?? '—'}</span>
-              <span class="col-r tlist-value">{Math.round(item.duration)} ms</span>
+        )}
+      </Section>
+
+      <Section
+        title="Server Timing"
+        isEmpty={serverTiming.length === 0}
+        emptyMessage="No server timing data — the server did not send a Server-Timing header"
+      >
+        <details class="tlist" open>
+          <summary class="tlist-summary">
+            <span class="tlist-label">Entries</span>
+            <span class="tlist-count">{serverTiming.length}</span>
+          </summary>
+          <div class="tlist-table">
+            <div class="tlist-header tlist-header--desc">
+              <span>Name</span>
+              <span>Description</span>
+              <span class="col-r">Duration</span>
             </div>
-          ))}
+            {serverTiming.map(item => (
+              <div class="tlist-row tlist-row--desc">
+                <span class="tlist-name">{item.name}</span>
+                <span class="tlist-secondary">{item.description ?? '—'}</span>
+                <span class="col-r tlist-value">{Math.round(item.duration)} ms</span>
+              </div>
+            ))}
+          </div>
+        </details>
+      </Section>
+
+      <Section
+        title="User Timing"
+        isEmpty={userTiming.length === 0}
+        emptyMessage="No user timing data — the page did not emit any performance.mark() or performance.measure() entries"
+      >
+        <div class="ut-sections">
+          {measures.length > 0 && (
+            <details class="tlist" open={measures.length <= 10}>
+              <summary class="tlist-summary">
+                <span class="tlist-label">Measures</span>
+                <span class="tlist-count">{measures.length}</span>
+              </summary>
+              <div class="tlist-table">
+                <div class="tlist-header">
+                  <span>Name</span>
+                  <span class="col-r">Start</span>
+                  <span class="col-r">Duration</span>
+                </div>
+                {measures.map(m => (
+                  <div class="tlist-row">
+                    <span class="tlist-name">{m.name}</span>
+                    <span class="col-r tlist-secondary">{Math.round(m.startTime)} ms</span>
+                    <span class="col-r tlist-value">{formatDuration(m.duration)}</span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+          {marks.length > 0 && (
+            <details class="tlist" open={marks.length <= 10}>
+              <summary class="tlist-summary">
+                <span class="tlist-label">Marks</span>
+                <span class="tlist-count">{marks.length}</span>
+              </summary>
+              <div class="tlist-table">
+                <div class="tlist-header cols-2">
+                  <span>Name</span>
+                  <span class="col-r">Start</span>
+                </div>
+                {marks.map(m => (
+                  <div class="tlist-row cols-2">
+                    <span class="tlist-name">{m.name}</span>
+                    <span class="col-r tlist-secondary">{Math.round(m.startTime)} ms</span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
         </div>
-      </details>
-    </Section>
-
-    <Section
-      title="User Timing"
-      isEmpty={userTiming.length === 0}
-      emptyMessage="No user timing data — the page did not emit any performance.mark() or performance.measure() entries"
-    >
-      <div class="ut-sections">
-        {measures.length > 0 && (
-          <details class="tlist" open={measures.length <= 10}>
-            <summary class="tlist-summary">
-              <span class="tlist-label">Measures</span>
-              <span class="tlist-count">{measures.length}</span>
-            </summary>
-            <div class="tlist-table">
-              <div class="tlist-header">
-                <span>Name</span>
-                <span class="col-r">Start</span>
-                <span class="col-r">Duration</span>
-              </div>
-              {measures.map(m => (
-                <div class="tlist-row">
-                  <span class="tlist-name">{m.name}</span>
-                  <span class="col-r tlist-secondary">{Math.round(m.startTime)} ms</span>
-                  <span class="col-r tlist-value">{formatDuration(m.duration)}</span>
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
-        {marks.length > 0 && (
-          <details class="tlist" open={marks.length <= 10}>
-            <summary class="tlist-summary">
-              <span class="tlist-label">Marks</span>
-              <span class="tlist-count">{marks.length}</span>
-            </summary>
-            <div class="tlist-table">
-              <div class="tlist-header cols-2">
-                <span>Name</span>
-                <span class="col-r">Start</span>
-              </div>
-              {marks.map(m => (
-                <div class="tlist-row cols-2">
-                  <span class="tlist-name">{m.name}</span>
-                  <span class="col-r tlist-secondary">{Math.round(m.startTime)} ms</span>
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
-      </div>
-    </Section>
-
-  </div>
-)}
+      </Section>
+    </div>
+  )
+}
 
 <style>
   .all-metrics {
@@ -509,7 +306,7 @@ const ttfbColor = ttfb.rating === 'good' ? '#16a34a' : ttfb.rating === 'needs-im
     gap: 1.5rem;
   }
 
-  /* ── Nav body ── */
+  /* ── Nav body ────────────────────────────────────────────────────────────── */
   .nav-body {
     display: flex;
     flex-direction: column;
@@ -521,7 +318,6 @@ const ttfbColor = ttfb.rating === 'good' ? '#16a34a' : ttfb.rating === 'needs-im
     flex-direction: column;
     gap: 0.2rem;
     padding: 0.5rem 0.625rem;
-    background: rgba(0,0,0,0.03);
     border: 1px solid var(--border);
     border-radius: 4px;
   }
@@ -533,26 +329,102 @@ const ttfbColor = ttfb.rating === 'good' ? '#16a34a' : ttfb.rating === 'needs-im
     letter-spacing: 0.05em;
   }
   .nav-url-value {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: var(--text);
     word-break: break-all;
     line-height: 1.4;
   }
 
-  /* ── Combined legend ── */
+  /* ── Diagram ─────────────────────────────────────────────────────────────── */
+  .nt-diagram {
+    display: flex;
+    flex-direction: column;
+    overflow-x: clip;
+  }
+
+  .nt-group-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text);
+    padding: 0.5rem 0 0.15rem;
+  }
+
+  .nt-tick-row {
+    position: relative;
+    overflow: visible;
+  }
+
+  .nt-bar-row {
+    position: relative;
+    height: 1.5rem;
+    background: var(--panel);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* ── Time axis ───────────────────────────────────────────────────────────── */
+  .nt-axis {
+    position: relative;
+    height: 1.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .nt-axis-tick {
+    position: absolute;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .nt-axis-tick--last {
+    left: auto !important;
+    right: 0;
+    align-items: flex-end;
+  }
+
+  .nt-axis-tick-line {
+    width: 1px;
+    height: 0.4rem;
+    background: var(--border);
+  }
+
+  .nt-axis-label {
+    font-size: 0.5625rem;
+    color: var(--muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    margin-top: 0.1rem;
+  }
+  .nt-axis-label--center { transform: translateX(-50%); }
+
+  /* ── Legend ──────────────────────────────────────────────────────────────── */
   .nt-legend {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.3rem 0.7rem;
     padding: 0.4rem 0.6rem;
-    background: rgba(0,0,0,0.025);
     border: 1px solid var(--border);
     border-radius: 4px;
   }
 
+  .nt-legend-heading {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text);
+    white-space: nowrap;
+    flex-basis: 100%;
+    margin-bottom: 0.1rem;
+  }
+
   .nt-legend-section {
-    font-size: 0.5rem;
+    font-size: 0.5625rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
@@ -569,7 +441,38 @@ const ttfbColor = ttfb.rating === 'good' ? '#16a34a' : ttfb.rating === 'needs-im
     display: flex;
     align-items: center;
     gap: 0.3rem;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.15rem 0.35rem 0.15rem 0.25rem;
+    margin: 0;
+    cursor: pointer;
+    font: inherit;
+    transition: background 0.1s, border-color 0.1s;
   }
+  .nt-legend-item::before {
+    content: '';
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border: 1.5px solid var(--muted);
+    border-radius: 2px;
+    flex-shrink: 0;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .nt-legend-item:hover { background: rgba(128, 128, 128, 0.07); }
+  .nt-legend-item[aria-pressed='true'] {
+    background: rgba(128, 128, 128, 0.12);
+    border-color: var(--text);
+  }
+  .nt-legend-item[aria-pressed='true']::before {
+    background: var(--text);
+    border-color: var(--text);
+  }
+
+  /* Dim ticks that don't belong to an active legend group */
+  .nt-diagram.has-active .nt-tick         { opacity: 0.12; transition: opacity 0.15s; }
+  .nt-diagram.has-active .nt-tick--active { opacity: 1; }
 
   .nt-legend-swatch {
     display: inline-block;
@@ -580,124 +483,39 @@ const ttfbColor = ttfb.rating === 'good' ? '#16a34a' : ttfb.rating === 'needs-im
   }
 
   .nt-legend-name {
-    font-size: 0.5625rem;
+    font-size: 0.625rem;
     font-weight: 600;
     color: var(--text);
     white-space: nowrap;
   }
-
-  .nt-legend-note {
-    font-weight: 400;
-    color: var(--muted);
-  }
+  .nt-legend-note     { font-weight: 400; color: var(--muted); }
 
   .nt-legend-ms {
-    font-size: 0.5rem;
+    font-size: 0.5625rem;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
 
   .nt-legend-secondary {
-    font-size: 0.4375rem;
+    font-size: 0.5rem;
     color: var(--muted);
     font-family: monospace;
     white-space: nowrap;
   }
 
-  /* ── Fuzzy note ── */
   .nt-fuzzy-note {
-    font-size: 0.5rem;
+    font-size: 0.5625rem;
     color: var(--muted);
     margin: 0;
     font-style: italic;
   }
 
-  /* ── Diagram ── */
-  .nt-diagram {
-    display: flex;
-    flex-direction: column;
-    /* clip overflowing tick labels at the horizontal edges */
-    overflow-x: clip;
-  }
+  /* ── Timestamps table ────────────────────────────────────────────────────── */
+  .nt-timestamps { margin-top: 0.5rem; }
 
-  .nt-group-label {
-    font-size: 0.5625rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--muted);
-    padding: 0.5rem 0 0.15rem;
-  }
-
-  /* tick rows — overflow:visible so labels can extend outward slightly,
-     but the diagram's overflow-x:clip keeps them from going off-screen */
-  .nt-tick-row,
-  .nt-tick-row-below {
-    position: relative;
-    overflow: visible;
-  }
-
-  /* ── Bars ── */
-  .nt-bar-row {
-    position: relative;
-    height: 1.5rem;
-    background: rgba(0,0,0,0.04);
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
-
-  /* ── Time axis ── */
-  .nt-axis {
-    position: relative;
-    height: 1.5rem;
-    margin-top: 0.25rem;
-  }
-
-  .nt-axis-tick {
-    position: absolute;
-    top: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  /* Last tick: anchor to right edge of container instead of left */
-  .nt-axis-tick--last {
-    left: auto !important;
-    right: 0;
-    align-items: flex-end;
-  }
-
-  .nt-axis-tick-line {
-    width: 1px;
-    height: 0.4rem;
-    background: rgba(0,0,0,0.25);
-  }
-
-  .nt-axis-label {
-    font-size: 0.5rem;
-    color: var(--muted);
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-    margin-top: 0.1rem;
-  }
-
-  .nt-axis-label--center {
-    transform: translateX(-50%);
-  }
-  .nt-axis-label--right {
-    /* last tick — label is right-aligned, no transform needed */
-  }
-
-  /* ── Timestamps table ── */
-  .nt-timestamps {
-    margin-top: 0.5rem;
-  }
   .nt-timestamps-summary {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--muted);
     cursor: pointer;
@@ -714,50 +532,46 @@ const ttfbColor = ttfb.rating === 'good' ? '#16a34a' : ttfb.rating === 'needs-im
     font-size: 0.45rem;
     transition: transform 0.15s;
   }
-  .nt-timestamps[open] > .nt-timestamps-summary::before {
-    transform: rotate(90deg);
-  }
+  .nt-timestamps[open] > .nt-timestamps-summary::before { transform: rotate(90deg); }
 
   .nt-ts-table {
     margin-top: 0.375rem;
     border: 1px solid var(--border);
     border-radius: 4px;
     overflow: hidden;
-    font-size: 0.625rem;
+    font-size: 0.6875rem;
   }
   .nt-ts-header,
   .nt-ts-row {
     display: grid;
-    grid-template-columns: 1fr 9rem 9rem;
+    grid-template-columns: 1fr 9rem;
     padding: 0.25rem 0.625rem;
     border-bottom: 1px solid var(--border);
   }
   .nt-ts-header {
-    background: rgba(0,0,0,0.04);
+    background: var(--panel);
     font-weight: 700;
     color: var(--muted);
   }
   .nt-ts-header span:not(:first-child),
-  .nt-ts-row span:not(:first-child) { text-align: right; }
-  .nt-ts-row:last-child { border-bottom: none; }
-  .nt-ts-row:nth-child(even) { background: rgba(0,0,0,0.015); }
+  .nt-ts-row   span:not(:first-child) { text-align: right; }
+  .nt-ts-row:last-child               { border-bottom: none; }
+  .nt-ts-row:nth-child(even)          { background: var(--panel); }
+
   .nt-ts-field {
     font-family: monospace;
     color: var(--text);
-    font-size: 0.5625rem;
+    font-size: 0.6875rem;
   }
-  .nt-ts-note {
-    color: var(--muted);
-    font-family: sans-serif;
-  }
-  .nt-ts-val {
+  .nt-ts-note { color: var(--muted); font-family: sans-serif; }
+  .nt-ts-val  {
     color: var(--text);
     font-weight: 500;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
 
-  /* ── Lists (server + user timing) ── */
+  /* ── Server / User timing lists ──────────────────────────────────────────── */
   .ut-sections {
     display: flex;
     flex-direction: column;
@@ -790,10 +604,11 @@ const ttfbColor = ttfb.rating === 'good' ? '#16a34a' : ttfb.rating === 'needs-im
     color: var(--text);
   }
   .tlist-count {
-    font-size: 0.625rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     color: var(--muted);
-    background: rgba(0,0,0,0.07);
+    background: var(--panel);
+    border: 1px solid var(--border);
     border-radius: 9999px;
     padding: 0.1em 0.45em;
   }
@@ -814,23 +629,45 @@ const ttfbColor = ttfb.rating === 'good' ? '#16a34a' : ttfb.rating === 'needs-im
     border-bottom: 1px solid var(--border);
   }
   .tlist-header {
-    background: rgba(0,0,0,0.04);
+    background: var(--panel);
     font-weight: 600;
     color: var(--muted);
   }
-  .tlist-row { padding: 0.3125rem 0.625rem; }
-
-  .tlist-header.tlist-header--desc,
-  .tlist-row.tlist-row--desc { grid-template-columns: 1fr 1fr auto; }
-
+  .tlist-row                 { padding: 0.3125rem 0.625rem; }
+  .tlist-header--desc,
+  .tlist-row--desc           { grid-template-columns: 1fr 1fr auto; }
   .tlist-header.cols-2,
-  .tlist-row.cols-2 { grid-template-columns: 1fr auto; }
+  .tlist-row.cols-2          { grid-template-columns: 1fr auto; }
+  .tlist-row:last-child      { border-bottom: none; }
+  .tlist-row:nth-child(even) { background: var(--panel); }
 
-  .tlist-row:last-child { border-bottom: none; }
-  .tlist-row:nth-child(even) { background: rgba(0,0,0,0.015); }
-
-  .tlist-name { color: var(--text); word-break: break-word; line-height: 1.4; }
+  .tlist-name      { color: var(--text); word-break: break-word; line-height: 1.4; }
   .tlist-secondary { color: var(--muted); white-space: nowrap; }
-  .tlist-value { color: var(--text); font-weight: 500; white-space: nowrap; }
-  .col-r { text-align: right; }
+  .tlist-value     { color: var(--text); font-weight: 500; white-space: nowrap; }
+  .col-r           { text-align: right; }
 </style>
+
+<script>
+  const legend  = document.getElementById('nt-legend');
+  const diagram = document.getElementById('nt-diagram');
+  if (legend && diagram) {
+    legend.addEventListener('click', e => {
+      const btn = (e.target as Element).closest<HTMLButtonElement>('button.nt-legend-item');
+      if (!btn) return;
+
+      const isActive = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', isActive ? 'false' : 'true');
+
+      const activeGroups = new Set(
+        Array.from(legend.querySelectorAll<HTMLButtonElement>('button.nt-legend-item[aria-pressed="true"]'))
+          .map(b => b.dataset.group ?? ''),
+      );
+
+      diagram.querySelectorAll<HTMLElement>('.nt-tick').forEach(tick => {
+        tick.classList.toggle('nt-tick--active', activeGroups.has(tick.dataset.group ?? ''));
+      });
+
+      diagram.classList.toggle('has-active', activeGroups.size > 0);
+    });
+  }
+</script>
