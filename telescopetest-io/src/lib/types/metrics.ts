@@ -17,7 +17,7 @@ export interface NavigationTiming {
   startTime: number;
   duration: number;
   // Core timing fields
-  navigationStart?: number;
+  navigationStart?: number; // usually 0
   unloadEventStart: number;
   unloadEventEnd: number;
   redirectStart: number;
