@@ -155,6 +155,18 @@ export interface LayoutShift {
   sources?: LayoutShiftSource[];
 }
 
+/**
+ * Structure of metrics.json from Telescope test results.
+ * Matches the actual output written by testRunner.ts collectMetrics().
+ */
+export interface MetricsJson {
+  navigationTiming?: NavigationTiming;
+  paintTiming?: PaintTiming[];
+  userTiming?: UserTiming[];
+  largestContentfulPaint?: LCPEvent[];
+  layoutShifts?: LayoutShift[];
+}
+
 // ── Navigation Timing diagram types ───────────────────────────────────────────
 
 /**
@@ -212,15 +224,3 @@ export type NavTimingDiagram = {
   hasFuzzyDom: boolean;
   navTimestampRows: { field: string; msRel: number; note?: string }[];
 };
-
-/**
- * Structure of metrics.json from Telescope test results.
- * Matches the actual output written by testRunner.ts collectMetrics().
- */
-export interface MetricsJson {
-  navigationTiming?: NavigationTiming;
-  paintTiming?: PaintTiming[];
-  userTiming?: UserTiming[];
-  largestContentfulPaint?: LCPEvent[];
-  layoutShifts?: LayoutShift[];
-}

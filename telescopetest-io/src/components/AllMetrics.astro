@@ -1,10 +1,13 @@
 ---
-import type { MetricsJson, ServerTiming, UserTiming } from '@/lib/types/metrics';
+import type {
+  MetricsJson,
+  ServerTiming,
+  UserTiming,
+} from '@/lib/types/metrics';
 import MetricCard from '@/components/MetricCard.astro';
 import Section from '@/components/Section.astro';
 import { getLcp, getCls } from '@/lib/utils/cwv';
 import { formatDuration } from '@/lib/utils/formatters';
-import { getTtfb } from '@/lib/utils/extractors';
 import { buildNavTimingDiagram } from '@/lib/utils/navTiming';
 
 export interface Props {
@@ -13,37 +16,37 @@ export interface Props {
 
 const { metrics } = Astro.props;
 
-const lcp  = getLcp(metrics);
-const cls  = getCls(metrics);
-const ttfb = getTtfb(metrics);
-const nav  = metrics?.navigationTiming;
+const lcp = getLcp(metrics);
+const cls = getCls(metrics);
+const nav = metrics?.navigationTiming;
 
 // Diagram layout constants
 const AXIS_FRACS = [0, 0.25, 0.5, 0.75, 1];
 const SEG_GAP_PX = 2;
-const LANE_STEP  = 1.4;                  // rem per tick lane
-const LANE_TOP   = [0, LANE_STEP, LANE_STEP * 2, LANE_STEP * 3];
+const LANE_STEP = 1.4; // rem per tick lane
+const LANE_TOP = [0, LANE_STEP, LANE_STEP * 2, LANE_STEP * 3];
 const TICK_ROW_H = LANE_STEP * 4 + 0.6; // total tick-row height (rem)
 
+// Get and break out all diagram variables from helper
 const diagram = nav ? buildNavTimingDiagram(nav) : null;
 const {
-  totalMs          = 1,
-  frTicks          = [],
-  pageTicks        = [],
-  frSpans          = [],
-  pageSegs         = [],
-  frLegend         = [],
-  pageLegend       = [],
-  ttfbMarker       = null,
-  hasFuzzyDom      = false,
+  totalMs = 1,
+  frTicks = [],
+  pageTicks = [],
+  frSpans = [],
+  pageSegs = [],
+  frLegend = [],
+  pageLegend = [],
+  ttfbMarker = null,
+  hasFuzzyDom = false,
   navTimestampRows = [],
 } = diagram ?? {};
 
-// Server / User timing
+// Server & User timing
 const serverTiming: ServerTiming[] = nav?.serverTiming ?? [];
-const userTiming:   UserTiming[]   = metrics?.userTiming ?? [];
+const userTiming: UserTiming[] = metrics?.userTiming ?? [];
 const measures = userTiming.filter(u => u.entryType === 'measure');
-const marks    = userTiming.filter(u => u.entryType === 'mark');
+const marks = userTiming.filter(u => u.entryType === 'mark');
 ---
 
 {
@@ -52,11 +55,15 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
       <MetricCard
         heading="Core Web Vitals"
         metrics={[
-          { label: 'LCP', value: lcp.formatted, unit: 'ms', rating: lcp.rating },
+          {
+            label: 'LCP',
+            value: lcp.formatted,
+            unit: 'ms',
+            rating: lcp.rating,
+          },
           { label: 'CLS', value: cls.formatted, rating: cls.rating },
         ]}
       />
-
       <Section
         title="Navigation Timing"
         isEmpty={!nav}
@@ -70,20 +77,30 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
                 <span class="nav-url-value">{nav.name}</span>
               </div>
             )}
-
             <div class="nt-diagram" id="nt-diagram">
               {/* ── First Request ── */}
               <div class="nt-group-label">First Request</div>
-
               <div class="nt-tick-row" style={`height:${TICK_ROW_H}rem`}>
                 {frTicks.map(t => {
                   const stemColor = t.color ?? 'var(--border)';
                   const textColor = t.color ?? 'var(--muted)';
-                  const stem = <div style={`width:1px; align-self:stretch; background:${stemColor}; flex-shrink:0;`} />;
+                  const stem = (
+                    <div
+                      style={`width:1px; align-self:stretch; background:${stemColor}; flex-shrink:0;`}
+                    />
+                  );
                   const label = (
                     <div style={t.align === 'right' ? 'text-align:right;' : ''}>
-                      <div style={`font-size:0.625rem; font-family:monospace; color:${textColor}; white-space:nowrap; line-height:1.2; font-weight:${t.color ? '700' : '400'};`}>{t.field}</div>
-                      <div style={`font-size:0.5625rem; color:${textColor}; white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;`}>{t.msRel} ms</div>
+                      <div
+                        style={`font-size:0.625rem; font-family:monospace; color:${textColor}; white-space:nowrap; line-height:1.2; font-weight:${t.color ? '700' : '400'};`}
+                      >
+                        {t.field}
+                      </div>
+                      <div
+                        style={`font-size:0.5625rem; color:${textColor}; white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;`}
+                      >
+                        {t.msRel} ms
+                      </div>
                     </div>
                   );
                   return (
@@ -92,15 +109,26 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
                       data-group={t.group ?? ''}
                       style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:${LANE_TOP[t.lane]}rem; bottom:0; display:flex; flex-direction:row; align-items:flex-start; gap:2px; pointer-events:none; ${t.align === 'right' ? 'transform:translateX(-100%);' : ''}`}
                     >
-                      {t.align === 'right' ? <>{label}{stem}</> : <>{stem}{label}</>}
+                      {t.align === 'right' ? (
+                        <>
+                          {label}
+                          {stem}
+                        </>
+                      ) : (
+                        <>
+                          {stem}
+                          {label}
+                        </>
+                      )}
                     </div>
                   );
                 })}
               </div>
-
               <div class="nt-bar-row">
                 {AXIS_FRACS.map(f => (
-                  <div style={`position:absolute; inset:0 auto 0 ${(f * 100).toFixed(1)}%; width:1px; background:var(--border);`} />
+                  <div
+                    style={`position:absolute; inset:0 auto 0 ${(f * 100).toFixed(1)}%; width:1px; background:var(--border);`}
+                  />
                 ))}
                 {frSpans.map((s, i, arr) => (
                   <div
@@ -109,16 +137,20 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
                   />
                 ))}
                 {ttfbMarker && (
-                  <div style={`position:absolute; inset:0 auto 0 ${ttfbMarker.leftPct.toFixed(3)}%; width:2px; background:rgba(245,158,66,0.7); z-index:2;`} />
+                  <div
+                    style={`position:absolute; inset:0 auto 0 ${ttfbMarker.leftPct.toFixed(3)}%; width:2px; background:rgba(245,158,66,0.7); z-index:2;`}
+                  />
                 )}
               </div>
-
               {/* ── Page-scoped ── */}
-              <div class="nt-group-label" style="padding-top:0.4rem;">Page-scoped</div>
-
+              <div class="nt-group-label" style="padding-top:0.4rem;">
+                Page-scoped
+              </div>
               <div class="nt-bar-row">
                 {AXIS_FRACS.map(f => (
-                  <div style={`position:absolute; inset:0 auto 0 ${(f * 100).toFixed(1)}%; width:1px; background:var(--border);`} />
+                  <div
+                    style={`position:absolute; inset:0 auto 0 ${(f * 100).toFixed(1)}%; width:1px; background:var(--border);`}
+                  />
                 ))}
                 {pageSegs.map((s, i, arr) => (
                   <div
@@ -127,14 +159,21 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
                   />
                 ))}
               </div>
-
               <div class="nt-tick-row" style={`height:${TICK_ROW_H}rem`}>
                 {pageTicks.map(t => {
-                  const stem = <div style="width:1px; align-self:stretch; background:var(--border); flex-shrink:0;" />;
+                  const stem = (
+                    <div style="width:1px; align-self:stretch; background:var(--border); flex-shrink:0;" />
+                  );
                   const label = (
-                    <div style={`display:flex; flex-direction:column; justify-content:flex-end; padding-top:${LANE_TOP[t.lane]}rem; ${t.align === 'right' ? 'text-align:right;' : ''}`}>
-                      <div style="font-size:0.625rem; font-family:monospace; color:var(--muted); white-space:nowrap; line-height:1.2;">{t.field}</div>
-                      <div style="font-size:0.5625rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;">{t.msRel} ms</div>
+                    <div
+                      style={`display:flex; flex-direction:column; justify-content:flex-end; padding-top:${LANE_TOP[t.lane]}rem; ${t.align === 'right' ? 'text-align:right;' : ''}`}
+                    >
+                      <div style="font-size:0.625rem; font-family:monospace; color:var(--muted); white-space:nowrap; line-height:1.2;">
+                        {t.field}
+                      </div>
+                      <div style="font-size:0.5625rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;">
+                        {t.msRel} ms
+                      </div>
                     </div>
                   );
                   return (
@@ -143,12 +182,21 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
                       data-group={t.group ?? ''}
                       style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:0; display:flex; flex-direction:row; align-items:stretch; gap:2px; pointer-events:none; ${t.align === 'right' ? 'transform:translateX(-100%);' : ''}`}
                     >
-                      {t.align === 'right' ? <>{label}{stem}</> : <>{stem}{label}</>}
+                      {t.align === 'right' ? (
+                        <>
+                          {label}
+                          {stem}
+                        </>
+                      ) : (
+                        <>
+                          {stem}
+                          {label}
+                        </>
+                      )}
                     </div>
                   );
                 })}
               </div>
-
               {/* ── Time axis ── */}
               <div class="nt-axis">
                 {AXIS_FRACS.map((f, i, arr) => (
@@ -157,45 +205,68 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
                     style={`left:${(f * 100).toFixed(1)}%`}
                   >
                     <div class="nt-axis-tick-line" />
-                    <span class={`nt-axis-label${i === 0 ? '' : i === arr.length - 1 ? ' nt-axis-label--right' : ' nt-axis-label--center'}`}>
+                    <span
+                      class={`nt-axis-label${i === 0 ? '' : i === arr.length - 1 ? ' nt-axis-label--right' : ' nt-axis-label--center'}`}
+                    >
                       {Math.round(f * totalMs)} ms
                     </span>
                   </div>
                 ))}
               </div>
             </div>
-
             {/* ── Legend ── */}
             <div class="nt-legend" id="nt-legend">
               <div class="nt-legend-heading">Legend</div>
               <span class="nt-legend-section">First Request</span>
               {frLegend.map(item => (
-                <button class="nt-legend-item" data-group={item.label} data-color={item.color} type="button">
-                  <span class="nt-legend-swatch" style={`background:${item.color}`} />
+                <button
+                  class="nt-legend-item"
+                  data-group={item.label}
+                  data-color={item.color}
+                  type="button"
+                >
+                  <span
+                    class="nt-legend-swatch"
+                    style={`background:${item.color}`}
+                  />
                   <span class="nt-legend-name">{item.label}</span>
                   <span class="nt-legend-ms">{item.ms} ms</span>
-                  {item.secondary && <span class="nt-legend-secondary">{item.secondary}</span>}
+                  {item.secondary && (
+                    <span class="nt-legend-secondary">{item.secondary}</span>
+                  )}
                 </button>
               ))}
-              <span class="nt-legend-section nt-legend-section--gap">Page-scoped</span>
+              <span class="nt-legend-section nt-legend-section--gap">
+                Page-scoped
+              </span>
               {pageLegend.map(item => (
-                <button class="nt-legend-item" data-group={item.label} data-color={item.color} type="button">
-                  <span class="nt-legend-swatch" style={`background:${item.color}`} />
+                <button
+                  class="nt-legend-item"
+                  data-group={item.label}
+                  data-color={item.color}
+                  type="button"
+                >
+                  <span
+                    class="nt-legend-swatch"
+                    style={`background:${item.color}`}
+                  />
                   <span class="nt-legend-name">
                     {item.label}
-                    {item.note && <span class="nt-legend-note"> {item.note}</span>}
+                    {item.note && (
+                      <span class="nt-legend-note"> {item.note}</span>
+                    )}
                   </span>
                   <span class="nt-legend-ms">{item.ms} ms</span>
                 </button>
               ))}
             </div>
-
             {hasFuzzyDom && (
               <p class="nt-fuzzy-note">
-                * DOM left edge is approximate — parsing begins somewhere between responseStart and responseEnd.
+                * DOM left edge is approximate — parsing begins somewhere
+                between responseStart and responseEnd.
               </p>
             )}
-
+            {/* All timestamps dropdown */}
             <details class="nt-timestamps">
               <summary class="nt-timestamps-summary">All timestamps</summary>
               <div class="nt-ts-table">
@@ -238,7 +309,9 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
               <div class="tlist-row tlist-row--desc">
                 <span class="tlist-name">{item.name}</span>
                 <span class="tlist-secondary">{item.description ?? '—'}</span>
-                <span class="col-r tlist-value">{Math.round(item.duration)} ms</span>
+                <span class="col-r tlist-value">
+                  {Math.round(item.duration)} ms
+                </span>
               </div>
             ))}
           </div>
@@ -266,8 +339,12 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
                 {measures.map(m => (
                   <div class="tlist-row">
                     <span class="tlist-name">{m.name}</span>
-                    <span class="col-r tlist-secondary">{Math.round(m.startTime)} ms</span>
-                    <span class="col-r tlist-value">{formatDuration(m.duration)}</span>
+                    <span class="col-r tlist-secondary">
+                      {Math.round(m.startTime)} ms
+                    </span>
+                    <span class="col-r tlist-value">
+                      {formatDuration(m.duration)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -287,7 +364,9 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
                 {marks.map(m => (
                   <div class="tlist-row cols-2">
                     <span class="tlist-name">{m.name}</span>
-                    <span class="col-r tlist-secondary">{Math.round(m.startTime)} ms</span>
+                    <span class="col-r tlist-secondary">
+                      {Math.round(m.startTime)} ms
+                    </span>
                   </div>
                 ))}
               </div>
@@ -399,7 +478,9 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
     line-height: 1;
     margin-top: 0.1rem;
   }
-  .nt-axis-label--center { transform: translateX(-50%); }
+  .nt-axis-label--center {
+    transform: translateX(-50%);
+  }
 
   /* ── Legend ──────────────────────────────────────────────────────────────── */
   .nt-legend {
@@ -448,7 +529,9 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
     margin: 0;
     cursor: pointer;
     font: inherit;
-    transition: background 0.1s, border-color 0.1s;
+    transition:
+      background 0.1s,
+      border-color 0.1s;
   }
   .nt-legend-item::before {
     content: '';
@@ -458,9 +541,13 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
     border: 1.5px solid var(--muted);
     border-radius: 2px;
     flex-shrink: 0;
-    transition: background 0.1s, border-color 0.1s;
+    transition:
+      background 0.1s,
+      border-color 0.1s;
   }
-  .nt-legend-item:hover { background: rgba(128, 128, 128, 0.07); }
+  .nt-legend-item:hover {
+    background: rgba(128, 128, 128, 0.07);
+  }
   .nt-legend-item[aria-pressed='true'] {
     background: rgba(128, 128, 128, 0.12);
     border-color: var(--text);
@@ -471,8 +558,13 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
   }
 
   /* Dim ticks that don't belong to an active legend group */
-  .nt-diagram.has-active .nt-tick         { opacity: 0.12; transition: opacity 0.15s; }
-  .nt-diagram.has-active .nt-tick--active { opacity: 1; }
+  .nt-diagram.has-active .nt-tick {
+    opacity: 0.12;
+    transition: opacity 0.15s;
+  }
+  .nt-diagram.has-active .nt-tick--active {
+    opacity: 1;
+  }
 
   .nt-legend-swatch {
     display: inline-block;
@@ -488,7 +580,10 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
     color: var(--text);
     white-space: nowrap;
   }
-  .nt-legend-note     { font-weight: 400; color: var(--muted); }
+  .nt-legend-note {
+    font-weight: 400;
+    color: var(--muted);
+  }
 
   .nt-legend-ms {
     font-size: 0.5625rem;
@@ -512,7 +607,9 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
   }
 
   /* ── Timestamps table ────────────────────────────────────────────────────── */
-  .nt-timestamps { margin-top: 0.5rem; }
+  .nt-timestamps {
+    margin-top: 0.5rem;
+  }
 
   .nt-timestamps-summary {
     font-size: 0.75rem;
@@ -526,13 +623,17 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
     gap: 0.3rem;
     padding: 0.125rem 0;
   }
-  .nt-timestamps-summary::-webkit-details-marker { display: none; }
+  .nt-timestamps-summary::-webkit-details-marker {
+    display: none;
+  }
   .nt-timestamps-summary::before {
     content: '▶';
     font-size: 0.45rem;
     transition: transform 0.15s;
   }
-  .nt-timestamps[open] > .nt-timestamps-summary::before { transform: rotate(90deg); }
+  .nt-timestamps[open] > .nt-timestamps-summary::before {
+    transform: rotate(90deg);
+  }
 
   .nt-ts-table {
     margin-top: 0.375rem;
@@ -554,17 +655,26 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
     color: var(--muted);
   }
   .nt-ts-header span:not(:first-child),
-  .nt-ts-row   span:not(:first-child) { text-align: right; }
-  .nt-ts-row:last-child               { border-bottom: none; }
-  .nt-ts-row:nth-child(even)          { background: var(--panel); }
+  .nt-ts-row span:not(:first-child) {
+    text-align: right;
+  }
+  .nt-ts-row:last-child {
+    border-bottom: none;
+  }
+  .nt-ts-row:nth-child(even) {
+    background: var(--panel);
+  }
 
   .nt-ts-field {
     font-family: monospace;
     color: var(--text);
     font-size: 0.6875rem;
   }
-  .nt-ts-note { color: var(--muted); font-family: sans-serif; }
-  .nt-ts-val  {
+  .nt-ts-note {
+    color: var(--muted);
+    font-family: sans-serif;
+  }
+  .nt-ts-val {
     color: var(--text);
     font-weight: 500;
     white-space: nowrap;
@@ -588,7 +698,9 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
     padding: 0.125rem 0;
     margin-bottom: 0.375rem;
   }
-  .tlist-summary::-webkit-details-marker { display: none; }
+  .tlist-summary::-webkit-details-marker {
+    display: none;
+  }
   .tlist-summary::before {
     content: '▶';
     font-size: 0.5rem;
@@ -596,7 +708,9 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
     transition: transform 0.15s;
     flex-shrink: 0;
   }
-  .tlist[open] > .tlist-summary::before { transform: rotate(90deg); }
+  .tlist[open] > .tlist-summary::before {
+    transform: rotate(90deg);
+  }
 
   .tlist-label {
     font-size: 0.75rem;
@@ -633,40 +747,67 @@ const marks    = userTiming.filter(u => u.entryType === 'mark');
     font-weight: 600;
     color: var(--muted);
   }
-  .tlist-row                 { padding: 0.3125rem 0.625rem; }
+  .tlist-row {
+    padding: 0.3125rem 0.625rem;
+  }
   .tlist-header--desc,
-  .tlist-row--desc           { grid-template-columns: 1fr 1fr auto; }
+  .tlist-row--desc {
+    grid-template-columns: 1fr 1fr auto;
+  }
   .tlist-header.cols-2,
-  .tlist-row.cols-2          { grid-template-columns: 1fr auto; }
-  .tlist-row:last-child      { border-bottom: none; }
-  .tlist-row:nth-child(even) { background: var(--panel); }
+  .tlist-row.cols-2 {
+    grid-template-columns: 1fr auto;
+  }
+  .tlist-row:last-child {
+    border-bottom: none;
+  }
+  .tlist-row:nth-child(even) {
+    background: var(--panel);
+  }
 
-  .tlist-name      { color: var(--text); word-break: break-word; line-height: 1.4; }
-  .tlist-secondary { color: var(--muted); white-space: nowrap; }
-  .tlist-value     { color: var(--text); font-weight: 500; white-space: nowrap; }
-  .col-r           { text-align: right; }
+  .tlist-name {
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.4;
+  }
+  .tlist-secondary {
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .tlist-value {
+    color: var(--text);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .col-r {
+    text-align: right;
+  }
 </style>
 
 <script>
-  const legend  = document.getElementById('nt-legend');
+  const legend = document.getElementById('nt-legend');
   const diagram = document.getElementById('nt-diagram');
   if (legend && diagram) {
     legend.addEventListener('click', e => {
-      const btn = (e.target as Element).closest<HTMLButtonElement>('button.nt-legend-item');
+      const btn = (e.target as Element).closest<HTMLButtonElement>(
+        'button.nt-legend-item',
+      );
       if (!btn) return;
-
       const isActive = btn.getAttribute('aria-pressed') === 'true';
       btn.setAttribute('aria-pressed', isActive ? 'false' : 'true');
-
       const activeGroups = new Set(
-        Array.from(legend.querySelectorAll<HTMLButtonElement>('button.nt-legend-item[aria-pressed="true"]'))
-          .map(b => b.dataset.group ?? ''),
+        Array.from(
+          legend.querySelectorAll<HTMLButtonElement>(
+            'button.nt-legend-item[aria-pressed="true"]',
+          ),
+        ).map(b => b.dataset.group ?? ''),
       );
-
       diagram.querySelectorAll<HTMLElement>('.nt-tick').forEach(tick => {
-        tick.classList.toggle('nt-tick--active', activeGroups.has(tick.dataset.group ?? ''));
+        tick.classList.toggle(
+          'nt-tick--active',
+          activeGroups.has(tick.dataset.group ?? ''),
+        );
       });
-
       diagram.classList.toggle('has-active', activeGroups.size > 0);
     });
   }

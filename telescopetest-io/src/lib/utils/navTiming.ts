@@ -38,11 +38,118 @@ function toPct(ts: number, base: number, totalMs: number): number {
 }
 
 /** Duration between two timestamps as %, clamped so it never overflows. */
-function durPct(s: number, e: number, base: number, totalMs: number): number {
+function durPct(
+  start: number,
+  end: number,
+  base: number,
+  totalMs: number,
+): number {
   return Math.max(
     0,
-    Math.min(100 - toPct(s, base, totalMs), ((e - s) / totalMs) * 100),
+    Math.min(
+      100 - toPct(start, base, totalMs),
+      ((end - start) / totalMs) * 100,
+    ),
   );
+}
+
+// ── Static field definitions ──────────────────────────────────────────────────
+
+type NavField = keyof NavigationTiming;
+type TickField = { field: NavField; group?: string };
+type TsField = { field: NavField; note?: string };
+
+// FR ticks: always-present fields (redirect and TLS entries are spliced in dynamically)
+const FR_TICK_BASE: TickField[] = [
+  { field: 'fetchStart' },
+  { field: 'domainLookupStart', group: 'DNS' },
+  { field: 'domainLookupEnd', group: 'DNS' },
+  { field: 'connectStart', group: 'TCP' },
+  // connectEnd group depends on hasTls — injected at runtime
+  { field: 'requestStart', group: 'Request' },
+  { field: 'responseStart', group: 'Response' },
+  { field: 'responseEnd', group: 'Response' },
+];
+
+const FR_TICK_REDIRECT: TickField[] = [
+  { field: 'redirectStart', group: 'Redirect' },
+  { field: 'redirectEnd', group: 'Redirect' },
+];
+
+const FR_TICK_TLS: TickField[] = [
+  { field: 'secureConnectionStart', group: 'TLS' },
+];
+
+// Canonical timestamp order used to sort the assembled FR tick list
+const FR_TICK_ORDER: NavField[] = [
+  'fetchStart',
+  'redirectStart',
+  'redirectEnd',
+  'domainLookupStart',
+  'domainLookupEnd',
+  'connectStart',
+  'secureConnectionStart',
+  'connectEnd',
+  'requestStart',
+  'responseStart',
+  'responseEnd',
+];
+
+const PAGE_TICK_FIELDS: TickField[] = [
+  { field: 'domInteractive', group: 'DOM' },
+  { field: 'domContentLoadedEventStart', group: 'DOM' },
+  { field: 'domContentLoadedEventEnd', group: 'DOM' },
+  { field: 'domComplete', group: 'DOM' },
+  { field: 'loadEventStart', group: 'Load Event' },
+  { field: 'loadEventEnd', group: 'Load Event' },
+];
+
+// Timestamp table fields (ttfbField and optional responseStart are spliced in at runtime)
+const TS_FIELDS_PRE: TsField[] = [
+  { field: 'fetchStart' },
+  { field: 'redirectStart' },
+  { field: 'redirectEnd' },
+  { field: 'domainLookupStart' },
+  { field: 'domainLookupEnd' },
+  { field: 'connectStart' },
+  { field: 'secureConnectionStart' },
+  { field: 'connectEnd' },
+  { field: 'requestStart' },
+];
+
+const TS_FIELDS_POST: TsField[] = [
+  { field: 'responseEnd' },
+  { field: 'domInteractive' },
+  { field: 'domContentLoadedEventStart' },
+  { field: 'domContentLoadedEventEnd' },
+  { field: 'domComplete' },
+  { field: 'loadEventStart' },
+  { field: 'loadEventEnd' },
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function frTickFields(hasRedirect: boolean, hasTls: boolean): TickField[] {
+  const fields: TickField[] = [
+    ...(hasRedirect ? FR_TICK_REDIRECT : []),
+    ...FR_TICK_BASE,
+    { field: 'connectEnd' as NavField, group: hasTls ? 'TLS' : 'TCP' },
+    ...(hasTls ? FR_TICK_TLS : []),
+  ];
+  return fields.sort(
+    (a, b) => FR_TICK_ORDER.indexOf(a.field) - FR_TICK_ORDER.indexOf(b.field),
+  );
+}
+
+function tsFieldDefs(ttfbField: NavField): TsField[] {
+  return [
+    ...TS_FIELDS_PRE,
+    { field: ttfbField, note: 'used for TTFB' },
+    ...(ttfbField !== 'responseStart'
+      ? [{ field: 'responseStart' as NavField }]
+      : []),
+    ...TS_FIELDS_POST,
+  ];
 }
 
 // ── Main builder ──────────────────────────────────────────────────────────────
@@ -53,10 +160,11 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
   const pct = (ts: number | undefined) =>
     ts === undefined ? 0 : toPct(ts, base, totalMs);
   const dur = (s: number, e: number) => durPct(s, e, base, totalMs);
+  const relMs = (ts: number) => Math.round(ts - base);
 
   const hasRedirect = (nav.redirectEnd ?? 0) > (nav.redirectStart ?? 0);
   const hasTls = (nav.secureConnectionStart ?? 0) > 0;
-  const ttfbField = selectTtfbField(nav);
+  const ttfbField = selectTtfbField(nav) as NavField;
 
   // ── First-request spans ────────────────────────────────────────────────────
 
@@ -64,27 +172,29 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
 
   function addSpan(
     label: string,
-    s: number | undefined,
-    e: number | undefined,
+    start: number | undefined,
+    end: number | undefined,
     color: string,
   ) {
-    if (s === undefined || e === undefined || e <= s) return;
+    if (start === undefined || end === undefined || end <= start) return;
     frSpans.push({
       label,
-      ms: Math.round(e - s),
-      leftPct: pct(s),
-      widthPct: dur(s, e),
+      ms: Math.round(end - start),
+      leftPct: pct(start),
+      widthPct: dur(start, end),
       color,
     });
   }
 
   const tcpEnd = hasTls ? nav.secureConnectionStart : nav.connectEnd;
-  if (hasRedirect)
+  if (hasRedirect) {
     addSpan('Redirect', nav.redirectStart, nav.redirectEnd, COLOR.redirect);
+  }
   addSpan('DNS', nav.domainLookupStart, nav.domainLookupEnd, COLOR.dns);
   addSpan('TCP', nav.connectStart, tcpEnd, COLOR.tcp);
-  if (hasTls)
+  if (hasTls) {
     addSpan('TLS', nav.secureConnectionStart, nav.connectEnd, COLOR.tls);
+  }
   addSpan('Request', nav.requestStart, nav.responseStart, COLOR.request);
   addSpan('Response', nav.responseStart, nav.responseEnd, COLOR.response);
 
@@ -93,41 +203,32 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
   const frTicks: DiagramTick[] = [];
   let laneCounter = 0;
 
-  const frTickFields: { field: string; group?: string }[] = [
-    { field: 'fetchStart' },
-    ...(hasRedirect
-      ? [
-          { field: 'redirectStart', group: 'Redirect' },
-          { field: 'redirectEnd', group: 'Redirect' },
-        ]
-      : []),
-    { field: 'domainLookupStart', group: 'DNS' },
-    { field: 'domainLookupEnd', group: 'DNS' },
-    { field: 'connectStart', group: 'TCP' },
-    ...(hasTls ? [{ field: 'secureConnectionStart', group: 'TLS' }] : []),
-    { field: 'connectEnd', group: hasTls ? 'TLS' : 'TCP' },
-    { field: 'requestStart', group: 'Request' },
-    { field: 'responseStart', group: 'Response' },
-    { field: 'responseEnd', group: 'Response' },
-  ];
-
-  for (const { field, group } of frTickFields) {
-    const ts = nav[field as keyof NavigationTiming] as number | undefined;
-    if (ts === undefined) continue;
+  function makeTick(
+    field: NavField,
+    group: string | undefined,
+    color?: string,
+  ): DiagramTick | null {
+    const ts = nav[field] as number | undefined;
+    if (ts === undefined) return null;
     const leftPct = pct(ts);
-    frTicks.push({
+    return {
       field,
       leftPct,
-      msRel: Math.round(ts - base),
+      msRel: relMs(ts),
       lane: laneCounter++ % 4,
       align: leftPct > 75 ? 'right' : 'left',
       group,
-    });
+      color,
+    };
   }
-
-  // TTFB tick — amber, always shown (pushed directly, bypasses dedup)
-  const ttfbTs = nav[ttfbField as keyof NavigationTiming] as number | undefined;
-  const ttfbMs = ttfbTs !== undefined ? Math.round(ttfbTs - base) : 0;
+  // push all ticks
+  for (const { field, group } of frTickFields(hasRedirect, hasTls)) {
+    const tick = makeTick(field, group);
+    if (tick) frTicks.push(tick);
+  }
+  // TTFB tick — amber, always shown (bypasses dedup)
+  const ttfbTs = nav[ttfbField] as number | undefined;
+  const ttfbMs = ttfbTs !== undefined ? relMs(ttfbTs) : 0;
   let ttfbMarker: { leftPct: number; ms: number } | null = null;
   if (ttfbTs !== undefined) {
     const ttfbLeftPct = pct(ttfbTs);
@@ -137,12 +238,11 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
       leftPct: ttfbLeftPct,
       msRel: ttfbMs,
       lane: laneCounter++ % 4,
-      align: ttfbLeftPct > 75 ? 'right' : 'left',
+      align: ttfbLeftPct > 75 ? 'right' : 'left', // right side labels right aligned
       color: COLOR.ttfb,
       group: 'TTFB',
     });
   }
-
   const frLegend: DiagramLegendItem[] = [
     ...frSpans.map(s => ({ label: s.label, ms: s.ms, color: s.color })),
     {
@@ -158,7 +258,7 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
   const pageSegs: DiagramPageSeg[] = [];
   const pageLegend: DiagramLegendItem[] = [];
   let hasFuzzyDom = false;
-
+  // DOM, fuzzy left
   if (
     nav.responseStart !== undefined &&
     nav.domComplete !== undefined &&
@@ -173,13 +273,10 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
           100
         : 0;
     hasFuzzyDom = fuzzyFrac > 0;
-
-    const c = COLOR.dom;
-    const rgb = '251,113,133'; // matches #fb7185
+    const rgb = '251,113,133'; // matches COLOR.dom = #fb7185
     const domBg = hasFuzzyDom
-      ? `linear-gradient(to right, rgba(${rgb},0) 0%, rgba(${rgb},0.45) ${(fuzzyFrac * 0.5).toFixed(1)}%, ${c} ${fuzzyFrac.toFixed(1)}%, ${c} 100%)`
-      : c;
-
+      ? `linear-gradient(to right, rgba(${rgb},0) 0%, rgba(${rgb},0.45) ${(fuzzyFrac * 0.5).toFixed(1)}%, ${COLOR.dom} ${fuzzyFrac.toFixed(1)}%, ${COLOR.dom} 100%)`
+      : COLOR.dom;
     pageSegs.push({
       label: 'DOM',
       ms: domMs,
@@ -190,11 +287,11 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
     pageLegend.push({
       label: 'DOM',
       ms: domMs,
-      color: c,
+      color: COLOR.dom,
       note: hasFuzzyDom ? '*' : undefined,
     });
   }
-
+  // load events
   if (
     nav.loadEventStart !== undefined &&
     nav.loadEventEnd !== undefined &&
@@ -212,30 +309,18 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
   }
 
   // ── Page-scoped ticks ──────────────────────────────────────────────────────
-
   const pageTicks: DiagramTick[] = [];
   const seenPcts = new Set<string>();
-
-  const pageTickFields: { field: string; group: string }[] = [
-    { field: 'domInteractive', group: 'DOM' },
-    { field: 'domContentLoadedEventStart', group: 'DOM' },
-    { field: 'domContentLoadedEventEnd', group: 'DOM' },
-    { field: 'domComplete', group: 'DOM' },
-    { field: 'loadEventStart', group: 'Load Event' },
-    { field: 'loadEventEnd', group: 'Load Event' },
-  ];
-
-  for (const { field, group } of pageTickFields) {
-    const ts = nav[field as keyof NavigationTiming] as number | undefined;
+  for (const { field, group } of PAGE_TICK_FIELDS) {
+    const ts = nav[field] as number | undefined;
     if (ts === undefined || ts <= 0) continue;
     const leftPct = pct(ts);
-    const key = leftPct.toFixed(2);
-    if (seenPcts.has(key)) continue;
-    seenPcts.add(key);
+    if (seenPcts.has(leftPct.toFixed(2))) continue;
+    seenPcts.add(leftPct.toFixed(2));
     pageTicks.push({
       field,
       leftPct,
-      msRel: Math.round(ts - base),
+      msRel: relMs(ts),
       lane: laneCounter++ % 4,
       align: leftPct > 75 ? 'right' : 'left',
       group,
@@ -244,32 +329,11 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
 
   // ── Raw timestamp table ────────────────────────────────────────────────────
 
-  const tsFieldDefs: { field: string; note?: string }[] = [
-    { field: 'fetchStart' },
-    { field: 'redirectStart' },
-    { field: 'redirectEnd' },
-    { field: 'domainLookupStart' },
-    { field: 'domainLookupEnd' },
-    { field: 'connectStart' },
-    { field: 'secureConnectionStart' },
-    { field: 'connectEnd' },
-    { field: 'requestStart' },
-    { field: ttfbField, note: 'used for TTFB' },
-    ...(ttfbField !== 'responseStart' ? [{ field: 'responseStart' }] : []),
-    { field: 'responseEnd' },
-    { field: 'domInteractive' },
-    { field: 'domContentLoadedEventStart' },
-    { field: 'domContentLoadedEventEnd' },
-    { field: 'domComplete' },
-    { field: 'loadEventStart' },
-    { field: 'loadEventEnd' },
-  ];
-
-  const navTimestampRows = tsFieldDefs
+  const navTimestampRows = tsFieldDefs(ttfbField)
     .map(({ field, note }) => {
-      const ms = nav[field as keyof NavigationTiming] as number | undefined;
+      const ms = nav[field] as number | undefined;
       return ms !== undefined && ms > 0
-        ? { field, msRel: Math.round(ms - base), note }
+        ? { field, msRel: relMs(ms), note }
         : null;
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
