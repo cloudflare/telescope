@@ -103,37 +103,51 @@ function renderToolbar(types: string[]): string {
 // Ruler
 // ─────────────────────────────────────────────────────────────────────────────
 
-function renderRuler(totalMs: number): string {
+function tickPositions(totalMs: number): number[] {
   const targets = [50, 100, 200, 250, 500, 1000, 2000, 5000] as const;
   const interval: number = (targets.find((t) => t >= totalMs / 8) ??
     targets[targets.length - 1])!;
-  const ticks: string[] = [];
-  for (let ms = interval; ms < totalMs; ms += interval) {
-    const label = `${parseFloat((ms / 1000).toFixed(3))}s`;
-    ticks.push(
-      `<span class="wf-tick" style="left:${((ms / totalMs) * 100).toFixed(4)}%">${esc(label)}</span>`,
-    );
-  }
-  return ticks.join('\n      ');
+  const positions: number[] = [];
+  for (let ms = interval; ms < totalMs; ms += interval) positions.push(ms);
+  return positions;
+}
+
+function renderRuler(totalMs: number): string {
+  return tickPositions(totalMs)
+    .map((ms) => {
+      const label = `${parseFloat((ms / 1000).toFixed(3))}s`;
+      return `<span class="wf-tick" style="left:${((ms / totalMs) * 100).toFixed(4)}%">${esc(label)}</span>`;
+    })
+    .join('\n      ');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Event lines overlay
-// Event lines are positioned as percentages of the overlay width.
-// The JS upgrade path re-positions them in pixels via ResizeObserver.
+// The overlay lives inside .wf-col-header--timeline so that its width equals
+// the timeline column width. That means left:X% aligns with ruler ticks and
+// bar positions in both the CSS-only static render and after JS upgrade.
 // ─────────────────────────────────────────────────────────────────────────────
+
+function renderGridLines(totalMs: number): string {
+  return tickPositions(totalMs)
+    .map((ms) => {
+      const leftPct = ((ms / totalMs) * 100).toFixed(4);
+      return `<div class="wf-grid-line" style="left:${leftPct}%"></div>`;
+    })
+    .join('\n      ');
+}
 
 function renderEventLines(
   pageTimings: HarPageTimings,
   totalMs: number,
 ): string {
-  const lines = pageEvents(pageTimings, totalMs)
+  return pageEvents(pageTimings, totalMs)
     .map(({ ms, cls, label }) => {
-      const pct = ((ms / totalMs) * 100).toFixed(4);
-      return `<div class="wf-event-line ${cls}" data-label="${esc(fmtEventLabel(label, ms))}" style="left:${pct}%"></div>`;
+      const leftPct = ((ms / totalMs) * 100).toFixed(4);
+      const dataLabel = fmtEventLabel(label, ms);
+      return `<div class="wf-event-line ${cls}" data-label="${esc(dataLabel)}" style="left:${leftPct}%"></div>`;
     })
-    .join('\n    ');
-  return lines;
+    .join('\n      ');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -325,7 +339,8 @@ export function renderToHTML(har: Har): string {
   // Ruler ticks
   const rulerHTML = renderRuler(totalMs);
 
-  // Event lines
+  // Grid lines + event lines (rendered inside the timeline column header)
+  const gridLinesHTML = renderGridLines(totalMs);
   const eventLinesHTML = renderEventLines(pageTimings, totalMs);
 
   // Request rows
@@ -343,9 +358,6 @@ ${renderLegend()}
 ${renderToolbar(types)}
 
 <div class="wf-list-wrap">
-  <div class="wf-events-overlay" aria-hidden="true">
-    ${eventLinesHTML}
-  </div>
   <div class="wf-col-headers" aria-hidden="true">
     <div class="wf-col-header wf-col-header--idx">#</div>
     <div class="wf-col-header wf-col-header--url">URL</div>
@@ -358,6 +370,10 @@ ${renderToolbar(types)}
     <div class="wf-col-header wf-col-header--timeline">
       <div class="wf-ruler" aria-hidden="true">
         ${rulerHTML}
+      </div>
+      <div class="wf-events-overlay" aria-hidden="true">
+        ${gridLinesHTML}
+        ${eventLinesHTML}
       </div>
     </div>
   </div>
