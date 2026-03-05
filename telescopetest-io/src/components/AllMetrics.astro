@@ -71,12 +71,6 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
       >
         {nav && (
           <div class="nav-body">
-            {nav.name && (
-              <div class="nav-url-row">
-                <span class="nav-url-label">URL</span>
-                <span class="nav-url-value">{nav.name}</span>
-              </div>
-            )}
             <div class="nt-diagram" id="nt-diagram">
               {/* ── First Request ── */}
               <div class="nt-group-label">First Request</div>
@@ -390,28 +384,6 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
-  }
-
-  .nav-url-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    padding: 0.5rem 0.625rem;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-  }
-  .nav-url-label {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .nav-url-value {
-    font-size: 0.8125rem;
-    color: var(--text);
-    word-break: break-all;
-    line-height: 1.4;
   }
 
   /* ── Diagram ─────────────────────────────────────────────────────────────── */
