@@ -22,7 +22,8 @@
     "typecheck": "tsc --noEmit",
     "gen-demo": "node scripts/gen-demo.js",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "serve": "npx serve ."
   },
   "devDependencies": {
     "prettier": "^3.8.1",

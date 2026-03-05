@@ -124,10 +124,12 @@ export class WaterfallChart extends HTMLElement {
 
   attributeChangedCallback(
     name: string,
-    _old: string | null,
+    old: string | null,
     next: string | null,
   ) {
-    if (name === 'src' && next !== null && this.isConnected) {
+    // Ignore the initial attribute parse (old === null) — connectedCallback
+    // handles the first render. Only react to genuine changes after connection.
+    if (name === 'src' && old !== null && next !== null && this.isConnected) {
       this._teardownAndBuild();
       this._fetchAndRender(next);
     }
