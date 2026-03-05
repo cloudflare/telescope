@@ -1,0 +1,39 @@
+{
+  "name": "@cloudflare/waterfall",
+  "version": "0.1.0",
+  "description": "HAR waterfall chart as a framework-free web component",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "gen-demo": "node scripts/gen-demo.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "typescript": "^5.4.0"
+  },
+  "keywords": [
+    "waterfall",
+    "har",
+    "web-component",
+    "custom-element",
+    "performance"
+  ],
+  "license": "Apache-2.0"
+}

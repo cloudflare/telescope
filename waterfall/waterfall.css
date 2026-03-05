@@ -1,0 +1,807 @@
+/* =============================================================================
+   waterfall.css — styles for <waterfall-chart>
+   Include this stylesheet in <head> so the layout renders before the JS
+   custom-element bundle is parsed and registered.
+   ============================================================================= */
+
+/* ── Color & surface tokens ──────────────────────────────────────────────────
+   Override any of these on :root (or on waterfall-chart directly) to theme
+   the component.
+   --------------------------------------------------------------------------- */
+:root {
+  /* Connection-phase colors (thin bars) */
+  --wf-blocked: #a0a0a0;
+  --wf-wait: #c8b432;
+  --wf-dns: #1a6b52;
+  --wf-connect: #e07820;
+  --wf-ssl: #7b3fb0;
+  --wf-send: #4a90d9;
+
+  /* Resource type colors — light = send+wait, dark = receive */
+  --wf-html-light: #a8c8f0;
+  --wf-html-dark: #4a7ec8;
+  --wf-js-light: #e8d4a0;
+  --wf-js-dark: #c8a040;
+  --wf-css-light: #a8d8a8;
+  --wf-css-dark: #4a9850;
+  --wf-image-light: #d0b8e8;
+  --wf-image-dark: #8050b8;
+  --wf-font-light: #f0a898;
+  --wf-font-dark: #c83820;
+  --wf-video-light: #a8e0b8;
+  --wf-video-dark: #2a8048;
+  --wf-other-light: #c8c8c8;
+  --wf-other-dark: #787878;
+
+  /* Row highlight tints */
+  --wf-row-blocking-bg: rgba(239, 68, 68, 0.05);
+  --wf-row-blocking-bg-hover: rgba(239, 68, 68, 0.1);
+  --wf-row-open-bg: rgba(14, 165, 233, 0.07);
+
+  /* Surface tokens */
+  --wf-text: #111827;
+  --wf-muted: #6b7280;
+  --wf-bg: #ffffff;
+  --wf-panel: #f9fafb;
+  --wf-border: #e5e7eb;
+  --wf-brand: #2563eb;
+  --wf-success: #16a34a;
+  --wf-warning: #d97706;
+  --wf-danger: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --wf-wait: #d4c040;
+    --wf-ssl: #9060c8;
+    --wf-other-dark: #909090;
+    --wf-text: #f9fafb;
+    --wf-muted: #9ca3af;
+    --wf-bg: #111827;
+    --wf-panel: #1f2937;
+    --wf-border: #374151;
+  }
+}
+
+/* ── Host element ────────────────────────────────────────────────────────────
+   Provide sensible display default; consumers can override freely.
+   --------------------------------------------------------------------------- */
+waterfall-chart {
+  display: block;
+  font-size: 14px;
+}
+
+/* Show a skeleton outline while the element is not yet upgraded AND has no
+   pre-rendered children. If children are present (static/progressive pages)
+   they render immediately and the skeleton is suppressed. */
+waterfall-chart:not(:defined):not(:has(.wf-list)) {
+  min-height: 6rem;
+  display: block;
+  border: 1px solid var(--wf-border);
+  border-radius: 0.75rem;
+  background: var(--wf-panel);
+}
+waterfall-chart:not(:defined):not(:has(.wf-list))::before {
+  content: 'Loading waterfall…';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 6rem;
+  color: var(--wf-muted);
+  font-size: 0.875rem;
+  font-family: system-ui, sans-serif;
+}
+
+/* Toolbar buttons are inert until the custom element upgrades and wires up
+   their event handlers. Styled via :not(:defined) so no disabled attribute
+   is needed in the HTML and no JS is needed to re-enable them. */
+waterfall-chart:not(:defined) .wf-filter-btn,
+waterfall-chart:not(:defined) .wf-toggle-cols {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── State messages ──────────────────────────────────────────────────────────*/
+.wf-message {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--wf-muted);
+  font-size: 0.875rem;
+  margin: 0.5rem 0 0;
+}
+.wf-message--error {
+  padding: 0.875rem 1.25rem;
+  text-align: left;
+  border-radius: 0.5rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--wf-danger);
+}
+
+/* ── Legend ──────────────────────────────────────────────────────────────────*/
+.wf-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--wf-panel);
+  border: 1px solid var(--wf-border);
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.wf-legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.wf-legend-heading {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--wf-muted);
+  white-space: nowrap;
+  min-width: 9rem;
+}
+.wf-legend-note {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.wf-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--wf-muted);
+  white-space: nowrap;
+}
+
+/* ── Swatches ────────────────────────────────────────────────────────────────*/
+.wf-swatch {
+  display: inline-block;
+  width: 1.375rem;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.wf-swatch--thin {
+  height: 3px;
+}
+.wf-swatch--thick {
+  height: 8px;
+}
+
+.wf-swatch--blocked {
+  background: var(--wf-blocked);
+}
+.wf-swatch--wait {
+  background: var(--wf-wait);
+}
+.wf-swatch--dns {
+  background: var(--wf-dns);
+}
+.wf-swatch--connect {
+  background: var(--wf-connect);
+}
+.wf-swatch--ssl {
+  background: var(--wf-ssl);
+}
+.wf-swatch--send {
+  background: var(--wf-send);
+}
+.wf-swatch--ev-dcl {
+  background: #d060d0;
+}
+.wf-swatch--ev-load {
+  background: #4060d0;
+}
+
+.wf-swatch--html {
+  background: linear-gradient(
+    to right,
+    var(--wf-html-light) 50%,
+    var(--wf-html-dark) 50%
+  );
+}
+.wf-swatch--js {
+  background: linear-gradient(
+    to right,
+    var(--wf-js-light) 50%,
+    var(--wf-js-dark) 50%
+  );
+}
+.wf-swatch--css {
+  background: linear-gradient(
+    to right,
+    var(--wf-css-light) 50%,
+    var(--wf-css-dark) 50%
+  );
+}
+.wf-swatch--image {
+  background: linear-gradient(
+    to right,
+    var(--wf-image-light) 50%,
+    var(--wf-image-dark) 50%
+  );
+}
+.wf-swatch--font {
+  background: linear-gradient(
+    to right,
+    var(--wf-font-light) 50%,
+    var(--wf-font-dark) 50%
+  );
+}
+.wf-swatch--video {
+  background: linear-gradient(
+    to right,
+    var(--wf-video-light) 50%,
+    var(--wf-video-dark) 50%
+  );
+}
+.wf-swatch--other {
+  background: linear-gradient(
+    to right,
+    var(--wf-other-light) 50%,
+    var(--wf-other-dark) 50%
+  );
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────────*/
+.wf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.625rem;
+}
+.wf-filters {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.wf-toggle-cols {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.2rem 0.625rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--wf-border);
+  background: var(--wf-panel);
+  color: var(--wf-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+.wf-toggle-cols:hover {
+  background: var(--wf-bg);
+  color: var(--wf-text);
+}
+.wf-toggle-cols[aria-expanded='true'] {
+  background: var(--wf-brand);
+  border-color: var(--wf-brand);
+  color: #fff;
+}
+
+/* ── Filter chips ────────────────────────────────────────────────────────────*/
+.wf-filter-btn {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.175rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--wf-border);
+  background: var(--wf-panel);
+  color: var(--wf-muted);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+.wf-filter-btn.active {
+  background: var(--wf-brand);
+  border-color: var(--wf-brand);
+  color: #fff;
+}
+
+/* ── Waterfall list wrapper ──────────────────────────────────────────────────
+   Wraps the column header row + the <ol> of requests.
+   Position:relative lets the event-line overlay sit over the timeline column.
+   --------------------------------------------------------------------------- */
+.wf-list-wrap {
+  position: relative;
+  overflow-x: auto;
+  border: 1px solid var(--wf-border);
+  border-radius: 0.75rem;
+}
+
+/* ── Column header row ───────────────────────────────────────────────────────
+   Mirrors the column widths of .wf-row so headers align with list items.
+   --------------------------------------------------------------------------- */
+.wf-col-headers {
+  display: grid;
+  grid-template-columns: var(--wf-grid-cols);
+  background: var(--wf-panel);
+  border-bottom: 1px solid var(--wf-border);
+  padding: 0;
+  min-width: var(--wf-min-width, 0);
+}
+.wf-col-header {
+  padding: 0.45rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--wf-muted);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.wf-col-header--idx {
+  text-align: center;
+}
+.wf-col-header--size,
+.wf-col-header--dur {
+  text-align: right;
+}
+.wf-col-header--timeline {
+  position: relative;
+  padding-bottom: 0;
+}
+
+/* ── Column grid variables ───────────────────────────────────────────────────
+   Two states: full (all info columns visible) and collapsed (info hidden).
+   The JS toggles .cols-collapsed on .wf-list-wrap.
+   --------------------------------------------------------------------------- */
+.wf-list-wrap {
+  --wf-col-idx: 2.25rem;
+  --wf-col-url: minmax(11rem, 22%);
+  --wf-col-info: 0px; /* collapsed default */
+  --wf-col-wf: 1fr;
+  --wf-grid-cols: var(--wf-col-idx) var(--wf-col-url) var(--wf-col-info)
+    /* method  */ var(--wf-col-info) /* protocol */ var(--wf-col-info)
+    /* status  */ var(--wf-col-info) /* type    */ var(--wf-col-info)
+    /* size    */ var(--wf-col-info) /* dur     */ var(--wf-col-wf);
+}
+
+.wf-list-wrap.cols-expanded {
+  --wf-col-info: auto;
+  --wf-grid-cols: var(--wf-col-idx) var(--wf-col-url) 4.25rem /* method   */
+    5rem /* protocol */ 4rem /* status   */ 5.5rem /* type     */ 5rem
+    /* size     */ 5.5rem /* dur      */ var(--wf-col-wf);
+}
+
+/* ── Request list (<ol>) ─────────────────────────────────────────────────────*/
+.wf-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Request row (<li>) ──────────────────────────────────────────────────────*/
+.wf-row {
+  display: grid;
+  grid-template-columns: var(--wf-grid-cols);
+  align-items: center;
+  height: var(--wf-row-h, 1.75rem); /* set by wf-row--rh* class */
+  border-bottom: 1px solid var(--wf-border);
+  cursor: pointer;
+  transition: background 0.1s;
+  min-width: var(--wf-min-width, 0);
+}
+.wf-row:last-child {
+  border-bottom: none;
+}
+.wf-row:hover {
+  background: var(--wf-panel);
+}
+
+.wf-row.row--blocking {
+  background: var(--wf-row-blocking-bg);
+}
+.wf-row.row--blocking:hover {
+  background: var(--wf-row-blocking-bg-hover);
+}
+.wf-row.row--open {
+  background: var(--wf-row-open-bg);
+}
+
+/* ── Row-height classes ──────────────────────────────────────────────────────
+   Each class sets --wf-row-h (consumed by the grid row height above) and
+   --wf-bar-wrap-h (consumed by .wf-bar-wrap) to barH + 10.
+   barH values come from config.ts: 14 (document), 12 (image/video),
+   10 (script/stylesheet), 8 (font/other).
+   --------------------------------------------------------------------------- */
+.wf-row--rh24 {
+  --wf-row-h: 24px; /* barH 14 �� document */
+  --wf-bar-wrap-h: 24px;
+}
+.wf-row--rh22 {
+  --wf-row-h: 22px; /* barH 12 → image / video */
+  --wf-bar-wrap-h: 22px;
+}
+.wf-row--rh20 {
+  --wf-row-h: 20px; /* barH 10 → script / stylesheet */
+  --wf-bar-wrap-h: 20px;
+}
+.wf-row--rh18 {
+  --wf-row-h: 18px; /* barH 8 → font / other */
+  --wf-bar-wrap-h: 18px;
+}
+
+/* ── Row cells ───────────────────────────────────────────────────────────────
+   Each cell is a <span> inside the <li>. They share a common base style then
+   individual tweaks via modifier classes.
+   --------------------------------------------------------------------------- */
+.wf-cell {
+  padding: 0 0.625rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wf-text);
+  font-size: 0.8125rem;
+  line-height: 1;
+}
+
+.wf-cell--idx {
+  text-align: center;
+  color: var(--wf-muted);
+  font-size: 0.75rem;
+}
+
+.wf-cell--url {
+  font-size: 0.775rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.05rem;
+}
+.wf-url-domain {
+  color: var(--wf-text);
+}
+.wf-url-path {
+  color: var(--wf-muted);
+  font-size: 0.725rem;
+}
+
+/* Info cells (method / protocol / status / type / size / dur) collapse to 0
+   width when the wrapper does not have .cols-expanded */
+.wf-cell--info {
+  overflow: hidden;
+}
+/* In collapsed state info cells are zero-width — achieved via grid column */
+
+.wf-cell--stat {
+  text-align: center;
+}
+.wf-cell--stat.s2xx {
+  color: var(--wf-success);
+}
+.wf-cell--stat.s3xx {
+  color: var(--wf-warning);
+}
+.wf-cell--stat.s4xx {
+  color: var(--wf-danger);
+}
+.wf-cell--stat.s5xx {
+  color: var(--wf-danger);
+}
+
+.wf-cell--size,
+.wf-cell--dur {
+  text-align: right;
+}
+
+/* ── Timeline cell ───────────────────────────────────────────────────────────*/
+.wf-cell--timeline {
+  padding: 0 0.5rem;
+  overflow: visible;
+}
+.wf-bar-wrap {
+  position: relative;
+  width: 100%;
+  /* Height is driven by --wf-bar-wrap-h set on the parent .wf-row via a
+     row-height class (wf-row--rh18/20/22/24). */
+  height: var(--wf-bar-wrap-h, 1.75rem);
+}
+.wb {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 1px;
+  min-width: 1.5px;
+  /* left and width are always set via inline style (data-driven percentages).
+     height is provided by wb--phase or the resource-type class below. */
+}
+
+/* Phase bars (connection-overhead segments) are always 3 px tall. */
+.wb--phase {
+  height: 3px;
+}
+
+.wb--blocked {
+  background: var(--wf-blocked);
+}
+.wb--dns {
+  background: var(--wf-dns);
+}
+.wb--connect {
+  background: var(--wf-connect);
+}
+.wb--ssl {
+  background: var(--wf-ssl);
+}
+.wb--send {
+  background: var(--wf-send);
+}
+.wb--wait {
+  background: var(--wf-wait);
+}
+
+/* document → barH 14 */
+.wb--html-light {
+  background: var(--wf-html-light);
+  height: 14px;
+}
+.wb--html-dark {
+  background: var(--wf-html-dark);
+  height: 14px;
+}
+/* script / stylesheet → barH 10 */
+.wb--js-light {
+  background: var(--wf-js-light);
+  height: 10px;
+}
+.wb--js-dark {
+  background: var(--wf-js-dark);
+  height: 10px;
+}
+.wb--css-light {
+  background: var(--wf-css-light);
+  height: 10px;
+}
+.wb--css-dark {
+  background: var(--wf-css-dark);
+  height: 10px;
+}
+/* image / video → barH 12 */
+.wb--image-light {
+  background: var(--wf-image-light);
+  height: 12px;
+}
+.wb--image-dark {
+  background: var(--wf-image-dark);
+  height: 12px;
+}
+.wb--video-light {
+  background: var(--wf-video-light);
+  height: 12px;
+}
+.wb--video-dark {
+  background: var(--wf-video-dark);
+  height: 12px;
+}
+/* font / other → barH 8 */
+.wb--font-light {
+  background: var(--wf-font-light);
+  height: 8px;
+}
+.wb--font-dark {
+  background: var(--wf-font-dark);
+  height: 8px;
+}
+.wb--other-light {
+  background: var(--wf-other-light);
+  height: 8px;
+}
+.wb--other-dark {
+  background: var(--wf-other-dark);
+  height: 8px;
+}
+
+/* ── Ruler ───────────────────────────────────────────────────────────────────*/
+.wf-ruler {
+  position: relative;
+  width: 100%;
+  height: 1.25rem;
+  overflow: hidden;
+}
+.wf-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 0.6rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--wf-muted);
+  white-space: nowrap;
+  line-height: 1;
+  padding-top: 0.2rem;
+}
+.wf-tick::before {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 3px;
+  background: var(--wf-border);
+  margin: 0 auto 2px;
+}
+
+/* ── Event-line overlay ──────────────────────────────────────────────────────
+   Absolutely positioned over the full .wf-list-wrap, pointer-events off.
+   --------------------------------------------------------------------------- */
+.wf-events-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+.wf-event-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  opacity: 0.75;
+}
+.wf-event-line::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 0.6rem;
+  white-space: nowrap;
+  opacity: 0.9;
+  font-weight: 600;
+  color: inherit;
+}
+.wf-event--dcl {
+  background: #d060d0;
+  color: #d060d0;
+}
+.wf-event--load {
+  background: #4060d0;
+  color: #4060d0;
+}
+
+/* ── Detail panel ────────────────────────────────────────────────────────────*/
+.wf-panel {
+  margin-top: 0.5rem;
+  border: 1px solid var(--wf-border);
+  border-radius: 0.75rem;
+  background: var(--wf-panel);
+  overflow: hidden;
+}
+.wf-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--wf-bg);
+  border-bottom: 1px solid var(--wf-border);
+}
+.wf-panel-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--wf-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wf-panel-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--wf-muted);
+  font-size: 1.125rem;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  transition: color 0.12s;
+}
+.wf-panel-close:hover {
+  color: var(--wf-text);
+}
+
+.wf-panel-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.wf-panel-section {
+  padding: 0.75rem 0.875rem;
+  border-right: 1px solid var(--wf-border);
+  border-bottom: 1px solid var(--wf-border);
+}
+.wf-panel-section:nth-child(even) {
+  border-right: none;
+}
+.wf-panel-section:nth-last-child(-n + 2) {
+  border-bottom: none;
+}
+
+.wf-section-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--wf-muted);
+  margin-bottom: 0.5rem;
+}
+
+.wf-info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  padding: 0.175rem 0;
+}
+.wf-info-key {
+  color: var(--wf-muted);
+  white-space: nowrap;
+}
+.wf-info-val {
+  color: var(--wf-text);
+  text-align: right;
+  word-break: break-all;
+  max-width: 62%;
+  font-variant-numeric: tabular-nums;
+}
+
+.wf-timing-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  padding: 0.175rem 0;
+}
+.wf-timing-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--wf-muted);
+}
+.wf-timing-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.wf-timing-val {
+  color: var(--wf-text);
+  font-variant-numeric: tabular-nums;
+}
+.wf-timing-total {
+  border-top: 1px solid var(--wf-border);
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  font-weight: 600;
+}
+
+.wf-headers-table {
+  width: 100%;
+  font-size: 0.775rem;
+  border-collapse: collapse;
+}
+.wf-headers-table td {
+  padding: 0.15rem 0;
+  vertical-align: top;
+  word-break: break-all;
+  color: var(--wf-text);
+}
+.wf-headers-table td:first-child {
+  width: 38%;
+  color: var(--wf-muted);
+  font-weight: 500;
+  padding-right: 0.625rem;
+  white-space: nowrap;
+  word-break: normal;
+}
