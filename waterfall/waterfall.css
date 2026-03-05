@@ -42,7 +42,7 @@
   --wf-text: #111827;
   --wf-muted: #6b7280;
   --wf-bg: #ffffff;
-  --wf-panel: #f9fafb;
+  --wf-panel: #ffffff;
   --wf-border: #e5e7eb;
   --wf-brand: #2563eb;
   --wf-success: #16a34a;
@@ -51,7 +51,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --wf-wait: #d4c040;
     --wf-ssl: #9060c8;
     --wf-other-dark: #909090;
@@ -61,6 +61,17 @@
     --wf-panel: #1f2937;
     --wf-border: #374151;
   }
+}
+
+[data-theme='dark'] {
+  --wf-wait: #d4c040;
+  --wf-ssl: #9060c8;
+  --wf-other-dark: #909090;
+  --wf-text: #f9fafb;
+  --wf-muted: #9ca3af;
+  --wf-bg: #111827;
+  --wf-panel: #1f2937;
+  --wf-border: #374151;
 }
 
 /* ── Host element ────────────────────────────────────────────────────────────
