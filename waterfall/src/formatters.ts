@@ -11,5 +11,5 @@ export function fmtSize(bytes: number): string {
 }
 
 export function fmtMs(ms: number): string {
-  return ms <= 0 ? '-' : `${Math.round(ms)} ms`;
+  return ms <= 0 ? '-' : `${parseFloat((ms / 1000).toFixed(3))}s`;
 }

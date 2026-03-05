@@ -350,6 +350,7 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 .wf-col-header--timeline {
   position: relative;
   padding-bottom: 0;
+  border-left: 1px solid var(--wf-border);
 }
 
 /* ── Column grid variables ───────────────────────────────────────────────────
@@ -409,15 +410,12 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   background: var(--wf-row-open-bg);
 }
 
-/* ── Row-height classes ──────────────────────────────────────────────────────
-   Each class sets --wf-row-h (consumed by the grid row height above) and
-   --wf-bar-wrap-h (consumed by .wf-bar-wrap) to barH + 10.
-   barH values come from config.ts: 14 (document), 12 (image/video),
-   10 (script/stylesheet), 8 (font/other).
+/* ── Row-height class ────────────────────────────────────────────────────────
+   All resource types share barH 16, so every row gets wf-row--rh26 (16 + 10).
    --------------------------------------------------------------------------- */
-.wf-row--rh24 {
-  --wf-row-h: 24px; /* barH 14 �� document */
-  --wf-bar-wrap-h: 24px;
+.wf-row--rh26 {
+  --wf-row-h: 26px;
+  --wf-bar-wrap-h: 26px;
 }
 .wf-row--rh22 {
   --wf-row-h: 22px; /* barH 12 → image / video */
@@ -454,25 +452,28 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 
 .wf-cell--url {
   font-size: 0.775rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.05rem;
 }
 .wf-url-domain {
   color: var(--wf-text);
 }
 .wf-url-path {
   color: var(--wf-muted);
-  font-size: 0.725rem;
 }
 
-/* Info cells (method / protocol / status / type / size / dur) collapse to 0
-   width when the wrapper does not have .cols-expanded */
-.wf-cell--info {
+/* Info cells (method / protocol / status / type / size / dur) are hidden when
+   columns are collapsed; visible only inside .cols-expanded. */
+.wf-cell--info,
+.wf-col-header--info {
   overflow: hidden;
+  visibility: hidden;
+  padding: 0;
 }
-/* In collapsed state info cells are zero-width — achieved via grid column */
+
+.cols-expanded .wf-cell--info,
+.cols-expanded .wf-col-header--info {
+  visibility: visible;
+  padding: 0 0.625rem;
+}
 
 .wf-cell--stat {
   text-align: center;
@@ -499,6 +500,7 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 .wf-cell--timeline {
   padding: 0 0.5rem;
   overflow: visible;
+  border-left: 1px solid var(--wf-border);
 }
 .wf-bar-wrap {
   position: relative;
@@ -515,6 +517,14 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   min-width: 1.5px;
   /* left and width are always set via inline style (data-driven percentages).
      height is provided by wb--phase or the resource-type class below. */
+  /* Pipe gradient: highlight at top, shadow at bottom, colour via background-color. */
+  background-image: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.28) 0%,
+    rgb(255 255 255 / 0.06) 40%,
+    rgb(0 0 0 / 0.06) 60%,
+    rgb(0 0 0 / 0.22) 100%
+  );
 }
 
 /* Phase bars (connection-overhead segments) are always 3 px tall. */
@@ -523,83 +533,80 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 }
 
 .wb--blocked {
-  background: var(--wf-blocked);
+  background-color: var(--wf-blocked);
 }
 .wb--dns {
-  background: var(--wf-dns);
+  background-color: var(--wf-dns);
 }
 .wb--connect {
-  background: var(--wf-connect);
+  background-color: var(--wf-connect);
 }
 .wb--ssl {
-  background: var(--wf-ssl);
+  background-color: var(--wf-ssl);
 }
 .wb--send {
-  background: var(--wf-send);
+  background-color: var(--wf-send);
 }
 .wb--wait {
-  background: var(--wf-wait);
+  background-color: var(--wf-wait);
 }
 
-/* document → barH 14 */
+/* All resource-type bars share the same height (barH 10). */
 .wb--html-light {
-  background: var(--wf-html-light);
-  height: 14px;
+  background-color: var(--wf-html-light);
+  height: 16px;
 }
 .wb--html-dark {
-  background: var(--wf-html-dark);
-  height: 14px;
+  background-color: var(--wf-html-dark);
+  height: 16px;
 }
-/* script / stylesheet → barH 10 */
 .wb--js-light {
-  background: var(--wf-js-light);
-  height: 10px;
+  background-color: var(--wf-js-light);
+  height: 16px;
 }
 .wb--js-dark {
-  background: var(--wf-js-dark);
-  height: 10px;
+  background-color: var(--wf-js-dark);
+  height: 16px;
 }
 .wb--css-light {
-  background: var(--wf-css-light);
-  height: 10px;
+  background-color: var(--wf-css-light);
+  height: 16px;
 }
 .wb--css-dark {
-  background: var(--wf-css-dark);
-  height: 10px;
+  background-color: var(--wf-css-dark);
+  height: 16px;
 }
-/* image / video → barH 12 */
 .wb--image-light {
-  background: var(--wf-image-light);
-  height: 12px;
+  background-color: var(--wf-image-light);
+  height: 16px;
 }
 .wb--image-dark {
-  background: var(--wf-image-dark);
-  height: 12px;
+  background-color: var(--wf-image-dark);
+  height: 16px;
 }
 .wb--video-light {
-  background: var(--wf-video-light);
-  height: 12px;
+  background-color: var(--wf-video-light);
+  height: 16px;
 }
 .wb--video-dark {
-  background: var(--wf-video-dark);
-  height: 12px;
+  background-color: var(--wf-video-dark);
+  height: 16px;
 }
-/* font / other → barH 8 */
 .wb--font-light {
-  background: var(--wf-font-light);
-  height: 8px;
+  background-color: var(--wf-font-light);
+  height: 16px;
 }
 .wb--font-dark {
-  background: var(--wf-font-dark);
-  height: 8px;
+  background-color: var(--wf-font-dark);
+  height: 16px;
 }
 .wb--other-light {
-  background: var(--wf-other-light);
-  height: 8px;
+  background-color: var(--wf-other-light);
+  height: 16px;
 }
 .wb--other-dark {
-  background: var(--wf-other-dark);
-  height: 8px;
+  background-color: var(--wf-other-dark);
+  height: 16px;
 }
 
 /* ── Ruler ───────────────────────────────────────────────────────────────────*/
@@ -615,6 +622,7 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   transform: translateX(-50%);
   font-size: 0.6rem;
   font-variant-numeric: tabular-nums;
+  text-transform: none;
   color: var(--wf-muted);
   white-space: nowrap;
   line-height: 1;
