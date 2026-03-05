@@ -29,22 +29,30 @@ export function getFcp(metrics: MetricsJson | null): DiagnosticMetric {
 }
 
 /**
- * Time to First Byte in milliseconds (responseStart �� fetchStart).
- * Source: navigationTiming.
+ * Returns the NavigationTiming field name to use as the TTFB timestamp.
  *
  * Chrome 115–132 quirk: responseStart pointed to the 103 Early Hints
  * response rather than the final document response. We prefer
  * firstInterimResponseStart when it is present and non-zero.
- *
+ */
+export function selectTtfbField(
+  nav: import('../types/metrics.js').NavigationTiming,
+): string {
+  if (nav.firstInterimResponseStart && nav.firstInterimResponseStart > 0)
+    return 'firstInterimResponseStart';
+  return 'responseStart';
+}
+
+/**
+ * Time to First Byte in milliseconds (responseStart − fetchStart).
+ * Source: navigationTiming.
  * Diagnostic metric — not a CWV.
  */
 export function getTtfb(metrics: MetricsJson | null): DiagnosticMetric {
   const nav = metrics?.navigationTiming;
   if (!nav) return { value: undefined, formatted: null, rating: undefined };
-  const responseStart =
-    nav.firstInterimResponseStart && nav.firstInterimResponseStart > 0
-      ? nav.firstInterimResponseStart
-      : nav.responseStart;
+  const field = selectTtfbField(nav);
+  const responseStart = nav[field as keyof typeof nav] as number | undefined;
   const value =
     responseStart !== undefined
       ? responseStart - (nav.fetchStart ?? 0)
