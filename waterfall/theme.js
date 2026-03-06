@@ -54,28 +54,30 @@
 
     // Highlight only when user has explicitly overridden the system default
     label.classList.toggle('theme-toggle--overridden', override !== null);
+
+    // Reveal the toggle now that knob position is correct (prevents flash)
+    label.classList.add('theme-toggle--ready');
   }
 
-  // Apply stored theme immediately (before first paint).
+  // Apply stored theme and set knob position immediately — the <script> tag
+  // sits after the <label> in the HTML, so the checkbox is already in the DOM
+  // and this runs synchronously before the browser paints the toggle.
   let currentOverride = getStored();
   applyTheme(currentOverride);
 
-  // Wire up the toggle once the DOM is ready.
-  function init() {
-    const checkbox = document.getElementById('theme-btn');
-    if (!checkbox) return;
-    const label = checkbox.closest('.theme-toggle');
-    if (!label) return;
-
+  const checkbox = document.getElementById('theme-btn');
+  const label = checkbox && checkbox.closest('.theme-toggle');
+  if (checkbox && label) {
     syncUI(checkbox, label, currentOverride);
+  }
+
+  // Wire up event listeners once the DOM is fully ready.
+  function init() {
+    if (!checkbox || !label) return;
 
     // Use a click handler on the label so we can detect clicks on the already-
     // active side (a `change` event never fires when the value doesn't change).
     label.addEventListener('click', (e) => {
-      // Let the browser handle the checkbox state change first.
-      // We read checkbox.checked *after* the default action would flip it,
-      // but since we call preventDefault and manage state manually, read the
-      // *intended* target from the click position instead.
       e.preventDefault();
 
       // Determine which side the user clicked: dark if knob would go right.

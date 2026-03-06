@@ -327,6 +327,13 @@ input[type='url'] {
   flex-shrink: 0;
   cursor: pointer;
   user-select: none;
+  /* Hidden until theme.js has read localStorage and set the knob position.
+     theme.js adds .theme-toggle--ready synchronously, before first paint. */
+  visibility: hidden;
+}
+
+.theme-toggle--ready {
+  visibility: visible;
 }
 
 .theme-toggle input[type='checkbox'] {
