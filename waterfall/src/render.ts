@@ -70,8 +70,8 @@ function renderToolbar(types: string[]): string {
 
   const phaseBtn = (key: string, label: string) =>
     `<button class="wf-filter-btn" data-phase="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`;
-  const eventSwatch = (key: string, label: string) =>
-    `<span class="wf-legend-item"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</span>`;
+  const eventBtn = (key: string, label: string) =>
+    `<button class="wf-filter-btn" data-event="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`;
 
   return `
 <div class="wf-toolbar">
@@ -84,10 +84,10 @@ function renderToolbar(types: string[]): string {
     ${phaseBtn('connect', 'TCP Connect')}
     ${phaseBtn('ssl', 'TLS Handshake')}
   </div>
-  <div class="wf-legend-group" aria-label="Events">
-    ${eventSwatch('ev-dcl', 'DOM Content Loaded')}
-    ${eventSwatch('ev-load', 'Page Load')}
-    ${eventSwatch('ev-lcp', 'Largest Contentful Paint')}
+  <div class="wf-legend-group" role="group" aria-label="Toggle metrics">
+    ${eventBtn('ev-dcl', 'DOM Content Loaded')}
+    ${eventBtn('ev-load', 'Page Load')}
+    ${eventBtn('ev-lcp', 'Largest Contentful Paint')}
   </div>
 </div>`.trim();
 }
