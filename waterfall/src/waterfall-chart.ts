@@ -86,6 +86,7 @@ export class WaterfallChart extends HTMLElement {
   // ── Light-DOM refs (populated by _buildDOM or _adoptDOM) ──────────────────
   private _filtersEl!: HTMLElement;
   private _phaseGroupEl!: HTMLElement;
+  private _eventGroupEl!: HTMLElement;
   private _listWrapEl!: HTMLElement;
   private _colHeadersEl!: HTMLElement;
   private _listEl!: HTMLOListElement;
@@ -233,6 +234,28 @@ export class WaterfallChart extends HTMLElement {
 
     if (!this._allEntries.length) return;
 
+    // Stamp data-type and data-phases on each pre-rendered row.
+    rows.forEach((li, i) => {
+      const entry = this._allEntries[i]!;
+      li.dataset.type = resourceType(entry);
+
+      const blocked =
+        parseFloat(li.dataset.blocked ?? '0') +
+        parseFloat(li.dataset.blockedQueueing ?? '0');
+      const phaseList = (
+        [
+          ['blocked', blocked],
+          ['dns', parseFloat(li.dataset.dns ?? '0')],
+          ['connect', parseFloat(li.dataset.connect ?? '0')],
+          ['ssl', parseFloat(li.dataset.ssl ?? '0')],
+        ] as [string, number][]
+      )
+        .filter(([, v]) => v > 0)
+        .map(([p]) => p)
+        .join(' ');
+      if (phaseList) li.dataset.phases = phaseList;
+    });
+
     this._totalMs = computeTotalMs(this._allEntries);
     this._originMs = +new Date(this._allEntries[0]!.startedDateTime);
     this._pageTimings = this._readPageTimings();
@@ -260,6 +283,14 @@ export class WaterfallChart extends HTMLElement {
         this._syncPhaseChips();
         this._renderRows();
       });
+      if (type !== 'all') {
+        btn.addEventListener('mouseenter', () => {
+          this._listWrapEl.dataset.hoverType = type;
+        });
+        btn.addEventListener('mouseleave', () => {
+          delete this._listWrapEl.dataset.hoverType;
+        });
+      }
     });
 
     // Wire up phase filter buttons
@@ -276,6 +307,30 @@ export class WaterfallChart extends HTMLElement {
           this._syncFilterChips(types);
           this._syncPhaseChips();
           this._renderRows();
+        });
+        btn.addEventListener('mouseenter', () => {
+          this._listWrapEl.dataset.hoverPhase = phase;
+        });
+        btn.addEventListener('mouseleave', () => {
+          delete this._listWrapEl.dataset.hoverPhase;
+        });
+      });
+
+    // Wire up event toggle buttons
+    this._eventGroupEl = this.querySelector(
+      '.wf-legend-group[aria-label="Toggle metrics"]',
+    ) as HTMLElement;
+    this._eventGroupEl
+      ?.querySelectorAll<HTMLButtonElement>('[data-event]')
+      .forEach((btn) => {
+        btn.classList.add('active'); // all on by default
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.event!;
+          this._hiddenEvents.has(key)
+            ? this._hiddenEvents.delete(key)
+            : this._hiddenEvents.add(key);
+          this._syncEventChips();
+          this._renderEventLines();
         });
       });
 
@@ -410,10 +465,13 @@ export class WaterfallChart extends HTMLElement {
         className: `wf-swatch wf-swatch--${thin ? 'thin' : 'thick'} wf-swatch--${key}`,
       });
 
-    const mkLegendItem = (thin: boolean, key: string, label: string) => {
-      const span = el('span', { className: 'wf-legend-item' });
-      span.append(mkSwatch(thin, key), document.createTextNode(label));
-      return span;
+    const mkEventBtn = (key: string, label: string) => {
+      const btn = el('button', {
+        className: 'wf-filter-btn active',
+        'data-event': key,
+      });
+      btn.append(mkSwatch(true, key), document.createTextNode(label));
+      return btn;
     };
 
     this._filtersEl = el('div', {
@@ -439,15 +497,28 @@ export class WaterfallChart extends HTMLElement {
       this._phaseGroupEl.appendChild(btn);
     }
 
-    const eventGroup = el('div', {
+    this._eventGroupEl = el('div', {
       className: 'wf-legend-group',
-      'aria-label': 'Events',
+      role: 'group',
+      'aria-label': 'Toggle metrics',
     });
-    eventGroup.append(
-      mkLegendItem(true, 'ev-dcl', 'DOM Content Loaded'),
-      mkLegendItem(true, 'ev-load', 'Page Load'),
-      mkLegendItem(true, 'ev-lcp', 'Largest Contentful Paint'),
+    this._eventGroupEl.append(
+      mkEventBtn('ev-dcl', 'DOM Content Loaded'),
+      mkEventBtn('ev-load', 'Page Load'),
+      mkEventBtn('ev-lcp', 'Largest Contentful Paint'),
     );
+    this._eventGroupEl
+      .querySelectorAll<HTMLButtonElement>('[data-event]')
+      .forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.event!;
+          this._hiddenEvents.has(key)
+            ? this._hiddenEvents.delete(key)
+            : this._hiddenEvents.add(key);
+          this._syncEventChips();
+          this._renderEventLines();
+        });
+      });
 
     this._toggleBtn = el('button', {
       className: 'wf-toggle-cols',
@@ -458,7 +529,7 @@ export class WaterfallChart extends HTMLElement {
     this._toggleBtn.addEventListener('click', () => this._onToggleCols());
 
     const toolbar = el('div', { className: 'wf-toolbar' });
-    toolbar.append(this._filtersEl, this._phaseGroupEl, eventGroup);
+    toolbar.append(this._filtersEl, this._phaseGroupEl, this._eventGroupEl);
 
     // ── List wrapper ──────────────────────────────────────────────────────────
 
@@ -599,6 +670,7 @@ export class WaterfallChart extends HTMLElement {
     this._allEntries = [];
     this._activeFilters = new Set(['all']);
     this._activePhaseFilters = new Set();
+    this._hiddenEvents = new Set();
     this._openPanels.clear();
     this._pageTimings = {};
     this._totalMs = 0;
@@ -675,6 +747,14 @@ export class WaterfallChart extends HTMLElement {
         this._renderPhaseFilters(types);
         this._renderRows();
       });
+      if (type !== 'all') {
+        btn.addEventListener('mouseenter', () => {
+          this._listWrapEl.dataset.hoverType = type;
+        });
+        btn.addEventListener('mouseleave', () => {
+          delete this._listWrapEl.dataset.hoverType;
+        });
+      }
       this._filtersEl.appendChild(btn);
     }
   }
@@ -725,6 +805,12 @@ export class WaterfallChart extends HTMLElement {
         this._renderPhaseFilters(types);
         this._renderRows();
       });
+      btn.addEventListener('mouseenter', () => {
+        this._listWrapEl.dataset.hoverPhase = phase;
+      });
+      btn.addEventListener('mouseleave', () => {
+        delete this._listWrapEl.dataset.hoverPhase;
+      });
       this._phaseGroupEl.appendChild(btn);
     }
   }
@@ -737,6 +823,18 @@ export class WaterfallChart extends HTMLElement {
         btn.classList.toggle(
           'active',
           this._activePhaseFilters.has(btn.dataset.phase!),
+        );
+      });
+  }
+
+  /** Sync active/inactive CSS classes on event toggle buttons. */
+  private _syncEventChips() {
+    this._eventGroupEl
+      ?.querySelectorAll<HTMLButtonElement>('[data-event]')
+      .forEach((btn) => {
+        btn.classList.toggle(
+          'active',
+          !this._hiddenEvents.has(btn.dataset.event!),
         );
       });
   }
@@ -997,6 +1095,8 @@ export class WaterfallChart extends HTMLElement {
       this._pageTimings,
       this._totalMs,
     )) {
+      const eventKey = 'ev-' + cls.replace('wf-event--', '');
+      if (this._hiddenEvents.has(eventKey)) continue; // skip hidden metrics
       const line = el('div', { className: `wf-event-line ${cls}` });
       line.dataset.label = fmtEventLabel(label, ms);
       line.dataset.name = label;
@@ -1140,6 +1240,23 @@ export class WaterfallChart extends HTMLElement {
 
       const li = el('li', { className: rowClasses });
       li.dataset.index = String(i);
+      li.dataset.type = type;
+      const t = entry.timings;
+      const phases = (
+        [
+          [
+            'blocked',
+            Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0)),
+          ],
+          ['dns', Math.max(0, t.dns)],
+          ['connect', Math.max(0, t.connect)],
+          ['ssl', Math.max(0, t.ssl ?? 0)],
+        ] as [string, number][]
+      )
+        .filter(([, v]) => v > 0)
+        .map(([p]) => p)
+        .join(' ');
+      if (phases) li.dataset.phases = phases;
 
       // # index — always the original 1-based position
       const cellIdx = el(

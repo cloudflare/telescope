@@ -202,6 +202,13 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 .wf-swatch--ev-lcp {
   background: #30a050;
 }
+.wf-swatch--ev-dcl,
+.wf-swatch--ev-load,
+.wf-swatch--ev-lcp {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
 
 .wf-swatch--html {
   background: linear-gradient(
@@ -419,6 +426,34 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 }
 .wf-row.row--open {
   background: var(--wf-row-open-bg);
+}
+
+/* ── Filter hover highlight ──────────────────────────────────────────────────
+   When a filter chip is hovered, dim all rows then un-dim matching ones.     */
+.wf-list-wrap[data-hover-type] .wf-row,
+.wf-list-wrap[data-hover-phase] .wf-row {
+  opacity: 0.2;
+  transition: opacity 0.1s;
+}
+.wf-list-wrap[data-hover-type] .wf-row[data-type] {
+  /* overridden per-type below */
+}
+/* Un-dim rows whose type matches the hovered chip */
+.wf-list-wrap[data-hover-type='html'] .wf-row[data-type='html'],
+.wf-list-wrap[data-hover-type='js'] .wf-row[data-type='js'],
+.wf-list-wrap[data-hover-type='css'] .wf-row[data-type='css'],
+.wf-list-wrap[data-hover-type='image'] .wf-row[data-type='image'],
+.wf-list-wrap[data-hover-type='font'] .wf-row[data-type='font'],
+.wf-list-wrap[data-hover-type='video'] .wf-row[data-type='video'],
+.wf-list-wrap[data-hover-type='other'] .wf-row[data-type='other'] {
+  opacity: 1;
+}
+/* Un-dim rows that have the hovered phase */
+.wf-list-wrap[data-hover-phase='blocked'] .wf-row[data-phases~='blocked'],
+.wf-list-wrap[data-hover-phase='dns'] .wf-row[data-phases~='dns'],
+.wf-list-wrap[data-hover-phase='connect'] .wf-row[data-phases~='connect'],
+.wf-list-wrap[data-hover-phase='ssl'] .wf-row[data-phases~='ssl'] {
+  opacity: 1;
 }
 
 /* ── Row-height class ────────────────────────────────────────────────────────
