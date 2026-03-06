@@ -75,7 +75,7 @@ function renderToolbar(types: string[]): string {
 
   return `
 <div class="wf-toolbar">
-  <div class="wf-filters" role="group" aria-label="Filter by resource type">
+  <div class="wf-legend-group wf-filters" role="group" aria-label="Filter by resource type">
     ${chips}
   </div>
   <div class="wf-legend-group" role="group" aria-label="Filter by connection phase">
