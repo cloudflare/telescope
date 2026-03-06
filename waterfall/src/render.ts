@@ -122,10 +122,13 @@ function renderRuler(totalMs: number): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Event lines overlay
-// The overlay lives inside .wf-col-header--timeline so that its width equals
-// the timeline column width. That means left:X% aligns with ruler ticks and
-// bar positions in both the CSS-only static render and after JS upgrade.
+// Overlays
+// Both overlays live inside .wf-col-header--timeline so their width equals the
+// timeline column width. That means left:X% aligns with ruler ticks and bar
+// positions in both the CSS-only static render and after JS upgrade.
+//
+// Grid lines go in .wf-grid-overlay (low z-index → behind request bars).
+// Event lines go in .wf-events-overlay (high z-index → in front of bars).
 // ─────────────────────────────────────────────────────────────────────────────
 
 function renderGridLines(totalMs: number): string {
@@ -339,7 +342,7 @@ export function renderToHTML(har: Har): string {
   // Ruler ticks
   const rulerHTML = renderRuler(totalMs);
 
-  // Grid lines + event lines (rendered inside the timeline column header)
+  // Grid lines (behind bars) + event lines (in front of bars)
   const gridLinesHTML = renderGridLines(totalMs);
   const eventLinesHTML = renderEventLines(pageTimings, totalMs);
 
@@ -371,8 +374,10 @@ ${renderToolbar(types)}
       <div class="wf-ruler" aria-hidden="true">
         ${rulerHTML}
       </div>
-      <div class="wf-events-overlay" aria-hidden="true">
+      <div class="wf-grid-overlay" aria-hidden="true">
         ${gridLinesHTML}
+      </div>
+      <div class="wf-events-overlay" aria-hidden="true">
         ${eventLinesHTML}
       </div>
     </div>
