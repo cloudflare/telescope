@@ -319,23 +319,22 @@ export class WaterfallChart extends HTMLElement {
         });
       });
 
-    // Wire up event toggle buttons
-    this._eventGroupEl = this.querySelector(
-      '.wf-legend-group[aria-label="Toggle metrics"]',
-    ) as HTMLElement;
-    this._eventGroupEl
-      ?.querySelectorAll<HTMLButtonElement>('[data-event]')
-      .forEach((btn) => {
-        btn.classList.add('active'); // all on by default
-        btn.addEventListener('click', () => {
-          const key = btn.dataset.event!;
-          this._hiddenEvents.has(key)
-            ? this._hiddenEvents.delete(key)
-            : this._hiddenEvents.add(key);
-          this._syncEventChips();
-          this._renderEventLines();
+    // Build event toggle buttons from actual pageTimings (adopt path).
+    // The group may not exist in pre-rendered HTML if no metrics were collected.
+    this._eventGroupEl =
+      (this.querySelector(
+        '.wf-legend-group[aria-label="Toggle metrics"]',
+      ) as HTMLElement | null) ??
+      (() => {
+        const g = el('div', {
+          className: 'wf-legend-group',
+          role: 'group',
+          'aria-label': 'Toggle metrics',
         });
-      });
+        this.querySelector('.wf-toolbar')?.appendChild(g);
+        return g;
+      })();
+    this._renderEventFilters();
 
     // Wire up row click → detail panel
     rows.forEach((li, i) => {
@@ -511,23 +510,7 @@ export class WaterfallChart extends HTMLElement {
       role: 'group',
       'aria-label': 'Toggle metrics',
     });
-    this._eventGroupEl.append(
-      mkEventBtn('ev-dcl', 'DOM Content Loaded'),
-      mkEventBtn('ev-load', 'Page Load'),
-      mkEventBtn('ev-lcp', 'Largest Contentful Paint'),
-    );
-    this._eventGroupEl
-      .querySelectorAll<HTMLButtonElement>('[data-event]')
-      .forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const key = btn.dataset.event!;
-          this._hiddenEvents.has(key)
-            ? this._hiddenEvents.delete(key)
-            : this._hiddenEvents.add(key);
-          this._syncEventChips();
-          this._renderEventLines();
-        });
-      });
+    // Buttons are populated later by _renderEventFilters() once pageTimings are known.
 
     this._toggleBtn = el('button', {
       className: 'wf-toggle-cols',
@@ -663,6 +646,7 @@ export class WaterfallChart extends HTMLElement {
       const types = uniqueTypes(entries);
       this._renderFilters(types);
       this._renderPhaseFilters(types);
+      this._renderEventFilters();
       this._renderRuler();
       this._renderRows();
       // Defer event lines until layout has settled
@@ -844,6 +828,61 @@ export class WaterfallChart extends HTMLElement {
           this._activePhaseFilters.has(btn.dataset.phase!),
         );
       });
+  }
+
+  /**
+   * Build event toggle buttons from the current _pageTimings — one button per
+   * metric that has a positive value. Replaces any previously rendered buttons.
+   * Also hides the group entirely when no metrics are present.
+   */
+  private _renderEventFilters() {
+    this._eventGroupEl.innerHTML = '';
+
+    const EVENTS: Array<{
+      key: string;
+      label: string;
+      hasValue: boolean;
+    }> = [
+      {
+        key: 'ev-dcl',
+        label: 'DOM Content Loaded',
+        hasValue: (this._pageTimings.onContentLoad ?? 0) > 0,
+      },
+      {
+        key: 'ev-load',
+        label: 'Page Load',
+        hasValue: (this._pageTimings.onLoad ?? 0) > 0,
+      },
+      {
+        key: 'ev-lcp',
+        label: 'Largest Contentful Paint',
+        hasValue: (this._pageTimings._lcp ?? 0) > 0,
+      },
+    ];
+
+    const present = EVENTS.filter((e) => e.hasValue);
+    this._eventGroupEl.hidden = present.length === 0;
+
+    for (const { key, label } of present) {
+      const btn = el('button', {
+        className: 'wf-filter-btn active',
+        'data-event': key,
+      });
+      btn.append(
+        el('span', {
+          className: `wf-swatch wf-swatch--thin wf-swatch--${key}`,
+        }),
+        document.createTextNode(label),
+      );
+      btn.addEventListener('click', () => {
+        this._hiddenEvents.has(key)
+          ? this._hiddenEvents.delete(key)
+          : this._hiddenEvents.add(key);
+        this._syncEventChips();
+        this._renderEventLines();
+      });
+      this._eventGroupEl.appendChild(btn);
+    }
   }
 
   /** Sync active/inactive CSS classes on event toggle buttons. */
