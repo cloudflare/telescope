@@ -66,7 +66,7 @@ const typeLabel = (t: string): string => TYPE_LABEL[t] ?? t;
 // Toolbar (filter chips + toggle button)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function renderToolbar(types: string[]): string {
+function renderToolbar(types: string[], pageTimings: HarPageTimings): string {
   const chips = types
     .map((t, i) => {
       const key = TYPE_SWATCH[t];
@@ -82,6 +82,21 @@ function renderToolbar(types: string[]): string {
   const eventBtn = (key: string, label: string) =>
     `<button class="wf-filter-btn" data-event="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`;
 
+  const eventBtns: string[] = [];
+  if ((pageTimings.onContentLoad ?? 0) > 0)
+    eventBtns.push(eventBtn('ev-dcl', 'DOM Content Loaded'));
+  if ((pageTimings.onLoad ?? 0) > 0)
+    eventBtns.push(eventBtn('ev-load', 'Page Load'));
+  if ((pageTimings._lcp ?? 0) > 0)
+    eventBtns.push(eventBtn('ev-lcp', 'Largest Contentful Paint'));
+
+  const metricsGroup =
+    eventBtns.length > 0
+      ? `<div class="wf-legend-group" role="group" aria-label="Toggle metrics">
+    ${eventBtns.join('\n    ')}
+  </div>`
+      : '';
+
   return `
 <div class="wf-toolbar">
   <div class="wf-legend-group wf-filters" role="group" aria-label="Filter by resource type">
@@ -93,11 +108,7 @@ function renderToolbar(types: string[]): string {
     ${phaseBtn('connect', 'TCP Connect')}
     ${phaseBtn('ssl', 'TLS Handshake')}
   </div>
-  <div class="wf-legend-group" role="group" aria-label="Toggle metrics">
-    ${eventBtn('ev-dcl', 'DOM Content Loaded')}
-    ${eventBtn('ev-load', 'Page Load')}
-    ${eventBtn('ev-lcp', 'Largest Contentful Paint')}
-  </div>
+  ${metricsGroup}
 </div>`.trim();
 }
 
@@ -359,7 +370,7 @@ export function renderToHTML(har: Har): string {
     .join('\n    ');
 
   return `
-${renderToolbar(types)}
+${renderToolbar(types, pageTimings)}
 
 <div class="wf-list-wrap">
   <div class="wf-col-headers" aria-hidden="true">
