@@ -221,8 +221,8 @@ function renderTimelineCell(
   return `<span class="wf-cell wf-cell--timeline" style="--wf-bar-end:${barEndPct}%">
         <div class="wf-bar-wrap">
           ${bars.join('\n          ')}
+          <span class="wf-bar-dur">${esc(durLabel)}</span>
         </div>
-        <span class="wf-bar-dur">${esc(durLabel)}</span>
       </span>`;
 }
 
