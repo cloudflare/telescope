@@ -53,6 +53,15 @@ const TYPE_SWATCH: Record<string, string> = {
   other: 'other',
 };
 
+/** Display labels for filter chips — uppercase where conventional. */
+const TYPE_LABEL: Record<string, string> = {
+  html: 'HTML',
+  js: 'JS',
+  css: 'CSS',
+};
+
+const typeLabel = (t: string): string => TYPE_LABEL[t] ?? t;
+
 // ───────────────────────────��─────────────────────────────────────────────────
 // Toolbar (filter chips + toggle button)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -64,7 +73,7 @@ function renderToolbar(types: string[]): string {
       const swatch = key
         ? `<span class="wf-swatch wf-swatch--thick wf-swatch--${key}"></span>`
         : '';
-      return `<button class="wf-filter-btn${i === 0 ? ' active' : ''}">${swatch}${esc(t)}</button>`;
+      return `<button class="wf-filter-btn${i === 0 ? ' active' : ''}">${swatch}${esc(typeLabel(t))}</button>`;
     })
     .join('\n    ');
 

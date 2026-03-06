@@ -265,9 +265,11 @@ export class WaterfallChart extends HTMLElement {
     const chipBtns = Array.from(
       this._filtersEl.querySelectorAll<HTMLButtonElement>('.wf-filter-btn'),
     );
-    const types = chipBtns.map((b) => b.textContent?.trim() ?? '');
+    const types = chipBtns.map(
+      (b) => b.textContent?.trim().toLowerCase() ?? '',
+    );
     chipBtns.forEach((btn) => {
-      const type = btn.textContent?.trim() ?? '';
+      const type = btn.textContent?.trim().toLowerCase() ?? '';
       btn.addEventListener('click', () => {
         if (type === 'all') {
           this._activeFilters = new Set(['all']);
@@ -724,6 +726,11 @@ export class WaterfallChart extends HTMLElement {
       video: 'video',
       other: 'other',
     };
+    const TYPE_LABEL: Record<string, string> = {
+      html: 'HTML',
+      js: 'JS',
+      css: 'CSS',
+    };
     this._filtersEl.innerHTML = '';
     for (const type of types) {
       const active =
@@ -742,7 +749,7 @@ export class WaterfallChart extends HTMLElement {
           }),
         );
       }
-      btn.appendChild(document.createTextNode(type));
+      btn.appendChild(document.createTextNode(TYPE_LABEL[type] ?? type));
       btn.addEventListener('click', () => {
         if (type === 'all') {
           this._activeFilters = new Set(['all']);
