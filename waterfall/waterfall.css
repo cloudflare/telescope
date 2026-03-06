@@ -363,7 +363,8 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 }
 .wf-col-header--timeline {
   position: relative;
-  padding-bottom: 0;
+  padding: 0 0.5rem;
+  padding-right: calc(0.5rem + var(--wf-dur-label-w, 3.5rem));
   border-left: 1px solid var(--wf-border);
   overflow: visible;
 }
@@ -546,7 +547,8 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 }
 .wf-bar-wrap {
   position: relative;
-  width: 100%;
+  /* Reserve space for the duration label so bars never push it outside the cell. */
+  width: calc(100% - var(--wf-dur-label-w, 3.5rem));
   /* Height is driven by --wf-bar-wrap-h set on the parent .wf-row via a
      row-height class (wf-row--rh18/20/22/24). */
   height: var(--wf-bar-wrap-h, 1.75rem);
