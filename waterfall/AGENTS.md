@@ -42,17 +42,43 @@ waterfall/
 │   ├── render.ts               renderToHTML(har) — pure server/build-time renderer
 │   ├── waterfall-chart.ts      Custom element class — the main file
 │   └── index.ts                Barrel re-export of everything public
+├── __tests__/                  Vitest test files
+│   └── theme.test.ts           Playwright-driven visual/theme checks
 ├── dist/                       Compiled JS + .d.ts (git-ignored, generated)
 ├── scripts/
-│   ���── gen-demo.js             Generates pre-rendered HTML and splices into demo pages
+│   └── gen-demo.js             Generates pre-rendered HTML and splices into demo pages
 ├── waterfall.css               Standalone stylesheet — include in <head>
 ├── demo.css                    Shared demo-page styles (nav, body, controls)
 ├── static.html                 Demo: pure HTML+CSS, no JS
 ├── progressive.html            Demo: HTML+CSS with lazy JS upgrade button
 ├── index.html                  Demo: full interactive (JS auto-loaded)
 ├── package.json                name: @telescope/waterfall, ESM, types
+├── vitest.config.ts            Vitest configuration (node environment)
 ├── tsconfig.json               strict + noUncheckedIndexedAccess
 └── README.md                   End-user usage docs
+```
+
+waterfall/
+├── src/ TypeScript source (compiled → dist/)
+│ ├── har.ts HAR 1.2 type definitions
+│ ├── config.ts Resource-type → bar-height / colour-key map
+│ ├── formatters.ts fmtSize(bytes), fmtMs(ms)
+│ ├── helpers.ts Pure analysis helpers (no side-effects)
+│ ├── render.ts renderToHTML(har) — pure server/build-time renderer
+│ ├── waterfall-chart.ts Custom element class — the main file
+│ └── index.ts Barrel re-export of everything public
+├── dist/ Compiled JS + .d.ts (git-ignored, generated)
+├── scripts/
+│ ���── gen-demo.js Generates pre-rendered HTML and splices into demo pages
+├── waterfall.css Standalone stylesheet — include in <head>
+├── demo.css Shared demo-page styles (nav, body, controls)
+├── static.html Demo: pure HTML+CSS, no JS
+├── progressive.html Demo: HTML+CSS with lazy JS upgrade button
+├── index.html Demo: full interactive (JS auto-loaded)
+├── package.json name: @telescope/waterfall, ESM, types
+├── tsconfig.json strict + noUncheckedIndexedAccess
+└── README.md End-user usage docs
+
 ```
 
 ---
@@ -117,6 +143,7 @@ means:
 ### DOM structure
 
 ```
+
 <waterfall-chart>
   <!-- Legend -->
   <div class="wf-legend"> … </div>
@@ -182,6 +209,7 @@ means:
       </li>
       …
     </ol>
+
   </div>
 
   <!-- Detail panel — inserted after .wf-list-wrap on row click -->
@@ -324,11 +352,12 @@ All tokens are CSS custom properties on `:root`:
 
 ```bash
 cd waterfall
-npm install           # install TypeScript
+npm install           # install TypeScript + Vitest + Playwright
 npm run build         # tsc → dist/
 npm run dev           # tsc --watch
 npm run typecheck     # type-check only, no emit
 npm run gen-demo      # regenerate pre-rendered HTML in all three demo pages
+npm test              # run Vitest/Playwright tests
 npx serve .           # serve at http://localhost:3000
 ```
 
