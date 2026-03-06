@@ -1080,30 +1080,40 @@ export class WaterfallChart extends HTMLElement {
 
   // ── Render rows (<li> items) ──────────────────────────────────────────────
 
-  private _renderRows() {
-    this._listEl.innerHTML = '';
-    let visIdx = 0;
-    this._allEntries.forEach((entry, i) => {
-      if (
-        !this._activeFilters.has('all') &&
-        !this._activeFilters.has(resourceType(entry))
-      )
-        return;
-      if (this._activePhaseFilters.size > 0) {
-        const t = entry.timings;
-        const phaseVal: Record<string, number> = {
-          blocked: Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0)),
-          dns: Math.max(0, t.dns),
-          connect: Math.max(0, t.connect),
-          ssl: Math.max(0, t.ssl ?? 0),
-        };
-        const passes = [...this._activePhaseFilters].some(
-          (p) => (phaseVal[p] ?? 0) > 0,
-        );
-        if (!passes) return;
-      }
-      visIdx++;
+  private _rowPasses(entry: HarEntry): boolean {
+    if (
+      !this._activeFilters.has('all') &&
+      !this._activeFilters.has(resourceType(entry))
+    )
+      return false;
+    if (this._activePhaseFilters.size > 0) {
+      const t = entry.timings;
+      const phaseVal: Record<string, number> = {
+        blocked: Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0)),
+        dns: Math.max(0, t.dns),
+        connect: Math.max(0, t.connect),
+        ssl: Math.max(0, t.ssl ?? 0),
+      };
+      return [...this._activePhaseFilters].some((p) => (phaseVal[p] ?? 0) > 0);
+    }
+    return true;
+  }
 
+  private _renderRows() {
+    // If rows already exist, just show/hide them — preserving DOM indexes.
+    const existing =
+      this._listEl.querySelectorAll<HTMLElement>('li[data-index]');
+    if (existing.length > 0) {
+      existing.forEach((li) => {
+        const i = Number(li.dataset.index);
+        const entry = this._allEntries[i];
+        li.style.display = entry && this._rowPasses(entry) ? '' : 'none';
+      });
+      return;
+    }
+
+    // Initial build — create one <li> per entry and leave filtering to CSS.
+    this._allEntries.forEach((entry, i) => {
       const type = resourceType(entry);
       const { barH } = typeConfig(type);
       const status = entry.response.status;
@@ -1131,11 +1141,11 @@ export class WaterfallChart extends HTMLElement {
       const li = el('li', { className: rowClasses });
       li.dataset.index = String(i);
 
-      // # index
+      // # index — always the original 1-based position
       const cellIdx = el(
         'span',
         { className: 'wf-cell wf-cell--idx' },
-        String(visIdx),
+        String(i + 1),
       );
 
       // URL (domain + path inline)
