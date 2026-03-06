@@ -85,6 +85,7 @@ export class WaterfallChart extends HTMLElement {
 
   // ── Light-DOM refs (populated by _buildDOM or _adoptDOM) ──────────────────
   private _filtersEl!: HTMLElement;
+  private _phaseGroupEl!: HTMLElement;
   private _listWrapEl!: HTMLElement;
   private _colHeadersEl!: HTMLElement;
   private _listEl!: HTMLOListElement;
@@ -99,6 +100,8 @@ export class WaterfallChart extends HTMLElement {
   // ── Component state ───────────────────────────────────────────────────────
   private _allEntries: HarEntry[] = [];
   private _activeFilters = new Set<string>(['all']);
+  private _activePhaseFilters = new Set<string>();
+  private _hiddenEvents = new Set<string>();
   private _openPanels = new Map<number, HTMLElement>();
   private _pageTimings: HarPageTimings = {};
   private _totalMs = 0;
@@ -162,6 +165,7 @@ export class WaterfallChart extends HTMLElement {
     this.innerHTML = '';
     this._openPanels.clear();
     this._activeFilters = new Set(['all']);
+    this._activePhaseFilters = new Set();
     this._allEntries = [];
     this._pageTimings = {};
     this._totalMs = 0;
@@ -198,6 +202,9 @@ export class WaterfallChart extends HTMLElement {
     this._overlayEl.appendChild(this._scrubberEl);
 
     this._filtersEl = this.querySelector('.wf-filters') as HTMLElement;
+    this._phaseGroupEl = this.querySelector(
+      '.wf-legend-group[aria-label="Filter by connection phase"]',
+    ) as HTMLElement;
     this._toggleBtn = this.querySelector(
       '.wf-toggle-cols',
     ) as HTMLButtonElement;
@@ -233,17 +240,37 @@ export class WaterfallChart extends HTMLElement {
       btn.addEventListener('click', () => {
         if (type === 'all') {
           this._activeFilters = new Set(['all']);
+          this._activePhaseFilters = new Set();
         } else {
           this._activeFilters.delete('all');
           this._activeFilters.has(type)
             ? this._activeFilters.delete(type)
             : this._activeFilters.add(type);
-          if (!this._activeFilters.size) this._activeFilters = new Set(['all']);
+          if (!this._activeFilters.size && !this._activePhaseFilters.size)
+            this._activeFilters = new Set(['all']);
         }
         this._syncFilterChips(types);
+        this._syncPhaseChips();
         this._renderRows();
       });
     });
+
+    // Wire up phase filter buttons
+    this._phaseGroupEl
+      ?.querySelectorAll<HTMLButtonElement>('[data-phase]')
+      .forEach((btn) => {
+        const phase = btn.dataset.phase!;
+        btn.addEventListener('click', () => {
+          this._activePhaseFilters.has(phase)
+            ? this._activePhaseFilters.delete(phase)
+            : this._activePhaseFilters.add(phase);
+          if (!this._activeFilters.size && !this._activePhaseFilters.size)
+            this._activeFilters = new Set(['all']);
+          this._syncFilterChips(types);
+          this._syncPhaseChips();
+          this._renderRows();
+        });
+      });
 
     // Wire up row click → detail panel
     rows.forEach((li, i) => {
@@ -360,75 +387,61 @@ export class WaterfallChart extends HTMLElement {
 
   private _buildDOM() {
     // ── Legend ──────────────────────────────────────────────────────────────
-    const legend = el('div', {
-      className: 'wf-legend',
-      'aria-label': 'Waterfall chart legend',
-    });
+    // ── Toolbar (filters + phase/event legend groups + col toggle) ────────────
+    const TYPE_SWATCH: Record<string, string> = {
+      html: 'html',
+      js: 'js',
+      css: 'css',
+      image: 'image',
+      font: 'font',
+      video: 'video',
+      other: 'other',
+    };
 
-    const mkSwatch = (thin: boolean, key: string) => {
-      const s = el('span', {
+    const mkSwatch = (thin: boolean, key: string) =>
+      el('span', {
         className: `wf-swatch wf-swatch--${thin ? 'thin' : 'thick'} wf-swatch--${key}`,
       });
-      return s;
-    };
-    const mkItem = (thin: boolean, key: string, label: string) => {
+
+    const mkLegendItem = (thin: boolean, key: string, label: string) => {
       const span = el('span', { className: 'wf-legend-item' });
-      span.appendChild(mkSwatch(thin, key));
-      span.appendChild(document.createTextNode(label));
+      span.append(mkSwatch(thin, key), document.createTextNode(label));
       return span;
     };
 
-    const row1 = el('div', { className: 'wf-legend-row' });
-    const heading1 = el(
-      'span',
-      { className: 'wf-legend-heading' },
-      'Connection phases',
-    );
-    row1.append(
-      heading1,
-      mkItem(true, 'blocked', 'Blocked'),
-      mkItem(true, 'dns', 'DNS'),
-      mkItem(true, 'connect', 'Connect'),
-      mkItem(true, 'ssl', 'SSL'),
-      mkItem(true, 'send', 'Send'),
-      mkItem(true, 'wait', 'Wait'),
-    );
-
-    const row2 = el('div', { className: 'wf-legend-row' });
-    const heading2 = el('span', { className: 'wf-legend-heading' });
-    heading2.append(
-      document.createTextNode('File type '),
-      Object.assign(el('span', { className: 'wf-legend-note' }), {
-        textContent:
-          '(light\u00a0=\u00a0sent \u00b7 dark\u00a0=\u00a0received)',
-      }),
-    );
-    row2.append(
-      heading2,
-      mkItem(false, 'html', 'HTML'),
-      mkItem(false, 'js', 'JS'),
-      mkItem(false, 'css', 'CSS'),
-      mkItem(false, 'image', 'Image'),
-      mkItem(false, 'font', 'Font'),
-      mkItem(false, 'video', 'Video'),
-      mkItem(false, 'other', 'Other'),
-    );
-
-    const row3 = el('div', { className: 'wf-legend-row' });
-    row3.append(
-      el('span', { className: 'wf-legend-heading' }, 'Events'),
-      mkItem(true, 'ev-dcl', 'DCL'),
-      mkItem(true, 'ev-load', 'Load'),
-    );
-
-    legend.append(row1, row2, row3);
-
-    // ��─ Toolbar ──────────────────────────────────────────────────────────────
     this._filtersEl = el('div', {
       className: 'wf-filters',
       role: 'group',
       'aria-label': 'Filter by resource type',
     });
+
+    this._phaseGroupEl = el('div', {
+      className: 'wf-legend-group',
+      role: 'group',
+      'aria-label': 'Filter by connection phase',
+    });
+    for (const [phase, label] of [
+      ['blocked', 'Blocked'],
+      ['dns', 'DNS Lookup'],
+      ['connect', 'TCP Connect'],
+      ['ssl', 'TLS Handshake'],
+    ] as const) {
+      const btn = el('button', { className: 'wf-filter-btn' });
+      btn.dataset.phase = phase;
+      btn.append(mkSwatch(true, phase), document.createTextNode(label));
+      this._phaseGroupEl.appendChild(btn);
+    }
+
+    const eventGroup = el('div', {
+      className: 'wf-legend-group',
+      'aria-label': 'Events',
+    });
+    eventGroup.append(
+      mkLegendItem(true, 'ev-dcl', 'DOM Content Loaded'),
+      mkLegendItem(true, 'ev-load', 'Page Load'),
+      mkLegendItem(true, 'ev-lcp', 'Largest Contentful Paint'),
+    );
+
     this._toggleBtn = el(
       'button',
       { className: 'wf-toggle-cols', 'aria-expanded': 'false' },
@@ -437,7 +450,12 @@ export class WaterfallChart extends HTMLElement {
     this._toggleBtn.addEventListener('click', () => this._onToggleCols());
 
     const toolbar = el('div', { className: 'wf-toolbar' });
-    toolbar.append(this._filtersEl, this._toggleBtn);
+    toolbar.append(
+      this._filtersEl,
+      this._phaseGroupEl,
+      eventGroup,
+      this._toggleBtn,
+    );
 
     // ── List wrapper ──────────────────────────────────────────────────────────
 
@@ -505,13 +523,7 @@ export class WaterfallChart extends HTMLElement {
     this._errorEl.hidden = true;
 
     // ── Append everything to the element itself (light DOM) ───────────────────
-    this.append(
-      legend,
-      toolbar,
-      this._listWrapEl,
-      this._loadingEl,
-      this._errorEl,
-    );
+    this.append(toolbar, this._listWrapEl, this._loadingEl, this._errorEl);
   }
 
   // ── Column toggle ─────────────────────────────────────────────────────────
@@ -553,7 +565,9 @@ export class WaterfallChart extends HTMLElement {
       this._totalMs = computeTotalMs(entries);
       this._originMs = +new Date(entries[0]!.startedDateTime);
       this._showLoading(false);
-      this._renderFilters(uniqueTypes(entries));
+      const types = uniqueTypes(entries);
+      this._renderFilters(types);
+      this._renderPhaseFilters(types);
       this._renderRuler();
       this._renderRows();
       // Defer event lines until layout has settled
@@ -574,6 +588,7 @@ export class WaterfallChart extends HTMLElement {
   private _reset() {
     this._allEntries = [];
     this._activeFilters = new Set(['all']);
+    this._activePhaseFilters = new Set();
     this._openPanels.clear();
     this._pageTimings = {};
     this._totalMs = 0;
@@ -606,25 +621,48 @@ export class WaterfallChart extends HTMLElement {
   // ── Filter chips ──────────────────────────────────────────────────────────
 
   private _renderFilters(types: string[]) {
+    const TYPE_SWATCH: Record<string, string> = {
+      html: 'html',
+      js: 'js',
+      css: 'css',
+      image: 'image',
+      font: 'font',
+      video: 'video',
+      other: 'other',
+    };
     this._filtersEl.innerHTML = '';
     for (const type of types) {
-      const active = this._activeFilters.has(type);
-      const btn = el(
-        'button',
-        { className: `wf-filter-btn${active ? ' active' : ''}` },
-        type,
-      );
+      const active =
+        type === 'all'
+          ? this._activeFilters.has('all') &&
+            this._activePhaseFilters.size === 0
+          : this._activeFilters.has(type);
+      const btn = el('button', {
+        className: `wf-filter-btn${active ? ' active' : ''}`,
+      });
+      const key = TYPE_SWATCH[type];
+      if (key) {
+        btn.appendChild(
+          el('span', {
+            className: `wf-swatch wf-swatch--thick wf-swatch--${key}`,
+          }),
+        );
+      }
+      btn.appendChild(document.createTextNode(type));
       btn.addEventListener('click', () => {
         if (type === 'all') {
           this._activeFilters = new Set(['all']);
+          this._activePhaseFilters = new Set();
         } else {
           this._activeFilters.delete('all');
           this._activeFilters.has(type)
             ? this._activeFilters.delete(type)
             : this._activeFilters.add(type);
-          if (!this._activeFilters.size) this._activeFilters = new Set(['all']);
+          if (!this._activeFilters.size && !this._activePhaseFilters.size)
+            this._activeFilters = new Set(['all']);
         }
         this._renderFilters(types);
+        this._renderPhaseFilters(types);
         this._renderRows();
       });
       this._filtersEl.appendChild(btn);
@@ -638,8 +676,59 @@ export class WaterfallChart extends HTMLElement {
     );
     btns.forEach((btn, i) => {
       const type = types[i] ?? '';
-      btn.classList.toggle('active', this._activeFilters.has(type));
+      const isActive =
+        type === 'all'
+          ? this._activeFilters.has('all') &&
+            this._activePhaseFilters.size === 0
+          : this._activeFilters.has(type);
+      btn.classList.toggle('active', isActive);
     });
+  }
+
+  /** Build phase filter buttons for the dynamic (JS-rendered) path. */
+  private _renderPhaseFilters(types: string[]) {
+    this._phaseGroupEl.innerHTML = '';
+    for (const [phase, label] of [
+      ['blocked', 'Blocked'],
+      ['dns', 'DNS Lookup'],
+      ['connect', 'TCP Connect'],
+      ['ssl', 'TLS Handshake'],
+    ] as const) {
+      const active = this._activePhaseFilters.has(phase);
+      const btn = el('button', {
+        className: `wf-filter-btn${active ? ' active' : ''}`,
+      });
+      btn.dataset.phase = phase;
+      btn.append(
+        el('span', {
+          className: `wf-swatch wf-swatch--thin wf-swatch--${phase}`,
+        }),
+        document.createTextNode(label),
+      );
+      btn.addEventListener('click', () => {
+        this._activePhaseFilters.has(phase)
+          ? this._activePhaseFilters.delete(phase)
+          : this._activePhaseFilters.add(phase);
+        if (!this._activeFilters.size && !this._activePhaseFilters.size)
+          this._activeFilters = new Set(['all']);
+        this._renderFilters(types);
+        this._renderPhaseFilters(types);
+        this._renderRows();
+      });
+      this._phaseGroupEl.appendChild(btn);
+    }
+  }
+
+  /** Sync active/inactive CSS classes on phase filter buttons (adopt path). */
+  private _syncPhaseChips() {
+    this._phaseGroupEl
+      ?.querySelectorAll<HTMLButtonElement>('[data-phase]')
+      .forEach((btn) => {
+        btn.classList.toggle(
+          'active',
+          this._activePhaseFilters.has(btn.dataset.phase!),
+        );
+      });
   }
 
   // ── Timeline cell ─────────────────────────────────────────────────────────
@@ -684,9 +773,7 @@ export class WaterfallChart extends HTMLElement {
       ['wb--blocked wb--phase', blocked, 'Blocked'],
       ['wb--dns wb--phase', dns, 'DNS Lookup'],
       ['wb--connect wb--phase', connect, 'TCP Connect'],
-      ['wb--ssl wb--phase', ssl, 'SSL Handshake'],
-      ['wb--send wb--phase', send, 'Send'],
-      ['wb--wait wb--phase', wait, 'Wait (TTFB)'],
+      ['wb--ssl wb--phase', ssl, 'TLS Handshake'],
     ];
     let cursor = offsetPct;
     for (const [cls, val, label] of phases) {
@@ -712,7 +799,15 @@ export class WaterfallChart extends HTMLElement {
       `Receive: ${fmtMs(receive)}`,
     );
 
-    cell.appendChild(wrap);
+    const barEndPct = (offsetPct + (entry.time / this._totalMs) * 100).toFixed(
+      4,
+    );
+    cell.style.setProperty('--wf-bar-end', `${barEndPct}%`);
+
+    const durLabel = el('span', { className: 'wf-bar-dur' });
+    durLabel.textContent = `${Math.round(entry.time)} ms`;
+
+    cell.append(wrap, durLabel);
     return cell;
   }
 
@@ -782,7 +877,7 @@ export class WaterfallChart extends HTMLElement {
       ['wb--blocked', 'Blocked/Queued', blocked],
       ['wb--dns', 'DNS Lookup', Math.max(0, t.dns)],
       ['wb--connect', 'TCP Connect', Math.max(0, t.connect)],
-      ['wb--ssl', 'SSL Handshake', Math.max(0, t.ssl ?? 0)],
+      ['wb--ssl', 'TLS Handshake', Math.max(0, t.ssl ?? 0)],
       ['wb--send', 'Send', Math.max(0, t.send)],
       ['wb--wait', 'Wait (TTFB)', Math.max(0, t.wait)],
       ['wb--wait', 'Receive', Math.max(0, t.receive)],
@@ -984,6 +1079,19 @@ export class WaterfallChart extends HTMLElement {
         !this._activeFilters.has(resourceType(entry))
       )
         return;
+      if (this._activePhaseFilters.size > 0) {
+        const t = entry.timings;
+        const phaseVal: Record<string, number> = {
+          blocked: Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0)),
+          dns: Math.max(0, t.dns),
+          connect: Math.max(0, t.connect),
+          ssl: Math.max(0, t.ssl ?? 0),
+        };
+        const passes = [...this._activePhaseFilters].some(
+          (p) => (phaseVal[p] ?? 0) > 0,
+        );
+        if (!passes) return;
+      }
       visIdx++;
 
       const type = resourceType(entry);
