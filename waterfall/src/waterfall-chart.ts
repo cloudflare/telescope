@@ -342,15 +342,16 @@ export class WaterfallChart extends HTMLElement {
         if (line.classList.contains('wf-event--dcl'))
           timings.onContentLoad = ms;
         else if (line.classList.contains('wf-event--load')) timings.onLoad = ms;
+        else if (line.classList.contains('wf-event--lcp')) timings._lcp = ms;
       });
     return timings;
   }
 
   /** Parse ms back out of a formatted label like "DCL 340ms" or "Load 1.23s". */
   private _parseLabelMs(label: string): number {
-    const secMatch = label.match(/([\d.]+)s$/);
+    const secMatch = label.match(/([\d.]+) ?s$/);
     if (secMatch) return parseFloat(secMatch[1]!) * 1000;
-    const msMatch = label.match(/(\d+)ms$/);
+    const msMatch = label.match(/(\d+) ?ms$/);
     if (msMatch) return parseInt(msMatch[1]!, 10);
     return 0;
   }
@@ -893,6 +894,7 @@ export class WaterfallChart extends HTMLElement {
     )) {
       const line = el('div', { className: `wf-event-line ${cls}` });
       line.dataset.label = fmtEventLabel(label, ms);
+      line.dataset.name = label;
       line.style.left = `${(ms / this._totalMs) * 100}%`;
       this._overlayEl.appendChild(line);
     }
@@ -909,19 +911,65 @@ export class WaterfallChart extends HTMLElement {
       '.wf-scrubber__label',
     ) as HTMLElement;
 
+    // Snap threshold in CSS pixels: scrubber locks to a metric when closer
+    // than this many pixels.
+    const SNAP_PX = 8;
+
+    // Track which event line the scrubber is currently snapped to so we can
+    // remove the snapped class when it moves away.
+    let snappedLine: HTMLElement | null = null;
+
+    const snapTo = (line: HTMLElement) => {
+      if (snappedLine === line) return;
+      if (snappedLine) snappedLine.classList.remove('wf-event-line--snapped');
+      snappedLine = line;
+      line.classList.add('wf-event-line--snapped');
+    };
+
+    const unsnap = () => {
+      if (snappedLine) snappedLine.classList.remove('wf-event-line--snapped');
+      snappedLine = null;
+    };
+
     this._listWrapEl.addEventListener('mousemove', (e: MouseEvent) => {
       if (this._totalMs <= 0) return;
       const rect = this._overlayEl.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const pct = Math.min(1, Math.max(0, x / rect.width));
-      const ms = Math.round(pct * this._totalMs);
-      this._scrubberEl.style.left = `${pct * 100}%`;
-      label.textContent = `${ms}ms`;
-      this._scrubberEl.classList.add('wf-scrubber--visible');
+
+      // Find the closest event line within snap threshold.
+      const eventLines = Array.from(
+        this._overlayEl.querySelectorAll<HTMLElement>('.wf-event-line'),
+      );
+      let closest: HTMLElement | null = null;
+      let closestDx = Infinity;
+      for (const line of eventLines) {
+        const linePct = parseFloat(line.style.left) / 100;
+        const linePx = linePct * rect.width;
+        const dx = Math.abs(x - linePx);
+        if (dx < closestDx) {
+          closestDx = dx;
+          closest = line;
+        }
+      }
+
+      if (closest && closestDx <= SNAP_PX) {
+        // Snap: hide scrubber, show metric label.
+        snapTo(closest);
+        this._scrubberEl.classList.remove('wf-scrubber--visible');
+      } else {
+        // Free: show scrubber with cursor position in ms.
+        const ms = Math.round(pct * this._totalMs);
+        this._scrubberEl.style.left = `${pct * 100}%`;
+        label.textContent = `${ms} ms`;
+        unsnap();
+        this._scrubberEl.classList.add('wf-scrubber--visible');
+      }
     });
 
     this._listWrapEl.addEventListener('mouseleave', () => {
       this._scrubberEl.classList.remove('wf-scrubber--visible');
+      unsnap();
     });
   }
 

@@ -713,19 +713,23 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: var(--wf-text);
-  opacity: 0;
+  background: transparent;
   pointer-events: none;
   /* left is set via JS */
-  transition: opacity 0.1s;
+  transition: background 0.1s;
   z-index: 1;
 }
 
 .wf-scrubber--visible {
-  opacity: 0.7;
+  background: color-mix(in srgb, var(--wf-text) 70%, transparent);
+}
+
+.wf-scrubber--visible .wf-scrubber__label {
+  display: block;
 }
 
 .wf-scrubber__label {
+  display: none;
   position: absolute;
   /* Sit inside the header band — the overlay's top:0 is the top of the
      .wf-col-header--timeline cell, so top:2px lands in the ruler area. */
@@ -747,31 +751,59 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 
 .wf-event-line {
   position: absolute;
-  top: 0;
+  /* Start the line below the label pill so it doesn't protrude above it.
+     Pill sits at top:2px, height = 0.6rem × 1.4 line-height + 2px padding = ~calc(0.6rem * 1.4 + 4px).
+     Add 2px gap between pill bottom and line top. */
+  --wf-pill-h: calc(0.6rem * 1.4 + 2px);
+  top: calc(2px + var(--wf-pill-h) + 2px);
   bottom: 0;
   width: 2px;
-  opacity: 0.75;
+  /* Use alpha on the background instead of opacity so the ::after pill
+     is not affected and can remain fully opaque. */
+  background: color-mix(
+    in srgb,
+    var(--wf-event-color) 75%,
+    transparent
+  ) !important;
 }
 .wf-event-line::after {
-  content: attr(data-label);
+  content: attr(data-name);
   position: absolute;
-  top: 2px;
-  left: 3px;
+  top: calc(-1 * (var(--wf-pill-h) + 2px));
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 0.6rem;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  opacity: 0.9;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.4;
   font-weight: 600;
-  color: inherit;
+  /* Pill background = accent colour passed down via custom property.
+     color is reset to --wf-panel so text is readable over the coloured pill. */
+  background: var(--wf-event-color);
+  color: var(--wf-panel);
   text-transform: none;
   letter-spacing: 0;
 }
+
+.wf-event-line--snapped::after {
+  content: attr(data-label);
+}
 .wf-event--dcl {
-  background: #d060d0;
-  color: #d060d0;
+  --wf-event-color: #d060d0;
+  background: var(--wf-event-color);
+  color: var(--wf-event-color);
 }
 .wf-event--load {
-  background: #4060d0;
-  color: #4060d0;
+  --wf-event-color: #4060d0;
+  background: var(--wf-event-color);
+  color: var(--wf-event-color);
+}
+.wf-event--lcp {
+  --wf-event-color: #30a050;
+  background: var(--wf-event-color);
+  color: var(--wf-event-color);
 }
 
 /* ── Detail panel ────────────────────────────────────────────────────────────*/

@@ -115,6 +115,8 @@ export interface HarPage {
   pageTimings: {
     onContentLoad?: number;
     onLoad?: number;
+    /** Largest Contentful Paint (ms) — non-standard, stored as _lcp */
+    _lcp?: number;
   };
 }
 

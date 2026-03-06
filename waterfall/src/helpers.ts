@@ -67,7 +67,7 @@ export function uniqueTypes(entries: HarEntry[]): string[] {
 
 /** Format a page-timing value as a human-readable label, e.g. "DCL 1.23s". */
 export function fmtEventLabel(label: string, ms: number): string {
-  return `${label} ${Math.round(ms)}ms`;
+  return `${label} ${Math.round(ms)} ms`;
 }
 
 /** Extract DCL and Load events from HAR page timings, filtered to valid values. */
@@ -84,5 +84,7 @@ export function pageEvents(
     });
   if ((timings.onLoad ?? 0) > 0)
     events.push({ ms: timings.onLoad!, cls: 'wf-event--load', label: 'Load' });
+  if ((timings._lcp ?? 0) > 0)
+    events.push({ ms: timings._lcp!, cls: 'wf-event--lcp', label: 'LCP' });
   return events.filter((ev) => ev.ms > 0 && ev.ms <= totalMs);
 }
