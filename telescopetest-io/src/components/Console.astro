@@ -1,0 +1,272 @@
+---
+import type { ConsoleMessage } from '@/lib/types/console';
+import Summary from './Summary.astro';
+import MetricsSection from './metrics/MetricsSection.astro';
+
+export interface Props {
+  messages: ConsoleMessage[];
+}
+
+const { messages } = Astro.props;
+
+function getSeverityColor(type: string): string {
+  switch (type.toLowerCase()) {
+    case 'error':
+      return 'error';
+    case 'warning':
+      return 'warning';
+    case 'info':
+    case 'log':
+      return 'info';
+    case 'debug':
+      return 'debug';
+    default:
+      return 'unknown';
+  }
+}
+
+function getSeverityLabel(type: string): string {
+  switch (type.toLowerCase()) {
+    case 'error':
+      return 'Error';
+    case 'warning':
+      return 'Warning';
+    case 'info':
+    case 'log':
+      return 'Information';
+    case 'debug':
+      return 'Debug';
+    default:
+      return type;
+  }
+}
+
+const typeCounts = messages.reduce((acc, msg) => {
+  const severity = getSeverityLabel(msg.type);
+  acc[severity] = (acc[severity] || 0) + 1;
+  return acc;
+}, {} as Record<string, number>);
+
+const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+---
+
+<div class="console-container">
+  {messages.length === 0 ? (
+    <p class="console-unavailable">No console messages for this test.</p>
+  ) : (
+    <>
+      <Summary
+        heading="Console Messages"
+        metrics={sortedTypes.map(([type, count]) => ({
+          label: type,
+          value: count.toString(),
+        }))}
+      />
+
+      <MetricsSection title="Messages">
+        <div class="table-wrapper">
+          <table class="console-table">
+            <thead>
+              <tr>
+                <th class="col-severity">Severity</th>
+                <th class="col-message">Message</th>
+                <th class="col-line">Line</th>
+              </tr>
+            </thead>
+            <tbody>
+              {messages.map((msg) => {
+                const severity = getSeverityColor(msg.type);
+                const label = getSeverityLabel(msg.type);
+                return (
+                  <tr class:list={['console-row', `severity-${severity}`]}>
+                    <td class="severity-cell">
+                      <span class:list={['severity-badge', `severity-${severity}`]}>
+                        {label}
+                      </span>
+                    </td>
+                    <td class="message-cell" title={msg.text}>
+                      {msg.text}
+                    </td>
+                    <td class="line-cell">
+                      {msg.location.lineNumber > 0 ? msg.location.lineNumber : '-'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </MetricsSection>
+    </>
+  )}
+</div>
+
+<style>
+  .console-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .console-unavailable {
+    padding: 2.5rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    margin: 0;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .console-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .console-table thead {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .console-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .col-severity {
+    width: 10rem;
+  }
+
+  .col-message {
+    min-width: 20rem;
+  }
+
+  .col-line {
+    width: 6rem;
+    text-align: right;
+  }
+
+  .console-row {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .console-row td {
+    padding: 0.75rem 1rem;
+  }
+
+  .severity-cell {
+    vertical-align: top;
+  }
+
+  .severity-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .severity-badge.severity-error {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+  }
+
+  .severity-badge.severity-warning {
+    background: rgba(234, 179, 8, 0.15);
+    color: #eab308;
+  }
+
+  .severity-badge.severity-info {
+    background: rgba(156, 163, 175, 0.15);
+    color: #9ca3af;
+  }
+
+  .severity-badge.severity-debug {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+  }
+
+  .severity-badge.severity-unknown {
+    background: rgba(209, 213, 219, 0.15);
+    color: #d1d5db;
+  }
+
+  .message-cell {
+    color: var(--text);
+    font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    font-size: 0.8125rem;
+    word-break: break-word;
+    max-width: 50rem;
+  }
+
+  .line-cell {
+    color: var(--muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .severity-badge.severity-error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    .severity-badge.severity-warning {
+      background: rgba(234, 179, 8, 0.2);
+      color: #facc15;
+    }
+
+    .severity-badge.severity-info {
+      background: rgba(156, 163, 175, 0.2);
+      color: #d1d5db;
+    }
+
+    .severity-badge.severity-debug {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+
+    .severity-badge.severity-unknown {
+      background: rgba(209, 213, 219, 0.2);
+      color: #e5e7eb;
+    }
+  }
+
+  [data-theme-override='dark'] .severity-badge.severity-error {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+
+  [data-theme-override='dark'] .severity-badge.severity-warning {
+    background: rgba(234, 179, 8, 0.2);
+    color: #facc15;
+  }
+
+  [data-theme-override='dark'] .severity-badge.severity-info {
+    background: rgba(156, 163, 175, 0.2);
+    color: #d1d5db;
+  }
+
+  [data-theme-override='dark'] .severity-badge.severity-debug {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+  }
+
+  [data-theme-override='dark'] .severity-badge.severity-unknown {
+    background: rgba(209, 213, 219, 0.2);
+    color: #e5e7eb;
+  }
+</style>

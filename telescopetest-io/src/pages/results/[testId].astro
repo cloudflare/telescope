@@ -7,12 +7,14 @@ import Tabs from '@/components/Tabs.astro';
 import AllMetrics from '@/components/AllMetrics.astro';
 import Waterfall from '@/components/Waterfall.astro';
 import Resources from '@/components/Resources.astro';
+import Console from '@/components/Console.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/testRepository';
 
 import type { MetricsJson } from '@/lib/types/results';
 import type { ResourceTiming } from '@/lib/types/resources';
+import type { ConsoleMessage } from '@/lib/types/console';
 import {
   extractFcp,
   extractLcp,
@@ -91,6 +93,18 @@ try {
 } catch (err) {
   console.error('Error reading resources.json:', err);
   // resources unavailable — render without them
+}
+
+// --- Console Messages ---
+let consoleMessages: ConsoleMessage[] = [];
+try {
+  const consoleObj = await env.RESULTS_BUCKET.get(`${testId}/console.json`);
+  if (consoleObj) {
+    consoleMessages = await consoleObj.json<ConsoleMessage[]>();
+  }
+} catch (err) {
+  console.error('Error reading console.json:', err);
+  // console messages unavailable — render without them
 }
 
 // Extract metric values
@@ -233,6 +247,10 @@ const formattedDate = date.toLocaleString('en-US', {
             </div>
           )
         }
+      </div>
+
+      <div slot="console">
+        <Console messages={consoleMessages} />
       </div>
     </Tabs>
   </div>
