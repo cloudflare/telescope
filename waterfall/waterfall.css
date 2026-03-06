@@ -364,7 +364,6 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 .wf-col-header--timeline {
   position: relative;
   padding: 0 0.5rem;
-  padding-right: calc(0.5rem + var(--wf-dur-label-w, 3.5rem));
   border-left: 1px solid var(--wf-border);
   overflow: visible;
 }
@@ -671,7 +670,7 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 /* ── Ruler ───────────────────────────────────────────────────────────────────*/
 .wf-ruler {
   position: relative;
-  width: 100%;
+  width: calc(100% - var(--wf-dur-label-w, 3.5rem));
   height: 1.25rem;
   overflow: hidden;
 }
@@ -723,7 +722,7 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 .wf-events-overlay {
   position: absolute;
   left: 0;
-  width: 100%;
+  width: calc(100% - var(--wf-dur-label-w, 3.5rem));
   pointer-events: none;
 }
 
