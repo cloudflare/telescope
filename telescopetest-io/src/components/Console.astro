@@ -1,7 +1,5 @@
 ---
 import type { ConsoleMessage } from '@/lib/types/console';
-import Summary from './Summary.astro';
-import MetricsSection from './metrics/MetricsSection.astro';
 
 export interface Props {
   messages: ConsoleMessage[];
@@ -9,105 +7,79 @@ export interface Props {
 
 const { messages } = Astro.props;
 
-function getSeverityColor(type: string): string {
-  switch (type.toLowerCase()) {
-    case 'error':
-      return 'error';
-    case 'warning':
-      return 'warning';
-    case 'info':
-    case 'log':
-      return 'info';
-    case 'debug':
-      return 'debug';
-    default:
-      return 'unknown';
-  }
-}
+const SEVERITY_MAP: Record<string, string> = {
+  error: 'error',
+  warning: 'warning',
+  info: 'info',
+  log: 'info',
+  debug: 'debug',
+};
 
-function getSeverityLabel(type: string): string {
-  switch (type.toLowerCase()) {
-    case 'error':
-      return 'Error';
-    case 'warning':
-      return 'Warning';
-    case 'info':
-    case 'log':
-      return 'Information';
-    case 'debug':
-      return 'Debug';
-    default:
-      return type;
-  }
-}
+const getSeverity = (type: string) => SEVERITY_MAP[type.toLowerCase()] || 'other';
 
-const typeCounts = messages.reduce((acc, msg) => {
-  const severity = getSeverityLabel(msg.type);
+const severityCounts = messages.reduce((acc, msg) => {
+  const severity = getSeverity(msg.type);
   acc[severity] = (acc[severity] || 0) + 1;
   return acc;
 }, {} as Record<string, number>);
-
-const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
 ---
 
-<div class="console-container">
-  {messages.length === 0 ? (
-    <p class="console-unavailable">No console messages for this test.</p>
-  ) : (
-    <>
-      <Summary
-        heading="Console Messages"
-        metrics={sortedTypes.map(([type, count]) => ({
-          label: type,
-          value: count.toString(),
-        }))}
-      />
+{messages.length === 0 ? (
+  <p class="console-unavailable">No console messages for this test.</p>
+) : (
+  <div class="console-root">
+    <div class="console-legend" aria-label="Console message severity legend">
+      <div class="console-legend-row">
+        <span class="console-legend-heading">Severity</span>
+        <span class="console-legend-item"><span class="swatch swatch--error"></span>Error</span>
+        <span class="console-legend-item"><span class="swatch swatch--warning"></span>Warning</span>
+        <span class="console-legend-item"><span class="swatch swatch--info"></span>Info/Log</span>
+        <span class="console-legend-item"><span class="swatch swatch--debug"></span>Debug</span>
+        <span class="console-legend-item"><span class="swatch swatch--other"></span>Other</span>
+      </div>
+    </div>
 
-      <MetricsSection title="Messages">
-        <div class="table-wrapper">
-          <table class="console-table">
-            <thead>
-              <tr>
-                <th class="col-severity">Severity</th>
-                <th class="col-message">Message</th>
-                <th class="col-line">Line</th>
+    <div class="console-toolbar">
+      <div class="console-filters" id="console-filters" role="group" aria-label="Filter by severity" data-counts={JSON.stringify(severityCounts)}></div>
+    </div>
+
+    <div class="console-table-wrap">
+      <table class="console-table" id="console-table">
+        <thead>
+          <tr>
+            <th class="col-idx" scope="col">#</th>
+            <th class="col-severity" scope="col">Severity</th>
+            <th class="col-message" scope="col">Message</th>
+            <th class="col-line" scope="col">Line</th>
+          </tr>
+        </thead>
+        <tbody id="console-tbody">
+          {messages.map((msg, index) => {
+            const severity = getSeverity(msg.type);
+            return (
+              <tr class:list={['console-row', `severity-${severity}`]} data-severity={severity} data-type={msg.type}>
+                <td class="td-idx">{index + 1}</td>
+                <td class="td-severity">
+                  <span class:list={['severity-badge', `severity-${severity}`]}>
+                    {msg.type}
+                  </span>
+                </td>
+                <td class="td-message" title={msg.text}>
+                  {msg.text}
+                </td>
+                <td class="td-line">
+                  {msg.location.lineNumber > 0 ? msg.location.lineNumber : '-'}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {messages.map((msg) => {
-                const severity = getSeverityColor(msg.type);
-                const label = getSeverityLabel(msg.type);
-                return (
-                  <tr class:list={['console-row', `severity-${severity}`]}>
-                    <td class="severity-cell">
-                      <span class:list={['severity-badge', `severity-${severity}`]}>
-                        {label}
-                      </span>
-                    </td>
-                    <td class="message-cell" title={msg.text}>
-                      {msg.text}
-                    </td>
-                    <td class="line-cell">
-                      {msg.location.lineNumber > 0 ? msg.location.lineNumber : '-'}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </MetricsSection>
-    </>
-  )}
-</div>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
 
 <style>
-  .console-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
   .console-unavailable {
     padding: 2.5rem;
     text-align: center;
@@ -118,155 +90,266 @@ const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
     border-radius: 0.75rem;
     margin: 0;
   }
-
-  .table-wrapper {
-    overflow-x: auto;
+  .console-root {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
-
+  .console-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+  }
+  .console-legend-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .console-legend-heading {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 5rem;
+  }
+  .console-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .swatch {
+    display: inline-block;
+    width: 1.375rem;
+    height: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .swatch--error { background: #dc2626; }
+  .swatch--warning { background: #ca8a04; }
+  .swatch--info { background: #6b7280; }
+  .swatch--debug { background: #3b82f6; }
+  .swatch--other { background: #10b981; }
+  @media (prefers-color-scheme: dark) {
+    .swatch--error { background: #f87171; }
+    .swatch--warning { background: #facc15; }
+    .swatch--info { background: #d1d5db; }
+    .swatch--debug { background: #60a5fa; }
+    .swatch--other { background: #34d399; }
+  }
+  [data-theme-override='dark'] {
+    .swatch--error { background: #f87171; }
+    .swatch--warning { background: #facc15; }
+    .swatch--info { background: #d1d5db; }
+    .swatch--debug { background: #60a5fa; }
+    .swatch--other { background: #34d399; }
+  }
+  .console-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .console-filters {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  .console-table-wrap {
+    position: relative;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+  }
   .console-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
-  }
-
-  .console-table thead {
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .console-table th {
-    text-align: left;
-    padding: 0.75rem 1rem;
-    font-weight: 600;
-    color: var(--muted);
     font-size: 0.8125rem;
+    table-layout: fixed;
+  }
+  .console-table thead th {
+    padding: 0.375rem 0.625rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
   }
+  .col-idx { width: 2.25rem; text-align: center; }
+  .col-severity { width: 11rem; }
+  .col-message { min-width: 20rem; }
+  .col-line { width: 5rem; text-align: right; }
+</style>
 
-  .col-severity {
-    width: 10rem;
-  }
-
-  .col-message {
-    min-width: 20rem;
-  }
-
-  .col-line {
-    width: 6rem;
-    text-align: right;
-  }
-
+<style is:global>
   .console-row {
     border-bottom: 1px solid var(--border);
   }
-
+  .console-row:last-child {
+    border-bottom: none;
+  }
   .console-row td {
-    padding: 0.75rem 1rem;
+    padding: 0.375rem 0.625rem;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-
-  .severity-cell {
-    vertical-align: top;
+  .td-idx {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.75rem;
   }
-
+  .td-severity {
+    white-space: nowrap;
+    overflow: visible;
+  }
   .severity-badge {
     display: inline-block;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 600;
-    padding: 0.25rem 0.5rem;
+    padding: 0.15rem 0.4rem;
     border-radius: 0.25rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-
-  .severity-badge.severity-error {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+  .severity-badge {
+    &.severity-error { background: rgba(220, 38, 38, 0.12); color: #dc2626; }
+    &.severity-warning { background: rgba(202, 138, 4, 0.12); color: #ca8a04; }
+    &.severity-info { background: rgba(107, 114, 128, 0.12); color: #4b5563; }
+    &.severity-debug { background: rgba(37, 99, 235, 0.12); color: #2563eb; }
+    &.severity-other { background: rgba(5, 150, 105, 0.12); color: #059669; }
   }
-
-  .severity-badge.severity-warning {
-    background: rgba(234, 179, 8, 0.15);
-    color: #eab308;
+  @media (prefers-color-scheme: dark) {
+    .severity-badge {
+      &.severity-error { background: rgba(248, 113, 113, 0.15); color: #fca5a5; }
+      &.severity-warning { background: rgba(250, 204, 21, 0.15); color: #fde047; }
+      &.severity-info { background: rgba(209, 213, 219, 0.15); color: #e5e7eb; }
+      &.severity-debug { background: rgba(96, 165, 250, 0.15); color: #93c5fd; }
+      &.severity-other { background: rgba(52, 211, 153, 0.15); color: #6ee7b7; }
+    }
   }
-
-  .severity-badge.severity-info {
-    background: rgba(156, 163, 175, 0.15);
-    color: #9ca3af;
+  [data-theme-override='dark'] .severity-badge {
+    &.severity-error { background: rgba(248, 113, 113, 0.15); color: #fca5a5; }
+    &.severity-warning { background: rgba(250, 204, 21, 0.15); color: #fde047; }
+    &.severity-info { background: rgba(209, 213, 219, 0.15); color: #e5e7eb; }
+    &.severity-debug { background: rgba(96, 165, 250, 0.15); color: #93c5fd; }
+    &.severity-other { background: rgba(52, 211, 153, 0.15); color: #6ee7b7; }
   }
-
-  .severity-badge.severity-debug {
-    background: rgba(59, 130, 246, 0.15);
-    color: #3b82f6;
-  }
-
-  .severity-badge.severity-unknown {
-    background: rgba(209, 213, 219, 0.15);
-    color: #d1d5db;
-  }
-
-  .message-cell {
+  .td-message {
     color: var(--text);
     font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
-    font-size: 0.8125rem;
-    word-break: break-word;
-    max-width: 50rem;
+    font-size: 0.775rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-
-  .line-cell {
+  .td-line {
     color: var(--muted);
     text-align: right;
     font-variant-numeric: tabular-nums;
+    font-size: 0.75rem;
+    white-space: nowrap;
   }
-
-  @media (prefers-color-scheme: dark) {
-    .severity-badge.severity-error {
-      background: rgba(239, 68, 68, 0.2);
-      color: #f87171;
-    }
-
-    .severity-badge.severity-warning {
-      background: rgba(234, 179, 8, 0.2);
-      color: #facc15;
-    }
-
-    .severity-badge.severity-info {
-      background: rgba(156, 163, 175, 0.2);
-      color: #d1d5db;
-    }
-
-    .severity-badge.severity-debug {
-      background: rgba(59, 130, 246, 0.2);
-      color: #60a5fa;
-    }
-
-    .severity-badge.severity-unknown {
-      background: rgba(209, 213, 219, 0.2);
-      color: #e5e7eb;
-    }
+  .console-filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.175rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
   }
-
-  [data-theme-override='dark'] .severity-badge.severity-error {
-    background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
+  .console-filter-btn.active {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
   }
-
-  [data-theme-override='dark'] .severity-badge.severity-warning {
-    background: rgba(234, 179, 8, 0.2);
-    color: #facc15;
+  .filter-count {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    opacity: 0.75;
   }
-
-  [data-theme-override='dark'] .severity-badge.severity-info {
-    background: rgba(156, 163, 175, 0.2);
-    color: #d1d5db;
-  }
-
-  [data-theme-override='dark'] .severity-badge.severity-debug {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
-  }
-
-  [data-theme-override='dark'] .severity-badge.severity-unknown {
-    background: rgba(209, 213, 219, 0.2);
-    color: #e5e7eb;
+  .console-filter-btn.active .filter-count {
+    opacity: 0.9;
   }
 </style>
+
+<script>
+  const filtersContainer = document.getElementById('console-filters');
+  const tbody = document.getElementById('console-tbody');
+  if (filtersContainer && tbody) {
+    const countsData = filtersContainer.getAttribute('data-counts');
+    const counts = countsData ? JSON.parse(countsData) : {};
+    const totalCount = Object.values(counts).reduce((sum: number, count) => sum + (count as number), 0);
+    const filterTypes = ['all', 'error', 'warning', 'info', 'debug', 'other'];
+    const activeFilters = new Set(['all']);
+    filterTypes.forEach(type => {
+      const btn = document.createElement('button');
+      btn.className = 'console-filter-btn' + (type === 'all' ? ' active' : '');
+      const label = document.createElement('span');
+      label.textContent = type === 'info' ? 'info/log' : type;
+      btn.appendChild(label);
+      const count = type === 'all' ? totalCount : (counts[type] || 0);
+      if (count > 0) {
+        const countSpan = document.createElement('span');
+        countSpan.className = 'filter-count';
+        countSpan.textContent = count.toString();
+        btn.appendChild(countSpan);
+      }
+      btn.dataset.filter = type;
+      btn.addEventListener('click', () => {
+        if (type === 'all') {
+          activeFilters.clear();
+          activeFilters.add('all');
+        } else {
+          activeFilters.delete('all');
+          if (activeFilters.has(type)) {
+            activeFilters.delete(type);
+          } else {
+            activeFilters.add(type);
+          }
+          if (activeFilters.size === 0) {
+            activeFilters.add('all');
+          }
+        }
+        filtersContainer.querySelectorAll('.console-filter-btn').forEach(b => {
+          const filterType = b.getAttribute('data-filter');
+          if (filterType && activeFilters.has(filterType)) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
+        });
+        tbody.querySelectorAll('.console-row').forEach(row => {
+          const severity = row.getAttribute('data-severity');
+          if (activeFilters.has('all') || (severity && activeFilters.has(severity))) {
+            (row as HTMLElement).style.display = '';
+          } else {
+            (row as HTMLElement).style.display = 'none';
+          }
+        });
+      });
+      filtersContainer.appendChild(btn);
+    });
+  }
+</script>

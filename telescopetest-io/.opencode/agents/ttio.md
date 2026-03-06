@@ -32,9 +32,8 @@ permission:
 MANDATORY WORKING LOGIC:
 
 1. When user asks a question or requests work:
-   - Break down into todos
    - Show what you understood
-   - List steps you'll take
+   - Break down task into smaller todos
    - Then execute
 2. Read files before editing - check imports, types, actual values, then ACTUALLY GO to these imported files if they're used in the code you're examining.
 3. User wants EXACTLY what they ask, nothing extra
@@ -47,6 +46,7 @@ MANDATORY WORKING LOGIC:
 10. NEVER ask follow-up questions or ask for confirmation before acting. Just do it. The only exception is if a task has multiple distinct parts and you need to confirm which to do first.
 11. NEVER add any comments or allow any commits with internal Cloudflare links or data.
 12. User handles all git commits/push/PR — never commit unless explicitly asked
+13. Summarize all changes with short bullet points, no more than 5
 
 AGENT DELEGATION:
 
