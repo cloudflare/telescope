@@ -205,14 +205,24 @@ export class WaterfallChart extends HTMLElement {
     this._phaseGroupEl = this.querySelector(
       '.wf-legend-group[aria-label="Filter by connection phase"]',
     ) as HTMLElement;
-    this._toggleBtn = this.querySelector(
-      '.wf-toggle-cols',
-    ) as HTMLButtonElement;
     this._loadingEl = this.querySelector('.wf-loading') as HTMLElement;
     this._errorEl = this.querySelector('.wf-error') as HTMLElement;
 
     // Hide the loading message (pre-rendered content is already visible)
     if (this._loadingEl) this._loadingEl.hidden = true;
+
+    // Inject the toggle button into the URL header cell (JS-only)
+    const urlHeaderEl = this.querySelector(
+      '.wf-col-header--url',
+    ) as HTMLElement;
+    this._toggleBtn = el('button', {
+      className: 'wf-toggle-cols',
+      'aria-expanded': 'false',
+      'aria-label': 'Show columns',
+    });
+    this._toggleBtn.textContent = '\u2192';
+    this._toggleBtn.addEventListener('click', () => this._onToggleCols());
+    urlHeaderEl.appendChild(this._toggleBtn);
 
     // Reconstruct _allEntries from data-* on the <li> rows.
     // We read enough to support filtering, panel rendering, and event lines.
@@ -226,9 +236,6 @@ export class WaterfallChart extends HTMLElement {
     this._totalMs = computeTotalMs(this._allEntries);
     this._originMs = +new Date(this._allEntries[0]!.startedDateTime);
     this._pageTimings = this._readPageTimings();
-
-    // Wire up toggle button
-    this._toggleBtn.addEventListener('click', () => this._onToggleCols());
 
     // Wire up filter chips — they already have the right labels from SSR
     const chipBtns = Array.from(
@@ -442,20 +449,16 @@ export class WaterfallChart extends HTMLElement {
       mkLegendItem(true, 'ev-lcp', 'Largest Contentful Paint'),
     );
 
-    this._toggleBtn = el(
-      'button',
-      { className: 'wf-toggle-cols', 'aria-expanded': 'false' },
-      'Show columns',
-    );
+    this._toggleBtn = el('button', {
+      className: 'wf-toggle-cols',
+      'aria-expanded': 'false',
+      'aria-label': 'Show columns',
+    });
+    this._toggleBtn.textContent = '\u2192';
     this._toggleBtn.addEventListener('click', () => this._onToggleCols());
 
     const toolbar = el('div', { className: 'wf-toolbar' });
-    toolbar.append(
-      this._filtersEl,
-      this._phaseGroupEl,
-      eventGroup,
-      this._toggleBtn,
-    );
+    toolbar.append(this._filtersEl, this._phaseGroupEl, eventGroup);
 
     // ── List wrapper ──────────────────────────────────────────────────────────
 
@@ -483,9 +486,14 @@ export class WaterfallChart extends HTMLElement {
       className: 'wf-col-headers',
       'aria-hidden': 'true',
     });
+    const urlHeader = el('div', {
+      className: 'wf-col-header wf-col-header--url',
+    });
+    urlHeader.append(document.createTextNode('URL'), this._toggleBtn);
+
     this._colHeadersEl.append(
       el('div', { className: 'wf-col-header wf-col-header--idx' }, '#'),
-      el('div', { className: 'wf-col-header wf-col-header--url' }, 'URL'),
+      urlHeader,
       el('div', { className: 'wf-col-header wf-col-header--info' }, 'Method'),
       el('div', { className: 'wf-col-header wf-col-header--info' }, 'Protocol'),
       el('div', { className: 'wf-col-header wf-col-header--info' }, 'Status'),
@@ -533,11 +541,13 @@ export class WaterfallChart extends HTMLElement {
     if (expanded) {
       this._listWrapEl.classList.remove('cols-expanded');
       this._toggleBtn.setAttribute('aria-expanded', 'false');
-      this._toggleBtn.textContent = 'Show columns';
+      this._toggleBtn.setAttribute('aria-label', 'Show columns');
+      this._toggleBtn.textContent = '\u2192';
     } else {
       this._listWrapEl.classList.add('cols-expanded');
       this._toggleBtn.setAttribute('aria-expanded', 'true');
-      this._toggleBtn.textContent = 'Hide columns';
+      this._toggleBtn.setAttribute('aria-label', 'Hide columns');
+      this._toggleBtn.textContent = '\u2190';
     }
     this._renderEventLines();
   }

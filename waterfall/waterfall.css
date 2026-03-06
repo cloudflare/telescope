@@ -119,9 +119,7 @@ waterfall-chart:not(:defined) .wf-filter-btn {
   cursor: default;
   pointer-events: none;
 }
-waterfall-chart:not(:defined) .wf-toggle-cols {
-  display: none;
-}
+
 waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
   opacity: 0.4;
   cursor: not-allowed;
@@ -269,15 +267,15 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
   flex-wrap: wrap;
 }
 .wf-toggle-cols {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  padding: 0.2rem 0.625rem;
-  border-radius: 0.25rem;
-  border: 1px solid var(--wf-border);
-  background: var(--wf-panel);
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  line-height: 1;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.2rem;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--wf-muted);
   cursor: pointer;
-  white-space: nowrap;
   transition:
     background 0.12s,
     color 0.12s,
@@ -285,12 +283,8 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 }
 .wf-toggle-cols:hover {
   background: var(--wf-bg);
+  border-color: var(--wf-border);
   color: var(--wf-text);
-}
-.wf-toggle-cols[aria-expanded='true'] {
-  background: var(--wf-brand);
-  border-color: var(--wf-brand);
-  color: #fff;
 }
 
 /* ── Filter chips ────────────────────────────────────────────────────────────*/
@@ -352,6 +346,16 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 }
 .wf-col-header--idx {
   text-align: center;
+  align-self: center;
+}
+.wf-col-header--url {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  padding-top: 0;
+  padding-right: 0;
+  padding-bottom: 0;
 }
 .wf-col-header--size,
 .wf-col-header--dur {
@@ -448,7 +452,6 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
   white-space: nowrap;
   color: var(--wf-text);
   font-size: 0.8125rem;
-  line-height: 1;
 }
 
 .wf-cell--idx {
@@ -474,6 +477,9 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
   overflow: hidden;
   visibility: hidden;
   padding: 0;
+}
+.wf-col-header--info {
+  align-self: center;
 }
 
 .cols-expanded .wf-cell--info,

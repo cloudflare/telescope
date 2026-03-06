@@ -89,7 +89,6 @@ function renderToolbar(types: string[]): string {
     ${eventSwatch('ev-load', 'Page Load')}
     ${eventSwatch('ev-lcp', 'Largest Contentful Paint')}
   </div>
-  <button class="wf-toggle-cols" aria-expanded="false">Show columns</button>
 </div>`.trim();
 }
 
