@@ -40,14 +40,14 @@
 
   /* Surface tokens */
   --wf-text: #111827;
-  --wf-muted: #6b7280;
+  --wf-muted: #525862;
   --wf-bg: #ffffff;
   --wf-panel: #ffffff;
   --wf-border: #e5e7eb;
-  --wf-brand: #2563eb;
-  --wf-success: #16a34a;
-  --wf-warning: #d97706;
-  --wf-danger: #dc2626;
+  --wf-brand: #1e40af;
+  --wf-success: #166534;
+  --wf-warning: #92400e;
+  --wf-danger: #991b1b;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -56,10 +56,13 @@
     --wf-ssl: #9060c8;
     --wf-other-dark: #909090;
     --wf-text: #f9fafb;
-    --wf-muted: #9ca3af;
+    --wf-muted: #b8bdc6;
     --wf-bg: #111827;
     --wf-panel: #1f2937;
     --wf-border: #374151;
+    --wf-success: #34d058;
+    --wf-warning: #fbbf24;
+    --wf-danger: #fca5a5;
   }
 }
 
@@ -68,10 +71,13 @@
   --wf-ssl: #9060c8;
   --wf-other-dark: #909090;
   --wf-text: #f9fafb;
-  --wf-muted: #9ca3af;
+  --wf-muted: #b8bdc6;
   --wf-bg: #111827;
   --wf-panel: #1f2937;
   --wf-border: #374151;
+  --wf-success: #34d058;
+  --wf-warning: #fbbf24;
+  --wf-danger: #fca5a5;
 }
 
 /* ── Host element ────────────────────────────────────────────────────────────
