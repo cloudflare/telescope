@@ -4,6 +4,7 @@
     <button class="tab-btn" data-tab="all-metrics">All Metrics</button>
     <button class="tab-btn" data-tab="waterfall">Waterfall</button>
     <button class="tab-btn" data-tab="resources">Resources</button>
+    <button class="tab-btn" data-tab="console">Console</button>
   </div>
   <div class="tabs-content">
     <div class="tab-pane active" data-pane="summary">
@@ -17,6 +18,9 @@
     </div>
     <div class="tab-pane" data-pane="resources">
       <slot name="resources" />
+    </div>
+    <div class="tab-pane" data-pane="console">
+      <slot name="console" />
     </div>
   </div>
 
