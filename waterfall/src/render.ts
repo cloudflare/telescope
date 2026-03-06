@@ -42,41 +42,16 @@ function esc(s: string): string {
 // Legend
 // ─────────────────────────────────────────────────────────────────────────────
 
-function renderLegend(): string {
-  const swatch = (thin: boolean, key: string) =>
-    `<span class="wf-swatch wf-swatch--${thin ? 'thin' : 'thick'} wf-swatch--${key}"></span>`;
-
-  const item = (thin: boolean, key: string, label: string) =>
-    `<span class="wf-legend-item">${swatch(thin, key)}${esc(label)}</span>`;
-
-  return `
-<div class="wf-legend" aria-label="Waterfall chart legend">
-  <div class="wf-legend-row">
-    <span class="wf-legend-heading">Connection phases</span>
-    ${item(true, 'blocked', 'Blocked')}
-    ${item(true, 'dns', 'DNS')}
-    ${item(true, 'connect', 'Connect')}
-    ${item(true, 'ssl', 'SSL')}
-    ${item(true, 'send', 'Send')}
-    ${item(true, 'wait', 'Wait')}
-  </div>
-  <div class="wf-legend-row">
-    <span class="wf-legend-heading">File type <span class="wf-legend-note">(light\u00a0=\u00a0sent \u00b7 dark\u00a0=\u00a0received)</span></span>
-    ${item(false, 'html', 'HTML')}
-    ${item(false, 'js', 'JS')}
-    ${item(false, 'css', 'CSS')}
-    ${item(false, 'image', 'Image')}
-    ${item(false, 'font', 'Font')}
-    ${item(false, 'video', 'Video')}
-    ${item(false, 'other', 'Other')}
-  </div>
-  <div class="wf-legend-row">
-    <span class="wf-legend-heading">Events</span>
-    ${item(true, 'ev-dcl', 'DCL')}
-    ${item(true, 'ev-load', 'Load')}
-  </div>
-</div>`.trim();
-}
+/** Maps resource-type filter chip label → swatch CSS key (undefined = no swatch). */
+const TYPE_SWATCH: Record<string, string> = {
+  html: 'html',
+  js: 'js',
+  css: 'css',
+  image: 'image',
+  font: 'font',
+  video: 'video',
+  other: 'other',
+};
 
 // ───────────────────────────��─────────────────────────────────────────────────
 // Toolbar (filter chips + toggle button)
@@ -84,16 +59,35 @@ function renderLegend(): string {
 
 function renderToolbar(types: string[]): string {
   const chips = types
-    .map(
-      (t, i) =>
-        `<button class="wf-filter-btn${i === 0 ? ' active' : ''}">${esc(t)}</button>`,
-    )
+    .map((t, i) => {
+      const key = TYPE_SWATCH[t];
+      const swatch = key
+        ? `<span class="wf-swatch wf-swatch--thick wf-swatch--${key}"></span>`
+        : '';
+      return `<button class="wf-filter-btn${i === 0 ? ' active' : ''}">${swatch}${esc(t)}</button>`;
+    })
     .join('\n    ');
+
+  const phaseBtn = (key: string, label: string) =>
+    `<button class="wf-filter-btn" data-phase="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`;
+  const eventSwatch = (key: string, label: string) =>
+    `<span class="wf-legend-item"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</span>`;
 
   return `
 <div class="wf-toolbar">
   <div class="wf-filters" role="group" aria-label="Filter by resource type">
     ${chips}
+  </div>
+  <div class="wf-legend-group" role="group" aria-label="Filter by connection phase">
+    ${phaseBtn('blocked', 'Blocked')}
+    ${phaseBtn('dns', 'DNS Lookup')}
+    ${phaseBtn('connect', 'TCP Connect')}
+    ${phaseBtn('ssl', 'TLS Handshake')}
+  </div>
+  <div class="wf-legend-group" aria-label="Events">
+    ${eventSwatch('ev-dcl', 'DOM Content Loaded')}
+    ${eventSwatch('ev-load', 'Page Load')}
+    ${eventSwatch('ev-lcp', 'Largest Contentful Paint')}
   </div>
   <button class="wf-toggle-cols" aria-expanded="false">Show columns</button>
 </div>`.trim();
@@ -196,9 +190,7 @@ function renderTimelineCell(
     ['wb--blocked wb--phase', blocked, 'Blocked'],
     ['wb--dns wb--phase', dns, 'DNS Lookup'],
     ['wb--connect wb--phase', connect, 'TCP Connect'],
-    ['wb--ssl wb--phase', ssl, 'SSL Handshake'],
-    ['wb--send wb--phase', send, 'Send'],
-    ['wb--wait wb--phase', wait, 'Wait (TTFB)'],
+    ['wb--ssl wb--phase', ssl, 'TLS Handshake'],
   ];
 
   let cursor = offsetPct;
@@ -225,10 +217,13 @@ function renderTimelineCell(
     `Receive: ${fmtMs(receive)}`,
   );
 
-  return `<span class="wf-cell wf-cell--timeline">
+  const barEndPct = (offsetPct + (entry.time / totalMs) * 100).toFixed(4);
+  const durLabel = `${Math.round(entry.time)} ms`;
+  return `<span class="wf-cell wf-cell--timeline" style="--wf-bar-end:${barEndPct}%">
         <div class="wf-bar-wrap">
           ${bars.join('\n          ')}
         </div>
+        <span class="wf-bar-dur">${esc(durLabel)}</span>
       </span>`;
 }
 
@@ -356,8 +351,6 @@ export function renderToHTML(har: Har): string {
     .join('\n    ');
 
   return `
-${renderLegend()}
-
 ${renderToolbar(types)}
 
 <div class="wf-list-wrap">

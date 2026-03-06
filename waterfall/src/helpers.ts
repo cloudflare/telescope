@@ -22,12 +22,19 @@ export function parseUrl(raw: string): { domain: string; path: string } {
 
 // ── Resource type ─────────────────────────────────────────────────────────────
 
+const TYPE_REMAP: Record<string, string> = {
+  document: 'html',
+  script: 'js',
+  stylesheet: 'css',
+};
+
 export function resourceType(entry: HarEntry): string {
-  if (entry._resourceType) return entry._resourceType;
+  if (entry._resourceType)
+    return TYPE_REMAP[entry._resourceType] ?? entry._resourceType;
   const m = entry.response.content.mimeType;
-  if (m.includes('html')) return 'document';
-  if (m.includes('javascript') || m.includes('ecmascript')) return 'script';
-  if (m.includes('css')) return 'stylesheet';
+  if (m.includes('html')) return 'html';
+  if (m.includes('javascript') || m.includes('ecmascript')) return 'js';
+  if (m.includes('css')) return 'css';
   if (m.includes('image')) return 'image';
   if (m.includes('font')) return 'font';
   if (m.includes('video')) return 'video';
@@ -56,11 +63,18 @@ export function computeTotalMs(entries: HarEntry[]): number {
   }, 0);
 }
 
-/** Returns ['all', ...sorted unique resource types] for the given entries. */
+const TYPE_ORDER = ['html', 'js', 'css', 'image', 'font', 'video', 'other'];
+
+/** Returns ['all', ...types in canonical order] for the given entries. */
 export function uniqueTypes(entries: HarEntry[]): string[] {
   const seen = new Set<string>();
   entries.forEach((e) => seen.add(resourceType(e)));
-  return ['all', ...Array.from(seen).sort()];
+  const ordered = TYPE_ORDER.filter((t) => seen.has(t));
+  // Append any unknown types not in TYPE_ORDER at the end.
+  seen.forEach((t) => {
+    if (!TYPE_ORDER.includes(t)) ordered.push(t);
+  });
+  return ['all', ...ordered];
 }
 
 // ── Event-line label formatting ───────────────────────────────────────────────

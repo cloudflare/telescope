@@ -64,6 +64,8 @@ export async function openPage(
   opts: {
     storedTheme?: 'light' | 'dark';
     dataTheme?: 'light' | 'dark';
+    /** Which demo page to load. Defaults to 'static.html'. */
+    htmlPage?: 'static.html' | 'index.html' | 'progressive.html';
   } = {},
 ): Promise<Page> {
   const ctx = await browser.newContext({ colorScheme: systemScheme });
@@ -76,7 +78,7 @@ export async function openPage(
     );
   }
 
-  await page.goto(`${baseUrl}/static.html`);
+  await page.goto(`${baseUrl}/${opts.htmlPage ?? 'static.html'}`);
 
   if (opts.dataTheme) {
     await page.evaluate(

@@ -18,24 +18,23 @@
   --wf-send: #4a90d9;
 
   /* Resource type colors — light = send+wait, dark = receive */
-  --wf-html-light: #a8c8f0;
-  --wf-html-dark: #4a7ec8;
-  --wf-js-light: #e8d4a0;
-  --wf-js-dark: #c8a040;
-  --wf-css-light: #a8d8a8;
-  --wf-css-dark: #4a9850;
-  --wf-image-light: #d0b8e8;
-  --wf-image-dark: #8050b8;
-  --wf-font-light: #f0a898;
-  --wf-font-dark: #c83820;
-  --wf-video-light: #a8e0b8;
-  --wf-video-dark: #2a8048;
-  --wf-other-light: #c8c8c8;
-  --wf-other-dark: #787878;
+  --wf-html-light: #cfe0f7;
+  --wf-html-dark: #97bbee;
+  --wf-js-light: #fbecda;
+  --wf-js-dark: #f5cc9d;
+  --wf-css-light: #dcefd1;
+  --wf-css-dark: #b5de9f;
+  --wf-image-light: #ddcdea;
+  --wf-image-dark: #bc9dd6;
+  --wf-font-light: #f4a399;
+  --wf-font-dark: #ee6e5f;
+  --wf-video-light: #81d5c4;
+  --wf-video-dark: #4ec4ad;
+  --wf-other-light: #e3e3e3;
+  --wf-other-dark: #c2c2c2;
 
   /* Row highlight tints */
-  --wf-row-blocking-bg: rgba(239, 68, 68, 0.05);
-  --wf-row-blocking-bg-hover: rgba(239, 68, 68, 0.1);
+  --wf-row-stripe: rgba(0, 0, 0, 0.04);
   --wf-row-open-bg: rgba(14, 165, 233, 0.07);
 
   /* Surface tokens */
@@ -43,7 +42,8 @@
   --wf-muted: #525862;
   --wf-bg: #ffffff;
   --wf-panel: #ffffff;
-  --wf-border: #e5e7eb;
+  --wf-border: #1f2937;
+  --wf-grid: #c4c9d4;
   --wf-brand: #1e40af;
   --wf-success: #166534;
   --wf-warning: #92400e;
@@ -59,10 +59,9 @@
     --wf-muted: #b8bdc6;
     --wf-bg: #111827;
     --wf-panel: #1f2937;
-    --wf-border: #374151;
-    --wf-success: #34d058;
-    --wf-warning: #fbbf24;
-    --wf-danger: #fca5a5;
+    --wf-border: #e5e7eb;
+    --wf-grid: #4b5563;
+    --wf-row-stripe: rgba(255, 255, 255, 0.05);
   }
 }
 
@@ -74,7 +73,9 @@
   --wf-muted: #b8bdc6;
   --wf-bg: #111827;
   --wf-panel: #1f2937;
-  --wf-border: #374151;
+  --wf-border: #e5e7eb;
+  --wf-grid: #4b5563;
+  --wf-row-stripe: rgba(255, 255, 255, 0.05);
   --wf-success: #34d058;
   --wf-warning: #fbbf24;
   --wf-danger: #fca5a5;
@@ -109,11 +110,19 @@ waterfall-chart:not(:defined):not(:has(.wf-list))::before {
   font-family: system-ui, sans-serif;
 }
 
-/* Toolbar buttons are inert until the custom element upgrades and wires up
-   their event handlers. Styled via :not(:defined) so no disabled attribute
-   is needed in the HTML and no JS is needed to re-enable them. */
-waterfall-chart:not(:defined) .wf-filter-btn,
+/* Before the custom element upgrades, filter chips have no event handlers so
+   render them as plain legend labels (no button chrome) and hide the col-toggle
+   button entirely since it has no pre-rendered equivalent. */
+waterfall-chart:not(:defined) .wf-filter-btn {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+  pointer-events: none;
+}
 waterfall-chart:not(:defined) .wf-toggle-cols {
+  display: none;
+}
+waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
   opacity: 0.4;
   cursor: not-allowed;
   pointer-events: none;
@@ -137,36 +146,6 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 }
 
 /* ── Legend ──────────────────────────────────────────────────────────────────*/
-.wf-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-  padding: 0.5rem 0.875rem;
-  background: var(--wf-panel);
-  border: 1px solid var(--wf-border);
-  border-radius: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-.wf-legend-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-.wf-legend-heading {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--wf-muted);
-  white-space: nowrap;
-  min-width: 9rem;
-}
-.wf-legend-note {
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
-}
 .wf-legend-item {
   display: flex;
   align-items: center;
@@ -174,6 +153,14 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   font-size: 0.75rem;
   color: var(--wf-muted);
   white-space: nowrap;
+}
+.wf-legend-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--wf-grid);
 }
 
 /* ── Swatches ────────────────────────────────────────────────────────────────*/
@@ -213,6 +200,9 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 }
 .wf-swatch--ev-load {
   background: #4060d0;
+}
+.wf-swatch--ev-lcp {
+  background: #30a050;
 }
 
 .wf-swatch--html {
@@ -277,7 +267,6 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   display: flex;
   gap: 0.375rem;
   flex-wrap: wrap;
-  flex: 1;
 }
 .wf-toggle-cols {
   font-size: 0.8125rem;
@@ -306,6 +295,9 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 
 /* ── Filter chips ────────────────────────────────────────────────────────────*/
 .wf-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.75rem;
   font-weight: 500;
   padding: 0.175rem 0.5rem;
@@ -407,23 +399,19 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   grid-template-columns: var(--wf-grid-cols);
   align-items: center;
   height: var(--wf-row-h, 1.75rem); /* set by wf-row--rh* class */
-  border-bottom: 1px solid var(--wf-border);
   cursor: pointer;
   transition: background 0.1s;
   min-width: var(--wf-min-width, 0);
 }
-.wf-row:last-child {
-  border-bottom: none;
+.wf-row:nth-child(even) {
+  background: var(--wf-row-stripe);
 }
 .wf-row:hover {
   background: var(--wf-panel);
 }
 
-.wf-row.row--blocking {
-  background: var(--wf-row-blocking-bg);
-}
-.wf-row.row--blocking:hover {
-  background: var(--wf-row-blocking-bg-hover);
+.wf-row.row--blocking .wf-cell--idx {
+  border-left: 3px solid var(--wf-danger);
 }
 .wf-row.row--open {
   background: var(--wf-row-open-bg);
@@ -517,6 +505,7 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
 
 /* ── Timeline cell ───────────────────────────────────────────────────────────*/
 .wf-cell--timeline {
+  position: relative;
   padding: 0 0.5rem;
   overflow: visible;
   border-left: 1px solid var(--wf-border);
@@ -528,6 +517,19 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
      row-height class (wf-row--rh18/20/22/24). */
   height: var(--wf-bar-wrap-h, 1.75rem);
   /* Sit above the grid-line overlay (z-index:0) but below event lines (z-index:2). */
+  z-index: 1;
+}
+.wf-bar-dur {
+  position: absolute;
+  left: var(--wf-bar-end);
+  top: 50%;
+  transform: translateY(-50%);
+  padding-left: 0.3rem;
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--wf-muted);
+  white-space: nowrap;
+  pointer-events: none;
   z-index: 1;
 }
 .wb {
@@ -655,7 +657,7 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   display: block;
   width: 1px;
   height: 3px;
-  background: var(--wf-border);
+  background: var(--wf-grid);
   margin: 0 auto 2px;
 }
 
@@ -677,7 +679,7 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: var(--wf-border);
+  background: var(--wf-grid);
   opacity: 0.6;
 }
 

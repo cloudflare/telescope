@@ -11,9 +11,9 @@ export interface TypeConfig {
 }
 
 const TYPE_CONFIG: Record<string, TypeConfig> = {
-  document: { barH: 16, key: 'html' },
-  script: { barH: 16, key: 'js' },
-  stylesheet: { barH: 16, key: 'css' },
+  html: { barH: 16, key: 'html' },
+  js: { barH: 16, key: 'js' },
+  css: { barH: 16, key: 'css' },
   image: { barH: 16, key: 'image' },
   font: { barH: 16, key: 'font' },
   video: { barH: 16, key: 'video' },

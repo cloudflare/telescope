@@ -34,28 +34,32 @@ afterAll(async () => {
 // ── Light-mode backgrounds ────────────────────────────────────────────────────
 
 describe('light mode backgrounds', () => {
-  it('legend background is white', async () => {
-    const page = await openPage(browser, baseUrl, 'light');
-    expect(await bgColor(page, '.wf-legend')).toBe(WHITE);
-  });
-
   it('column headers background is white', async () => {
     const page = await openPage(browser, baseUrl, 'light');
     expect(await bgColor(page, '.wf-col-headers')).toBe(WHITE);
   });
 
   it('inactive filter button background is white', async () => {
-    const page = await openPage(browser, baseUrl, 'light');
+    const page = await openPage(browser, baseUrl, 'light', {
+      htmlPage: 'index.html',
+    });
+    await page.waitForSelector('waterfall-chart.wf-ready, .wf-scrubber');
     expect(await bgColor(page, '.wf-filter-btn:not(.active)')).toBe(WHITE);
   });
 
   it('active filter button background is brand blue', async () => {
-    const page = await openPage(browser, baseUrl, 'light');
+    const page = await openPage(browser, baseUrl, 'light', {
+      htmlPage: 'index.html',
+    });
+    await page.waitForSelector('waterfall-chart.wf-ready, .wf-scrubber');
     expect(await bgColor(page, '.wf-filter-btn.active')).toBe(BRAND_BLUE);
   });
 
   it('toggle button background is white', async () => {
-    const page = await openPage(browser, baseUrl, 'light');
+    const page = await openPage(browser, baseUrl, 'light', {
+      htmlPage: 'index.html',
+    });
+    await page.waitForSelector('waterfall-chart.wf-ready, .wf-scrubber');
     expect(await bgColor(page, '.wf-toggle-cols')).toBe(WHITE);
   });
 });
@@ -65,25 +69,25 @@ describe('light mode backgrounds', () => {
 describe('theme override via data-theme attribute', () => {
   it('system light, no override → white panel', async () => {
     const page = await openPage(browser, baseUrl, 'light');
-    expect(await bgColor(page, '.wf-legend')).toBe(WHITE);
+    expect(await bgColor(page, '.wf-col-headers')).toBe(WHITE);
   });
 
   it('system dark, no override → dark panel', async () => {
     const page = await openPage(browser, baseUrl, 'dark');
-    expect(await bgColor(page, '.wf-legend')).toBe(DARK_PANEL);
+    expect(await bgColor(page, '.wf-col-headers')).toBe(DARK_PANEL);
   });
 
   it('system dark + data-theme=light → white panel', async () => {
     const page = await openPage(browser, baseUrl, 'dark', {
       dataTheme: 'light',
     });
-    expect(await bgColor(page, '.wf-legend')).toBe(WHITE);
+    expect(await bgColor(page, '.wf-col-headers')).toBe(WHITE);
   });
 
   it('system light + data-theme=dark → dark panel', async () => {
     const page = await openPage(browser, baseUrl, 'light', {
       dataTheme: 'dark',
     });
-    expect(await bgColor(page, '.wf-legend')).toBe(DARK_PANEL);
+    expect(await bgColor(page, '.wf-col-headers')).toBe(DARK_PANEL);
   });
 });
