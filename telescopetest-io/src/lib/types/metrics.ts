@@ -17,7 +17,7 @@ export interface NavigationTiming {
   startTime: number;
   duration: number;
   // Core timing fields
-  navigationStart?: number;
+  navigationStart?: number; // usually 0
   unloadEventStart: number;
   unloadEventEnd: number;
   redirectStart: number;
@@ -166,3 +166,61 @@ export interface MetricsJson {
   largestContentfulPaint?: LCPEvent[];
   layoutShifts?: LayoutShift[];
 }
+
+// ── Navigation Timing diagram types ───────────────────────────────────────────
+
+/**
+ * A vertical tick mark in the Navigation Timing diagram.
+ * `align` controls whether the label hangs to the right ('left') or left ('right') of the stem.
+ */
+export type DiagramTick = {
+  field: string;
+  leftPct: number;
+  msRel: number;
+  lane: number;
+  align: 'left' | 'right';
+  color?: string;
+  group?: string;
+};
+
+/** A coloured horizontal bar segment in the First Request bar. */
+export type DiagramSpan = {
+  label: string;
+  ms: number;
+  leftPct: number;
+  widthPct: number;
+  color: string;
+};
+
+/** A coloured horizontal bar segment in the Page-scoped bar. */
+export type DiagramPageSeg = {
+  label: string;
+  ms: number;
+  leftPct: number;
+  widthPct: number;
+  bg: string; // may be a CSS gradient string
+};
+
+/** One item in the diagram legend. */
+export type DiagramLegendItem = {
+  label: string;
+  ms: number;
+  color: string;
+  note?: string;
+  secondary?: string;
+};
+
+/** All computed data needed to render the Navigation Timing diagram. */
+export type NavTimingDiagram = {
+  totalMs: number;
+  frTicks: DiagramTick[];
+  pageTicks: DiagramTick[];
+  frSpans: DiagramSpan[];
+  pageSegs: DiagramPageSeg[];
+  frLegend: DiagramLegendItem[];
+  pageLegend: DiagramLegendItem[];
+  ttfbMarker: { leftPct: number; ms: number } | null;
+  ttfbField: string;
+  hasFuzzyDom: boolean;
+  navTimestampRows: { field: string; msRel: number; note?: string }[];
+};
