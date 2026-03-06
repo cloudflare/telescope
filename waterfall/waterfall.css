@@ -45,6 +45,8 @@
   --wf-border: #1f2937;
   --wf-grid: #c4c9d4;
   --wf-brand: #1e40af;
+  --wf-brand-subtle: #dbeafe; /* light blue tint for active filter chips */
+  --wf-brand-subtle-hover: #bfdbfe; /* deeper tint on hover */
   --wf-success: #166534;
   --wf-warning: #92400e;
   --wf-danger: #991b1b;
@@ -306,6 +308,22 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
     border-color 0.12s;
 }
 .wf-filter-btn.active {
+  background: var(--wf-brand-subtle, var(--wf-brand));
+  border-color: var(--wf-brand);
+  color: var(--wf-brand);
+}
+.wf-filter-btn.active:hover {
+  background: var(--wf-brand-subtle-hover, var(--wf-brand));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .wf-filter-btn.active {
+    background: var(--wf-brand);
+    border-color: var(--wf-brand);
+    color: #fff;
+  }
+}
+:root[data-theme='dark'] .wf-filter-btn.active {
   background: var(--wf-brand);
   border-color: var(--wf-brand);
   color: #fff;
