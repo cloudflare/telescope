@@ -644,6 +644,7 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   font-size: 0.6rem;
   font-variant-numeric: tabular-nums;
   text-transform: none;
+  letter-spacing: 0;
   color: var(--wf-muted);
   white-space: nowrap;
   line-height: 1;
@@ -705,6 +706,45 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   height: var(--wf-overlay-h, 9999px);
   z-index: 2;
 }
+/* ── Scrubber ─────────────────────────────────────────────────────────────── */
+
+.wf-scrubber {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--wf-text);
+  opacity: 0;
+  pointer-events: none;
+  /* left is set via JS */
+  transition: opacity 0.1s;
+  z-index: 1;
+}
+
+.wf-scrubber--visible {
+  opacity: 0.7;
+}
+
+.wf-scrubber__label {
+  position: absolute;
+  /* Sit inside the header band — the overlay's top:0 is the top of the
+     .wf-col-header--timeline cell, so top:2px lands in the ruler area. */
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--wf-text);
+  color: var(--wf-panel);
+  font-size: 0.6rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.4;
+  pointer-events: none;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .wf-event-line {
   position: absolute;
   top: 0;
@@ -722,6 +762,8 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   opacity: 0.9;
   font-weight: 600;
   color: inherit;
+  text-transform: none;
+  letter-spacing: 0;
 }
 .wf-event--dcl {
   background: #d060d0;

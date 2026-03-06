@@ -91,6 +91,7 @@ export class WaterfallChart extends HTMLElement {
   private _rulerEl!: HTMLElement;
   private _gridOverlayEl!: HTMLElement;
   private _overlayEl!: HTMLElement;
+  private _scrubberEl!: HTMLElement;
   private _loadingEl!: HTMLElement;
   private _errorEl!: HTMLElement;
   private _toggleBtn!: HTMLButtonElement;
@@ -188,6 +189,14 @@ export class WaterfallChart extends HTMLElement {
     this._overlayEl = this.querySelector(
       '.wf-col-header--timeline .wf-events-overlay',
     ) as HTMLElement;
+
+    // Scrubber is not part of the static HTML — create it and inject it.
+    this._scrubberEl = el('div', { className: 'wf-scrubber' });
+    this._scrubberEl.appendChild(
+      el('span', { className: 'wf-scrubber__label' }),
+    );
+    this._overlayEl.appendChild(this._scrubberEl);
+
     this._filtersEl = this.querySelector('.wf-filters') as HTMLElement;
     this._toggleBtn = this.querySelector(
       '.wf-toggle-cols',
@@ -242,6 +251,8 @@ export class WaterfallChart extends HTMLElement {
         this._togglePanel(i, this._allEntries[i]!),
       );
     });
+
+    this._wireScrubber();
 
     // Re-position event lines with accurate pixel measurements
     const ro = new ResizeObserver(() => {
@@ -439,6 +450,11 @@ export class WaterfallChart extends HTMLElement {
       className: 'wf-events-overlay',
       'aria-hidden': 'true',
     });
+    this._scrubberEl = el('div', { className: 'wf-scrubber' });
+    this._scrubberEl.appendChild(
+      el('span', { className: 'wf-scrubber__label' }),
+    );
+    this._overlayEl.appendChild(this._scrubberEl);
     const timelineHeader = el('div', {
       className: 'wf-col-header wf-col-header--timeline',
     });
@@ -474,6 +490,7 @@ export class WaterfallChart extends HTMLElement {
 
     this._listWrapEl = el('div', { className: 'wf-list-wrap' });
     this._listWrapEl.append(this._colHeadersEl, this._listEl);
+    this._wireScrubber();
 
     // ── State messages ────────────────────────────────────────────────────────
     this._loadingEl = el(
@@ -565,6 +582,7 @@ export class WaterfallChart extends HTMLElement {
     this._rulerEl.innerHTML = '';
     this._gridOverlayEl.innerHTML = '';
     this._overlayEl.innerHTML = '';
+    this._overlayEl.appendChild(this._scrubberEl);
     this._errorEl.hidden = true;
     this._errorEl.textContent = '';
     // Remove any open detail panels
@@ -878,6 +896,33 @@ export class WaterfallChart extends HTMLElement {
       line.style.left = `${(ms / this._totalMs) * 100}%`;
       this._overlayEl.appendChild(line);
     }
+
+    // Scrubber must always be the last child of the overlay so it renders
+    // on top of event lines.
+    this._overlayEl.appendChild(this._scrubberEl);
+  }
+
+  // ── Scrubber ──────────────────────────────────────────────────────────────
+
+  private _wireScrubber() {
+    const label = this._scrubberEl.querySelector(
+      '.wf-scrubber__label',
+    ) as HTMLElement;
+
+    this._listWrapEl.addEventListener('mousemove', (e: MouseEvent) => {
+      if (this._totalMs <= 0) return;
+      const rect = this._overlayEl.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const pct = Math.min(1, Math.max(0, x / rect.width));
+      const ms = Math.round(pct * this._totalMs);
+      this._scrubberEl.style.left = `${pct * 100}%`;
+      label.textContent = `${ms}ms`;
+      this._scrubberEl.classList.add('wf-scrubber--visible');
+    });
+
+    this._listWrapEl.addEventListener('mouseleave', () => {
+      this._scrubberEl.classList.remove('wf-scrubber--visible');
+    });
   }
 
   // ── Render rows (<li> items) ──────────────────────────────────────────────
