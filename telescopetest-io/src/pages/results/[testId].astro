@@ -8,6 +8,7 @@ import AllMetrics from '@/components/AllMetrics.astro';
 import Waterfall from '@/components/Waterfall.astro';
 import Resources from '@/components/Resources.astro';
 import Console from '@/components/Console.astro';
+import Bottlenecks from '@/components/Bottlenecks.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/testRepository';
@@ -283,15 +284,23 @@ const formattedDate = date.toLocaleString('en-US', {
         }
       </div>
 
-            <div slot="console">
-              <Console messages={consoleMessages} />
+      <div slot="console">
+        <Console messages={consoleMessages} />
+      </div>
+
+      <div slot="bottlenecks">
+        {
+          resources.length > 0 ? (
+            <Bottlenecks resources={resources} testId={testId} />
+          ) : (
+            <div class="resources-unavailable">
+              <p>Resources data unavailable for this test.</p>
             </div>
-          </Tabs>
-        </>
-      )
-    }
+          )
+        }
+      </div>
+    </Tabs>
   </div>
-</Page>
 
 <style>
   .banner {
@@ -458,7 +467,6 @@ const formattedDate = date.toLocaleString('en-US', {
     }
 
     .metrics-row {
-      grid-template-columns: 1fr;
       gap: 1.5rem; /* 24px */
     }
   }
@@ -467,7 +475,6 @@ const formattedDate = date.toLocaleString('en-US', {
   @media (max-width: 48rem) {
     /* 768px */
     .metrics-row {
-      display: flex;
       flex-direction: column;
     }
   }
@@ -524,3 +531,4 @@ const formattedDate = date.toLocaleString('en-US', {
     });
   }
 </script>
+</Page>
