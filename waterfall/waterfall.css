@@ -527,6 +527,8 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   /* Height is driven by --wf-bar-wrap-h set on the parent .wf-row via a
      row-height class (wf-row--rh18/20/22/24). */
   height: var(--wf-bar-wrap-h, 1.75rem);
+  /* Sit above the grid-line overlay (z-index:0) but below event lines (z-index:2). */
+  z-index: 1;
 }
 .wb {
   position: absolute;
@@ -656,12 +658,17 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   margin: 0 auto 2px;
 }
 
-/* ── Event-line overlay ──────────────────────────────────────────────────────
-   The overlay lives inside .wf-col-header--timeline so its width equals the
-   timeline column width. left:X% on children therefore aligns exactly with
+/* ── Overlays ────────────────────────────────────────────────────────────────
+   Both overlays live inside .wf-col-header--timeline so their width equals
+   the timeline column width. left:X% on children therefore aligns exactly with
    ruler ticks and bar positions in both CSS-only and JS-upgraded modes.
-   The overlay extends downward over the full list via a large fixed height;
+   Each overlay extends downward over the full list via a large fixed height;
    .wf-list-wrap clips it with overflow-y:hidden.
+
+   z-index layering (within .wf-col-header--timeline stacking context):
+     0  .wf-grid-overlay   — grid lines: behind request bars
+     1  .wf-bar-wrap       — request bars (z-index set on .wf-bar-wrap)
+     2  .wf-events-overlay — DCL/Load event lines: in front of bars
    --------------------------------------------------------------------------- */
 
 .wf-grid-line {
@@ -673,16 +680,29 @@ waterfall-chart:not(:defined) .wf-toggle-cols {
   opacity: 0.6;
 }
 
+.wf-grid-overlay,
 .wf-events-overlay {
   position: absolute;
-  top: 0;
   left: 0;
   width: 100%;
+  pointer-events: none;
+}
+
+.wf-grid-overlay {
+  /* top:100% = bottom edge of the parent .wf-col-header--timeline cell,
+     i.e. exactly where the request list begins. Grid lines therefore start
+     below the ruler/header and only cross the request rows. */
+  top: 100%;
   /* JS sets --wf-overlay-h on .wf-list-wrap to the wrap's exact offsetHeight.
      The 9999px fallback is only used in the CSS-only (no-JS) case and is
      clipped by .wf-list-wrap overflow-y:hidden. */
   height: var(--wf-overlay-h, 9999px);
-  pointer-events: none;
+  z-index: 0;
+}
+
+.wf-events-overlay {
+  top: 0;
+  height: var(--wf-overlay-h, 9999px);
   z-index: 2;
 }
 .wf-event-line {
