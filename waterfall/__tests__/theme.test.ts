@@ -55,12 +55,12 @@ describe('light mode backgrounds', () => {
     expect(await bgColor(page, '.wf-filter-btn.active')).toBe(BRAND_BLUE);
   });
 
-  it('toggle button background is white', async () => {
+  it('toggle button background is transparent', async () => {
     const page = await openPage(browser, baseUrl, 'light', {
       htmlPage: 'index.html',
     });
     await page.waitForSelector('waterfall-chart.wf-ready, .wf-scrubber');
-    expect(await bgColor(page, '.wf-toggle-cols')).toBe(WHITE);
+    expect(await bgColor(page, '.wf-toggle-cols')).toBe('rgba(0, 0, 0, 0)');
   });
 });
 
