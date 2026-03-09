@@ -1012,16 +1012,26 @@
       const wf = document.getElementById('wf');
       const urlInput = document.getElementById('har-url');
 
+      function isSafeSrc(str) {
+        if (!str) return false;
+        try {
+          const url = new URL(str, window.location.href);
+          return url.protocol === 'http:' || url.protocol === 'https:';
+        } catch {
+          return false;
+        }
+      }
+
       // ── Load URL ───────────────────────────────────────────────────────────
       document.getElementById('load-btn').addEventListener('click', () => {
         const src = urlInput.value.trim();
-        if (src) wf.setAttribute('src', src);
+        if (isSafeSrc(src)) wf.setAttribute('src', src);
       });
 
       urlInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           const src = urlInput.value.trim();
-          if (src) wf.setAttribute('src', src);
+          if (isSafeSrc(src)) wf.setAttribute('src', src);
         }
       });
 
