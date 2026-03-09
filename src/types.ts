@@ -141,7 +141,19 @@ export interface BrowserConfigOptions {
     isEnabled: (name: string, severity: string) => boolean;
     log: (name: string, severity: string, message: string) => void;
   };
+  userAgent?: string;
 }
+
+/**
+ * Simplified browser configuration
+ */
+export type SimplifiedBrowserConfigOptions = Omit<BrowserConfigOptions,
+  'httpCredentials' |
+  'javaScriptEnabled' |
+  'logger' |
+  'recordHar' |
+  'recordVideo' |
+  'userAgent'>;
 
 // ============================================================================
 // Launch Options
@@ -175,6 +187,8 @@ export interface LaunchOptions {
   zip?: boolean;
   uploadUrl?: string | null;
   dry?: boolean;
+  userAgent?: string;
+  agentExtra?: string;
   command?: string[];
   delay?: Record<string, number>;
   delayUsing?: DelayMethod;
@@ -516,12 +530,21 @@ export interface SavedConfig {
 // ============================================================================
 
 /**
+ * HTTP Header entry
+ */
+export interface HTTPHeader {
+  name: string;
+  value: string;
+}
+
+/**
  * HAR entry with extended timing data
  */
 export interface HarEntry {
   request: {
     url: string;
     method: string;
+    headers: HTTPHeader[];
   };
   response: {
     status: number;
@@ -631,4 +654,6 @@ export interface CLIOptions {
   dry?: boolean;
   delay?: Record<string, number>;
   delayUsing?: DelayMethod;
+  userAgent?: string;
+  agentExtra?: string;
 }

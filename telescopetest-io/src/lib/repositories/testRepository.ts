@@ -4,7 +4,7 @@
  */
 
 import type { PrismaClient } from '@/generated/prisma/client';
-import type { TestConfig, Tests } from '@/lib/classes/TestConfig';
+import type { TestConfig, Tests } from '@/lib/types/tests';
 
 /**
  * Create a new test in the database
@@ -40,6 +40,28 @@ export async function findTestIdByZipKey(
     select: { test_id: true },
   });
   return test?.test_id ?? null;
+}
+
+/**
+ * Find a single test by its testId
+ * Returns the test or null if not found
+ */
+export async function getTestById(
+  prisma: PrismaClient,
+  testId: string,
+): Promise<Tests | null> {
+  const row = await prisma.tests.findUnique({
+    where: { test_id: testId },
+    select: {
+      test_id: true,
+      url: true,
+      test_date: true,
+      browser: true,
+      name: true,
+      description: true,
+    },
+  });
+  return row ?? null;
 }
 
 /**

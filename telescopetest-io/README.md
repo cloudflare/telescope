@@ -17,8 +17,10 @@ This is how to set up the project. These steps are neccessary for local testing.
 Once you've finished the steps above, run these to set up Prisma, the ORM we're with D1. This is a [preview feature](https://www.prisma.io/docs/orm/overview/databases/cloudflare-d1#migration-workflows) that Prisma has been building out since 2024.
 
 1. Make sure you have the local `telescope-db-development` table (step 3 above).
-2. Copy the relative path (without telescopetest-io/) of this local `.sqlite` file in the folder `.wrangler/state/v3/d1/miniflare... ` and put this into a new `.env` file at the root of the `telescopetest-io` project as `DATABASE_URL="file:{{relative_path}}`.
+2. Copy the relative path (without telescopetest-io/) of this local `.sqlite` file in the folder `.wrangler/state/v3/d1/miniflare... ` and put this into a new `.env` file at the root of the `telescopetest-io` project as `DATABASE_URL="file:{{relative_path}}"`.
+   - **Note for Windows users:** Use forward slashes `/` in the DATABASE_URL path (e.g., `file:./prisma/dev.db`), not backslashes.
 3. Run `npm run generate` to generate a Prisma Client.
+4. Run `npm run migrate:local` to apply all existing migrations to your local database.
 
 You should now be able to run `npm run studio` to view local D1 data in Prisma Studio, as well as create migrations.
 
@@ -42,8 +44,8 @@ npx prisma migrate diff \
 
 This should fill your created file with the raw SQLite for your changes.
 
-4. Run `npx wrangler d1 migrations apply telescope-db-development --local --env development`
-5. Regenerate a Prisma Client that reflects your new changes in `schema.prisma` with `npm run generate`.
+4. Run `npm run generate` to regenerate a Prisma Client that reflects your new changes in `schema.prisma`.
+5. Run `npm run migrate:local` to apply this new migration to your local database.
 
 ## Running Locally
 

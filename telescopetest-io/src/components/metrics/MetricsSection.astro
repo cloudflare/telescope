@@ -1,0 +1,59 @@
+---
+export interface Props {
+  title: string;
+  isEmpty?: boolean;
+  emptyMessage?: string;
+}
+
+const { title, isEmpty = false, emptyMessage = 'No data' } = Astro.props;
+---
+
+<div class="section-wrapper">
+  <h3>{title}</h3>
+  {
+    isEmpty ? (
+      <div class="section empty">
+        <span class="empty-message">{emptyMessage}</span>
+      </div>
+    ) : (
+      <div class="section">
+        <slot />
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .section-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .section-wrapper h3 {
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .section {
+    padding: 0.75rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .section.empty {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.01);
+    text-align: center;
+  }
+
+  .empty-message {
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-style: italic;
+  }
+</style>

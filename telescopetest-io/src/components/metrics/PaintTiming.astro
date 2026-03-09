@@ -1,0 +1,61 @@
+---
+import type { PaintTiming } from '@/lib/types/results';
+import { formatMetricValue } from '@/lib/utils/formatters';
+import AllMetricsRow from '../AllMetricsRow.astro';
+import MetricsSection from './MetricsSection.astro';
+
+export interface Props {
+  paintTiming: PaintTiming[] | null | undefined;
+}
+
+const { paintTiming } = Astro.props;
+const isEmpty = !paintTiming || paintTiming.length === 0;
+---
+
+<MetricsSection
+  title="Paint Timing"
+  isEmpty={isEmpty}
+  emptyMessage="No paint timing data"
+>
+  {
+    paintTiming?.map(item => (
+      <div class="timing-group">
+        <h4>{item.name}</h4>
+        <div class="grid">
+          <AllMetricsRow label="entryType" value={item.entryType} />
+          <AllMetricsRow
+            label="startTime"
+            value={formatMetricValue('startTime', item.startTime)}
+          />
+          <AllMetricsRow
+            label="duration"
+            value={formatMetricValue('duration', item.duration)}
+          />
+        </div>
+      </div>
+    ))
+  }
+</MetricsSection>
+
+<style>
+  .timing-group {
+    margin-top: 0.5rem;
+  }
+
+  .timing-group:first-of-type {
+    margin-top: 0;
+  }
+
+  .timing-group h4 {
+    margin: 0 0 0.375rem 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.5rem;
+  }
+</style>

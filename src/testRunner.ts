@@ -24,6 +24,7 @@ import { log, logTimer, generateTestID } from './helpers.js';
 import AdmZip from 'adm-zip';
 import type {
   BrowserConfigOptions,
+  SimplifiedBrowserConfigOptions,
   LaunchOptions,
   TestPaths,
   ResultAssets,
@@ -210,6 +211,39 @@ class TestRunner {
 
     const engine = this.selectedBrowser.engine;
     const browserType = playwright[engine];
+
+    if (this.options.agentExtra) {
+      const simpleOptions: SimplifiedBrowserConfigOptions = {
+        args: this.selectedBrowser.args,
+        channel: this.selectedBrowser.channel,
+        engine: this.selectedBrowser.engine,
+        firefoxUserPrefs: this.selectedBrowser.firefoxUserPrefs,
+        headless: this.selectedBrowser.headless,
+        ignoreDefaultArgs: this.selectedBrowser.ignoreDefaultArgs,
+        viewport: { height: 1, width: 1 },
+      };
+
+      if (simpleOptions.args) {
+        const idx = simpleOptions.args.indexOf('--metrics-recording-only');
+        if (idx > -1) {
+          simpleOptions.args.splice(idx, 1);
+        }
+      }
+
+      const tmpbrowser = await browserType.launch(
+        simpleOptions as Parameters<
+          typeof browserType.launchPersistentContext
+        >[1],
+      );
+      const tmpcontext = await tmpbrowser.newContext();
+      const tmppage = await tmpcontext.newPage();
+
+      // Get the User-Agent string from the blank page in the browser
+      const originalUserAgent = await tmppage.evaluate(() => navigator.userAgent);
+      await tmpbrowser.close();
+
+      this.selectedBrowser.userAgent = originalUserAgent.concat(this.options.agentExtra);
+    }
 
     const browser = await browserType.launchPersistentContext(
       this.paths['temporaryContext'],
@@ -687,7 +721,14 @@ class TestRunner {
 
         // Open the HTML report in the browser if --openHtml is set
         if (this.options.openHtml) {
-          this.openInBrowser(path.resolve(htmlPath));
+          if (process.env.CI || process.env.RUNNING_IN_DOCKER) {
+            console.log(
+              'Skipping --openHtml: cannot open browser in CI or Docker environment',
+            );
+            console.log('HTML report available at:', path.resolve(htmlPath));
+          } else {
+            this.openInBrowser(path.resolve(htmlPath));
+          }
         }
       } catch (err) {
         console.error('Error writing html file ' + err);
