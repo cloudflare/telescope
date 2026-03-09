@@ -9,10 +9,28 @@ import {
   unlinkSync,
   existsSync,
 } from 'fs';
+import os from 'os';
 
 import path from 'path';
 import url from 'url';
 import { exec } from 'child_process';
+
+function isEmulatedX86OnArm(): boolean {
+  const inDocker = existsSync('/.dockerenv');
+  if (!inDocker) return false;
+
+  const containerArch = os.arch();
+  if (containerArch !== 'x64') return false;
+
+  // Docker Desktop on Apple Silicon shows "VirtualApple" in cpuinfo
+  try {
+    const cpuinfo = readFileSync('/proc/cpuinfo', 'utf8');
+    return cpuinfo.includes('VirtualApple');
+  } catch {
+    return false;
+  }
+}
+
 import {
   start as throttleStart,
   stop as throttleStop,
@@ -239,10 +257,14 @@ class TestRunner {
       const tmppage = await tmpcontext.newPage();
 
       // Get the User-Agent string from the blank page in the browser
-      const originalUserAgent = await tmppage.evaluate(() => navigator.userAgent);
+      const originalUserAgent = await tmppage.evaluate(
+        () => navigator.userAgent,
+      );
       await tmpbrowser.close();
 
-      this.selectedBrowser.userAgent = originalUserAgent.concat(this.options.agentExtra);
+      this.selectedBrowser.userAgent = originalUserAgent.concat(
+        this.options.agentExtra,
+      );
     }
 
     const browser = await browserType.launchPersistentContext(
@@ -526,6 +548,16 @@ class TestRunner {
       return;
     }
 
+    // Check for emulated environment before attempting throttling
+    if (isEmulatedX86OnArm()) {
+      console.error(
+        'Network throttling is not supported in this environment. ' +
+          'You are running an x86 container on an ARM host (likely Docker Desktop on Apple Silicon Mac). ' +
+          'The emulation layer cannot access host kernel modules needed for network throttling.',
+      );
+      process.exit(1);
+    }
+
     const start = performance.now();
     const networkType = this.options.connectionType as Exclude<
       ConnectionType,
@@ -533,7 +565,6 @@ class TestRunner {
     >;
 
     try {
-      //TODO: Remove monkey patch in throttle (currently setting dummynet any to any)
       await throttleStart({
         up: networkTypes[networkType].up,
         down: networkTypes[networkType].down,
@@ -542,6 +573,7 @@ class TestRunner {
       log('Throttling successfully started');
     } catch (error) {
       console.error('throttling error: ' + error);
+      process.exit(1);
     }
     const end = performance.now();
     logTimer('Network Throttle', end, start);

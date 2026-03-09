@@ -170,16 +170,17 @@ docker compose build
 # Run a test
 docker compose run --rm telescope -u https://example.com -b chrome
 
+# Run with network throttling
+docker compose run --rm telescope -u https://example.com -b chrome --connectionType 3g
+
 # Results are saved to ./results/
 ```
 
 Supports: Chrome, Chrome Beta, Edge, Firefox, and Safari (WebKit).
 
-The container runs as an unprivileged user by default. If you need network throttling (the `--connectionType` option), run the container as root:
+### Network Throttling Limitation
 
-```bash
-docker compose run --rm --user root telescope --connectionType 3G https://example.com
-```
+Network throttling (`--connectionType`) requires OS-level traffic shaping via Linux kernel modules. This works on native x86_64/amd64 Linux machines but **does not work on Apple Silicon (ARM) Macs** running Docker, because the x86 emulation layer cannot access host kernel modules.
 
 ## Installation
 
