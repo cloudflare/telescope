@@ -80,17 +80,20 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                   const textColor = t.color ?? 'var(--muted)';
                   const stem = (
                     <div
+                      class="nt-tick-stem"
                       style={`width:1px; align-self:stretch; background:${stemColor}; flex-shrink:0;`}
                     />
                   );
                   const label = (
                     <div style={t.align === 'right' ? 'text-align:right;' : ''}>
                       <div
+                        class="nt-tick-text"
                         style={`font-size:0.625rem; font-family:monospace; color:${textColor}; white-space:nowrap; line-height:1.2; font-weight:${t.color ? '700' : '400'};`}
                       >
                         {t.field}
                       </div>
                       <div
+                        class="nt-tick-text"
                         style={`font-size:0.5625rem; color:${textColor}; white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;`}
                       >
                         {t.msRel} ms
@@ -101,6 +104,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                     <div
                       class="nt-tick"
                       data-group={t.group ?? ''}
+                      data-field={t.field}
                       style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:${LANE_TOP[t.lane]}rem; bottom:0; display:flex; flex-direction:row; align-items:flex-start; gap:2px; pointer-events:none; ${t.align === 'right' ? 'transform:translateX(-100%);' : ''}`}
                     >
                       {t.align === 'right' ? (
@@ -151,16 +155,16 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
               <div class="nt-tick-row" style={`height:${TICK_ROW_H}rem`}>
                 {pageTicks.map(t => {
                   const stem = (
-                    <div style="width:1px; align-self:stretch; background:var(--border); flex-shrink:0;" />
+                    <div class="nt-tick-stem" style="width:1px; align-self:stretch; background:var(--border); flex-shrink:0;" />
                   );
                   const label = (
                     <div
                       style={`display:flex; flex-direction:column; justify-content:flex-end; padding-top:${LANE_TOP[t.lane]}rem; ${t.align === 'right' ? 'text-align:right;' : ''}`}
                     >
-                      <div style="font-size:0.625rem; font-family:monospace; color:var(--muted); white-space:nowrap; line-height:1.2;">
+                      <div class="nt-tick-text" style="font-size:0.625rem; font-family:monospace; color:var(--muted); white-space:nowrap; line-height:1.2;">
                         {t.field}
                       </div>
-                      <div style="font-size:0.5625rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;">
+                      <div class="nt-tick-text" style="font-size:0.5625rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;">
                         {t.msRel} ms
                       </div>
                     </div>
@@ -169,6 +173,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                     <div
                       class="nt-tick"
                       data-group={t.group ?? ''}
+                      data-field={t.field}
                       style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:0; display:flex; flex-direction:row; align-items:stretch; gap:2px; pointer-events:none; ${t.align === 'right' ? 'transform:translateX(-100%);' : ''}`}
                     >
                       {t.align === 'right' ? (
@@ -274,7 +279,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                   <span>ms (from fetchStart)</span>
                 </div>
                 {navTimestampRows.map(r => (
-                  <div class="nt-ts-row">
+                  <div class="nt-ts-row" data-field={r.field}>
                     <span class="nt-ts-field">
                       {r.field}
                       {r.note && <span class="nt-ts-note"> ({r.note})</span>}
@@ -478,6 +483,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     color: var(--text);
     white-space: nowrap;
   }
+
   .nt-legend-clear {
     font-size: 0.6875rem;
     font-weight: 600;
@@ -486,12 +492,9 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     border: 1px solid var(--border);
     border-radius: 3px;
     padding: 0.25rem 0.65rem;
-    margin: 0;
     margin-left: auto;
     cursor: pointer;
-    transition:
-      background 0.1s,
-      color 0.1s;
+    transition: background 0.1s, color 0.1s;
   }
   .nt-legend-clear:hover {
     background: rgba(128, 128, 128, 0.07);
@@ -508,11 +511,6 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     flex-basis: 100%;
     margin-top: 0.2rem;
   }
-  .nt-legend-section--gap {
-    margin-left: 0;
-    padding-left: 0;
-    border-left: none;
-  }
 
   .nt-legend-item {
     display: flex;
@@ -522,12 +520,9 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     border: 1px solid var(--border);
     border-radius: 3px;
     padding: 0.15rem 0.35rem 0.15rem 0.25rem;
-    margin: 0;
     cursor: pointer;
     font: inherit;
-    transition:
-      background 0.1s,
-      border-color 0.1s;
+    transition: background 0.1s, border-color 0.1s;
   }
   .nt-legend-item::before {
     content: '';
@@ -537,9 +532,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     border: 1.5px solid var(--muted);
     border-radius: 2px;
     flex-shrink: 0;
-    transition:
-      background 0.1s,
-      border-color 0.1s;
+    transition: background 0.1s, border-color 0.1s;
   }
   .nt-legend-item:hover {
     background: rgba(128, 128, 128, 0.07);
@@ -560,13 +553,23 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     font-weight: 700;
   }
 
-  /* Dim ticks that don't belong to an active legend group */
   .nt-diagram.has-active .nt-tick {
     opacity: 0.12;
     transition: opacity 0.15s;
   }
   .nt-diagram.has-active .nt-tick--active {
     opacity: 1;
+  }
+
+  .nt-tick--hover {
+    opacity: 1 !important;
+  }
+  .nt-tick--hover .nt-tick-stem {
+    background: #3b82f6 !important;
+  }
+  .nt-tick--hover .nt-tick-text {
+    color: #3b82f6 !important;
+    font-weight: 700 !important;
   }
 
   .nt-legend-swatch {
@@ -605,10 +608,10 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
   .nt-fuzzy-note {
     font-size: 0.5625rem;
     color: var(--muted);
-    margin: 0;
     font-style: italic;
     flex-basis: 100%;
     padding-left: 0.25rem;
+    margin: 0;
   }
 
   /* ── Timestamps table ────────────────────────────────────────────────────── */
@@ -658,6 +661,13 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     background: var(--panel);
     font-weight: 700;
     color: var(--muted);
+  }
+  .nt-ts-row {
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .nt-ts-row:hover {
+    background: rgba(59, 130, 246, 0.08) !important;
   }
   .nt-ts-header span:not(:first-child),
   .nt-ts-row span:not(:first-child) {
@@ -793,6 +803,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
   const legend = document.getElementById('nt-legend');
   const diagram = document.getElementById('nt-diagram');
   const clearBtn = document.getElementById('nt-legend-clear');
+  const tsTable = document.querySelector('.nt-ts-table');
   function updateDiagram() {
     if (!legend || !diagram) return;
     const activeGroups = new Set(
@@ -830,6 +841,27 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
           btn.setAttribute('aria-pressed', 'false');
         });
       updateDiagram();
+    });
+  }
+  if (tsTable && diagram) {
+    tsTable.addEventListener('mouseover', e => {
+      const row = (e.target as Element).closest<HTMLElement>('.nt-ts-row');
+      if (!row) return;
+      const field = row.dataset.field;
+      if (!field) return;
+      diagram.querySelectorAll<HTMLElement>('.nt-tick').forEach(tick => {
+        const tickField = tick.dataset.field;
+        if (tickField && (tickField === field || tickField.includes(field))) {
+          tick.classList.add('nt-tick--hover');
+        }
+      });
+    });
+    tsTable.addEventListener('mouseout', e => {
+      const row = (e.target as Element).closest<HTMLElement>('.nt-ts-row');
+      if (!row) return;
+      diagram.querySelectorAll<HTMLElement>('.nt-tick').forEach(tick => {
+        tick.classList.remove('nt-tick--hover');
+      });
     });
   }
 </script>
