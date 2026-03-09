@@ -16,11 +16,11 @@ import {
 import {
   parseCLIOption,
   parseUnknown,
+  parseWithSchema,
   formatZodError,
 } from '../src/validation.js';
 
 import { normalizeCLIConfig } from '../src/config.js';
-import { parseWithSchema } from '../src/validation.js';
 
 import type { CLIOptions } from '../src/types.js';
 
