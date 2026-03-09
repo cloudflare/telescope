@@ -130,11 +130,6 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                     title={`${s.label}: ${s.ms} ms`}
                   />
                 ))}
-                {ttfbMarker && (
-                  <div
-                    style={`position:absolute; inset:0 auto 0 ${ttfbMarker.leftPct.toFixed(3)}%; width:2px; background:rgba(245,158,66,0.7); z-index:2;`}
-                  />
-                )}
               </div>
               {/* ── Page-scoped ── */}
               <div class="nt-group-label" style="padding-top:0.4rem;">
@@ -211,12 +206,20 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
             {/* ── Legend ── */}
             <div class="nt-legend" id="nt-legend">
               <div class="nt-legend-heading">Legend</div>
+              <button
+                class="nt-legend-clear"
+                id="nt-legend-clear"
+                type="button"
+              >
+                Clear filters
+              </button>
               <span class="nt-legend-section">First Request</span>
               {frLegend.map(item => (
                 <button
                   class="nt-legend-item"
                   data-group={item.label}
                   data-color={item.color}
+                  aria-pressed={item.label === 'TTFB' ? 'true' : 'false'}
                   type="button"
                 >
                   <span
@@ -238,6 +241,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                   class="nt-legend-item"
                   data-group={item.label}
                   data-color={item.color}
+                  aria-pressed="false"
                   type="button"
                 >
                   <span
@@ -253,13 +257,14 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                   <span class="nt-legend-ms">{item.ms} ms</span>
                 </button>
               ))}
+              {hasFuzzyDom && (
+                <p class="nt-fuzzy-note">
+                  * DCL left edge is approximate — parsing begins somewhere
+                  between responseStart and responseEnd.
+                </p>
+              )}
             </div>
-            {hasFuzzyDom && (
-              <p class="nt-fuzzy-note">
-                * DOM left edge is approximate — parsing begins somewhere
-                between responseStart and responseEnd.
-              </p>
-            )}
+
             {/* All timestamps dropdown */}
             <details class="nt-timestamps">
               <summary class="nt-timestamps-summary">All timestamps</summary>
@@ -472,8 +477,25 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     letter-spacing: 0.07em;
     color: var(--text);
     white-space: nowrap;
-    flex-basis: 100%;
-    margin-bottom: 0.1rem;
+  }
+  .nt-legend-clear {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.25rem 0.65rem;
+    margin: 0;
+    margin-left: auto;
+    cursor: pointer;
+    transition:
+      background 0.1s,
+      color 0.1s;
+  }
+  .nt-legend-clear:hover {
+    background: rgba(128, 128, 128, 0.07);
+    color: var(--text);
   }
 
   .nt-legend-section {
@@ -483,11 +505,13 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     letter-spacing: 0.07em;
     color: var(--muted);
     white-space: nowrap;
+    flex-basis: 100%;
+    margin-top: 0.2rem;
   }
   .nt-legend-section--gap {
-    margin-left: 0.5rem;
-    padding-left: 0.7rem;
-    border-left: 1px solid var(--border);
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
   }
 
   .nt-legend-item {
@@ -508,8 +532,8 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
   .nt-legend-item::before {
     content: '';
     display: inline-block;
-    width: 0.6rem;
-    height: 0.6rem;
+    width: 0.75rem;
+    height: 0.75rem;
     border: 1.5px solid var(--muted);
     border-radius: 2px;
     flex-shrink: 0;
@@ -521,12 +545,19 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     background: rgba(128, 128, 128, 0.07);
   }
   .nt-legend-item[aria-pressed='true'] {
-    background: rgba(128, 128, 128, 0.12);
-    border-color: var(--text);
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.4);
   }
   .nt-legend-item[aria-pressed='true']::before {
-    background: var(--text);
-    border-color: var(--text);
+    content: '✓';
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgb(59, 130, 246);
+    color: rgb(59, 130, 246);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
   }
 
   /* Dim ticks that don't belong to an active legend group */
@@ -576,6 +607,8 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     color: var(--muted);
     margin: 0;
     font-style: italic;
+    flex-basis: 100%;
+    padding-left: 0.25rem;
   }
 
   /* ── Timestamps table ────────────────────────────────────────────────────── */
@@ -759,7 +792,26 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
 <script>
   const legend = document.getElementById('nt-legend');
   const diagram = document.getElementById('nt-diagram');
+  const clearBtn = document.getElementById('nt-legend-clear');
+  function updateDiagram() {
+    if (!legend || !diagram) return;
+    const activeGroups = new Set(
+      Array.from(
+        legend.querySelectorAll<HTMLButtonElement>(
+          'button.nt-legend-item[aria-pressed="true"]',
+        ),
+      ).map(b => b.dataset.group ?? ''),
+    );
+    diagram.querySelectorAll<HTMLElement>('.nt-tick').forEach(tick => {
+      tick.classList.toggle(
+        'nt-tick--active',
+        activeGroups.has(tick.dataset.group ?? ''),
+      );
+    });
+    diagram.classList.toggle('has-active', activeGroups.size > 0);
+  }
   if (legend && diagram) {
+    updateDiagram();
     legend.addEventListener('click', e => {
       const btn = (e.target as Element).closest<HTMLButtonElement>(
         'button.nt-legend-item',
@@ -767,20 +819,17 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
       if (!btn) return;
       const isActive = btn.getAttribute('aria-pressed') === 'true';
       btn.setAttribute('aria-pressed', isActive ? 'false' : 'true');
-      const activeGroups = new Set(
-        Array.from(
-          legend.querySelectorAll<HTMLButtonElement>(
-            'button.nt-legend-item[aria-pressed="true"]',
-          ),
-        ).map(b => b.dataset.group ?? ''),
-      );
-      diagram.querySelectorAll<HTMLElement>('.nt-tick').forEach(tick => {
-        tick.classList.toggle(
-          'nt-tick--active',
-          activeGroups.has(tick.dataset.group ?? ''),
-        );
-      });
-      diagram.classList.toggle('has-active', activeGroups.size > 0);
+      updateDiagram();
+    });
+  }
+  if (clearBtn && legend) {
+    clearBtn.addEventListener('click', () => {
+      legend
+        .querySelectorAll<HTMLButtonElement>('button.nt-legend-item')
+        .forEach(btn => {
+          btn.setAttribute('aria-pressed', 'false');
+        });
+      updateDiagram();
     });
   }
 </script>

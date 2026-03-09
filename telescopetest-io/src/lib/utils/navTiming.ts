@@ -23,11 +23,11 @@ const COLOR = {
   dns: '#1a6b52',
   tcp: '#e07820',
   tls: '#7b3fb0',
-  request: '#c8b432',
+  request: '#7dd3fc',
   response: '#3b82f6',
   ttfb: '#f59e0b',
-  dom: '#fb7185', // pink  (was teal — swapped with Load Event)
-  loadEvent: '#2a9d8f', // teal  (was pink — swapped with DOM)
+  dom: '#fb7185', // pink
+  loadEvent: '#1e3a8a',
 } as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -96,10 +96,10 @@ const FR_TICK_ORDER: NavField[] = [
 ];
 
 const PAGE_TICK_FIELDS: TickField[] = [
-  { field: 'domInteractive', group: 'DOM' },
-  { field: 'domContentLoadedEventStart', group: 'DOM' },
-  { field: 'domContentLoadedEventEnd', group: 'DOM' },
-  { field: 'domComplete', group: 'DOM' },
+  { field: 'domInteractive', group: 'DCL' },
+  { field: 'domContentLoadedEventStart', group: 'DCL' },
+  { field: 'domContentLoadedEventEnd', group: 'DCL' },
+  { field: 'domComplete', group: 'DCL' },
   { field: 'loadEventStart', group: 'Load Event' },
   { field: 'loadEventEnd', group: 'Load Event' },
 ];
@@ -258,13 +258,13 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
   const pageSegs: DiagramPageSeg[] = [];
   const pageLegend: DiagramLegendItem[] = [];
   let hasFuzzyDom = false;
-  // DOM, fuzzy left
+  // DCL, fuzzy left
   if (
     nav.responseStart !== undefined &&
     nav.domComplete !== undefined &&
     nav.domComplete > nav.responseStart
   ) {
-    const domMs = Math.round(nav.domComplete - nav.responseStart);
+    const domMs = Math.round(nav.domComplete);
     const fuzzyEndTs = nav.responseEnd ?? nav.responseStart;
     const fuzzyFrac =
       nav.domComplete > fuzzyEndTs
@@ -278,14 +278,14 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
       ? `linear-gradient(to right, rgba(${rgb},0) 0%, rgba(${rgb},0.45) ${(fuzzyFrac * 0.5).toFixed(1)}%, ${COLOR.dom} ${fuzzyFrac.toFixed(1)}%, ${COLOR.dom} 100%)`
       : COLOR.dom;
     pageSegs.push({
-      label: 'DOM',
+      label: 'DCL',
       ms: domMs,
       leftPct: pct(nav.responseStart),
       widthPct: dur(nav.responseStart, nav.domComplete),
       bg: domBg,
     });
     pageLegend.push({
-      label: 'DOM',
+      label: 'DCL',
       ms: domMs,
       color: COLOR.dom,
       note: hasFuzzyDom ? '*' : undefined,
