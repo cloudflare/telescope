@@ -4,6 +4,8 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "dev:setup": "./scripts/dev-setup.sh",
+    "dev:clean": "rm -rf .wrangler .env",
     "build": "astro build",
     "preview": "astro build && wrangler dev --env development",
     "cf-typegen": "wrangler types",
