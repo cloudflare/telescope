@@ -133,129 +133,160 @@ const formattedDate = date.toLocaleString('en-US', {
     <a href="/results" class="back-link">← Back to all results</a>
   </div>
   <div class="sections">
-    {isUnsafe && (
-      <div class="banner banner-unsafe">
-        <strong>This result cannot be displayed.</strong>
-        <p>
-          The content was rated unsafe by our AI content filter.
-          To view unsafe results, run telescopetest.io locally and upload there.
-        </p>
-      </div>
-    )}
-
-    {isUnknown && (
-      <>
-        <div class="banner banner-pending" id="rating-pending">
-          <strong>Rating in progress...</strong>
-          <p>AI content rating is running. This page will update automatically.</p>
+    {
+      isUnsafe && (
+        <div class="banner banner-unsafe">
+          <strong>This result cannot be displayed.</strong>
+          <p>
+            The content was rated unsafe by our AI content filter. To view
+            unsafe results, run telescopetest.io locally and upload there.
+          </p>
         </div>
-        <div class="banner banner-pending" id="rating-timeout" style="display: none;">
-          <strong>Rating timed out.</strong>
-          <p>Content rating could not be completed. This result cannot be displayed.</p>
-        </div>
-      </>
-    )}
+      )
+    }
 
-    {!isUnsafe && !isUnknown && (
-      <>
-        <!-- Title and Description (Full Width) -->
-        <div class="title-section">
-          {test.name ? <h1>{test.name}</h1> : <h1>{test.test_id}</h1>}
-          {
-            test.description && (
+    {
+      isUnknown && (
+        <>
+          <div class="banner banner-pending" id="rating-pending">
+            <strong>Rating in progress...</strong>
+            <p>
+              AI content rating is running. This page will update automatically.
+            </p>
+          </div>
+          <div
+            class="banner banner-pending"
+            id="rating-timeout"
+            style="display: none;"
+          >
+            <strong>Rating timed out.</strong>
+            <p>
+              Content rating could not be completed. This result cannot be
+              displayed.
+            </p>
+          </div>
+        </>
+      )
+    }
+
+    {
+      !isUnsafe && !isUnknown && (
+        <>
+          <div class="title-section">
+            {test.name ? <h1>{test.name}</h1> : <h1>{test.test_id}</h1>}
+            {test.description && (
               <div class="description-details">
                 <p class="description-text">{test.description}</p>
                 <button class="description-toggle" aria-expanded="false">
                   more
                 </button>
               </div>
-            )
-          }
-        </div>
+            )}
+          </div>
 
-        <!-- Info Panel + Screenshot (Side by Side) -->
-        <section class="overview-section">
-          <TestInfoPanel
-            testId={testId}
-            url={test.url}
-            browser={test.browser}
-            browserVersion={harBrowser?.version ?? null}
-            formattedDate={formattedDate}
-          />
+          <section class="overview-section">
+            <TestInfoPanel
+              testId={testId}
+              url={test.url}
+              browser={test.browser}
+              browserVersion={harBrowser?.version ?? null}
+              formattedDate={formattedDate}
+            />
 
-          <ScreenshotDisplay
-            screenshotUrl={screenshotUrl}
-            alt={`Screenshot of ${test.url}`}
-          />
-        </section>
+            <ScreenshotDisplay
+              screenshotUrl={screenshotUrl}
+              alt={`Screenshot of ${test.url}`}
+            />
+          </section>
 
-        <!-- Metrics Tabs -->
-        {
-          metrics ? (
-            <Tabs>
-              <div slot="summary">
-                <div class="metrics-row">
-                  <Summary
-                    heading="Core Web Vitals"
-                    metrics={[
-                      {
-                        label: 'LCP',
-                        value: formatMs(lcpMs),
-                        unit: 'ms',
-                        rating: getLcpRating(lcpMs),
-                      },
-                      {
-                        label: 'CLS',
-                        value: formatDecimal(clsValue),
-                        rating: getClsRating(clsValue),
-                      },
-                    ]}
-                  />
-                  <Summary
-                    heading="Performance Metrics"
-                    metrics={[
-                      {
-                        label: 'FCP',
-                        value: formatMs(fcpMs),
-                        unit: 'ms',
-                        rating: getFcpRating(fcpMs),
-                      },
-                      {
-                        label: 'TTFB',
-                        value: formatMs(ttfbMs),
-                        unit: 'ms',
-                        rating: getTtfbRating(ttfbMs),
-                      },
-                      {
-                        label: 'Transfer Size',
-                        value: formatKb(transferBytes),
-                        unit: 'KB',
-                      },
-                      {
-                        label: 'Page Load Time',
-                        value: formatMs(durationMs),
-                        unit: 'ms',
-                      },
-                    ]}
-                  />
-                </div>
-              </div>
-
-              <div slot="all-metrics">
-                <AllMetrics metrics={metrics} />
-              </div>
-            </Tabs>
-          ) : (
-            <div class="metrics-unavailable panel">
-              <p>Metrics unavailable for this test.</p>
+          <Tabs>
+            <div slot="summary">
+              {
+                metrics ? (
+                  <div class="metrics-row">
+                    <Summary
+                      heading="Core Web Vitals"
+                      metrics={[
+                        {
+                          label: 'LCP',
+                          value: formatMs(lcpMs),
+                          unit: 'ms',
+                          rating: getLcpRating(lcpMs),
+                        },
+                        {
+                          label: 'CLS',
+                          value: formatDecimal(clsValue),
+                          rating: getClsRating(clsValue),
+                        },
+                      ]}
+                    />
+                    <Summary
+                      heading="Performance Metrics"
+                      metrics={[
+                        {
+                          label: 'FCP',
+                          value: formatMs(fcpMs),
+                          unit: 'ms',
+                          rating: getFcpRating(fcpMs),
+                        },
+                        {
+                          label: 'TTFB',
+                          value: formatMs(ttfbMs),
+                          unit: 'ms',
+                          rating: getTtfbRating(ttfbMs),
+                        },
+                        {
+                          label: 'Transfer Size',
+                          value: formatKb(transferBytes),
+                          unit: 'KB',
+                        },
+                        {
+                          label: 'Page Load Time',
+                          value: formatMs(durationMs),
+                          unit: 'ms',
+                        },
+                      ]}
+                    />
+                  </div>
+                ) : (
+                  <div class="metrics-unavailable panel">
+                    <p>Metrics unavailable for this test.</p>
+                  </div>
+                )
+              }
             </div>
-          )
-        }
-<ScreenshotDisplay
-        screenshotUrl={screenshotUrl}
-        alt={`Screenshot of ${test.url}`}
-      />
-    </section>
+
+            <div slot="all-metrics">
+              {
+                metrics ? (
+                  <AllMetrics metrics={metrics} />
+                ) : (
+                  <div class="metrics-unavailable panel">
+                    <p>Metrics unavailable for this test.</p>
+                  </div>
+                )
+              }
+            </div>
+
+            <div slot="waterfall">
+              <Waterfall testId={testId} hasHar={hasHar} />
+            </div>
+
+            <div slot="resources">
+              {
+                resources.length > 0 || metrics?.navigationTiming ? (
+                  <Resources
+                    resources={resources}
+                    url={test.url}
+                    navigationTiming={metrics?.navigationTiming}
+                  />
+                ) : (
+                  <div class="resources-unavailable">
+                    <p>Resources data unavailable for this test.</p>
+                  </div>
+                )
+              }
+            </div>
 
     <!-- Metrics + Waterfall Tabs -->
     <Tabs>
@@ -343,10 +374,13 @@ const formattedDate = date.toLocaleString('en-US', {
         }
       </div>
 
-      <div slot="console">
-        <Console messages={consoleMessages} />
-      </div>
-    </Tabs>
+            <div slot="console">
+              <Console messages={consoleMessages} />
+            </div>
+          </Tabs>
+        </>
+      )
+    }
   </div>
 </Page>
 
