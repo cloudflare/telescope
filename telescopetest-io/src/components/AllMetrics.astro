@@ -37,7 +37,6 @@ const {
   pageSegs = [],
   frLegend = [],
   pageLegend = [],
-  ttfbMarker = null,
   hasFuzzyDom = false,
   navTimestampRows = [],
 } = diagram ?? {};
@@ -176,62 +175,76 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                 </div>
                 {pageTicks
                   .filter(t => t.field === 'domContentLoadedEventStart')
-                  .map(t => (
-                    <div
-                      class="nt-tick-bracket"
-                      data-field={t.field}
-                      data-group={t.group ?? ''}
-                      style={`position:absolute; left:0; top:1.5rem; width:${t.leftPct.toFixed(3)}%; height:1rem; pointer-events:none;`}
-                    >
+                  .map(t => {
+                    const stemColor = t.color ?? 'var(--border)';
+                    return (
                       <div
-                        class="nt-tick-bracket-vert"
-                        style="position:absolute; left:0; top:0; width:1px; height:100%; background:var(--border);"
-                      />
-                      <div
-                        class="nt-tick-bracket-horiz"
-                        style="position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--border);"
-                      />
-                    </div>
-                  ))}
+                        class="nt-tick-bracket"
+                        data-field={t.field}
+                        data-group={t.group ?? ''}
+                        style={`position:absolute; left:0; top:1.5rem; width:${t.leftPct.toFixed(3)}%; height:1rem; pointer-events:none;`}
+                      >
+                        <div
+                          class="nt-tick-bracket-vert"
+                          style={`position:absolute; left:0; top:0; width:1px; height:100%; background:${stemColor};`}
+                        />
+                        <div
+                          class="nt-tick-bracket-horiz"
+                          style={`position:absolute; left:0; right:0; bottom:0; height:1px; background:${stemColor};`}
+                        />
+                      </div>
+                    );
+                  })}
                 <div class="nt-tick-row" style={`height:${TICK_ROW_H}rem;`}>
-                {pageTicks.map(t => {
-                  const stem = (
-                    <div class="nt-tick-stem" style="width:1px; align-self:stretch; background:var(--border); flex-shrink:0;" />
-                  );
-                  const label = (
-                    <div
-                      style={`display:flex; flex-direction:column; justify-content:flex-end; padding-top:${LANE_TOP[t.lane] + 1}rem; ${t.align === 'right' ? 'text-align:right;' : ''}`}
-                    >
-                      <div class="nt-tick-text" style="font-size:0.625rem; font-family:monospace; color:var(--muted); white-space:nowrap; line-height:1.2;">
-                        {t.field}
+                  {pageTicks.map(t => {
+                    const stemColor = t.color ?? 'var(--border)';
+                    const textColor = t.color ?? 'var(--muted)';
+                    const stem = (
+                      <div
+                        class="nt-tick-stem"
+                        style={`width:1px; align-self:stretch; background:${stemColor}; flex-shrink:0;`}
+                      />
+                    );
+                    const label = (
+                      <div
+                        style={`display:flex; flex-direction:column; justify-content:flex-end; padding-top:${LANE_TOP[t.lane] + 1}rem; ${t.align === 'right' ? 'text-align:right;' : ''}`}
+                      >
+                        <div
+                          class="nt-tick-text"
+                          style={`font-size:0.625rem; font-family:monospace; color:${textColor}; white-space:nowrap; line-height:1.2; font-weight:${t.color ? '700' : '400'};`}
+                        >
+                          {t.field}
+                        </div>
+                        <div
+                          class="nt-tick-text"
+                          style={`font-size:0.5625rem; color:${textColor}; white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;`}
+                        >
+                          {t.msRel} ms
+                        </div>
                       </div>
-                      <div class="nt-tick-text" style="font-size:0.5625rem; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;">
-                        {t.msRel} ms
+                    );
+                    return (
+                      <div
+                        class="nt-tick"
+                        data-group={t.group ?? ''}
+                        data-field={t.field}
+                        style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:0; display:flex; flex-direction:row; align-items:stretch; gap:2px; pointer-events:none; ${t.align === 'right' ? 'transform:translateX(-100%);' : ''}`}
+                      >
+                        {t.align === 'right' ? (
+                          <>
+                            {label}
+                            {stem}
+                          </>
+                        ) : (
+                          <>
+                            {stem}
+                            {label}
+                          </>
+                        )}
                       </div>
-                    </div>
-                  );
-                  return (
-                    <div
-                      class="nt-tick"
-                      data-group={t.group ?? ''}
-                      data-field={t.field}
-                      style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:0; display:flex; flex-direction:row; align-items:stretch; gap:2px; pointer-events:none; ${t.align === 'right' ? 'transform:translateX(-100%);' : ''}`}
-                    >
-                      {t.align === 'right' ? (
-                        <>
-                          {label}
-                          {stem}
-                        </>
-                      ) : (
-                        <>
-                          {stem}
-                          {label}
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
               </div>
               {/* ── Time axis ── */}
               <div class="nt-axis">
@@ -536,7 +549,9 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     padding: 0.25rem 0.65rem;
     margin-left: auto;
     cursor: pointer;
-    transition: background 0.1s, color 0.1s;
+    transition:
+      background 0.1s,
+      color 0.1s;
   }
   .nt-legend-clear:hover {
     background: rgba(128, 128, 128, 0.07);
@@ -564,7 +579,9 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     padding: 0.15rem 0.35rem 0.15rem 0.25rem;
     cursor: pointer;
     font: inherit;
-    transition: background 0.1s, border-color 0.1s;
+    transition:
+      background 0.1s,
+      border-color 0.1s;
   }
   .nt-legend-item::before {
     content: '';
@@ -574,7 +591,9 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
     border: 1.5px solid var(--muted);
     border-radius: 2px;
     flex-shrink: 0;
-    transition: background 0.1s, border-color 0.1s;
+    transition:
+      background 0.1s,
+      border-color 0.1s;
   }
   .nt-legend-item:hover {
     background: rgba(128, 128, 128, 0.07);
@@ -861,7 +880,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
   const diagram = document.getElementById('nt-diagram');
   const clearBtn = document.getElementById('nt-legend-clear');
   const tsTable = document.querySelector('.nt-ts-table');
-  
+
   function updateDiagram() {
     if (!legend || !diagram) return;
     const activeGroups = new Set(
@@ -877,15 +896,17 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
         activeGroups.has(tick.dataset.group ?? ''),
       );
     });
-    diagram.querySelectorAll<HTMLElement>('.nt-tick-bracket').forEach(bracket => {
-      bracket.classList.toggle(
-        'nt-tick-bracket--active',
-        activeGroups.has(bracket.dataset.group ?? ''),
-      );
-    });
+    diagram
+      .querySelectorAll<HTMLElement>('.nt-tick-bracket')
+      .forEach(bracket => {
+        bracket.classList.toggle(
+          'nt-tick-bracket--active',
+          activeGroups.has(bracket.dataset.group ?? ''),
+        );
+      });
     diagram.classList.toggle('has-active', activeGroups.size > 0);
   }
-  
+
   if (legend && diagram) {
     updateDiagram();
     legend.addEventListener('click', e => {
@@ -898,7 +919,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
       updateDiagram();
     });
   }
-  
+
   if (clearBtn && legend) {
     clearBtn.addEventListener('click', () => {
       legend
@@ -907,7 +928,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
       updateDiagram();
     });
   }
-  
+
   if (tsTable && diagram) {
     tsTable.addEventListener('mouseover', e => {
       const row = (e.target as Element).closest<HTMLElement>('.nt-ts-row');
@@ -920,13 +941,15 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
           tick.classList.add('nt-tick--hover');
         }
       });
-      diagram.querySelectorAll<HTMLElement>('.nt-tick-bracket').forEach(bracket => {
-        const bracketField = bracket.dataset.field;
-        if (!bracketField) return;
-        if (bracketField === field || bracketField.includes(field)) {
-          bracket.classList.add('nt-tick-bracket--hover');
-        }
-      });
+      diagram
+        .querySelectorAll<HTMLElement>('.nt-tick-bracket')
+        .forEach(bracket => {
+          const bracketField = bracket.dataset.field;
+          if (!bracketField) return;
+          if (bracketField === field || bracketField.includes(field)) {
+            bracket.classList.add('nt-tick-bracket--hover');
+          }
+        });
     });
     tsTable.addEventListener('mouseout', e => {
       const row = (e.target as Element).closest<HTMLElement>('.nt-ts-row');

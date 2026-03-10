@@ -317,6 +317,7 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
     const leftPct = pct(ts);
     if (seenPcts.has(leftPct.toFixed(2))) continue;
     seenPcts.add(leftPct.toFixed(2));
+    const isDCLStart = field === 'domContentLoadedEventStart';
     pageTicks.push({
       field,
       leftPct,
@@ -324,6 +325,7 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
       lane: laneCounter++ % 4,
       align: leftPct > 75 ? 'right' : 'left',
       group,
+      color: isDCLStart ? COLOR.dom : undefined,
     });
   }
 
