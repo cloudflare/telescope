@@ -1016,7 +1016,9 @@
         if (!str) return false;
         try {
           const url = new URL(str, window.location.href);
-          return url.protocol === 'http:' || url.protocol === 'https:';
+          const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
+          const isSameOrigin = url.origin === window.location.origin;
+          return isHttp && isSameOrigin;
         } catch {
           return false;
         }
