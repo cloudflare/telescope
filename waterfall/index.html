@@ -1027,13 +1027,17 @@
       // ── Load URL ───────────────────────────────────────────────────────────
       document.getElementById('load-btn').addEventListener('click', () => {
         const src = urlInput.value.trim();
-        if (isSafeSrc(src)) wf.setAttribute('src', src);
+        if (isSafeSrc(src)) {
+          wf.setAttribute('src', src);
+        }
       });
 
       urlInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           const src = urlInput.value.trim();
-          if (isSafeSrc(src)) wf.setAttribute('src', src);
+          if (isSafeSrc(src)) {
+            wf.setAttribute('src', src);
+          }
         }
       });
 
