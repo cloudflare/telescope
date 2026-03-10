@@ -35,7 +35,7 @@ const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
       screenshotUrl = `/api/tests/${test.test_id}/${filename}`;
     }
     return {
-      ...test,
+      ...test, // now with content_rating field
       screenshot_url: screenshotUrl,
     };
   }),

@@ -565,7 +565,7 @@ const formattedDate = date.toLocaleString('en-US', {
 </style>
 
 <script>
-  // Only poll when the pending banner is present (rating is unknown/in-progress)
+  // AI content rating polling
   if (document.getElementById('rating-pending')) {
     const INTERVAL_MS = 2000;
     const TIMEOUT_MS = 60_000;
@@ -573,7 +573,6 @@ const formattedDate = date.toLocaleString('en-US', {
     const testId = window.location.pathname.split('/').at(-1);
     const pendingBanner = document.getElementById('rating-pending');
     const timeoutBanner = document.getElementById('rating-timeout');
-
     async function poll() {
       if (Date.now() - start >= TIMEOUT_MS) {
         if (pendingBanner) pendingBanner.style.display = 'none';
@@ -594,16 +593,13 @@ const formattedDate = date.toLocaleString('en-US', {
     }
     setTimeout(poll, INTERVAL_MS);
   }
-</script>
-
-<script>
+  // Description toggle
   const toggle = document.querySelector(
     '.description-toggle',
   ) as HTMLButtonElement | null;
   const text = document.querySelector(
     '.description-text',
   ) as HTMLElement | null;
-
   if (toggle && text) {
     toggle.addEventListener('click', () => {
       const expanded = toggle.getAttribute('aria-expanded') === 'true';

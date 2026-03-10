@@ -5,7 +5,7 @@ import type { TestConfig } from '@/lib/types/tests';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
-import { TestSource } from '@/lib/types/tests';
+import { TestSource, ContentRating } from '@/lib/types/tests';
 import { getPrismaClient } from '@/lib/prisma/client';
 import {
   createTest,
@@ -221,12 +221,16 @@ export const POST: APIRoute = async (context: APIContext) => {
     // Rate the URL content via Workers AI — fire-and-forget after response is built
     if (env.ENABLE_AI_RATING === 'true' && env.AI) {
       context.locals.runtime.ctx.waitUntil(
-        rateUrlContent(
-          env.AI,
-          testConfig.url,
-          unzipped['metrics.json'],
-          unzipped['screenshot.png'],
-        ).then(rating => updateContentRating(prisma, testId, rating)),
+        (async () => {
+          await updateContentRating(prisma, testId, ContentRating.IN_PROGRESS);
+          const rating = await rateUrlContent(
+            env.AI!,
+            testConfig.url,
+            unzipped['metrics.json'],
+            unzipped['screenshot.png'],
+          );
+          await updateContentRating(prisma, testId, rating);
+        })(),
       );
     }
 

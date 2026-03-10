@@ -9,6 +9,7 @@ import { ContentRating } from '@/lib/types/tests';
 
 /**
  * Create a new test in the database
+ * Always created with UNKNOWN rating; upload.ts marks as IN_PROGRESS before starting AI job
  */
 export async function createTest(
   prisma: PrismaClient,

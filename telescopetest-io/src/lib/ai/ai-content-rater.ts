@@ -29,18 +29,7 @@ async function scrapeUrl(url: string): Promise<string> {
     signal: AbortSignal.timeout(10_000),
   });
   const html = await response.text();
-  return html
-    .replace(/<(script|style|noscript|head|template)[\s\S]*?<\/\1>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&[a-z]+;/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return html;
 }
 
 export async function rateUrlContent(
@@ -64,7 +53,7 @@ export async function rateUrlContent(
         .join(' ')
         .replace(/\s+/g, ' ')
         .trim()
-        .slice(0, 4000);
+        .slice(0, 100000);
       // console.log('pageText: ', combined);
       if (combined) {
         const textResult = await ai.run('@cf/meta/llama-guard-3-8b', {
