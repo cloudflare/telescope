@@ -11,23 +11,58 @@ export const ROOT = path.resolve(import.meta.dirname, '..');
 
 // ── Static file server ────────────────────────────────────────────────────────
 
+/**
+ * Explicit allowlist of URL paths the test server is permitted to serve.
+ * Mapping: request path → relative file path from ROOT.
+ *
+ * Using an allowlist (rather than joining req.url directly into a filesystem
+ * path) prevents path-traversal attacks where a crafted URL such as
+ * `/../../../etc/passwd` could read arbitrary files from disk.
+ */
+const ALLOWED_PATHS: Record<string, string> = {
+  '/': 'static.html',
+  '/static.html': 'static.html',
+  '/index.html': 'index.html',
+  '/progressive.html': 'progressive.html',
+  '/src-attr.html': 'src-attr.html',
+  '/waterfall.css': 'waterfall.css',
+  '/demo.css': 'demo.css',
+  '/theme.js': 'theme.js',
+  '/progressive.js': 'progressive.js',
+  // dist/ ES module bundle — index.js and its sibling chunk files
+  '/dist/index.js': 'dist/index.js',
+  '/dist/waterfall-chart.js': 'dist/waterfall-chart.js',
+  '/dist/render.js': 'dist/render.js',
+  '/dist/config.js': 'dist/config.js',
+  '/dist/formatters.js': 'dist/formatters.js',
+  '/dist/helpers.js': 'dist/helpers.js',
+  '/dist/har.js': 'dist/har.js',
+};
+
+const MIME: Record<string, string> = {
+  '.html': 'text/html',
+  '.css': 'text/css',
+  '.js': 'application/javascript',
+  '.json': 'application/json',
+};
+
 export function createServer(): Promise<{ url: string; close: () => void }> {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
-      const filePath = path.join(
-        ROOT,
-        req.url === '/' ? '/static.html' : (req.url ?? ''),
-      );
+      const requestPath = req.url ?? '/';
+      const relativePath = ALLOWED_PATHS[requestPath];
+
+      if (!relativePath) {
+        res.writeHead(404);
+        res.end();
+        return;
+      }
+
+      const filePath = path.join(ROOT, relativePath);
       try {
         const data = fs.readFileSync(filePath);
         const ext = path.extname(filePath);
-        const mime: Record<string, string> = {
-          '.html': 'text/html',
-          '.css': 'text/css',
-          '.js': 'application/javascript',
-          '.json': 'application/json',
-        };
-        res.writeHead(200, { 'Content-Type': mime[ext] ?? 'text/plain' });
+        res.writeHead(200, { 'Content-Type': MIME[ext] ?? 'text/plain' });
         res.end(data);
       } catch {
         res.writeHead(404);
