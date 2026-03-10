@@ -58,7 +58,16 @@ export function createServer(): Promise<{ url: string; close: () => void }> {
         return;
       }
 
-      const filePath = path.join(ROOT, relativePath);
+      // `relativePath` is a value from the ALLOWED_PATHS allowlist above, not
+      // derived from req.url, so path traversal is not possible. The check
+      // below is a defence-in-depth guard that verifies the resolved path stays
+      // within ROOT even if the allowlist were ever accidentally widened.
+      const filePath = path.resolve(ROOT, relativePath);
+      if (!filePath.startsWith(ROOT + path.sep) && filePath !== ROOT) {
+        res.writeHead(403);
+        res.end();
+        return;
+      }
       try {
         const data = fs.readFileSync(filePath);
         const ext = path.extname(filePath);
