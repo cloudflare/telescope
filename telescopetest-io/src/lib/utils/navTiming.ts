@@ -297,7 +297,7 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
     nav.loadEventEnd !== undefined &&
     nav.loadEventEnd > nav.loadEventStart
   ) {
-    const leMs = Math.round(nav.loadEventEnd - nav.loadEventStart);
+    const leMs = Math.round(nav.loadEventStart);
     pageSegs.push({
       label: 'Page Load',
       ms: leMs,
