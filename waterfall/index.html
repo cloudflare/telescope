@@ -1012,30 +1012,39 @@
       const wf = document.getElementById('wf');
       const urlInput = document.getElementById('har-url');
 
-      function isSafeSrc(str) {
-        if (!str) return false;
+      /**
+       * Sanitize a user-supplied HAR URL.
+       *
+       * Returns the resolved href string when the URL is safe to fetch
+       * (http/https, same origin), or null when it should be rejected.
+       * Returning the resolved URL rather than the raw input ensures any
+       * relative paths or encoded characters are normalised before use.
+       */
+      function sanitizeURL(str) {
+        if (!str) return null;
         try {
           const url = new URL(str, window.location.href);
-          const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
-          const isSameOrigin = url.origin === window.location.origin;
-          return isHttp && isSameOrigin;
+          if (url.protocol !== 'http:' && url.protocol !== 'https:')
+            return null;
+          if (url.origin !== window.location.origin) return null;
+          return url.href;
         } catch {
-          return false;
+          return null;
         }
       }
 
       // ── Load URL ───────────────────────────────────────────────────────────
       document.getElementById('load-btn').addEventListener('click', () => {
-        const src = urlInput.value.trim(); // lgtm[js/xss-through-dom]
-        if (isSafeSrc(src)) {
+        const src = sanitizeURL(urlInput.value.trim());
+        if (src) {
           wf.setAttribute('src', src);
         }
       });
 
       urlInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-          const src = urlInput.value.trim(); // lgtm[js/xss-through-dom]
-          if (isSafeSrc(src)) {
+          const src = sanitizeURL(urlInput.value.trim());
+          if (src) {
             wf.setAttribute('src', src);
           }
         }
