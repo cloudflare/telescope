@@ -96,12 +96,12 @@ const FR_TICK_ORDER: NavField[] = [
 ];
 
 const PAGE_TICK_FIELDS: TickField[] = [
-  { field: 'domInteractive', group: 'DCL' },
+  { field: 'domInteractive' },
   { field: 'domContentLoadedEventStart', group: 'DCL' },
-  { field: 'domContentLoadedEventEnd', group: 'DCL' },
-  { field: 'domComplete', group: 'DCL' },
-  { field: 'loadEventStart', group: 'Load Event' },
-  { field: 'loadEventEnd', group: 'Load Event' },
+  { field: 'domContentLoadedEventEnd' },
+  { field: 'domComplete' },
+  { field: 'loadEventStart', group: 'Page Load' },
+  { field: 'loadEventEnd' },
 ];
 
 // Timestamp table fields (ttfbField and optional responseStart are spliced in at runtime)
@@ -264,7 +264,7 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
     nav.domComplete !== undefined &&
     nav.domComplete > nav.responseStart
   ) {
-    const domMs = Math.round(nav.domComplete);
+    const domMs = Math.round(nav.domContentLoadedEventStart);
     const fuzzyEndTs = nav.responseEnd ?? nav.responseStart;
     const fuzzyFrac =
       nav.domComplete > fuzzyEndTs
@@ -281,7 +281,7 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
       label: 'DCL',
       ms: domMs,
       leftPct: pct(nav.responseStart),
-      widthPct: dur(nav.responseStart, nav.domComplete),
+      widthPct: dur(nav.responseStart, nav.domContentLoadedEventStart),
       bg: domBg,
     });
     pageLegend.push({
@@ -291,7 +291,7 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
       note: hasFuzzyDom ? '*' : undefined,
     });
   }
-  // load events
+  // Page Loads
   if (
     nav.loadEventStart !== undefined &&
     nav.loadEventEnd !== undefined &&
@@ -299,13 +299,13 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
   ) {
     const leMs = Math.round(nav.loadEventEnd - nav.loadEventStart);
     pageSegs.push({
-      label: 'Load Event',
+      label: 'Page Load',
       ms: leMs,
       leftPct: pct(nav.loadEventStart),
       widthPct: dur(nav.loadEventStart, nav.loadEventEnd),
       bg: COLOR.loadEvent,
     });
-    pageLegend.push({ label: 'Load Event', ms: leMs, color: COLOR.loadEvent });
+    pageLegend.push({ label: 'Page Load', ms: leMs, color: COLOR.loadEvent });
   }
 
   // ── Page-scoped ticks ──────────────────────────────────────────────────────
@@ -318,6 +318,7 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
     if (seenPcts.has(leftPct.toFixed(2))) continue;
     seenPcts.add(leftPct.toFixed(2));
     const isDCLStart = field === 'domContentLoadedEventStart';
+    const isLoadEventStart = field === 'loadEventStart';
     pageTicks.push({
       field,
       leftPct,
@@ -325,7 +326,11 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
       lane: laneCounter++ % 4,
       align: leftPct > 75 ? 'right' : 'left',
       group,
-      color: isDCLStart ? COLOR.dom : undefined,
+      color: isDCLStart
+        ? COLOR.dom
+        : isLoadEventStart
+          ? COLOR.loadEvent
+          : undefined,
     });
   }
 

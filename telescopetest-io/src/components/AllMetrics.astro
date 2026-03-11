@@ -195,6 +195,28 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                       </div>
                     );
                   })}
+                {pageTicks
+                  .filter(t => t.field === 'loadEventStart')
+                  .map(t => {
+                    const stemColor = t.color ?? 'var(--border)';
+                    return (
+                      <div
+                        class="nt-tick-bracket"
+                        data-field={t.field}
+                        data-group={t.group ?? ''}
+                        style={`position:absolute; left:0; top:1.5rem; width:${t.leftPct.toFixed(3)}%; height:0.75rem; pointer-events:none;`}
+                      >
+                        <div
+                          class="nt-tick-bracket-vert"
+                          style={`position:absolute; left:0; top:0; width:1px; height:100%; background:${stemColor};`}
+                        />
+                        <div
+                          class="nt-tick-bracket-horiz"
+                          style={`position:absolute; left:0; right:0; bottom:0; height:1px; background:${stemColor};`}
+                        />
+                      </div>
+                    );
+                  })}
                 <div class="nt-tick-row" style={`height:${TICK_ROW_H}rem;`}>
                   {pageTicks.map(t => {
                     const stemColor = t.color ?? 'var(--border)';
