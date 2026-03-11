@@ -310,13 +310,10 @@ export function buildNavTimingDiagram(nav: NavigationTiming): NavTimingDiagram {
 
   // ── Page-scoped ticks ──────────────────────────────────────────────────────
   const pageTicks: DiagramTick[] = [];
-  const seenPcts = new Set<string>();
   for (const { field, group } of PAGE_TICK_FIELDS) {
     const ts = nav[field] as number | undefined;
     if (ts === undefined || ts <= 0) continue;
     const leftPct = pct(ts);
-    if (seenPcts.has(leftPct.toFixed(2))) continue;
-    seenPcts.add(leftPct.toFixed(2));
     const isDCLStart = field === 'domContentLoadedEventStart';
     const isLoadEventStart = field === 'loadEventStart';
     pageTicks.push({
