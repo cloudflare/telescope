@@ -88,19 +88,17 @@ export function buildPageLoad(ctx: PageLoadContext): PageLoadData {
 
   // ── Page Load segment ──────────────────────────────────────────────────────
 
-  if (
-    nav.loadEventStart !== undefined &&
-    nav.loadEventEnd !== undefined &&
-    nav.loadEventEnd > nav.loadEventStart
-  ) {
+  if (nav.loadEventStart !== undefined && nav.loadEventEnd !== undefined) {
     const leMs = relMs(nav.loadEventStart);
-    pageSegs.push({
-      label: 'Page Load (loadEventStart)',
-      ms: leMs,
-      leftPct: pct(nav.loadEventStart),
-      widthPct: dur(nav.loadEventStart, nav.loadEventEnd),
-      bg: COLOR.loadEvent,
-    });
+    if (nav.loadEventEnd > nav.loadEventStart) {
+      pageSegs.push({
+        label: 'Page Load (loadEventStart)',
+        ms: leMs,
+        leftPct: pct(nav.loadEventStart),
+        widthPct: dur(nav.loadEventStart, nav.loadEventEnd),
+        bg: COLOR.loadEvent,
+      });
+    }
     pageLegend.push({
       label: 'Page Load',
       ms: leMs,
