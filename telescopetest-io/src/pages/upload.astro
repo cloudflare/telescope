@@ -356,8 +356,11 @@ import Page from '@/layouts/Page.astro';
       if (response.status === 409 && result.testId) {
         if (result.contentRating === 'unsafe') {
           statusDuplicateUnsafe.style.display = 'block';
-        } else if (result.contentRating === 'unknown' || result.contentRating === 'in_progress') {
-          // Rating still in progress — redirect to result page which handles polling and re-triggering
+        } else if (
+          result.contentRating === 'unknown' ||
+          result.contentRating === 'in_progress'
+        ) {
+          // Rating still in progress — redirect to result page which handles polling.
           window.location.href = `/results/${result.testId}`;
         } else {
           // safe — show the normal duplicate with a link

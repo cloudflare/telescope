@@ -161,8 +161,7 @@ const formattedDate = date.toLocaleString('en-US', {
           >
             <strong>Rating timed out.</strong>
             <p>
-              Content rating could not be completed. This result cannot be
-              displayed.
+              Content rating could not be completed. Please refresh to try again.
             </p>
           </div>
         </>
@@ -478,7 +477,7 @@ const formattedDate = date.toLocaleString('en-US', {
   // AI content rating polling
   if (document.getElementById('rating-pending')) {
     const INTERVAL_MS = 2000;
-    const TIMEOUT_MS = 60_000;
+    const TIMEOUT_MS = 30_000;
     const start = Date.now();
     const testId = window.location.pathname.split('/').at(-1);
     const pendingBanner = document.getElementById('rating-pending');
