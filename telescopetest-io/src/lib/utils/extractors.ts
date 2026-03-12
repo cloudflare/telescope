@@ -1,60 +1,67 @@
-// Helper functions to extract/calculate metrics
-import type { MetricsJson } from '../types/results.js';
+/**
+ * Extractors for diagnostic performance metrics from MetricsJson.
+ *
+ * These are NOT Core Web Vitals. CWV (LCP, CLS) live in lib/utils/cwv.ts.
+ * FCP and TTFB are Google-defined diagnostic metrics with published thresholds
+ * but are not in the official CWV set.
+ */
+import type { MetricsJson } from '../types/metrics.js';
+import { type Rating, getFcpRating, getTtfbRating } from './ratings.js';
+import { formatMs } from './formatters.js';
+
+export type DiagnosticMetric = {
+  value: number | undefined;
+  formatted: string | null;
+  rating: Rating | undefined;
+};
 
 /**
- * Extract First Contentful Paint (FCP) time in milliseconds
+ * First Contentful Paint in milliseconds.
+ * Source: paintTiming entry named 'first-contentful-paint'.
+ * Diagnostic metric — not a CWV.
  */
-export function extractFcp(metrics: MetricsJson | null): number | undefined {
-  const fcpEntry = metrics?.paintTiming?.find(
+export function getFcp(metrics: MetricsJson | null): DiagnosticMetric {
+  const entry = metrics?.paintTiming?.find(
     p => p.name === 'first-contentful-paint',
   );
-  return fcpEntry?.startTime;
+  const value = entry?.startTime;
+  return { value, formatted: formatMs(value), rating: getFcpRating(value) };
 }
 
 /**
- * Extract Largest Contentful Paint (LCP) time in milliseconds
- */
-export function extractLcp(metrics: MetricsJson | null): number | undefined {
-  return metrics?.largestContentfulPaint?.[0]?.startTime;
-}
-
-/**
- * Extract Cumulative Layout Shift (CLS) value
- */
-export function extractCls(metrics: MetricsJson | null): number | undefined {
-  return metrics?.layoutShifts?.reduce((sum, s) => sum + (s.value ?? 0), 0);
-}
-
-/**
- * Extract Time to First Byte (TTFB) in milliseconds
+ * Returns the NavigationTiming field name to use as the TTFB timestamp.
  *
- * Correctly handles Chrome 115-132's quirk where responseStart points to
- * the 200 document response instead of 103 Early Hints response.
- *
- * Per Cloudflare spec: Use firstInterimResponseStart when available and non-zero,
- * otherwise fall back to responseStart.
+ * Chrome 115–132 quirk: responseStart pointed to the 103 Early Hints
+ * response rather than the final document response. We prefer
+ * firstInterimResponseStart when it is present and non-zero.
  */
-export function extractTtfb(metrics: MetricsJson | null): number | undefined {
+export function selectTtfbField(
+  nav: import('../types/metrics.js').NavigationTiming,
+): string {
+  if (nav.firstInterimResponseStart && nav.firstInterimResponseStart > 0)
+    return 'firstInterimResponseStart';
+  return 'responseStart';
+}
+
+/**
+ * Time to First Byte in milliseconds (responseStart − fetchStart).
+ * Source: navigationTiming.
+ * Diagnostic metric — not a CWV.
+ */
+export function getTtfb(metrics: MetricsJson | null): DiagnosticMetric {
   const nav = metrics?.navigationTiming;
-  if (!nav) return undefined;
-
-  // Use firstInterimResponseStart if available and non-zero (Chrome 115-132 fix)
-  const effectiveResponseStart =
-    nav.firstInterimResponseStart && nav.firstInterimResponseStart > 0
-      ? nav.firstInterimResponseStart
-      : nav.responseStart;
-
-  // TTFB = time to first response byte relative to fetchStart (navigation origin).
-  // The actual metrics.json has fetchStart (not navigationStart) as the base time.
-  if (effectiveResponseStart !== undefined) {
-    return effectiveResponseStart - (nav.fetchStart ?? 0);
-  }
-
-  return undefined;
+  if (!nav) return { value: undefined, formatted: null, rating: undefined };
+  const field = selectTtfbField(nav);
+  const responseStart = nav[field as keyof typeof nav] as number | undefined;
+  const value =
+    responseStart !== undefined
+      ? responseStart - (nav.fetchStart ?? 0)
+      : undefined;
+  return { value, formatted: formatMs(value), rating: getTtfbRating(value) };
 }
 
 /**
- * Extract transfer size in bytes
+ * Transfer size of the main document in bytes.
  */
 export function extractTransferSize(
   metrics: MetricsJson | null,
@@ -63,7 +70,7 @@ export function extractTransferSize(
 }
 
 /**
- * Extract page load duration in milliseconds
+ * Total page load duration (fetchStart → loadEventEnd) in milliseconds.
  */
 export function extractDuration(
   metrics: MetricsJson | null,

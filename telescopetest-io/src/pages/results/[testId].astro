@@ -1,6 +1,6 @@
 ---
 import Page from '@/layouts/Page.astro';
-import Summary from '@/components/Summary.astro';
+import MetricCard from '@/components/MetricCard.astro';
 import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
 import TestInfoPanel from '@/components/TestInfoPanel.astro';
 import Tabs from '@/components/Tabs.astro';
@@ -12,24 +12,17 @@ import Console from '@/components/Console.astro';
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/testRepository';
 
-import type { MetricsJson } from '@/lib/types/results';
+import type { MetricsJson } from '@/lib/types/metrics';
 import type { ResourceTiming } from '@/lib/types/resources';
 import type { ConsoleMessage } from '@/lib/types/console';
+import { getLcp, getCls } from '@/lib/utils/cwv';
 import {
-  extractFcp,
-  extractLcp,
-  extractCls,
-  extractTtfb,
+  getFcp,
+  getTtfb,
   extractTransferSize,
   extractDuration,
 } from '@/lib/utils/extractors';
-import {
-  getFcpRating,
-  getLcpRating,
-  getClsRating,
-  getTtfbRating,
-} from '@/lib/utils/ratings';
-import { formatMs, formatDecimal, formatKb } from '@/lib/utils/formatters';
+import { formatMs, formatKb } from '@/lib/utils/formatters';
 
 export const prerender = false;
 
@@ -108,10 +101,10 @@ try {
 }
 
 // Extract metric values
-const fcpMs = extractFcp(metrics);
-const lcpMs = extractLcp(metrics);
-const clsValue = extractCls(metrics);
-const ttfbMs = extractTtfb(metrics);
+const lcp = getLcp(metrics);
+const cls = getCls(metrics);
+const fcp = getFcp(metrics);
+const ttfb = getTtfb(metrics);
 const transferBytes = extractTransferSize(metrics);
 const durationMs = extractDuration(metrics);
 
@@ -169,36 +162,32 @@ const formattedDate = date.toLocaleString('en-US', {
         {
           metrics ? (
             <div class="metrics-row">
-              <Summary
+              <MetricCard
                 heading="Core Web Vitals"
                 metrics={[
                   {
                     label: 'LCP',
-                    value: formatMs(lcpMs),
+                    value: lcp.formatted,
                     unit: 'ms',
-                    rating: getLcpRating(lcpMs),
+                    rating: lcp.rating,
                   },
-                  {
-                    label: 'CLS',
-                    value: formatDecimal(clsValue),
-                    rating: getClsRating(clsValue),
-                  },
+                  { label: 'CLS', value: cls.formatted, rating: cls.rating },
                 ]}
               />
-              <Summary
+              <MetricCard
                 heading="Performance Metrics"
                 metrics={[
                   {
                     label: 'FCP',
-                    value: formatMs(fcpMs),
+                    value: fcp.formatted,
                     unit: 'ms',
-                    rating: getFcpRating(fcpMs),
+                    rating: fcp.rating,
                   },
                   {
                     label: 'TTFB',
-                    value: formatMs(ttfbMs),
+                    value: ttfb.formatted,
                     unit: 'ms',
-                    rating: getTtfbRating(ttfbMs),
+                    rating: ttfb.rating,
                   },
                   {
                     label: 'Transfer Size',
@@ -240,7 +229,11 @@ const formattedDate = date.toLocaleString('en-US', {
       <div slot="resources">
         {
           resources.length > 0 || metrics?.navigationTiming ? (
-            <Resources resources={resources} url={test.url} navigationTiming={metrics?.navigationTiming} />
+            <Resources
+              resources={resources}
+              url={test.url}
+              navigationTiming={metrics?.navigationTiming}
+            />
           ) : (
             <div class="resources-unavailable">
               <p>Resources data unavailable for this test.</p>

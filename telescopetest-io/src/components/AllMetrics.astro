@@ -1,36 +1,990 @@
 ---
-import type { MetricsJson } from '@/lib/types/results';
-import NavigationTiming from './metrics/NavigationTiming.astro';
-import PaintTiming from './metrics/PaintTiming.astro';
-import UserTiming from './metrics/UserTiming.astro';
-import LargestContentfulPaint from './metrics/LargestContentfulPaint.astro';
-import LayoutShifts from './metrics/LayoutShifts.astro';
+import type {
+  MetricsJson,
+  ServerTiming,
+  UserTiming,
+} from '@/lib/types/metrics';
+import MetricCard from '@/components/MetricCard.astro';
+import Section from '@/components/Section.astro';
+import { getLcp, getCls } from '@/lib/utils/cwv';
+import { formatDuration } from '@/lib/utils/formatters';
+import { buildNavTimingDiagram } from '@/lib/allmetrics/navTiming';
 
 export interface Props {
   metrics: MetricsJson | null;
 }
 
 const { metrics } = Astro.props;
+
+const lcp = getLcp(metrics);
+const cls = getCls(metrics);
+const nav = metrics?.navigationTiming;
+
+// Diagram layout constants
+const AXIS_FRACS = [0, 0.25, 0.5, 0.75, 1];
+const SEG_GAP_PX = 2;
+const LANE_STEP = 1.4; // rem per tick lane
+const LANE_TOP = [0, LANE_STEP, LANE_STEP * 2, LANE_STEP * 3];
+const TICK_ROW_H = LANE_STEP * 4 + 0.6; // total tick-row height (rem)
+
+// Get and break out all diagram variables from helper
+const diagram = nav ? buildNavTimingDiagram(nav) : null;
+const {
+  totalMs = 1,
+  frTicks = [],
+  pageTicks = [],
+  frSpans = [],
+  pageSegs = [],
+  frLegend = [],
+  pageLegend = [],
+  hasFuzzyDom = false,
+  navTimestampRows = [],
+} = diagram ?? {};
+
+// Server & User timing
+const serverTiming: ServerTiming[] = nav?.serverTiming ?? [];
+const userTiming: UserTiming[] = metrics?.userTiming ?? [];
+const measures = userTiming.filter(u => u.entryType === 'measure');
+const marks = userTiming.filter(u => u.entryType === 'mark');
 ---
 
 {
   metrics && (
-    <div class="metrics-display">
-      <NavigationTiming nav={metrics.navigationTiming} />
-      <PaintTiming paintTiming={metrics.paintTiming} />
-      <UserTiming userTiming={metrics.userTiming} />
-      <LargestContentfulPaint
-        largestContentfulPaint={metrics.largestContentfulPaint}
+    <div class="all-metrics">
+      <MetricCard
+        heading="Core Web Vitals"
+        metrics={[
+          {
+            label: 'LCP',
+            value: lcp.formatted,
+            unit: 'ms',
+            rating: lcp.rating,
+          },
+          { label: 'CLS', value: cls.formatted, rating: cls.rating },
+        ]}
       />
-      <LayoutShifts layoutShifts={metrics.layoutShifts} />
+      <Section
+        title="Navigation Timing"
+        isEmpty={!nav}
+        emptyMessage="No navigation timing data"
+      >
+        {nav && (
+          <div class="nav-body">
+            <div class="nt-diagram" id="nt-diagram">
+              {/* ── First Request ── */}
+              <div class="nt-group-label">First Request</div>
+              <div class="nt-tick-row" style={`height:${TICK_ROW_H}rem`}>
+                {frTicks.map(t => {
+                  const stemColor = t.color ?? 'var(--border)';
+                  const textColor = t.color ?? 'var(--muted)';
+                  const isTTFB = t.group === 'TTFB';
+                  const stem = (
+                    <div
+                      class="nt-tick-stem"
+                      style={`width:1px; align-self:stretch; background:${stemColor}; flex-shrink:0;`}
+                    />
+                  );
+                  const bracket = isTTFB ? (
+                    <div
+                      class="nt-tick-bracket"
+                      data-field={t.field}
+                      data-group={t.group ?? ''}
+                      style={`position:absolute; left:0; bottom:0.5rem; width:${t.leftPct.toFixed(3)}%; pointer-events:none;`}
+                    >
+                      <div
+                        class="nt-tick-bracket-vert"
+                        style={`position:absolute; left:0; top:0; width:1px; height:calc(0.5rem + 1px); background:${stemColor};`}
+                      />
+                      <div
+                        class="nt-tick-bracket-horiz"
+                        style={`position:absolute; left:0; right:0; top:0; height:1px; background:${stemColor};`}
+                      />
+                    </div>
+                  ) : null;
+                  const label = (
+                    <div style={t.align === 'right' ? 'text-align:right;' : ''}>
+                      <div
+                        class="nt-tick-text"
+                        style={`font-size:0.625rem; font-family:monospace; color:${textColor}; white-space:nowrap; line-height:1.2; font-weight:${t.color ? '700' : '400'};`}
+                      >
+                        {t.field}
+                      </div>
+                      <div
+                        class="nt-tick-text"
+                        style={`font-size:0.5625rem; color:${textColor}; white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;`}
+                      >
+                        {t.msRel} ms
+                      </div>
+                    </div>
+                  );
+                  return (
+                    <>
+                      {bracket}
+                      <div
+                        class="nt-tick"
+                        data-group={t.group ?? ''}
+                        data-field={t.field}
+                        style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:${LANE_TOP[t.lane]}rem; bottom:0; display:flex; flex-direction:row; align-items:flex-start; gap:2px; pointer-events:none; ${t.align === 'right' ? 'transform:translateX(-100%);' : ''}`}
+                      >
+                        {t.align === 'right' ? (
+                          <>
+                            {label}
+                            {stem}
+                          </>
+                        ) : (
+                          <>
+                            {stem}
+                            {label}
+                          </>
+                        )}
+                      </div>
+                    </>
+                  );
+                })}
+              </div>
+              <div class="nt-bar-row">
+                {AXIS_FRACS.map(f => (
+                  <div
+                    style={`position:absolute; inset:0 auto 0 ${(f * 100).toFixed(1)}%; width:1px; background:var(--border);`}
+                  />
+                ))}
+                {frSpans.map((s, i, arr) => (
+                  <div
+                    style={`position:absolute; inset:0 auto 0 ${s.leftPct.toFixed(3)}%; width:calc(${s.widthPct.toFixed(3)}% - ${i < arr.length - 1 ? SEG_GAP_PX : 0}px); background:${s.color}; border-radius:2px; min-width:2px; z-index:1;`}
+                    title={`${s.label}: ${s.ms} ms`}
+                  />
+                ))}
+              </div>
+              {/* ── Page-scoped ── */}
+              <div class="nt-group-label" style="padding-top:0.4rem;">
+                Page-scoped
+              </div>
+              <div style="position:relative;">
+                <div class="nt-bar-row">
+                  {AXIS_FRACS.map(f => (
+                    <div
+                      style={`position:absolute; inset:0 auto 0 ${(f * 100).toFixed(1)}%; width:1px; background:var(--border);`}
+                    />
+                  ))}
+                  {pageSegs.map((s, i, arr) => (
+                    <div
+                      style={`position:absolute; inset:0 auto 0 ${s.leftPct.toFixed(3)}%; width:calc(${s.widthPct.toFixed(3)}% - ${i < arr.length - 1 ? SEG_GAP_PX : 0}px); background:${s.bg}; border-radius:2px; min-width:3px; z-index:1;`}
+                      title={`${s.label}: ${s.ms} ms`}
+                    />
+                  ))}
+                </div>
+                {pageTicks
+                  .filter(t => t.field === 'DCL (domContentLoadedEventStart)')
+                  .map(t => {
+                    const stemColor = t.color ?? 'var(--border)';
+                    return (
+                      <div
+                        class="nt-tick-bracket"
+                        data-field={t.field}
+                        data-group={t.group ?? ''}
+                        style={`position:absolute; left:0; top:1.5rem; width:${t.leftPct.toFixed(3)}%; height:1rem; pointer-events:none;`}
+                      >
+                        <div
+                          class="nt-tick-bracket-vert"
+                          style={`position:absolute; left:0; top:0; width:1px; height:100%; background:${stemColor};`}
+                        />
+                        <div
+                          class="nt-tick-bracket-horiz"
+                          style={`position:absolute; left:0; right:0; bottom:0; height:1px; background:${stemColor};`}
+                        />
+                      </div>
+                    );
+                  })}
+                {pageTicks
+                  .filter(t => t.field === 'Page Load (loadEventStart)')
+                  .map(t => {
+                    const stemColor = t.color ?? 'var(--border)';
+                    return (
+                      <div
+                        class="nt-tick-bracket"
+                        data-field={t.field}
+                        data-group={t.group ?? ''}
+                        style={`position:absolute; left:0; top:1.5rem; width:${t.leftPct.toFixed(3)}%; height:0.75rem; pointer-events:none;`}
+                      >
+                        <div
+                          class="nt-tick-bracket-vert"
+                          style={`position:absolute; left:0; top:0; width:1px; height:100%; background:${stemColor};`}
+                        />
+                        <div
+                          class="nt-tick-bracket-horiz"
+                          style={`position:absolute; left:0; right:0; bottom:0; height:1px; background:${stemColor};`}
+                        />
+                      </div>
+                    );
+                  })}
+                <div class="nt-tick-row" style={`height:${TICK_ROW_H}rem;`}>
+                  {pageTicks.map(t => {
+                    const stemColor = t.color ?? 'var(--border)';
+                    const textColor = t.color ?? 'var(--muted)';
+                    const stem = (
+                      <div
+                        class="nt-tick-stem"
+                        style={`width:1px; align-self:stretch; background:${stemColor}; flex-shrink:0;`}
+                      />
+                    );
+                    const label = (
+                      <div
+                        style={`display:flex; flex-direction:column; justify-content:flex-end; padding-top:${LANE_TOP[t.lane] + 1}rem; ${t.align === 'right' ? 'text-align:right;' : ''}`}
+                      >
+                        <div
+                          class="nt-tick-text"
+                          style={`font-size:0.625rem; font-family:monospace; color:${textColor}; white-space:nowrap; line-height:1.2; font-weight:${t.color ? '700' : '400'};`}
+                        >
+                          {t.field}
+                        </div>
+                        <div
+                          class="nt-tick-text"
+                          style={`font-size:0.5625rem; color:${textColor}; white-space:nowrap; font-variant-numeric:tabular-nums; line-height:1.2;`}
+                        >
+                          {t.msRel} ms
+                        </div>
+                      </div>
+                    );
+                    return (
+                      <div
+                        class="nt-tick"
+                        data-group={t.group ?? ''}
+                        data-field={t.field}
+                        style={`position:absolute; left:${t.leftPct.toFixed(3)}%; top:0; display:flex; flex-direction:row; align-items:stretch; gap:2px; pointer-events:none; ${t.align === 'right' ? 'transform:translateX(-100%);' : ''}`}
+                      >
+                        {t.align === 'right' ? (
+                          <>
+                            {label}
+                            {stem}
+                          </>
+                        ) : (
+                          <>
+                            {stem}
+                            {label}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* ── Time axis ── */}
+              <div class="nt-axis">
+                {AXIS_FRACS.map((f, i, arr) => (
+                  <div
+                    class={`nt-axis-tick${i === arr.length - 1 ? ' nt-axis-tick--last' : ''}`}
+                    style={`left:${(f * 100).toFixed(1)}%`}
+                  >
+                    <div class="nt-axis-tick-line" />
+                    <span
+                      class={`nt-axis-label${i === 0 ? '' : i === arr.length - 1 ? ' nt-axis-label--right' : ' nt-axis-label--center'}`}
+                    >
+                      {Math.round(f * totalMs)} ms
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* ── Legend ── */}
+            <div class="nt-legend" id="nt-legend">
+              <div class="nt-legend-heading">Legend</div>
+              <button
+                class="nt-legend-clear"
+                id="nt-legend-clear"
+                type="button"
+              >
+                Clear filters
+              </button>
+              <span class="nt-legend-section">First Request</span>
+              {frLegend.map(item => (
+                <button
+                  class="nt-legend-item"
+                  data-group={item.label}
+                  data-color={item.color}
+                  aria-pressed={item.label === 'TTFB' ? 'true' : 'false'}
+                  type="button"
+                >
+                  <span
+                    class="nt-legend-swatch"
+                    style={`background:${item.color}`}
+                  />
+                  <span class="nt-legend-name">{item.label}</span>
+                  <span class="nt-legend-ms">{item.ms} ms</span>
+                  {item.secondary && (
+                    <span class="nt-legend-secondary">{item.secondary}</span>
+                  )}
+                </button>
+              ))}
+              <span class="nt-legend-section nt-legend-section--gap">
+                Page-scoped
+              </span>
+              {pageLegend.map(item => (
+                <button
+                  class="nt-legend-item"
+                  data-group={item.label}
+                  data-color={item.color}
+                  aria-pressed="false"
+                  type="button"
+                >
+                  <span
+                    class="nt-legend-swatch"
+                    style={`background:${item.color}`}
+                  />
+                  <span class="nt-legend-name">
+                    {item.label}
+                    {item.note && (
+                      <span class="nt-legend-note"> {item.note}</span>
+                    )}
+                  </span>
+                  <span class="nt-legend-ms">{item.ms} ms</span>
+                  {item.secondary && (
+                    <span class="nt-legend-secondary">{item.secondary}</span>
+                  )}
+                </button>
+              ))}
+              {hasFuzzyDom && (
+                <p class="nt-fuzzy-note">
+                  * DCL left edge is approximate — parsing begins somewhere
+                  between responseStart and responseEnd.
+                </p>
+              )}
+            </div>
+
+            {/* All timestamps dropdown */}
+            <details class="nt-timestamps">
+              <summary class="nt-timestamps-summary">All timestamps</summary>
+              <div class="nt-ts-table">
+                <div class="nt-ts-header">
+                  <span>Field</span>
+                  <span>ms (from fetchStart)</span>
+                </div>
+                {navTimestampRows.map(r => (
+                  <div class="nt-ts-row" data-field={r.field}>
+                    <span class="nt-ts-field">
+                      {r.field}
+                      {r.note && <span class="nt-ts-note"> ({r.note})</span>}
+                    </span>
+                    <span class="nt-ts-val">{r.msRel} ms</span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </div>
+        )}
+      </Section>
+
+      <Section
+        title="Server Timing"
+        isEmpty={serverTiming.length === 0}
+        emptyMessage="No server timing data — the server did not send a Server-Timing header"
+      >
+        <details class="tlist" open>
+          <summary class="tlist-summary">
+            <span class="tlist-label">Entries</span>
+            <span class="tlist-count">{serverTiming.length}</span>
+          </summary>
+          <div class="tlist-table">
+            <div class="tlist-header tlist-header--desc">
+              <span>Name</span>
+              <span>Description</span>
+              <span class="col-r">Duration</span>
+            </div>
+            {serverTiming.map(item => (
+              <div class="tlist-row tlist-row--desc">
+                <span class="tlist-name">{item.name}</span>
+                <span class="tlist-secondary">{item.description ?? '—'}</span>
+                <span class="col-r tlist-value">
+                  {Math.round(item.duration)} ms
+                </span>
+              </div>
+            ))}
+          </div>
+        </details>
+      </Section>
+
+      <Section
+        title="User Timing"
+        isEmpty={userTiming.length === 0}
+        emptyMessage="No user timing data — the page did not emit any performance.mark() or performance.measure() entries"
+      >
+        <div class="ut-sections">
+          {measures.length > 0 && (
+            <details class="tlist" open={measures.length <= 10}>
+              <summary class="tlist-summary">
+                <span class="tlist-label">Measures</span>
+                <span class="tlist-count">{measures.length}</span>
+              </summary>
+              <div class="tlist-table">
+                <div class="tlist-header">
+                  <span>Name</span>
+                  <span class="col-r">Start</span>
+                  <span class="col-r">Duration</span>
+                </div>
+                {measures.map(m => (
+                  <div class="tlist-row">
+                    <span class="tlist-name">{m.name}</span>
+                    <span class="col-r tlist-secondary">
+                      {Math.round(m.startTime)} ms
+                    </span>
+                    <span class="col-r tlist-value">
+                      {formatDuration(m.duration)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+          {marks.length > 0 && (
+            <details class="tlist" open={marks.length <= 10}>
+              <summary class="tlist-summary">
+                <span class="tlist-label">Marks</span>
+                <span class="tlist-count">{marks.length}</span>
+              </summary>
+              <div class="tlist-table">
+                <div class="tlist-header cols-2">
+                  <span>Name</span>
+                  <span class="col-r">Start</span>
+                </div>
+                {marks.map(m => (
+                  <div class="tlist-row cols-2">
+                    <span class="tlist-name">{m.name}</span>
+                    <span class="col-r tlist-secondary">
+                      {Math.round(m.startTime)} ms
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+        </div>
+      </Section>
     </div>
   )
 }
 
 <style>
-  .metrics-display {
+  .all-metrics {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.5rem;
+  }
+
+  /* ── Nav body ────────────────────────────────────────────────────────────── */
+  .nav-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  /* ── Diagram ─────────────────────────────────────────────────────────────── */
+  .nt-diagram {
+    display: flex;
+    flex-direction: column;
+    overflow-x: clip;
+  }
+
+  .nt-group-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text);
+    padding: 0.5rem 0 0.15rem;
+  }
+
+  .nt-tick-row {
+    position: relative;
+    overflow: visible;
+  }
+
+  .nt-bar-row {
+    position: relative;
+    height: 1.5rem;
+    background: var(--panel);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* ── Time axis ───────────────────────────────────────────────────────────── */
+  .nt-axis {
+    position: relative;
+    height: 1.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .nt-axis-tick {
+    position: absolute;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .nt-axis-tick--last {
+    left: auto !important;
+    right: 0;
+    align-items: flex-end;
+  }
+
+  .nt-axis-tick-line {
+    width: 1px;
+    height: 0.4rem;
+    background: var(--border);
+  }
+
+  .nt-axis-label {
+    font-size: 0.5625rem;
+    color: var(--muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    margin-top: 0.1rem;
+  }
+  .nt-axis-label--center {
+    transform: translateX(-50%);
+  }
+
+  /* ── Legend ──────────────────────────────────────────────────────────────── */
+  .nt-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.7rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .nt-legend-heading {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .nt-legend-clear {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.25rem 0.65rem;
+    margin-left: auto;
+    cursor: pointer;
+    transition:
+      background 0.1s,
+      color 0.1s;
+  }
+  .nt-legend-clear:hover {
+    background: rgba(128, 128, 128, 0.07);
+    color: var(--text);
+  }
+
+  .nt-legend-section {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-basis: 100%;
+    margin-top: 0.2rem;
+  }
+
+  .nt-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.15rem 0.35rem 0.15rem 0.25rem;
+    cursor: pointer;
+    font: inherit;
+    transition:
+      background 0.1s,
+      border-color 0.1s;
+  }
+  .nt-legend-item::before {
+    content: '';
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border: 1.5px solid var(--muted);
+    border-radius: 2px;
+    flex-shrink: 0;
+    transition:
+      background 0.1s,
+      border-color 0.1s;
+  }
+  .nt-legend-item:hover {
+    background: rgba(128, 128, 128, 0.07);
+  }
+  .nt-legend-item[aria-pressed='true'] {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+  .nt-legend-item[aria-pressed='true']::before {
+    content: '✓';
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgb(59, 130, 246);
+    color: rgb(59, 130, 246);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+
+  .nt-diagram.has-active .nt-tick {
+    opacity: 0.12;
+    transition: opacity 0.15s;
+  }
+  .nt-diagram.has-active .nt-tick--active {
+    opacity: 1;
+  }
+  .nt-diagram.has-active .nt-tick-bracket {
+    opacity: 0.12;
+    transition: opacity 0.15s;
+  }
+  .nt-diagram.has-active .nt-tick-bracket--active {
+    opacity: 1;
+  }
+
+  .nt-tick--hover {
+    opacity: 1 !important;
+  }
+  .nt-tick--hover .nt-tick-stem {
+    background: #3b82f6 !important;
+  }
+  .nt-tick--hover .nt-tick-text {
+    color: #3b82f6 !important;
+    font-weight: 700 !important;
+  }
+
+  .nt-tick-bracket--hover {
+    opacity: 1 !important;
+  }
+  .nt-tick-bracket--hover .nt-tick-bracket-vert,
+  .nt-tick-bracket--hover .nt-tick-bracket-horiz {
+    background: #3b82f6 !important;
+  }
+
+  .nt-legend-swatch {
+    display: inline-block;
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .nt-legend-name {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .nt-legend-note {
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .nt-legend-ms {
+    font-size: 0.5625rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .nt-legend-secondary {
+    font-size: 0.5rem;
+    color: var(--muted);
+    font-family: monospace;
+    white-space: nowrap;
+  }
+
+  .nt-fuzzy-note {
+    font-size: 0.5625rem;
+    color: var(--muted);
+    font-style: italic;
+    flex-basis: 100%;
+    padding-left: 0.25rem;
+    margin: 0;
+  }
+
+  /* ── Timestamps table ────────────────────────────────────────────────────── */
+  .nt-timestamps {
+    margin-top: 0.5rem;
+  }
+
+  .nt-timestamps-summary {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.125rem 0;
+  }
+  .nt-timestamps-summary::-webkit-details-marker {
+    display: none;
+  }
+  .nt-timestamps-summary::before {
+    content: '▶';
+    font-size: 0.45rem;
+    transition: transform 0.15s;
+  }
+  .nt-timestamps[open] > .nt-timestamps-summary::before {
+    transform: rotate(90deg);
+  }
+
+  .nt-ts-table {
+    margin-top: 0.375rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 0.6875rem;
+  }
+  .nt-ts-header,
+  .nt-ts-row {
+    display: grid;
+    grid-template-columns: 1fr 9rem;
+    padding: 0.25rem 0.625rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .nt-ts-header {
+    background: var(--panel);
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .nt-ts-row {
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .nt-ts-row:hover {
+    background: rgba(59, 130, 246, 0.08) !important;
+  }
+  .nt-ts-header span:not(:first-child),
+  .nt-ts-row span:not(:first-child) {
+    text-align: right;
+  }
+  .nt-ts-row:last-child {
+    border-bottom: none;
+  }
+  .nt-ts-row:nth-child(even) {
+    background: var(--panel);
+  }
+
+  .nt-ts-field {
+    font-family: monospace;
+    color: var(--text);
+    font-size: 0.6875rem;
+  }
+  .nt-ts-note {
+    color: var(--muted);
+    font-family: sans-serif;
+  }
+  .nt-ts-val {
+    color: var(--text);
+    font-weight: 500;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Server / User timing lists ──────────────────────────────────────────── */
+  .ut-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .tlist-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    padding: 0.125rem 0;
+    margin-bottom: 0.375rem;
+  }
+  .tlist-summary::-webkit-details-marker {
+    display: none;
+  }
+  .tlist-summary::before {
+    content: '▶';
+    font-size: 0.5rem;
+    color: var(--muted);
+    transition: transform 0.15s;
+    flex-shrink: 0;
+  }
+  .tlist[open] > .tlist-summary::before {
+    transform: rotate(90deg);
+  }
+
+  .tlist-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .tlist-count {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    padding: 0.1em 0.45em;
+  }
+
+  .tlist-table {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 0.6875rem;
+  }
+
+  .tlist-header,
+  .tlist-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 1rem;
+    padding: 0.375rem 0.625rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .tlist-header {
+    background: var(--panel);
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .tlist-row {
+    padding: 0.3125rem 0.625rem;
+  }
+  .tlist-header--desc,
+  .tlist-row--desc {
+    grid-template-columns: 1fr 1fr auto;
+  }
+  .tlist-header.cols-2,
+  .tlist-row.cols-2 {
+    grid-template-columns: 1fr auto;
+  }
+  .tlist-row:last-child {
+    border-bottom: none;
+  }
+  .tlist-row:nth-child(even) {
+    background: var(--panel);
+  }
+
+  .tlist-name {
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.4;
+  }
+  .tlist-secondary {
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .tlist-value {
+    color: var(--text);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .col-r {
+    text-align: right;
   }
 </style>
+
+<script>
+  const legend = document.getElementById('nt-legend');
+  const diagram = document.getElementById('nt-diagram');
+  const clearBtn = document.getElementById('nt-legend-clear');
+  const tsTable = document.querySelector('.nt-ts-table');
+
+  function updateDiagram() {
+    if (!legend || !diagram) return;
+    const activeGroups = new Set(
+      Array.from(
+        legend.querySelectorAll<HTMLButtonElement>(
+          'button.nt-legend-item[aria-pressed="true"]',
+        ),
+      ).map(b => b.dataset.group ?? ''),
+    );
+    diagram.querySelectorAll<HTMLElement>('.nt-tick').forEach(tick => {
+      tick.classList.toggle(
+        'nt-tick--active',
+        activeGroups.has(tick.dataset.group ?? ''),
+      );
+    });
+    diagram
+      .querySelectorAll<HTMLElement>('.nt-tick-bracket')
+      .forEach(bracket => {
+        bracket.classList.toggle(
+          'nt-tick-bracket--active',
+          activeGroups.has(bracket.dataset.group ?? ''),
+        );
+      });
+    diagram.classList.toggle('has-active', activeGroups.size > 0);
+  }
+
+  if (legend && diagram) {
+    updateDiagram();
+    legend.addEventListener('click', e => {
+      const btn = (e.target as Element).closest<HTMLButtonElement>(
+        'button.nt-legend-item',
+      );
+      if (!btn) return;
+      const isActive = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', isActive ? 'false' : 'true');
+      updateDiagram();
+    });
+  }
+
+  if (clearBtn && legend) {
+    clearBtn.addEventListener('click', () => {
+      legend
+        .querySelectorAll<HTMLButtonElement>('button.nt-legend-item')
+        .forEach(btn => btn.setAttribute('aria-pressed', 'false'));
+      updateDiagram();
+    });
+  }
+
+  if (tsTable && diagram) {
+    tsTable.addEventListener('mouseover', e => {
+      const row = (e.target as Element).closest<HTMLElement>('.nt-ts-row');
+      if (!row) return;
+      const field = row.dataset.field;
+      if (!field) return;
+      diagram.querySelectorAll<HTMLElement>('.nt-tick').forEach(tick => {
+        const tickField = tick.dataset.field;
+        if (tickField && (tickField === field || tickField.includes(field))) {
+          tick.classList.add('nt-tick--hover');
+        }
+      });
+      diagram
+        .querySelectorAll<HTMLElement>('.nt-tick-bracket')
+        .forEach(bracket => {
+          const bracketField = bracket.dataset.field;
+          if (!bracketField) return;
+          if (bracketField === field || bracketField.includes(field)) {
+            bracket.classList.add('nt-tick-bracket--hover');
+          }
+        });
+    });
+    tsTable.addEventListener('mouseout', e => {
+      const row = (e.target as Element).closest<HTMLElement>('.nt-ts-row');
+      if (!row) return;
+      diagram
+        .querySelectorAll<HTMLElement>('.nt-tick')
+        .forEach(tick => tick.classList.remove('nt-tick--hover'));
+      diagram
+        .querySelectorAll<HTMLElement>('.nt-tick-bracket')
+        .forEach(bracket => bracket.classList.remove('nt-tick-bracket--hover'));
+    });
+  }
+</script>

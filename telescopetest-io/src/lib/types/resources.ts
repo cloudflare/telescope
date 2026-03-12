@@ -1,4 +1,4 @@
-import type { ServerTiming } from './results';
+import type { ServerTiming } from './metrics';
 
 /**
  * Resource timing entry from Performance API

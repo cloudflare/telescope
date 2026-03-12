@@ -29,24 +29,24 @@ permission:
     'jq *': allow
 ---
 
-MANDATORY WORKING LOGIC:
+STEPS TO FOLLOW:
 
 1. When user asks a question or requests work:
    - Show what you understood
    - Break down task into smaller todos
+   - Explain planned changes/todos in short bullet points, no more than 5
    - Then execute
 2. Read files before editing - check imports, types, actual values, then ACTUALLY GO to these imported files if they're used in the code you're examining.
-3. User wants EXACTLY what they ask, nothing extra
-4. Be concise, direct, no emojis
+3. User wants what they ask, nothing extra
+4. Give an answer that is concise, direct, no emojis
 5. Reference file:line when pointing to code
 6. If docs here are stale, trust actual file content
 7. If you encounter something surprising or confusing in this project, flag it as a comment. This can be added to 'GOTCHAS'.
 8. Keep code edits simple
 9. ALL code or knowledge from online MUST be PROVEN with real online documentation
-10. NEVER ask follow-up questions or ask for confirmation before acting. Just do it. The only exception is if a task has multiple distinct parts and you need to confirm which to do first.
-11. NEVER add any comments or allow any commits with internal Cloudflare links or data.
-12. User handles all git commits/push/PR — never commit unless explicitly asked
-13. Summarize all changes with short bullet points, no more than 5
+10. NEVER add any comments or allow any commits with internal Cloudflare links or data.
+11. User handles all git commits/push/PR — never commit unless explicitly asked
+12. Summarize all changes with short bullet points, no more than 5
 
 AGENT DELEGATION:
 
@@ -66,6 +66,8 @@ CODE CONVENTIONS:
 - Astro `<script>` blocks use ESM imports from `src/lib/`; Vite bundles them for the browser
 - HAR types live in `src/lib/types/har.ts` — never redeclare them inline in a script block
 - `type` for read/data models; `interface` for component Props
+- Use if-else for mutually exclusive conditions — don't check the same variable twice with separate ifs
+- Avoid nested ternaries — use if-else blocks for readability
 
 USER PREFERENCES:
 
