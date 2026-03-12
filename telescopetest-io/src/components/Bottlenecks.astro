@@ -1,7 +1,20 @@
 ---
 import type { ResourceTiming, EnrichedResource } from '@/lib/types/resources';
 import type { Har } from '@/lib/types/har';
-import { enrichResources, formatBytes, formatDuration, shortenUrl } from '@/lib/utils/resources';
+import {
+  enrichResources,
+  formatBytes,
+  formatDuration,
+  shortenUrl,
+} from '@/lib/utils/resources';
+import { loadBottlenecksData } from '@/lib/bottlenecks/data.js';
+import {
+  calculateFileTypeStats,
+  calculateCompressionStats,
+  calculateCompressionSizeStats,
+  calculateHttpVersionStats,
+} from '@/lib/bottlenecks/stats.js';
+import { drawPieChart } from '@/lib/bottlenecks/charts.js';
 
 export interface Props {
   resources: ResourceTiming[];
@@ -14,12 +27,16 @@ const enrichedResources = enrichResources(resources);
 const tables = [
   {
     title: 'Top 5 Largest Files',
-    data: [...enrichedResources].sort((a, b) => b.transferSize - a.transferSize).slice(0, 5),
+    data: [...enrichedResources]
+      .sort((a, b) => b.transferSize - a.transferSize)
+      .slice(0, 5),
     emptyMessage: 'No resource data available',
   },
   {
     title: 'Top 5 Longest Requests',
-    data: [...enrichedResources].sort((a, b) => b.duration - a.duration).slice(0, 5),
+    data: [...enrichedResources]
+      .sort((a, b) => b.duration - a.duration)
+      .slice(0, 5),
     emptyMessage: 'No resource data available',
   },
   {
@@ -32,41 +49,53 @@ const tables = [
 ---
 
 <div class="bottlenecks-container">
-  {tables.map(({ title, data, emptyMessage, isBlocking }) => (
-    <div class="bn-section">
-      <h3 class="bn-title">{title}</h3>
-      <div class="bn-table-wrap">
-        <table class="bn-table">
-          <thead>
-            <tr>
-              <th class="col-idx">#</th>
-              <th class="col-url">URL</th>
-              <th class="col-type">Type</th>
-              <th class="col-metric">Duration</th>
-              <th class="col-metric">Size</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.length === 0 ? (
+  {
+    tables.map(({ title, data, emptyMessage, isBlocking }) => (
+      <div class="bn-section">
+        <h3 class="bn-title">{title}</h3>
+        <div class="bn-table-wrap">
+          <table class="bn-table">
+            <thead>
               <tr>
-                <td colspan="5" class="empty-message">{emptyMessage}</td>
+                <th class="col-idx">#</th>
+                <th class="col-url">URL</th>
+                <th class="col-type">Type</th>
+                <th class="col-metric">Duration</th>
+                <th class="col-metric">Size</th>
               </tr>
-            ) : (
-              data.map((resource, index) => (
-                <tr class:list={['bn-row', { 'bn-row--blocking': isBlocking }]}>
-                  <td class="td-idx">{index + 1}</td>
-                  <td class="td-url" title={resource.name}>{shortenUrl(resource.name)}</td>
-                  <td class="td-type">{resource.fileType}</td>
-                  <td class="td-metric">{formatDuration(resource.duration)}</td>
-                  <td class="td-metric">{formatBytes(resource.transferSize)}</td>
+            </thead>
+            <tbody>
+              {data.length === 0 ? (
+                <tr>
+                  <td colspan="5" class="empty-message">
+                    {emptyMessage}
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                data.map((resource, index) => (
+                  <tr
+                    class:list={['bn-row', { 'bn-row--blocking': isBlocking }]}
+                  >
+                    <td class="td-idx">{index + 1}</td>
+                    <td class="td-url" title={resource.name}>
+                      {shortenUrl(resource.name)}
+                    </td>
+                    <td class="td-type">{resource.fileType}</td>
+                    <td class="td-metric">
+                      {formatDuration(resource.duration)}
+                    </td>
+                    <td class="td-metric">
+                      {formatBytes(resource.transferSize)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  ))}
+    ))
+  }
 
   <!-- Charts Section -->
   <div class="bn-section">
@@ -97,7 +126,9 @@ const tables = [
       <div class="chart-container">
         <h4 class="chart-title">Transfer Size by Compression</h4>
         <canvas id="chart-compression-size" data-test-id={testId}></canvas>
-        <p class="chart-note">Total transfer size (compressed vs uncompressed)</p>
+        <p class="chart-note">
+          Total transfer size (compressed vs uncompressed)
+        </p>
       </div>
     </div>
   </div>
@@ -151,10 +182,20 @@ const tables = [
     white-space: nowrap;
   }
 
-  .col-idx { width: 2.25rem; text-align: center; }
-  .col-url { min-width: 15rem; }
-  .col-type { width: 5.5rem; }
-  .col-metric { width: 6.5rem; text-align: right; }
+  .col-idx {
+    width: 2.25rem;
+    text-align: center;
+  }
+  .col-url {
+    min-width: 15rem;
+  }
+  .col-type {
+    width: 5.5rem;
+  }
+  .col-metric {
+    width: 6.5rem;
+    text-align: right;
+  }
 
   .bn-row {
     border-bottom: 1px solid var(--border);
@@ -243,179 +284,106 @@ const tables = [
 </style>
 
 <script>
-  import type { Har } from '@/lib/types/har.js';
-  import type { EnrichedResource } from '@/lib/types/resources.js';
-  import { enrichResources, getFileType, getProtocol } from '@/lib/utils/resources.js';
-
-  type ChartDataItem = { label: string; value: number; percentage: string };
-
-  const chartColors = [
-    '#4a7ec8', '#c8a040', '#4a9850', '#8050b8',
-    '#c83820', '#2a8048', '#787878', '#e07820',
-    '#7b3fb0', '#1a6b52'
-  ];
-
-  async function loadData(testId: string): Promise<{ har: Har | null; resources: any[] }> {
-    try {
-      const [harRes, resourcesRes] = await Promise.all([
-        fetch(`/api/tests/${testId}/pageload.har`),
-        fetch(`/api/tests/${testId}/resources.json`)
-      ]);
-      const har: Har | null = harRes.ok ? await harRes.json() : null;
-      const resources: any[] = resourcesRes.ok ? await resourcesRes.json() : [];
-      return { har, resources };
-    } catch (err) {
-      console.error('Failed to load data:', err);
-      return { har: null, resources: [] };
-    }
-  }
-
-  function calculateFileTypeStats(resources: any[]): ChartDataItem[] {
-    const counts: Record<string, number> = {};
-    resources.forEach(r => {
-      const type = getFileType(r);
-      counts[type] = (counts[type] || 0) + 1;
-    });
-    const total = resources.length;
-    return Object.entries(counts).map(([label, value]) => ({
-      label,
-      value,
-      percentage: `${((value / total) * 100).toFixed(1)}%`
-    }));
-  }
-
-  function calculateCompressionStats(resources: any[]): ChartDataItem[] {
-    const compressed = resources.filter(r => r.encodedBodySize < r.decodedBodySize).length;
-    const uncompressed = resources.length - compressed;
-    const total = resources.length;
-    return [
-      { label: 'Compressed', value: compressed, percentage: `${((compressed / total) * 100).toFixed(1)}%` },
-      { label: 'Uncompressed', value: uncompressed, percentage: `${((uncompressed / total) * 100).toFixed(1)}%` }
-    ];
-  }
-
-  function calculateCompressionSizeStats(resources: any[]): ChartDataItem[] {
-    const compressedResources = resources.filter(r => r.encodedBodySize < r.decodedBodySize);
-    const uncompressedResources = resources.filter(r => r.encodedBodySize >= r.decodedBodySize);
-    const compressedSize = compressedResources.reduce((sum, r) => sum + r.transferSize, 0);
-    const uncompressedSize = uncompressedResources.reduce((sum, r) => sum + r.transferSize, 0);
-    const total = compressedSize + uncompressedSize;
-    return [
-      { label: 'Compressed', value: compressedSize, percentage: `${((compressedSize / total) * 100).toFixed(1)}%` },
-      { label: 'Uncompressed', value: uncompressedSize, percentage: `${((uncompressedSize / total) * 100).toFixed(1)}%` }
-    ];
-  }
-
-  function calculateHttpVersionStats(har: Har | null): ChartDataItem[] {
-    if (!har?.log?.entries) return [];
-    const versions: Record<string, number> = {};
-    har.log.entries.forEach(entry => {
-      const version = entry.response.httpVersion;
-      versions[version] = (versions[version] || 0) + 1;
-    });
-    const total = har.log.entries.length;
-    return Object.entries(versions).map(([label, value]) => ({
-      label,
-      value,
-      percentage: `${((value / total) * 100).toFixed(1)}%`
-    }));
-  }
-
-  function drawPieChart(canvas: HTMLCanvasElement, data: ChartDataItem[]) {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      console.error('Failed to get canvas context');
-      return;
-    }
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {
-      console.error('Canvas has no dimensions:', rect);
-      return;
-    }
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const radius = Math.min(centerX, centerY) - 80;
-    const total = data.reduce((sum, item) => sum + item.value, 0);
-    if (total === 0 || data.length === 0) {
-      ctx.fillStyle = '#999';
-      ctx.font = '14px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('No data', centerX, centerY);
-      return;
-    }
-    let currentAngle = -Math.PI / 2;
-    data.forEach((item, index) => {
-      const sliceAngle = (item.value / total) * Math.PI * 2;
-      ctx.fillStyle = chartColors[index % chartColors.length];
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
-      ctx.closePath();
-      ctx.fill();
-      currentAngle += sliceAngle;
-    });
-    const legendX = 10;
-    let legendY = rect.height - (data.length * 20) - 10;
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'left';
-    data.forEach((item, index) => {
-      ctx.fillStyle = chartColors[index % chartColors.length];
-      ctx.fillRect(legendX, legendY, 12, 12);
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#000';
-      ctx.fillText(`${item.label}: ${item.value} (${item.percentage})`, legendX + 18, legendY + 10);
-      legendY += 20;
-    });
-  }
-
-  function formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
+  import { loadBottlenecksData } from '@/lib/bottlenecks/data.js';
+  import {
+    calculateFileTypeStats,
+    calculateCompressionStats,
+    calculateCompressionSizeStats,
+    calculateHttpVersionStats,
+  } from '@/lib/bottlenecks/stats.js';
+  import { drawPieChart } from '@/lib/bottlenecks/charts.js';
+  import { formatBytes } from '@/lib/utils/resources.js';
 
   async function init() {
-    console.log('Bottlenecks chart init starting...');
-    const fileTypesCanvas = document.getElementById('chart-file-types') as HTMLCanvasElement;
-    const compressionCanvas = document.getElementById('chart-compression') as HTMLCanvasElement;
-    const httpVersionsCanvas = document.getElementById('chart-http-versions') as HTMLCanvasElement;
-    const compressionSizeCanvas = document.getElementById('chart-compression-size') as HTMLCanvasElement;
-    console.log('Canvas elements:', { fileTypesCanvas, compressionCanvas, httpVersionsCanvas, compressionSizeCanvas });
-    if (!fileTypesCanvas || !compressionCanvas || !httpVersionsCanvas || !compressionSizeCanvas) {
-      console.error('Missing canvas elements');
+    console.log('[Bottlenecks] Init starting...');
+    const fileTypesCanvas = document.getElementById(
+      'chart-file-types',
+    ) as HTMLCanvasElement;
+    const compressionCanvas = document.getElementById(
+      'chart-compression',
+    ) as HTMLCanvasElement;
+    const httpVersionsCanvas = document.getElementById(
+      'chart-http-versions',
+    ) as HTMLCanvasElement;
+    const compressionSizeCanvas = document.getElementById(
+      'chart-compression-size',
+    ) as HTMLCanvasElement;
+    
+    console.log('[Bottlenecks] Canvas elements:', {
+      fileTypesCanvas,
+      compressionCanvas,
+      httpVersionsCanvas,
+      compressionSizeCanvas
+    });
+    
+    if (
+      !fileTypesCanvas ||
+      !compressionCanvas ||
+      !httpVersionsCanvas ||
+      !compressionSizeCanvas
+    ) {
+      console.error('[Bottlenecks] Missing canvas elements');
       return;
     }
     const testId = fileTypesCanvas.dataset.testId;
+    console.log('[Bottlenecks] TestId:', testId);
     if (!testId) {
-      console.error('No testId found');
+      console.error('[Bottlenecks] No testId found');
       return;
     }
-    console.log('Loading data for testId:', testId);
-    const { har, resources } = await loadData(testId);
-    console.log('Data loaded:', { harEntries: har?.log?.entries?.length, resourcesCount: resources.length });
+    
+    console.log('[Bottlenecks] Loading data...');
+    const { har, resources } = await loadBottlenecksData(testId);
+    console.log('[Bottlenecks] Data loaded:', { har, resourcesCount: resources.length });
+    
     const fileTypeStats = calculateFileTypeStats(resources);
     const compressionStats = calculateCompressionStats(resources);
     const compressionSizeStats = calculateCompressionSizeStats(resources);
     const httpVersionStats = calculateHttpVersionStats(har);
-    console.log('Stats calculated:', { fileTypeStats, compressionStats, compressionSizeStats, httpVersionStats });
+    
+    console.log('[Bottlenecks] Stats calculated:', {
+      fileTypeStats,
+      compressionStats,
+      compressionSizeStats,
+      httpVersionStats
+    });
+    
+    console.log('[Bottlenecks] Drawing charts...');
     drawPieChart(fileTypesCanvas, fileTypeStats);
     drawPieChart(compressionCanvas, compressionStats);
     drawPieChart(httpVersionsCanvas, httpVersionStats);
     const compressionSizeStatsFormatted = compressionSizeStats.map(item => ({
       ...item,
-      label: `${item.label} (${formatBytes(item.value)})`
+      label: `${item.label} (${formatBytes(item.value)})`,
     }));
     drawPieChart(compressionSizeCanvas, compressionSizeStatsFormatted);
-    console.log('Charts drawn');
+    console.log('[Bottlenecks] Charts drawn successfully');
   }
 
+  let chartsDrawn = false;
+
+  function tryDrawCharts() {
+    if (chartsDrawn) return;
+    const bottlenecksTab = document.querySelector('[data-tab="bottlenecks"]');
+    if (bottlenecksTab?.classList.contains('active')) {
+      console.log('[Bottlenecks] Tab is active, drawing charts...');
+      init();
+      chartsDrawn = true;
+    }
+  }
+
+  // Try to draw when tab is clicked
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.matches('[data-tab="bottlenecks"]')) {
+      setTimeout(tryDrawCharts, 50);
+    }
+  });
+
+  // Also try on load in case bottlenecks tab is default
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', () => setTimeout(tryDrawCharts, 100));
   } else {
-    init();
+    setTimeout(tryDrawCharts, 100);
   }
 </script>
