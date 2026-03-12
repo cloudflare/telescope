@@ -8,7 +8,7 @@ export type ChartDataItem = {
   percentage: string;
 };
 
-export function calculateFileTypeStats(
+export function calculateFileTypeCountStats(
   resources: ResourceTiming[],
 ): ChartDataItem[] {
   const counts: Record<string, number> = {};
@@ -17,65 +17,49 @@ export function calculateFileTypeStats(
     counts[type] = (counts[type] || 0) + 1;
   });
   const total = resources.length;
-  return Object.entries(counts).map(([label, value]) => ({
-    label,
-    value,
-    percentage: `${((value / total) * 100).toFixed(1)}%`,
-  }));
+  return Object.entries(counts)
+    .map(([label, value]) => ({
+      label,
+      value,
+      percentage: `${((value / total) * 100).toFixed(1)}%`,
+    }))
+    .sort((a, b) => b.value - a.value);
 }
 
-export function calculateCompressionStats(
+export function calculateFileTypeTransferStats(
   resources: ResourceTiming[],
 ): ChartDataItem[] {
-  const compressed = resources.filter(
-    r => r.encodedBodySize < r.decodedBodySize,
-  ).length;
-  const uncompressed = resources.length - compressed;
-  const total = resources.length;
-  return [
-    {
-      label: 'Compressed',
-      value: compressed,
-      percentage: `${((compressed / total) * 100).toFixed(1)}%`,
-    },
-    {
-      label: 'Uncompressed',
-      value: uncompressed,
-      percentage: `${((uncompressed / total) * 100).toFixed(1)}%`,
-    },
-  ];
+  const sizes: Record<string, number> = {};
+  resources.forEach(r => {
+    const type = getFileType(r);
+    sizes[type] = (sizes[type] || 0) + r.transferSize;
+  });
+  const total = Object.values(sizes).reduce((sum, val) => sum + val, 0);
+  return Object.entries(sizes)
+    .map(([label, value]) => ({
+      label,
+      value,
+      percentage: `${((value / total) * 100).toFixed(1)}%`,
+    }))
+    .sort((a, b) => b.value - a.value);
 }
 
-export function calculateCompressionSizeStats(
+export function calculateFileTypeDecodedStats(
   resources: ResourceTiming[],
 ): ChartDataItem[] {
-  const compressedResources = resources.filter(
-    r => r.encodedBodySize < r.decodedBodySize,
-  );
-  const uncompressedResources = resources.filter(
-    r => r.encodedBodySize >= r.decodedBodySize,
-  );
-  const compressedSize = compressedResources.reduce(
-    (sum, r) => sum + r.transferSize,
-    0,
-  );
-  const uncompressedSize = uncompressedResources.reduce(
-    (sum, r) => sum + r.transferSize,
-    0,
-  );
-  const total = compressedSize + uncompressedSize;
-  return [
-    {
-      label: 'Compressed',
-      value: compressedSize,
-      percentage: `${((compressedSize / total) * 100).toFixed(1)}%`,
-    },
-    {
-      label: 'Uncompressed',
-      value: uncompressedSize,
-      percentage: `${((uncompressedSize / total) * 100).toFixed(1)}%`,
-    },
-  ];
+  const sizes: Record<string, number> = {};
+  resources.forEach(r => {
+    const type = getFileType(r);
+    sizes[type] = (sizes[type] || 0) + r.decodedBodySize;
+  });
+  const total = Object.values(sizes).reduce((sum, val) => sum + val, 0);
+  return Object.entries(sizes)
+    .map(([label, value]) => ({
+      label,
+      value,
+      percentage: `${((value / total) * 100).toFixed(1)}%`,
+    }))
+    .sort((a, b) => b.value - a.value);
 }
 
 export function calculateHttpVersionStats(har: Har | null): ChartDataItem[] {
@@ -86,9 +70,11 @@ export function calculateHttpVersionStats(har: Har | null): ChartDataItem[] {
     versions[version] = (versions[version] || 0) + 1;
   });
   const total = har.log.entries.length;
-  return Object.entries(versions).map(([label, value]) => ({
-    label,
-    value,
-    percentage: `${((value / total) * 100).toFixed(1)}%`,
-  }));
+  return Object.entries(versions)
+    .map(([label, value]) => ({
+      label,
+      value,
+      percentage: `${((value / total) * 100).toFixed(1)}%`,
+    }))
+    .sort((a, b) => b.value - a.value);
 }

@@ -1,9 +1,10 @@
 export { loadBottlenecksData } from './data';
-export { drawPieChart, chartColors } from './charts';
+export { drawPieChart, contentTypeColors, defaultChartColors } from './charts';
 export {
-  calculateFileTypeStats,
-  calculateCompressionStats,
-  calculateCompressionSizeStats,
+  calculateFileTypeCountStats,
+  calculateFileTypeTransferStats,
+  calculateFileTypeDecodedStats,
   calculateHttpVersionStats,
 } from './stats';
+export { renderBottleneckCharts } from './render';
 export type { ChartDataItem } from './stats';
