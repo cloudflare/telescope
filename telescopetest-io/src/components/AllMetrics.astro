@@ -174,7 +174,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                   ))}
                 </div>
                 {pageTicks
-                  .filter(t => t.field === 'domContentLoadedEventStart')
+                  .filter(t => t.field === 'DCL (domContentLoadedEventStart)')
                   .map(t => {
                     const stemColor = t.color ?? 'var(--border)';
                     return (
@@ -196,7 +196,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                     );
                   })}
                 {pageTicks
-                  .filter(t => t.field === 'loadEventStart')
+                  .filter(t => t.field === 'Page Load (loadEventStart)')
                   .map(t => {
                     const stemColor = t.color ?? 'var(--border)';
                     return (
@@ -337,6 +337,9 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
                     )}
                   </span>
                   <span class="nt-legend-ms">{item.ms} ms</span>
+                  {item.secondary && (
+                    <span class="nt-legend-secondary">{item.secondary}</span>
+                  )}
                 </button>
               ))}
               {hasFuzzyDom && (

@@ -9,13 +9,7 @@ import type {
   DiagramLegendItem,
 } from '../types/metrics.js';
 import { selectTtfbField } from '../utils/extractors.js';
-import {
-  COLOR,
-  toPct,
-  durPct,
-  type NavField,
-  type TickField,
-} from './shared.js';
+import { COLOR, type NavField, type TickField } from './shared.js';
 
 // ── Field definitions ─────────────────────────────────────────────────────────
 

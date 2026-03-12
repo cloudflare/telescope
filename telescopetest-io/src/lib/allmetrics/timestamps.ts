@@ -23,10 +23,10 @@ const TS_FIELDS_PRE: TsField[] = [
 const TS_FIELDS_POST: TsField[] = [
   { field: 'responseEnd' },
   { field: 'domInteractive' },
-  { field: 'domContentLoadedEventStart' },
+  { field: 'domContentLoadedEventStart', note: 'used for DCL' },
   { field: 'domContentLoadedEventEnd' },
   { field: 'domComplete' },
-  { field: 'loadEventStart' },
+  { field: 'loadEventStart', note: 'used for Page Load' },
   { field: 'loadEventEnd' },
 ];
 

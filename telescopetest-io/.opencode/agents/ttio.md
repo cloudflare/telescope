@@ -66,6 +66,8 @@ CODE CONVENTIONS:
 - Astro `<script>` blocks use ESM imports from `src/lib/`; Vite bundles them for the browser
 - HAR types live in `src/lib/types/har.ts` — never redeclare them inline in a script block
 - `type` for read/data models; `interface` for component Props
+- Use if-else for mutually exclusive conditions — don't check the same variable twice with separate ifs
+- Avoid nested ternaries — use if-else blocks for readability
 
 USER PREFERENCES:
 

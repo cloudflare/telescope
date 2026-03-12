@@ -8,7 +8,7 @@ import type {
   DiagramPageSeg,
   DiagramLegendItem,
 } from '../types/metrics.js';
-import { COLOR, type NavField, type TickField } from './shared.js';
+import { COLOR, type TickField } from './shared.js';
 
 // ── Field definitions ─────────────────────────────────────────────────────────
 
@@ -71,7 +71,7 @@ export function buildPageLoad(ctx: PageLoadContext): PageLoadData {
       ? `linear-gradient(to right, rgba(${rgb},0) 0%, rgba(${rgb},0.45) ${(fuzzyFrac * 0.5).toFixed(1)}%, ${COLOR.dom} ${fuzzyFrac.toFixed(1)}%, ${COLOR.dom} 100%)`
       : COLOR.dom;
     pageSegs.push({
-      label: 'DCL',
+      label: 'DCL (domContentLoadedEventStart)',
       ms: dclStartMs,
       leftPct: pct(nav.responseStart),
       widthPct: dur(nav.responseStart, nav.domContentLoadedEventStart),
@@ -81,6 +81,7 @@ export function buildPageLoad(ctx: PageLoadContext): PageLoadData {
       label: 'DCL',
       ms: dclStartMs,
       color: COLOR.dom,
+      secondary: '(via domContentLoadedEventStart)',
       note: hasFuzzyDom ? '*' : undefined,
     });
   }
@@ -94,13 +95,18 @@ export function buildPageLoad(ctx: PageLoadContext): PageLoadData {
   ) {
     const leMs = relMs(nav.loadEventStart);
     pageSegs.push({
-      label: 'Page Load',
+      label: 'Page Load (loadEventStart)',
       ms: leMs,
       leftPct: pct(nav.loadEventStart),
       widthPct: dur(nav.loadEventStart, nav.loadEventEnd),
       bg: COLOR.loadEvent,
     });
-    pageLegend.push({ label: 'Page Load', ms: leMs, color: COLOR.loadEvent });
+    pageLegend.push({
+      label: 'Page Load',
+      ms: leMs,
+      color: COLOR.loadEvent,
+      secondary: '(via loadEventStart)',
+    });
   }
 
   // ── Ticks (vertical markers) ───────────────────────────────────────────────
@@ -110,20 +116,33 @@ export function buildPageLoad(ctx: PageLoadContext): PageLoadData {
     const ts = nav[field] as number | undefined;
     if (ts === undefined || ts <= 0) continue;
     const leftPct = pct(ts);
-    const isDCLStart = field === 'domContentLoadedEventStart';
-    const isLoadEventStart = field === 'loadEventStart';
+    let align: 'left' | 'right' = 'left';
+    if (leftPct > 75) {
+      align = 'right';
+    }
+
+    let displayField: string = field;
+    if (field === 'domContentLoadedEventStart') {
+      displayField = 'DCL (domContentLoadedEventStart)';
+    } else if (field === 'loadEventStart') {
+      displayField = 'Page Load (loadEventStart)';
+    }
+
+    let color: string | undefined = undefined;
+    if (field === 'domContentLoadedEventStart') {
+      color = COLOR.dom;
+    } else if (field === 'loadEventStart') {
+      color = COLOR.loadEvent;
+    }
+
     pageTicks.push({
-      field,
+      field: displayField,
       leftPct,
       msRel: relMs(ts),
       lane: ctx.laneCounter++ % 4,
-      align: leftPct > 75 ? 'right' : 'left',
+      align,
       group,
-      color: isDCLStart
-        ? COLOR.dom
-        : isLoadEventStart
-          ? COLOR.loadEvent
-          : undefined,
+      color,
     });
   }
 
