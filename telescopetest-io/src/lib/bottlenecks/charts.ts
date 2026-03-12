@@ -7,7 +7,8 @@ export const contentTypeColors: Record<string, string> = {
   image: '#8050b8',
   font: '#c83820',
   video: '#2a8048',
-  fetch: '#e07820',
+  fetch: '#e07820', // not content
+  iframe: '#d946ef', // not content (if html, document)
   other: '#787878',
 };
 
@@ -35,9 +36,9 @@ function getTextColor(): string {
 }
 
 function getColorForLabel(label: string, index: number): string {
-  const normalized = label.toLowerCase();
-  if (contentTypeColors[normalized]) {
-    return contentTypeColors[normalized];
+  const typeOnly = label.split('(')[0].trim().toLowerCase();
+  if (contentTypeColors[typeOnly]) {
+    return contentTypeColors[typeOnly];
   }
   return defaultChartColors[index % defaultChartColors.length];
 }
