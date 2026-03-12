@@ -1,0 +1,905 @@
+---
+interface Props {
+  testId: string;
+  hasHar: boolean;
+}
+
+const { testId, hasHar } = Astro.props;
+---
+
+{!hasHar ? (
+  <p class="wf-unavailable">No HAR file available for this test.</p>
+) : (
+  <div class="wf-root" id="wf-root" data-test-id={testId}>
+
+    <!-- Legend — fully static HTML, no JS needed -->
+    <div class="wf-legend" aria-label="Waterfall chart legend">
+      <div class="wf-legend-row">
+        <span class="wf-legend-heading">Connection phases</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--blocked"></span>Blocked</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--dns"    ></span>DNS</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--connect"></span>Connect</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--ssl"    ></span>SSL</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--send"   ></span>Send</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--wait"   ></span>Wait</span>
+      </div>
+      <div class="wf-legend-row">
+        <span class="wf-legend-heading">File type <span class="wf-legend-note">(light&nbsp;=&nbsp;sent · dark&nbsp;=&nbsp;received)</span></span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--html" ></span>HTML</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--js"   ></span>JS</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--css"  ></span>CSS</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--image"></span>Image</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--font" ></span>Font</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--video"></span>Video</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--other"></span>Other</span>
+      </div>
+      <div class="wf-legend-row">
+        <span class="wf-legend-heading">Events</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--ev-dcl" ></span>DCL</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--ev-load"></span>Load</span>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="wf-toolbar">
+      <div class="wf-filters" id="wf-filters" role="group" aria-label="Filter by resource type"></div>
+      <button class="wf-toggle-cols" id="wf-toggle-cols" aria-expanded="false" aria-controls="wf-table">
+        Show columns
+      </button>
+    </div>
+
+    <!-- Table — thead is static, tbody filled by JS -->
+    <div class="wf-table-wrap">
+      <!-- Event lines overlay — absolutely positioned over the waterfall column -->
+      <div class="wf-events-overlay" id="wf-events-overlay" aria-hidden="true"></div>
+      <table class="wf-table" id="wf-table">
+        <thead>
+          <tr>
+            <th class="col-idx"  scope="col">#</th>
+            <th class="col-url"  scope="col">URL</th>
+            <th class="col-meth col-info" scope="col">Method</th>
+            <th class="col-prot col-info" scope="col">Protocol</th>
+            <th class="col-stat col-info" scope="col">Status</th>
+            <th class="col-type col-info" scope="col">Type</th>
+            <th class="col-size col-info" scope="col">Size</th>
+            <th class="col-dur col-info" scope="col">Duration</th>
+            <th class="col-wf"   scope="col">
+              <!-- Ruler — tick marks injected by JS -->
+              <div class="wf-ruler" id="wf-ruler" aria-hidden="true"></div>
+            </th>
+          </tr>
+        </thead>
+        <tbody id="wf-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- State messages — hidden/shown by JS -->
+    <p class="wf-message" id="wf-loading" aria-live="polite">Loading waterfall…</p>
+    <p class="wf-message wf-message--error" id="wf-error" hidden></p>
+
+  </div>
+)}
+
+<style>
+  /* ── Color tokens ───────────────────────────────────────────────────────── */
+  :root {
+    /* Connection-phase colors (thin bars) */
+    --wf-blocked: #a0a0a0;
+    --wf-wait:    #c8b432;
+    --wf-dns:     #1a6b52;
+    --wf-connect: #e07820;
+    --wf-ssl:     #7b3fb0;
+    --wf-send:    #4a90d9;
+
+    /* Resource type colors — light = send+wait, dark = receive */
+    --wf-html-light:  #a8c8f0;
+    --wf-html-dark:   #4a7ec8;
+    --wf-js-light:    #e8d4a0;
+    --wf-js-dark:     #c8a040;
+    --wf-css-light:   #a8d8a8;
+    --wf-css-dark:    #4a9850;
+    --wf-image-light: #d0b8e8;
+    --wf-image-dark:  #8050b8;
+    --wf-font-light:  #f0a898;
+    --wf-font-dark:   #c83820;
+    --wf-video-light: #a8e0b8;
+    --wf-video-dark:  #2a8048;
+    --wf-other-light: #c8c8c8;
+    --wf-other-dark:  #787878;
+
+    /* Row highlight tints */
+    --wf-row-blocking-bg:       rgba(239, 68,  68,  0.05);
+    --wf-row-blocking-bg-hover: rgba(239, 68,  68,  0.10);
+    --wf-row-open-bg:           rgba( 14, 165, 233, 0.07);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --wf-wait:       #d4c040;
+      --wf-ssl:        #9060c8;
+      --wf-other-dark: #909090;
+    }
+  }
+  [data-theme-override='dark'] {
+    --wf-wait:       #d4c040;
+    --wf-ssl:        #9060c8;
+    --wf-other-dark: #909090;
+  }
+
+  /* ── Unavailable state ──────────────────────────────────────────────────── */
+  .wf-unavailable {
+    padding: 2.5rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    margin: 0;
+  }
+
+  /* ── State messages ─────────────────────────────────────────────────────── */
+  .wf-message {
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem;
+    margin: 0.5rem 0 0;
+  }
+  .wf-message--error {
+    padding: 0.875rem 1.25rem;
+    text-align: left;
+    border-radius: 0.5rem;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--color-danger);
+  }
+
+  /* ── Legend ─────────────────────────────────────────────────────────────── */
+  .wf-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .wf-legend-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .wf-legend-heading {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 9rem;
+  }
+  .wf-legend-note {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .wf-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* ── Swatches ───────────────────────────────────────────────────────────── */
+  .swatch {
+    display: inline-block;
+    width: 1.375rem;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .swatch--thin  { height: 3px; }
+  .swatch--thick { height: 8px; }
+
+  .swatch--blocked { background: var(--wf-blocked); }
+  .swatch--wait    { background: var(--wf-wait); }
+  .swatch--dns     { background: var(--wf-dns); }
+  .swatch--connect { background: var(--wf-connect); }
+  .swatch--ssl     { background: var(--wf-ssl); }
+  .swatch--send    { background: var(--wf-send); }
+  .swatch--ev-dcl  { background: #d060d0; }
+  .swatch--ev-load { background: #4060d0; }
+
+  .swatch--html  { background: linear-gradient(to right, var(--wf-html-light)  50%, var(--wf-html-dark)  50%); }
+  .swatch--js    { background: linear-gradient(to right, var(--wf-js-light)    50%, var(--wf-js-dark)    50%); }
+  .swatch--css   { background: linear-gradient(to right, var(--wf-css-light)   50%, var(--wf-css-dark)   50%); }
+  .swatch--image { background: linear-gradient(to right, var(--wf-image-light) 50%, var(--wf-image-dark) 50%); }
+  .swatch--font  { background: linear-gradient(to right, var(--wf-font-light)  50%, var(--wf-font-dark)  50%); }
+  .swatch--video { background: linear-gradient(to right, var(--wf-video-light) 50%, var(--wf-video-dark) 50%); }
+  .swatch--other { background: linear-gradient(to right, var(--wf-other-light) 50%, var(--wf-other-dark) 50%); }
+
+  /* ── Toolbar ────────────────────────────────────────────────────────────── */
+  .wf-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.625rem;
+  }
+  .wf-filters {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  .wf-toggle-cols {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 0.2rem 0.625rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .wf-toggle-cols:hover {
+    background: var(--bg);
+    color: var(--text);
+  }
+  .wf-toggle-cols[aria-expanded='true'] {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+  }
+
+  /* ── Table ──────────────────────────────────────────────────────────────── */
+  .wf-table-wrap {
+    position: relative;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+  }
+  .wf-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    table-layout: fixed;
+  }
+  .wf-table thead th {
+    padding: 0.45rem 0.625rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .col-idx  { width: 2.25rem; text-align: center; }
+  .col-url  { width: 22%; min-width: 11rem; }
+  .col-meth { width: 4.25rem; }
+  .col-prot { width: 5rem; }
+  .col-stat { width: 4rem; text-align: center; }
+  .col-type { width: 5.5rem; }
+  .col-size { width: 5rem; text-align: right; }
+  .col-dur  { width: 5.5rem; text-align: right; }
+  .col-wf   { position: relative; }
+
+  /* ── Info columns hidden state ──────────────────────────────────────────── */
+  .wf-table.cols-collapsed .col-info {
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* ── Ruler & overlay (static elements, scoped) ─────────────────────────── */
+  .wf-ruler {
+    position: relative;
+    width: 100%;
+    height: 1.25rem;
+    overflow: hidden;
+  }
+  .wf-events-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+  }
+</style>
+
+<!-- Styles for JS-created elements — must be global, no Astro scope hash applied -->
+<style is:global>
+  /* ── Rows ───────────────────────────────────────────────────────────────── */
+  .wf-row {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .wf-row:last-child { border-bottom: none; }
+  .wf-row:hover      { background: var(--panel); }
+
+  .wf-row.row--blocking       { background: var(--wf-row-blocking-bg); }
+  .wf-row.row--blocking:hover { background: var(--wf-row-blocking-bg-hover); }
+  .wf-row.row--open           { background: var(--wf-row-open-bg); }
+
+  .wf-row td {
+    padding: 0 0.625rem;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .td-idx            { text-align: center; color: var(--muted); font-size: 0.75rem; }
+  .td-url            { font-size: 0.775rem; }
+  .td-url .url-domain{ color: var(--text); }
+  .td-url .url-path  { color: var(--muted); }
+  .td-stat           { text-align: center; }
+  .td-stat.s2xx      { color: var(--color-success); }
+  .td-stat.s3xx      { color: var(--color-warning); }
+  .td-stat.s4xx      { color: var(--color-danger); }
+  .td-stat.s5xx      { color: var(--color-danger); }
+  .td-size           { text-align: right; }
+  .td-dur            { text-align: right; }
+
+  /* Info td cells collapse alongside their <th> counterparts */
+  .wf-table.cols-collapsed .td-info {
+    width: 0;
+    min-width: 0;
+    padding: 0 !important;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* ── Timeline bars ──────────────────────────────────────────────────────── */
+  .td-wf       { padding: 0 0.5rem; }
+  .wf-bar-wrap { position: relative; width: 100%; }
+
+  .wb {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 1px;
+    min-width: 1.5px;
+  }
+
+  .wb--blocked { background: var(--wf-blocked); }
+  .wb--dns     { background: var(--wf-dns); }
+  .wb--connect { background: var(--wf-connect); }
+  .wb--ssl     { background: var(--wf-ssl); }
+  .wb--send    { background: var(--wf-send); }
+  .wb--wait    { background: var(--wf-wait); }
+
+  .wb--html-light  { background: var(--wf-html-light); }
+  .wb--html-dark   { background: var(--wf-html-dark); }
+  .wb--js-light    { background: var(--wf-js-light); }
+  .wb--js-dark     { background: var(--wf-js-dark); }
+  .wb--css-light   { background: var(--wf-css-light); }
+  .wb--css-dark    { background: var(--wf-css-dark); }
+  .wb--image-light { background: var(--wf-image-light); }
+  .wb--image-dark  { background: var(--wf-image-dark); }
+  .wb--font-light  { background: var(--wf-font-light); }
+  .wb--font-dark   { background: var(--wf-font-dark); }
+  .wb--video-light { background: var(--wf-video-light); }
+  .wb--video-dark  { background: var(--wf-video-dark); }
+  .wb--other-light { background: var(--wf-other-light); }
+  .wb--other-dark  { background: var(--wf-other-dark); }
+
+  /* ── Ruler ticks ────────────────────────────────────────────────────────── */
+  .wf-tick {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-size: 0.6rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    white-space: nowrap;
+    line-height: 1;
+    padding-top: 0.2rem;
+  }
+  .wf-tick::before {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 3px;
+    background: var(--border);
+    margin: 0 auto 2px;
+  }
+
+  /* ── Event lines ────────────────────────────────────────────────────────── */
+  .wf-event-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    opacity: 0.75;
+  }
+  .wf-event-line::after {
+    content: attr(data-label);
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    font-size: 0.6rem;
+    white-space: nowrap;
+    opacity: 0.9;
+    font-weight: 600;
+    color: inherit;
+  }
+  .wf-event--dcl  { background: #d060d0; color: #d060d0; }
+  .wf-event--load { background: #4060d0; color: #4060d0; }
+
+  /* ── Filter chips ────────────────────────────────────────────────────────── */
+  .wf-filter-btn {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.175rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .wf-filter-btn.active {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+  }
+
+  /* ── Side panels ─────────────────────────────────────────────────────────── */
+  .wf-panel {
+    margin-top: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--panel);
+    overflow: hidden;
+  }
+  .wf-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .wf-panel-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .wf-panel-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 1.125rem;
+    line-height: 1;
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.25rem;
+    transition: color 0.12s;
+  }
+  .wf-panel-close:hover { color: var(--text); }
+
+  .wf-panel-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .wf-panel-section {
+    padding: 0.75rem 0.875rem;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .wf-panel-section:nth-child(even)      { border-right: none; }
+  .wf-panel-section:nth-last-child(-n+2) { border-bottom: none; }
+
+  .wf-section-title {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .wf-info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    padding: 0.175rem 0;
+  }
+  .wf-info-key { color: var(--muted); white-space: nowrap; }
+  .wf-info-val {
+    color: var(--text);
+    text-align: right;
+    word-break: break-all;
+    max-width: 62%;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wf-timing-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    padding: 0.175rem 0;
+  }
+  .wf-timing-label {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--muted);
+  }
+  .wf-timing-swatch {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .wf-timing-val {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .wf-timing-total {
+    border-top: 1px solid var(--border);
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+    font-weight: 600;
+  }
+
+  .wf-headers-table {
+    width: 100%;
+    font-size: 0.775rem;
+    border-collapse: collapse;
+  }
+  .wf-headers-table td {
+    padding: 0.15rem 0;
+    vertical-align: top;
+    word-break: break-all;
+  }
+  .wf-headers-table td:first-child {
+    width: 38%;
+    color: var(--muted);
+    font-weight: 500;
+    padding-right: 0.625rem;
+    white-space: nowrap;
+    word-break: normal;
+  }
+</style>
+
+<script>
+  import type { HarEntry, HarPage, Har } from '@/lib/types/har.js';
+  import { typeConfig } from '@/lib/waterfall/config.js';
+  import { fmtSize, fmtMs } from '@/lib/waterfall/formatters.js';
+  import { el } from '@/lib/waterfall/dom.js';
+  import {
+    parseUrl,
+    resourceType,
+    isBlocking,
+    computeTotalMs,
+    uniqueTypes,
+    pageEvents,
+    fmtEventLabel,
+  } from '@/lib/waterfall/helpers.js';
+
+  type HarPageTimings = HarPage['pageTimings'];
+
+  // ── State ────────────────────────────────────────────────────────────────
+  let allEntries: HarEntry[] = [];
+  let activeFilters = new Set<string>(['all']);
+  const openPanels = new Map<number, HTMLElement>();
+  let pageTimings: HarPageTimings = {};
+  let totalMs = 0;
+  let originMs = 0;
+
+  // ── Filter chips ─────────────────────────────────────────────────────────
+  function renderFilters(types: string[]) {
+    const container = document.getElementById('wf-filters')!;
+    container.innerHTML = '';
+    for (const type of types) {
+      const btn = el('button', { className: 'wf-filter-btn' + (activeFilters.has(type) ? ' active' : '') }, type);
+      btn.addEventListener('click', () => {
+        if (type === 'all') {
+          activeFilters = new Set(['all']);
+        } else {
+          activeFilters.delete('all');
+          activeFilters.has(type) ? activeFilters.delete(type) : activeFilters.add(type);
+          if (!activeFilters.size) activeFilters = new Set(['all']);
+        }
+        renderFilters(types);
+        renderRows();
+      });
+      container.appendChild(btn);
+    }
+  }
+
+  // ── Timeline cell ────────────────────────────────────────────────────────
+  function makeTimelineCell(entry: HarEntry): HTMLTableCellElement {
+    const td = el('td', { className: 'td-wf' });
+    const type = resourceType(entry);
+    const { barH, key } = typeConfig(type);
+    const rowH = barH + 10;
+    const t = entry.timings;
+    const blocked = Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0));
+    const dns = Math.max(0, t.dns);
+    const connect = Math.max(0, t.connect);
+    const ssl = Math.max(0, t.ssl ?? 0);
+    const send = Math.max(0, t.send);
+    const wait = Math.max(0, t.wait);
+    const receive = Math.max(0, t.receive);
+    const offsetPct = totalMs > 0 ? ((+new Date(entry.startedDateTime) - originMs) / totalMs) * 100 : 0;
+    const wrap = el('div', { className: 'wf-bar-wrap' });
+    wrap.style.height = `${rowH}px`;
+    function addBar(cls: string, leftPct: number, widthPct: number, heightPx: number, tooltip: string) {
+      if (widthPct <= 0) return;
+      const b = el('div', { className: `wb ${cls}`, title: tooltip });
+      b.style.left = `${leftPct}%`;
+      b.style.width = `${Math.max(widthPct, 0.1)}%`;
+      b.style.height = `${heightPx}px`;
+      wrap.appendChild(b);
+    }
+    const phases: Array<[string, number, string]> = [
+      ['wb--blocked', blocked, 'Blocked'],
+      ['wb--dns',     dns,     'DNS Lookup'],
+      ['wb--connect', connect, 'TCP Connect'],
+      ['wb--ssl',     ssl,     'SSL Handshake'],
+      ['wb--send',    send,    'Send'],
+      ['wb--wait',    wait,    'Wait (TTFB)'],
+    ];
+    let cursor = offsetPct;
+    for (const [cls, val, label] of phases) {
+      const pct = (val / totalMs) * 100;
+      addBar(cls, cursor, pct, 3, `${label}: ${fmtMs(val)}`);
+      cursor += pct;
+    }
+    const resCursor = offsetPct + ((blocked + dns + connect + ssl) / totalMs) * 100;
+    const sentPct = ((send + wait) / totalMs) * 100;
+    const recvPct = (receive / totalMs) * 100;
+    addBar(`wb--${key}-light`, resCursor, sentPct, barH, `Send+Wait: ${fmtMs(send + wait)}`);
+    addBar(`wb--${key}-dark`, resCursor + sentPct, recvPct, barH, `Receive: ${fmtMs(receive)}`);
+    td.appendChild(wrap);
+    return td;
+  }
+
+  // ── Side panel ───────────────────────────────────────────────────────────
+  function togglePanel(index: number, entry: HarEntry) {
+    if (openPanels.has(index)) {
+      openPanels.get(index)!.remove();
+      openPanels.delete(index);
+      document.querySelectorAll(`.wf-row[data-index="${index}"]`).forEach(r => r.classList.remove('row--open'));
+      return;
+    }
+    const t = entry.timings;
+    const size = entry.response._transferSize ?? entry.response.bodySize;
+    const panel = el('div', { className: 'wf-panel' });
+    panel.dataset.panelIndex = String(index);
+    const titleEl = el('span', { className: 'wf-panel-title' });
+    titleEl.textContent = `#${index + 1} — ${entry.request.url}`;
+    titleEl.title = entry.request.url;
+    const closeBtn = el('button', { className: 'wf-panel-close', title: 'Close' }, '×');
+    closeBtn.addEventListener('click', () => togglePanel(index, entry));
+    const hdr = el('div', { className: 'wf-panel-header' });
+    hdr.append(titleEl, closeBtn);
+    panel.appendChild(hdr);
+    const body = el('div', { className: 'wf-panel-body' });
+    function section(title: string, content: HTMLElement): HTMLElement {
+      const s = el('div', { className: 'wf-panel-section' });
+      s.appendChild(el('div', { className: 'wf-section-title' }, title));
+      s.appendChild(content);
+      return s;
+    }
+    const generalFrag = document.createDocumentFragment();
+    const infoRows: Array<[string, string]> = [
+      ['URL',      entry.request.url],
+      ['Method',   entry.request.method],
+      ['Protocol', entry.request.httpVersion],
+      ['Status',   `${entry.response.status} ${entry.response.statusText}`],
+      ['Type',     resourceType(entry)],
+      ['Size',     fmtSize(size)],
+      ['IP',       entry.serverIPAddress ?? '-'],
+    ];
+    for (const [k, v] of infoRows) {
+      const row = el('div', { className: 'wf-info-row' });
+      row.appendChild(el('span', { className: 'wf-info-key' }, k));
+      row.appendChild(el('span', { className: 'wf-info-val' }, v));
+      generalFrag.appendChild(row);
+    }
+    const generalWrap = el('div');
+    generalWrap.appendChild(generalFrag);
+    body.appendChild(section('General', generalWrap));
+    const blocked = Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0));
+    const timingRows: Array<[string, string, number]> = [
+      ['wb--blocked', 'Blocked/Queued', blocked],
+      ['wb--dns',     'DNS Lookup',     Math.max(0, t.dns)],
+      ['wb--connect', 'TCP Connect',    Math.max(0, t.connect)],
+      ['wb--ssl',     'SSL Handshake',  Math.max(0, t.ssl ?? 0)],
+      ['wb--send',    'Send',           Math.max(0, t.send)],
+      ['wb--wait',    'Wait (TTFB)',    Math.max(0, t.wait)],
+      ['wb--wait',    'Receive',        Math.max(0, t.receive)],
+    ];
+    const timingFrag = document.createDocumentFragment();
+    for (const [cls, label, val] of timingRows) {
+      if (val <= 0) continue;
+      const row = el('div', { className: 'wf-timing-row' });
+      const lbl = el('span', { className: 'wf-timing-label' });
+      lbl.appendChild(el('span', { className: `wf-timing-swatch ${cls}` }));
+      lbl.appendChild(document.createTextNode(label));
+      row.appendChild(lbl);
+      row.appendChild(el('span', { className: 'wf-timing-val' }, fmtMs(val)));
+      timingFrag.appendChild(row);
+    }
+    const totalRow = el('div', { className: 'wf-timing-row wf-timing-total' });
+    totalRow.appendChild(el('span', { className: 'wf-timing-label' }, 'Total'));
+    totalRow.appendChild(el('span', { className: 'wf-timing-val' }, fmtMs(entry.time)));
+    timingFrag.appendChild(totalRow);
+    const timingWrap = el('div');
+    timingWrap.appendChild(timingFrag);
+    body.appendChild(section('Timings', timingWrap));
+    function headersSection(title: string, headers: HarEntry['request']['headers']): HTMLElement {
+      const tbl = el('table', { className: 'wf-headers-table' });
+      for (const h of headers) {
+        const tr = el('tr');
+        tr.appendChild(el('td', {}, h.name));
+        tr.appendChild(el('td', {}, h.value));
+        tbl.appendChild(tr);
+      }
+      return section(title, tbl);
+    }
+    body.appendChild(headersSection('Request Headers', entry.request.headers));
+    body.appendChild(headersSection('Response Headers', entry.response.headers));
+    panel.appendChild(body);
+    document.querySelector('.wf-table-wrap')!.after(panel);
+    openPanels.set(index, panel);
+    document.querySelectorAll(`.wf-row[data-index="${index}"]`).forEach(r => r.classList.add('row--open'));
+  }
+
+  // ── Ruler ────────────────────────────────────────────────────────────────
+  function renderRuler() {
+    const ruler = document.getElementById('wf-ruler');
+    if (!ruler) return;
+    ruler.innerHTML = '';
+    const targets = [50, 100, 200, 250, 500, 1000, 2000, 5000];
+    const interval = targets.find(t => t >= totalMs / 8) ?? targets[targets.length - 1];
+    for (let ms = interval; ms < totalMs; ms += interval) {
+      const tick = el('span', { className: 'wf-tick' });
+      tick.style.left = `${(ms / totalMs) * 100}%`;
+      tick.textContent = ms >= 1000 ? `${(ms / 1000).toFixed(ms % 1000 === 0 ? 0 : 1)}s` : `${ms}ms`;
+      ruler.appendChild(tick);
+    }
+  }
+
+  // ── Event lines ──────────────────────────────────────────────────────────
+  function renderEventLines() {
+    const overlay = document.getElementById('wf-events-overlay');
+    const table = document.getElementById('wf-table');
+    if (!overlay || !table) return;
+    overlay.innerHTML = '';
+    const ths = table.querySelectorAll('thead th');
+    const lastTh = ths[ths.length - 1] as HTMLElement;
+    const pad = parseFloat(getComputedStyle(lastTh).paddingLeft) || 8;
+    const innerLeft = lastTh.offsetLeft + pad;
+    const innerWidth = lastTh.offsetWidth - pad * 2;
+    for (const { ms, cls, label } of pageEvents(pageTimings, totalMs)) {
+      const line = el('div', { className: `wf-event-line ${cls}` });
+      line.dataset.label = fmtEventLabel(label, ms);
+      line.style.left = `${innerLeft + (ms / totalMs) * innerWidth}px`;
+      overlay.appendChild(line);
+    }
+  }
+
+  // ── Render rows ──────────────────────────────────────────────────────────
+  function renderRows() {
+    const tbody = document.getElementById('wf-tbody')!;
+    tbody.innerHTML = '';
+    let visIdx = 0;
+    for (let i = 0; i < allEntries.length; i++) {
+      const entry = allEntries[i];
+      if (!activeFilters.has('all') && !activeFilters.has(resourceType(entry))) continue;
+      visIdx++;
+      const type = resourceType(entry);
+      const { barH } = typeConfig(type);
+      const status = entry.response.status;
+      const size = entry.response._transferSize ?? entry.response.bodySize;
+      const { domain, path } = parseUrl(entry.request.url);
+      const rowClasses = [
+        'wf-row',
+        isBlocking(entry) ? 'row--blocking' : '',
+        openPanels.has(i) ? 'row--open'     : '',
+      ].filter(Boolean).join(' ');
+      const statusCls = status >= 500 ? 's5xx' : status >= 400 ? 's4xx' : status >= 300 ? 's3xx' : 's2xx';
+      const tr = el('tr', { className: rowClasses });
+      tr.dataset.index = String(i);
+      tr.style.height = `${barH + 10}px`;
+      const tdIdx = el('td', { className: 'td-idx' }, String(visIdx));
+      const urlSpan = el('span', { className: 'td-url' });
+      urlSpan.appendChild(el('span', { className: 'url-domain' }, domain));
+      urlSpan.appendChild(el('span', { className: 'url-path' }, path));
+      const tdUrl = el('td');
+      tdUrl.title = entry.request.url;
+      tdUrl.appendChild(urlSpan);
+      const tdMeth = el('td', { className: 'td-info' }, entry.request.method);
+      const tdProt = el('td', { className: 'td-info' }, entry.request.httpVersion);
+      const tdStat = el('td', { className: `td-stat td-info ${statusCls}` }, String(status));
+      const tdType = el('td', { className: 'td-info' }, type);
+      const tdSize = el('td', { className: 'td-size td-info' }, fmtSize(size));
+      const tdDur = el('td', { className: 'td-dur td-info' }, fmtMs(entry.time));
+      tr.append(tdIdx, tdUrl, tdMeth, tdProt, tdStat, tdType, tdSize, tdDur);
+      tr.appendChild(makeTimelineCell(entry));
+      tr.addEventListener('click', () => togglePanel(i, entry));
+      tbody.appendChild(tr);
+    }
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  async function init() {
+    const root = document.getElementById('wf-root');
+    if (!root) return;
+    const testId = root.dataset.testId!;
+    const loadingEl = document.getElementById('wf-loading') as HTMLElement;
+    const errorEl = document.getElementById('wf-error') as HTMLElement;
+    try {
+      const res = await fetch(`/api/tests/${testId}/pageload.har`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const har: Har = await res.json();
+      allEntries = har.log.entries ?? [];
+      if (!allEntries.length) throw new Error('No entries in HAR file');
+      pageTimings = har.log.pages?.[0]?.pageTimings ?? {};
+      totalMs = computeTotalMs(allEntries);
+      originMs = +new Date(allEntries[0].startedDateTime);
+      loadingEl.hidden = true;
+      renderFilters(uniqueTypes(allEntries));
+      renderRuler();
+      renderRows();
+      const lastTh = document.querySelector('#wf-table thead th:last-child') as HTMLElement;
+      const ro = new ResizeObserver(() => {
+        if (lastTh.offsetWidth > 0) { ro.disconnect(); renderEventLines(); }
+      });
+      ro.observe(lastTh);
+
+      // Info columns are collapsed by default; toggle button expands/collapses them
+      const table = document.getElementById('wf-table')!;
+      const toggleColsBtn = document.getElementById('wf-toggle-cols') as HTMLButtonElement;
+      table.classList.add('cols-collapsed');
+      toggleColsBtn.addEventListener('click', () => {
+        const expanded = toggleColsBtn.getAttribute('aria-expanded') === 'true';
+        if (expanded) {
+          table.classList.add('cols-collapsed');
+          toggleColsBtn.setAttribute('aria-expanded', 'false');
+          toggleColsBtn.textContent = 'Show columns';
+        } else {
+          table.classList.remove('cols-collapsed');
+          toggleColsBtn.setAttribute('aria-expanded', 'true');
+          toggleColsBtn.textContent = 'Hide columns';
+        }
+        renderEventLines();
+      });
+    } catch (err) {
+      loadingEl.hidden = true;
+      errorEl.hidden = false;
+      errorEl.textContent = `Failed to load waterfall: ${(err as Error).message}`;
+    }
+  }
+
+  init();
+</script>

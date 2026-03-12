@@ -1,5 +1,5 @@
 ---
-description: Primary assistant for the telescopetest-io project. Use for general development, feature work, debugging, and questions about this codebase.
+description: Assistant for the telescopetest-io project. Use for general development, feature work, debugging, and questions about this codebase.
 model: anthropic/claude-sonnet-4-5-20250929
 mode: primary
 permission:
@@ -18,6 +18,9 @@ permission:
     'cat *': allow
     'grep *': allow
     'find *': allow
+    'sort *': allow
+    'tree *': allow
+    'head *': allow
     'wc *': allow
     'npm *': ask
     'npx *': ask
@@ -29,9 +32,8 @@ permission:
 MANDATORY WORKING LOGIC:
 
 1. When user asks a question or requests work:
-   - Break down into todos
    - Show what you understood
-   - List steps you'll take
+   - Break down task into smaller todos
    - Then execute
 2. Read files before editing - check imports, types, actual values, then ACTUALLY GO to these imported files if they're used in the code you're examining.
 3. User wants EXACTLY what they ask, nothing extra
@@ -44,6 +46,7 @@ MANDATORY WORKING LOGIC:
 10. NEVER ask follow-up questions or ask for confirmation before acting. Just do it. The only exception is if a task has multiple distinct parts and you need to confirm which to do first.
 11. NEVER add any comments or allow any commits with internal Cloudflare links or data.
 12. User handles all git commits/push/PR — never commit unless explicitly asked
+13. Summarize all changes with short bullet points, no more than 5
 
 AGENT DELEGATION:
 
@@ -57,6 +60,12 @@ CODE CONVENTIONS:
 - Named exports only (except Astro pages/components)
 - Repository functions in test-repository.ts with JSDoc
 - API responses: `{ success, error?, ... }` with proper HTTP status
+- No blank lines inside function bodies — blank lines between top-level declarations only
+- No column-alignment padding in variable declarations (no `const foo    = x`)
+- Client-side utilities (pure functions, types) go in `src/lib/<feature>/` — no inline redeclaration in script blocks
+- Astro `<script>` blocks use ESM imports from `src/lib/`; Vite bundles them for the browser
+- HAR types live in `src/lib/types/har.ts` — never redeclare them inline in a script block
+- `type` for read/data models; `interface` for component Props
 
 USER PREFERENCES:
 

@@ -1,5 +1,5 @@
 // Helper functions to extract/calculate metrics
-import type { MetricsJson } from './types.js';
+import type { MetricsJson } from '../types/results.js';
 
 /**
  * Extract First Contentful Paint (FCP) time in milliseconds
@@ -44,16 +44,13 @@ export function extractTtfb(metrics: MetricsJson | null): number | undefined {
       ? nav.firstInterimResponseStart
       : nav.responseStart;
 
-  // TTFB = time to first response byte (from navigation start)
-  if (
-    effectiveResponseStart !== undefined &&
-    nav.navigationStart !== undefined
-  ) {
-    return effectiveResponseStart - nav.navigationStart;
+  // TTFB = time to first response byte relative to fetchStart (navigation origin).
+  // The actual metrics.json has fetchStart (not navigationStart) as the base time.
+  if (effectiveResponseStart !== undefined) {
+    return effectiveResponseStart - (nav.fetchStart ?? 0);
   }
 
-  // Fallback: if navigationStart not available, return raw responseStart
-  return effectiveResponseStart;
+  return undefined;
 }
 
 /**

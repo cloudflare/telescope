@@ -27,6 +27,7 @@ Options:
   -h, --headers <object>        Any custom headers to apply to requests
   -c, --cookies <object>        Any custom cookies to apply
   -f, --flags <string>          A comma separated list of Chromium flags to launch Chrome with. See: https://peter.sh/experiments/chromium-command-line-switches/
+  --agentExtra <string>         A string to append to the end of the default User-Agent. Takes precedence over --userAgent option.
   --blockDomains <domains...>   A comma separated list of domains to block
   --block <substrings...>       A comma-delimited list of urls to block (based on a substring match)
   --delay <object>              An object mapping request regexes to response delays. Example: '{".css$": 2000, ".js$": 5000}'
@@ -45,6 +46,7 @@ Options:
   --openHtml                    Open HTML report in browser (requires --html) (default: false)
   --list                        Generate list of results in HTML (default: false)
   --overrideHost <object>       Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})
+  --userAgent <string>          Set the browsers User-Agent
   --zip                         Zip the results of the test into the results directory. (default: false)
   --uploadUrl <string>          Upload results to URL. Must be a valid URL if provided. (default: null)
   --dry                         Dry run (do not run test, just save config and cleanup) (default: false)
@@ -155,6 +157,28 @@ To test sites [protected with HTTP authentication](https://developer.mozilla.org
 
 ```
 npx . -u https://newsletter.www.example.com/admin -b safari --auth '{"username": "username", "password": "password"}'
+```
+
+## Docker
+
+Build and run telescope in a container:
+
+```bash
+# Build
+docker compose build
+
+# Run a test
+docker compose run --rm telescope -u https://example.com -b chrome
+
+# Results are saved to ./results/
+```
+
+Supports: Chrome, Chrome Beta, Edge, Firefox, and Safari (WebKit).
+
+The container runs as an unprivileged user by default. If you need network throttling (the `--connectionType` option), run the container as root:
+
+```bash
+docker compose run --rm --user root telescope --connectionType 3G https://example.com
 ```
 
 ## Installation
