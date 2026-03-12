@@ -1,20 +1,11 @@
 ---
-import type { ResourceTiming, EnrichedResource } from '@/lib/types/resources';
-import type { Har } from '@/lib/types/har';
+import type { ResourceTiming } from '@/lib/types/resources';
 import {
   enrichResources,
   formatBytes,
   formatDuration,
   shortenUrl,
 } from '@/lib/utils/resources';
-import { loadBottlenecksData } from '@/lib/bottlenecks/data.js';
-import {
-  calculateFileTypeStats,
-  calculateCompressionStats,
-  calculateCompressionSizeStats,
-  calculateHttpVersionStats,
-} from '@/lib/bottlenecks/stats.js';
-import { drawPieChart } from '@/lib/bottlenecks/charts.js';
 
 export interface Props {
   resources: ResourceTiming[];
@@ -97,38 +88,32 @@ const tables = [
     ))
   }
 
-  <!-- Charts Section -->
   <div class="bn-section">
     <h3 class="bn-title">Distribution Charts</h3>
     <div class="charts-grid">
-      <div class="chart-container">
-        <h4 class="chart-title">File Types by Count</h4>
-        <canvas id="chart-file-types" data-test-id={testId}></canvas>
-        <p class="chart-note">Number of requests per file type</p>
+      <div class="chart-box">
+        <h4 class="chart-title">Count by Content Type</h4>
+        <canvas id="chart-count"></canvas>
+        <div id="legend-count" class="chart-legend"></div>
+        <p class="chart-note">Number of requests per content type</p>
       </div>
-      <div class="chart-container">
-        <h4 class="chart-title">Compression Status</h4>
-        <canvas id="chart-compression" data-test-id={testId}></canvas>
-        <p class="chart-note">Count of compressed vs uncompressed resources</p>
+      <div class="chart-box">
+        <h4 class="chart-title">Transferred by Content Type</h4>
+        <canvas id="chart-transfer"></canvas>
+        <div id="legend-transfer" class="chart-legend"></div>
+        <p class="chart-note">Total transfer size per content type</p>
       </div>
-      <div class="chart-container">
+      <div class="chart-box">
+        <h4 class="chart-title">Decoded by Content Type</h4>
+        <canvas id="chart-decoded"></canvas>
+        <div id="legend-decoded" class="chart-legend"></div>
+        <p class="chart-note">Total decoded size per content type</p>
+      </div>
+      <div class="chart-box">
         <h4 class="chart-title">HTTP Versions</h4>
-        <canvas id="chart-http-versions" data-test-id={testId}></canvas>
+        <canvas id="chart-http"></canvas>
+        <div id="legend-http" class="chart-legend"></div>
         <p class="chart-note">Request count by HTTP protocol version</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Additional Stats Section -->
-  <div class="bn-section">
-    <h3 class="bn-title">Transfer Size Breakdown</h3>
-    <div class="charts-grid">
-      <div class="chart-container">
-        <h4 class="chart-title">Transfer Size by Compression</h4>
-        <canvas id="chart-compression-size" data-test-id={testId}></canvas>
-        <p class="chart-note">
-          Total transfer size (compressed vs uncompressed)
-        </p>
       </div>
     </div>
   </div>
@@ -251,14 +236,14 @@ const tables = [
     gap: 1.5rem;
   }
 
-  .chart-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+  .chart-box {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 0.5rem;
     padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .chart-title {
@@ -277,113 +262,64 @@ const tables = [
   }
 
   canvas {
-    width: 100%;
-    height: 300px;
     display: block;
+    width: 100%;
+    height: 250px;
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
   }
 </style>
 
 <script>
-  import { loadBottlenecksData } from '@/lib/bottlenecks/data.js';
-  import {
-    calculateFileTypeStats,
-    calculateCompressionStats,
-    calculateCompressionSizeStats,
-    calculateHttpVersionStats,
-  } from '@/lib/bottlenecks/stats.js';
-  import { drawPieChart } from '@/lib/bottlenecks/charts.js';
-  import { formatBytes } from '@/lib/utils/resources.js';
+  import { renderBottleneckCharts } from '@/lib/bottlenecks/render.js';
 
-  async function init() {
-    console.log('[Bottlenecks] Init starting...');
-    const fileTypesCanvas = document.getElementById(
-      'chart-file-types',
-    ) as HTMLCanvasElement;
-    const compressionCanvas = document.getElementById(
-      'chart-compression',
-    ) as HTMLCanvasElement;
-    const httpVersionsCanvas = document.getElementById(
-      'chart-http-versions',
-    ) as HTMLCanvasElement;
-    const compressionSizeCanvas = document.getElementById(
-      'chart-compression-size',
-    ) as HTMLCanvasElement;
-    
-    console.log('[Bottlenecks] Canvas elements:', {
-      fileTypesCanvas,
-      compressionCanvas,
-      httpVersionsCanvas,
-      compressionSizeCanvas
-    });
-    
-    if (
-      !fileTypesCanvas ||
-      !compressionCanvas ||
-      !httpVersionsCanvas ||
-      !compressionSizeCanvas
-    ) {
-      console.error('[Bottlenecks] Missing canvas elements');
-      return;
-    }
-    const testId = fileTypesCanvas.dataset.testId;
-    console.log('[Bottlenecks] TestId:', testId);
-    if (!testId) {
-      console.error('[Bottlenecks] No testId found');
-      return;
-    }
-    
-    console.log('[Bottlenecks] Loading data...');
-    const { har, resources } = await loadBottlenecksData(testId);
-    console.log('[Bottlenecks] Data loaded:', { har, resourcesCount: resources.length });
-    
-    const fileTypeStats = calculateFileTypeStats(resources);
-    const compressionStats = calculateCompressionStats(resources);
-    const compressionSizeStats = calculateCompressionSizeStats(resources);
-    const httpVersionStats = calculateHttpVersionStats(har);
-    
-    console.log('[Bottlenecks] Stats calculated:', {
-      fileTypeStats,
-      compressionStats,
-      compressionSizeStats,
-      httpVersionStats
-    });
-    
-    console.log('[Bottlenecks] Drawing charts...');
-    drawPieChart(fileTypesCanvas, fileTypeStats);
-    drawPieChart(compressionCanvas, compressionStats);
-    drawPieChart(httpVersionsCanvas, httpVersionStats);
-    const compressionSizeStatsFormatted = compressionSizeStats.map(item => ({
-      ...item,
-      label: `${item.label} (${formatBytes(item.value)})`,
-    }));
-    drawPieChart(compressionSizeCanvas, compressionSizeStatsFormatted);
-    console.log('[Bottlenecks] Charts drawn successfully');
+  const countCanvas = document.getElementById('chart-count') as HTMLCanvasElement;
+  const transferCanvas = document.getElementById('chart-transfer') as HTMLCanvasElement;
+  const decodedCanvas = document.getElementById('chart-decoded') as HTMLCanvasElement;
+  const httpCanvas = document.getElementById('chart-http') as HTMLCanvasElement;
+
+  async function drawCharts() {
+    const testId = new URLPattern({ pathname: '/results/:testId' }).exec(window.location.href)?.pathname.groups.testId;
+    if (!testId) return;
+    await renderBottleneckCharts(countCanvas, transferCanvas, decodedCanvas, httpCanvas, testId);
   }
 
-  let chartsDrawn = false;
-
-  function tryDrawCharts() {
-    if (chartsDrawn) return;
-    const bottlenecksTab = document.querySelector('[data-tab="bottlenecks"]');
-    if (bottlenecksTab?.classList.contains('active')) {
-      console.log('[Bottlenecks] Tab is active, drawing charts...');
-      init();
-      chartsDrawn = true;
-    }
+  const bottlenecksBtn = document.querySelector('[data-tab="bottlenecks"]');
+  if (bottlenecksBtn) {
+    bottlenecksBtn.addEventListener('click', () => {
+      setTimeout(drawCharts, 200);
+    });
   }
 
-  // Try to draw when tab is clicked
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    if (target.matches('[data-tab="bottlenecks"]')) {
-      setTimeout(tryDrawCharts, 50);
+  if (document.querySelector('[data-pane="bottlenecks"]')?.classList.contains('active')) {
+    setTimeout(drawCharts, 200);
+  }
+
+  const themeObserver = new MutationObserver(() => {
+    if (document.querySelector('[data-pane="bottlenecks"]')?.classList.contains('active')) {
+      drawCharts();
     }
   });
-
-  // Also try on load in case bottlenecks tab is default
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(tryDrawCharts, 100));
-  } else {
-    setTimeout(tryDrawCharts, 100);
-  }
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme-override'],
+  });
 </script>
