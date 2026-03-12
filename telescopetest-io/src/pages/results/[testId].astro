@@ -1,6 +1,6 @@
 ---
 import Page from '@/layouts/Page.astro';
-import Summary from '@/components/Summary.astro';
+import MetricCard from '@/components/MetricCard.astro';
 import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
 import TestInfoPanel from '@/components/TestInfoPanel.astro';
 import Tabs from '@/components/Tabs.astro';
@@ -200,96 +200,6 @@ const formattedDate = date.toLocaleString('en-US', {
           </section>
 
           <Tabs>
-            <div slot="summary">
-              {
-                metrics ? (
-                  <div class="metrics-row">
-                    <Summary
-                      heading="Core Web Vitals"
-                      metrics={[
-                        {
-                          label: 'LCP',
-                          value: formatMs(lcpMs),
-                          unit: 'ms',
-                          rating: getLcpRating(lcpMs),
-                        },
-                        {
-                          label: 'CLS',
-                          value: formatDecimal(clsValue),
-                          rating: getClsRating(clsValue),
-                        },
-                      ]}
-                    />
-                    <Summary
-                      heading="Performance Metrics"
-                      metrics={[
-                        {
-                          label: 'FCP',
-                          value: formatMs(fcpMs),
-                          unit: 'ms',
-                          rating: getFcpRating(fcpMs),
-                        },
-                        {
-                          label: 'TTFB',
-                          value: formatMs(ttfbMs),
-                          unit: 'ms',
-                          rating: getTtfbRating(ttfbMs),
-                        },
-                        {
-                          label: 'Transfer Size',
-                          value: formatKb(transferBytes),
-                          unit: 'KB',
-                        },
-                        {
-                          label: 'Page Load Time',
-                          value: formatMs(durationMs),
-                          unit: 'ms',
-                        },
-                      ]}
-                    />
-                  </div>
-                ) : (
-                  <div class="metrics-unavailable panel">
-                    <p>Metrics unavailable for this test.</p>
-                  </div>
-                )
-              }
-            </div>
-
-            <div slot="all-metrics">
-              {
-                metrics ? (
-                  <AllMetrics metrics={metrics} />
-                ) : (
-                  <div class="metrics-unavailable panel">
-                    <p>Metrics unavailable for this test.</p>
-                  </div>
-                )
-              }
-            </div>
-
-            <div slot="waterfall">
-              <Waterfall testId={testId} hasHar={hasHar} />
-            </div>
-
-            <div slot="resources">
-              {
-                resources.length > 0 || metrics?.navigationTiming ? (
-                  <Resources
-                    resources={resources}
-                    url={test.url}
-                    navigationTiming={metrics?.navigationTiming}
-                  />
-                ) : (
-                  <div class="resources-unavailable">
-                    <p>Resources data unavailable for this test.</p>
-                  </div>
-                )
-              }
-            </div>
-
-    <!-- Metrics + Waterfall Tabs -->
-    <Tabs>
       <div slot="summary">
         {
           metrics ? (
