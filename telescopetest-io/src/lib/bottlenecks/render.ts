@@ -14,23 +14,31 @@ import { formatBytes } from '@/lib/utils/resources.js';
 import type { ChartDataItem } from './stats.js';
 
 function getColorForLabel(label: string, index: number): string {
-  const normalized = label.toLowerCase();
-  if (contentTypeColors[normalized]) {
-    return contentTypeColors[normalized];
+  const typeOnly = label.split('(')[0].trim().toLowerCase();
+  if (contentTypeColors[typeOnly]) {
+    return contentTypeColors[typeOnly];
   }
   return defaultChartColors[index % defaultChartColors.length];
 }
 
-function renderLegend(legendElement: HTMLElement, data: ChartDataItem[]): void {
+function renderLegend(
+  legendElement: HTMLElement,
+  data: ChartDataItem[],
+  showValue: boolean = true,
+): void {
   legendElement.innerHTML = data
-    .map(
-      (item, index) => `
+    .map((item, index) => {
+      const typeOnly = item.label.split('(')[0].trim();
+      const text = showValue
+        ? `${typeOnly}: ${item.value} (${item.percentage})`
+        : `${item.label}: ${item.value} (${item.percentage})`;
+      return `
     <div class="legend-item">
       <div class="legend-color" style="background: ${getColorForLabel(item.label, index)}"></div>
-      <span>${item.label}: ${item.value} (${item.percentage})</span>
+      <span>${text}</span>
     </div>
-  `,
-    )
+  `;
+    })
     .join('');
 }
 
@@ -46,24 +54,46 @@ export async function renderBottleneckCharts(
   const transferStats = calculateFileTypeTransferStats(resources);
   const decodedStats = calculateFileTypeDecodedStats(resources);
   const httpVersionStats = calculateHttpVersionStats(har);
-  const transferStatsFormatted = transferStats.map(item => ({
+  const transferStatsWithBytes = transferStats.map(item => ({
     ...item,
-    label: `${item.label} (${formatBytes(item.value)})`,
+    bytes: item.value,
   }));
-  const decodedStatsFormatted = decodedStats.map(item => ({
+  const decodedStatsWithBytes = decodedStats.map(item => ({
     ...item,
-    label: `${item.label} (${formatBytes(item.value)})`,
+    bytes: item.value,
   }));
   drawPieChart(countCanvas, countStats, false);
-  drawPieChart(transferCanvas, transferStatsFormatted, false);
-  drawPieChart(decodedCanvas, decodedStatsFormatted, false);
+  drawPieChart(transferCanvas, transferStats, false);
+  drawPieChart(decodedCanvas, decodedStats, false);
   drawPieChart(httpCanvas, httpVersionStats, false);
   const countLegend = document.getElementById('legend-count');
   const transferLegend = document.getElementById('legend-transfer');
   const decodedLegend = document.getElementById('legend-decoded');
   const httpLegend = document.getElementById('legend-http');
-  if (countLegend) renderLegend(countLegend, countStats);
-  if (transferLegend) renderLegend(transferLegend, transferStatsFormatted);
-  if (decodedLegend) renderLegend(decodedLegend, decodedStatsFormatted);
-  if (httpLegend) renderLegend(httpLegend, httpVersionStats);
+  if (countLegend) renderLegend(countLegend, countStats, false);
+  if (transferLegend) {
+    transferLegend.innerHTML = transferStats
+      .map(
+        (item, index) => `
+      <div class="legend-item">
+        <div class="legend-color" style="background: ${getColorForLabel(item.label, index)}"></div>
+        <span>${item.label}: ${formatBytes(item.value)} (${item.percentage})</span>
+      </div>
+    `,
+      )
+      .join('');
+  }
+  if (decodedLegend) {
+    decodedLegend.innerHTML = decodedStats
+      .map(
+        (item, index) => `
+      <div class="legend-item">
+        <div class="legend-color" style="background: ${getColorForLabel(item.label, index)}"></div>
+        <span>${item.label}: ${formatBytes(item.value)} (${item.percentage})</span>
+      </div>
+    `,
+      )
+      .join('');
+  }
+  if (httpLegend) renderLegend(httpLegend, httpVersionStats, false);
 }
