@@ -1,7 +1,6 @@
 ---
 import type { ResourceTiming, EnrichedResource } from '@/lib/types/resources';
 import type { Har } from '@/lib/types/har';
-import MetricsSection from './metrics/MetricsSection.astro';
 import { enrichResources, formatBytes, formatDuration, shortenUrl } from '@/lib/utils/resources';
 
 export interface Props {
@@ -12,122 +11,66 @@ export interface Props {
 const { resources, testId } = Astro.props;
 const enrichedResources = enrichResources(resources);
 
-const top5Largest = [...enrichedResources]
-  .sort((a, b) => b.transferSize - a.transferSize)
-  .slice(0, 5);
-
-const top5Longest = [...enrichedResources]
-  .sort((a, b) => b.duration - a.duration)
-  .slice(0, 5);
-
-const blockingRequests = enrichedResources.filter(r => r.isBlocking);
+const tables = [
+  {
+    title: 'Top 5 Largest Files',
+    data: [...enrichedResources].sort((a, b) => b.transferSize - a.transferSize).slice(0, 5),
+    emptyMessage: 'No resource data available',
+  },
+  {
+    title: 'Top 5 Longest Requests',
+    data: [...enrichedResources].sort((a, b) => b.duration - a.duration).slice(0, 5),
+    emptyMessage: 'No resource data available',
+  },
+  {
+    title: 'All Blocking Requests',
+    data: enrichedResources.filter(r => r.isBlocking),
+    emptyMessage: 'No blocking requests found',
+    isBlocking: true,
+  },
+];
 ---
 
 <div class="bottlenecks-container">
-  <!-- Top 5 Largest Files -->
-  <MetricsSection title="Top 5 Largest Files">
-    <div class="table-wrapper">
-      <table class="bottleneck-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>URL</th>
-            <th>Type</th>
-            <th class="num-col">Transfer Size</th>
-            <th class="num-col">Decoded Size</th>
-          </tr>
-        </thead>
-        <tbody>
-          {top5Largest.length === 0 ? (
+  {tables.map(({ title, data, emptyMessage, isBlocking }) => (
+    <div class="bn-section">
+      <h3 class="bn-title">{title}</h3>
+      <div class="bn-table-wrap">
+        <table class="bn-table">
+          <thead>
             <tr>
-              <td colspan="5" class="empty-message">No resource data available</td>
+              <th class="col-idx">#</th>
+              <th class="col-url">URL</th>
+              <th class="col-type">Type</th>
+              <th class="col-metric">Duration</th>
+              <th class="col-metric">Size</th>
             </tr>
-          ) : (
-            top5Largest.map((resource, index) => (
+          </thead>
+          <tbody>
+            {data.length === 0 ? (
               <tr>
-                <td class="rank-col">{index + 1}</td>
-                <td class="url-cell" title={resource.name}>{shortenUrl(resource.name)}</td>
-                <td>{resource.fileType}</td>
-                <td class="num-col">{formatBytes(resource.transferSize)}</td>
-                <td class="num-col">{formatBytes(resource.decodedBodySize)}</td>
+                <td colspan="5" class="empty-message">{emptyMessage}</td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              data.map((resource, index) => (
+                <tr class:list={['bn-row', { 'bn-row--blocking': isBlocking }]}>
+                  <td class="td-idx">{index + 1}</td>
+                  <td class="td-url" title={resource.name}>{shortenUrl(resource.name)}</td>
+                  <td class="td-type">{resource.fileType}</td>
+                  <td class="td-metric">{formatDuration(resource.duration)}</td>
+                  <td class="td-metric">{formatBytes(resource.transferSize)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </MetricsSection>
-
-  <!-- Top 5 Longest Requests -->
-  <MetricsSection title="Top 5 Longest Requests">
-    <div class="table-wrapper">
-      <table class="bottleneck-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>URL</th>
-            <th>Type</th>
-            <th class="num-col">Duration</th>
-            <th class="num-col">Size</th>
-          </tr>
-        </thead>
-        <tbody>
-          {top5Longest.length === 0 ? (
-            <tr>
-              <td colspan="5" class="empty-message">No resource data available</td>
-            </tr>
-          ) : (
-            top5Longest.map((resource, index) => (
-              <tr>
-                <td class="rank-col">{index + 1}</td>
-                <td class="url-cell" title={resource.name}>{shortenUrl(resource.name)}</td>
-                <td>{resource.fileType}</td>
-                <td class="num-col">{formatDuration(resource.duration)}</td>
-                <td class="num-col">{formatBytes(resource.transferSize)}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
-  </MetricsSection>
-
-  <!-- All Blocking Requests -->
-  <MetricsSection title="All Blocking Requests">
-    <div class="table-wrapper">
-      <table class="bottleneck-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>URL</th>
-            <th>Type</th>
-            <th class="num-col">Duration</th>
-            <th class="num-col">Size</th>
-          </tr>
-        </thead>
-        <tbody>
-          {blockingRequests.length === 0 ? (
-            <tr>
-              <td colspan="5" class="empty-message">No blocking requests found</td>
-            </tr>
-          ) : (
-            blockingRequests.map((resource, index) => (
-              <tr class="blocking-row">
-                <td class="rank-col">{index + 1}</td>
-                <td class="url-cell" title={resource.name}>{shortenUrl(resource.name)}</td>
-                <td>{resource.fileType}</td>
-                <td class="num-col">{formatDuration(resource.duration)}</td>
-                <td class="num-col">{formatBytes(resource.transferSize)}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
-  </MetricsSection>
+  ))}
 
   <!-- Charts Section -->
-  <MetricsSection title="Distribution Charts">
+  <div class="bn-section">
+    <h3 class="bn-title">Distribution Charts</h3>
     <div class="charts-grid">
       <div class="chart-container">
         <h4 class="chart-title">File Types by Count</h4>
@@ -145,10 +88,11 @@ const blockingRequests = enrichedResources.filter(r => r.isBlocking);
         <p class="chart-note">Request count by HTTP protocol version</p>
       </div>
     </div>
-  </MetricsSection>
+  </div>
 
   <!-- Additional Stats Section -->
-  <MetricsSection title="Transfer Size Breakdown">
+  <div class="bn-section">
+    <h3 class="bn-title">Transfer Size Breakdown</h3>
     <div class="charts-grid">
       <div class="chart-container">
         <h4 class="chart-title">Transfer Size by Compression</h4>
@@ -156,7 +100,7 @@ const blockingRequests = enrichedResources.filter(r => r.isBlocking);
         <p class="chart-note">Total transfer size (compressed vs uncompressed)</p>
       </div>
     </div>
-  </MetricsSection>
+  </div>
 </div>
 
 <style>
@@ -166,69 +110,91 @@ const blockingRequests = enrichedResources.filter(r => r.isBlocking);
     gap: 1.5rem;
   }
 
-  .table-wrapper {
-    overflow-x: auto;
+  .bn-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
-  .bottleneck-table {
-    width: 100%;
-    border-collapse: collapse;
+  .bn-title {
+    margin: 0;
+    padding: 0;
     font-size: 0.875rem;
-  }
-
-  .bottleneck-table thead {
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .bottleneck-table th {
-    text-align: left;
-    padding: 0.75rem 1rem;
     font-weight: 600;
-    color: var(--muted);
-    font-size: 0.8125rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .bottleneck-table th.num-col {
-    text-align: right;
-  }
-
-  .bottleneck-table tr {
-    border-bottom: 1px solid var(--border);
-  }
-
-  .bottleneck-table tbody tr:last-child {
-    border-bottom: none;
-  }
-
-  .bottleneck-table td {
-    padding: 0.75rem 1rem;
     color: var(--text);
   }
 
-  .rank-col {
-    width: 3rem;
-    text-align: right;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-    font-weight: 500;
+  .bn-table-wrap {
+    position: relative;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
   }
 
-  .url-cell {
-    max-width: 400px;
+  .bn-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    table-layout: fixed;
+  }
+
+  .bn-table thead th {
+    padding: 0.375rem 0.625rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .col-idx { width: 2.25rem; text-align: center; }
+  .col-url { min-width: 15rem; }
+  .col-type { width: 5.5rem; }
+  .col-metric { width: 6.5rem; text-align: right; }
+
+  .bn-row {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .bn-row:last-child {
+    border-bottom: none;
+  }
+
+  .bn-row td {
+    padding: 0.375rem 0.625rem;
+    vertical-align: middle;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .num-col {
-    text-align: right;
+  .td-idx {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
   }
 
-  .blocking-row {
+  .td-url {
+    font-size: 0.775rem;
+    color: var(--text);
+  }
+
+  .td-type {
+    color: var(--text);
+  }
+
+  .td-metric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+
+  .bn-row--blocking {
     background: rgba(239, 68, 68, 0.05);
   }
 
