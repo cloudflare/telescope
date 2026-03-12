@@ -8,7 +8,7 @@ import MetricCard from '@/components/MetricCard.astro';
 import Section from '@/components/Section.astro';
 import { getLcp, getCls } from '@/lib/utils/cwv';
 import { formatDuration } from '@/lib/utils/formatters';
-import { buildNavTimingDiagram } from '@/lib/utils/navTiming';
+import { buildNavTimingDiagram } from '@/lib/allmetrics/navTiming';
 
 export interface Props {
   metrics: MetricsJson | null;
