@@ -182,11 +182,17 @@ function calculateHttpVersionStats(har: Har | null): ChartDataItem[] {
   });
   const total = har.log.entries.length;
   return Object.entries(versions)
-    .map(([label, value]) => ({
-      label,
-      value,
-      percentage: formatPercentage(value, total),
-    }))
+    .map(([label, value]) => {
+      const displayLabel = label
+        .toLowerCase()
+        .replace('http/', 'h')
+        .replace('.0', '');
+      return {
+        label: displayLabel,
+        value,
+        percentage: formatPercentage(value, total),
+      };
+    })
     .sort((a, b) => b.value - a.value);
 }
 
@@ -196,12 +202,43 @@ export async function renderBottleneckCharts(
   decodedContainer: HTMLElement,
   httpContainer: HTMLElement,
   testId: string,
+  url: string,
 ): Promise<void> {
   const { loadBottlenecksData } = await import('./data.js');
-  const { har, resources } = await loadBottlenecksData(testId);
-  const countStats = calculateFileTypeCountStats(resources);
-  const transferStats = calculateFileTypeTransferStats(resources);
-  const decodedStats = calculateFileTypeDecodedStats(resources);
+  const { har, resources, metrics } = await loadBottlenecksData(testId);
+  const navigationTiming = metrics?.navigationTiming;
+  const allResources: ResourceTiming[] =
+    navigationTiming && url
+      ? [
+          {
+            name: url,
+            entryType: 'navigation',
+            startTime: 0,
+            duration: navigationTiming.duration,
+            initiatorType: 'navigation',
+            deliveryType: navigationTiming.deliveryType,
+            nextHopProtocol: navigationTiming.nextHopProtocol,
+            renderBlockingStatus: navigationTiming.renderBlockingStatus,
+            fetchStart: navigationTiming.fetchStart,
+            domainLookupStart: navigationTiming.domainLookupStart,
+            domainLookupEnd: navigationTiming.domainLookupEnd,
+            connectStart: navigationTiming.connectStart,
+            connectEnd: navigationTiming.connectEnd,
+            secureConnectionStart: navigationTiming.secureConnectionStart,
+            requestStart: navigationTiming.requestStart,
+            responseStart: navigationTiming.responseStart,
+            responseEnd: navigationTiming.responseEnd,
+            transferSize: navigationTiming.transferSize ?? 0,
+            encodedBodySize: navigationTiming.encodedBodySize ?? 0,
+            decodedBodySize: navigationTiming.decodedBodySize ?? 0,
+            responseStatus: navigationTiming.responseStatus,
+          },
+          ...resources,
+        ]
+      : resources;
+  const countStats = calculateFileTypeCountStats(allResources);
+  const transferStats = calculateFileTypeTransferStats(allResources);
+  const decodedStats = calculateFileTypeDecodedStats(allResources);
   const httpStats = calculateHttpVersionStats(har);
   renderSvgPieChart(countContainer, countStats);
   renderSvgPieChart(transferContainer, transferStats);
