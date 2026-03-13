@@ -1,18 +1,27 @@
-import type { ChartDataItem } from './stats';
+import type { Har } from '@/lib/types/har';
+import type { ResourceTiming } from '@/lib/types/resources';
+import { getFileType, formatBytes } from '@/lib/utils/resources';
 
-export const contentTypeColors: Record<string, string> = {
-  document: '#4a7ec8',
-  script: '#c8a040',
-  stylesheet: '#4a9850',
-  image: '#8050b8',
-  font: '#c83820',
-  video: '#2a8048',
-  fetch: '#e07820', // not content
-  iframe: '#d946ef', // not content (if html, document)
-  other: '#787878',
+export type ChartDataItem = {
+  label: string;
+  value: number;
+  percentage: string;
 };
 
-export const defaultChartColors = [
+// based on chrome devTools waterfall
+const contentTypeColors: Record<string, string> = {
+  document: '#4285F4',
+  script: '#F9AB00',
+  stylesheet: '#9334E6',
+  image: '#0F9D58',
+  font: '#EA4335',
+  video: '#46BDC6',
+  fetch: '#FF6D01',
+  iframe: '#4285F4',
+  other: '#80868B',
+};
+
+const httpVersionColors = [
   '#4a7ec8',
   '#c8a040',
   '#4a9850',
@@ -25,81 +34,185 @@ export const defaultChartColors = [
   '#1a6b52',
 ];
 
-function getTextColor(): string {
-  const cssValue = getComputedStyle(document.documentElement)
-    .getPropertyValue('--text')
-    .trim();
-  if (cssValue.startsWith('rgba') || cssValue.startsWith('#')) {
-    return cssValue;
-  }
-  return '#000000';
-}
-
 function getColorForLabel(label: string, index: number): string {
   const typeOnly = label.split('(')[0].trim().toLowerCase();
-  if (contentTypeColors[typeOnly]) {
-    return contentTypeColors[typeOnly];
-  }
-  return defaultChartColors[index % defaultChartColors.length];
+  return (
+    contentTypeColors[typeOnly] ??
+    httpVersionColors[index % httpVersionColors.length]
+  );
 }
 
-export function drawPieChart(
-  canvas: HTMLCanvasElement,
+function createPieSlicePath(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number,
+): string {
+  const x1 = centerX + radius * Math.cos(startAngle);
+  const y1 = centerY + radius * Math.sin(startAngle);
+  const x2 = centerX + radius * Math.cos(endAngle);
+  const y2 = centerY + radius * Math.sin(endAngle);
+  const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0;
+  return `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+}
+
+function renderSvgPieChart(
+  container: HTMLElement,
   data: ChartDataItem[],
-  drawLegend: boolean = true,
 ): void {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    console.error('Failed to get canvas context');
+  const filteredData = data.filter(item => item.value > 0);
+  const total = filteredData.reduce((sum, item) => sum + item.value, 0);
+  if (total === 0 || filteredData.length === 0) {
+    container.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:250px;color:var(--muted);font-size:0.875rem;">No data</div>';
     return;
   }
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) {
-    console.error('Canvas has no dimensions:', rect);
-    return;
-  }
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  ctx.scale(dpr, dpr);
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
-  const radius = Math.min(centerX, centerY) - 40;
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  const textColor = getTextColor();
-  if (total === 0 || data.length === 0) {
-    ctx.fillStyle = textColor;
-    ctx.font = '14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('No data', centerX, centerY);
+  const size = 250;
+  const centerX = size / 2;
+  const centerY = size / 2;
+  const radius = size / 2 - 10;
+  if (filteredData.length === 1) {
+    const color = getColorForLabel(filteredData[0].label, 0);
+    container.innerHTML = `<svg viewBox="0 0 ${size} ${size}" style="width:100%;height:250px;"><circle cx="${centerX}" cy="${centerY}" r="${radius}" fill="${color}" /></svg>`;
     return;
   }
   let currentAngle = -Math.PI / 2;
-  data.forEach((item, index) => {
+  const paths = filteredData.map((item, index) => {
     const sliceAngle = (item.value / total) * Math.PI * 2;
-    ctx.fillStyle = getColorForLabel(item.label, index);
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
-    ctx.closePath();
-    ctx.fill();
-    currentAngle += sliceAngle;
+    const startAngle = currentAngle;
+    const endAngle = currentAngle + sliceAngle;
+    currentAngle = endAngle;
+    const pathData = createPieSlicePath(
+      centerX,
+      centerY,
+      radius,
+      startAngle,
+      endAngle,
+    );
+    const color = getColorForLabel(item.label, index);
+    return `<path d="${pathData}" fill="${color}" />`;
   });
-  if (drawLegend) {
-    const legendX = 10;
-    let legendY = rect.height - data.length * 20 - 10;
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'left';
-    data.forEach((item, index) => {
-      ctx.fillStyle = getColorForLabel(item.label, index);
-      ctx.fillRect(legendX, legendY, 12, 12);
-      ctx.fillStyle = textColor;
-      ctx.fillText(
-        `${item.label}: ${item.value} (${item.percentage})`,
-        legendX + 18,
-        legendY + 10,
-      );
-      legendY += 20;
-    });
-  }
+  container.innerHTML = `<svg viewBox="0 0 ${size} ${size}" style="width:100%;height:250px;">${paths.join('')}</svg>`;
+}
+
+function renderLegend(
+  legendElement: HTMLElement,
+  data: ChartDataItem[],
+  formatter?: (value: number) => string,
+): void {
+  legendElement.innerHTML = data
+    .map((item, index) => {
+      const color = getColorForLabel(item.label, index);
+      const displayValue = formatter ? formatter(item.value) : item.value;
+      return `<div class="legend-item"><div class="legend-color" style="background:${color}"></div><span>${item.label}: ${displayValue} (${item.percentage})</span></div>`;
+    })
+    .join('');
+}
+
+function formatPercentage(value: number, total: number): string {
+  const pct = (value / total) * 100;
+  if (pct === 0) return '0%';
+  if (pct < 0.1) return '<0.1%';
+  return `${pct.toFixed(1)}%`;
+}
+
+function calculateFileTypeCountStats(
+  resources: ResourceTiming[],
+): ChartDataItem[] {
+  const counts: Record<string, number> = {};
+  resources.forEach(r => {
+    const type = getFileType(r);
+    counts[type] = (counts[type] || 0) + 1;
+  });
+  const total = resources.length;
+  return Object.entries(counts)
+    .map(([label, value]) => ({
+      label,
+      value,
+      percentage: formatPercentage(value, total),
+    }))
+    .sort((a, b) => b.value - a.value);
+}
+
+function calculateFileTypeTransferStats(
+  resources: ResourceTiming[],
+): ChartDataItem[] {
+  const sizes: Record<string, number> = {};
+  resources.forEach(r => {
+    const type = getFileType(r);
+    sizes[type] = (sizes[type] || 0) + r.transferSize;
+  });
+  const total = Object.values(sizes).reduce((sum, val) => sum + val, 0);
+  if (total === 0) return [];
+  return Object.entries(sizes)
+    .map(([label, value]) => ({
+      label,
+      value,
+      percentage: formatPercentage(value, total),
+    }))
+    .sort((a, b) => b.value - a.value);
+}
+
+function calculateFileTypeDecodedStats(
+  resources: ResourceTiming[],
+): ChartDataItem[] {
+  const sizes: Record<string, number> = {};
+  resources.forEach(r => {
+    const type = getFileType(r);
+    sizes[type] = (sizes[type] || 0) + r.decodedBodySize;
+  });
+  const total = Object.values(sizes).reduce((sum, val) => sum + val, 0);
+  if (total === 0) return [];
+  return Object.entries(sizes)
+    .map(([label, value]) => ({
+      label,
+      value,
+      percentage: formatPercentage(value, total),
+    }))
+    .sort((a, b) => b.value - a.value);
+}
+
+function calculateHttpVersionStats(har: Har | null): ChartDataItem[] {
+  if (!har?.log?.entries) return [];
+  const versions: Record<string, number> = {};
+  har.log.entries.forEach(entry => {
+    const version = entry.response.httpVersion;
+    versions[version] = (versions[version] || 0) + 1;
+  });
+  const total = har.log.entries.length;
+  return Object.entries(versions)
+    .map(([label, value]) => ({
+      label,
+      value,
+      percentage: formatPercentage(value, total),
+    }))
+    .sort((a, b) => b.value - a.value);
+}
+
+export async function renderBottleneckCharts(
+  countContainer: HTMLElement,
+  transferContainer: HTMLElement,
+  decodedContainer: HTMLElement,
+  httpContainer: HTMLElement,
+  testId: string,
+): Promise<void> {
+  const { loadBottlenecksData } = await import('./data.js');
+  const { har, resources } = await loadBottlenecksData(testId);
+  const countStats = calculateFileTypeCountStats(resources);
+  const transferStats = calculateFileTypeTransferStats(resources);
+  const decodedStats = calculateFileTypeDecodedStats(resources);
+  const httpStats = calculateHttpVersionStats(har);
+  renderSvgPieChart(countContainer, countStats);
+  renderSvgPieChart(transferContainer, transferStats);
+  renderSvgPieChart(decodedContainer, decodedStats);
+  renderSvgPieChart(httpContainer, httpStats);
+  const countLegend = document.getElementById('legend-count');
+  const transferLegend = document.getElementById('legend-transfer');
+  const decodedLegend = document.getElementById('legend-decoded');
+  const httpLegend = document.getElementById('legend-http');
+  if (countLegend) renderLegend(countLegend, countStats);
+  if (transferLegend) renderLegend(transferLegend, transferStats, formatBytes);
+  if (decodedLegend) renderLegend(decodedLegend, decodedStats, formatBytes);
+  if (httpLegend) renderLegend(httpLegend, httpStats);
 }

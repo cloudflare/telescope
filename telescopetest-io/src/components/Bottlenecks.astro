@@ -30,18 +30,13 @@ const tables = [
       .slice(0, 5),
     emptyMessage: 'No resource data available',
   },
-  {
-    title: 'All Blocking Requests',
-    data: enrichedResources.filter(r => r.isBlocking),
-    emptyMessage: 'No blocking requests found',
-    isBlocking: true,
-  },
 ];
+const blockingResources = enrichedResources.filter(r => r.isBlocking);
 ---
 
 <div class="bottlenecks-container">
   {
-    tables.map(({ title, data, emptyMessage, isBlocking }) => (
+    tables.map(({ title, data, emptyMessage }) => (
       <div class="bn-section">
         <h3 class="bn-title">{title}</h3>
         <div class="bn-table-wrap">
@@ -64,9 +59,7 @@ const tables = [
                 </tr>
               ) : (
                 data.map((resource, index) => (
-                  <tr
-                    class:list={['bn-row', { 'bn-row--blocking': isBlocking }]}
-                  >
+                  <tr class="bn-row">
                     <td class="td-idx">{index + 1}</td>
                     <td class="td-url" title={resource.name}>
                       {shortenUrl(resource.name)}
@@ -89,29 +82,76 @@ const tables = [
   }
 
   <div class="bn-section">
+    <details class="blocking-details">
+      <summary class="blocking-summary">
+        <span class="blocking-label">All Blocking Requests</span>
+        <span class="blocking-count">{blockingResources.length}</span>
+      </summary>
+      <div class="bn-table-wrap">
+        <table class="bn-table">
+          <thead>
+            <tr>
+              <th class="col-idx">#</th>
+              <th class="col-url">URL</th>
+              <th class="col-type">Type</th>
+              <th class="col-metric">Duration</th>
+              <th class="col-metric">Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            {blockingResources.length === 0 ? (
+              <tr>
+                <td colspan="5" class="empty-message">
+                  No blocking requests found
+                </td>
+              </tr>
+            ) : (
+              blockingResources.map((resource, index) => (
+                <tr class="bn-row bn-row--blocking">
+                  <td class="td-idx">{index + 1}</td>
+                  <td class="td-url" title={resource.name}>
+                    {shortenUrl(resource.name)}
+                  </td>
+                  <td class="td-type">{resource.fileType}</td>
+                  <td class="td-metric">
+                    {formatDuration(resource.duration)}
+                  </td>
+                  <td class="td-metric">
+                    {formatBytes(resource.transferSize)}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <div class="bn-section">
     <h3 class="bn-title">Distribution Charts</h3>
     <div class="charts-grid">
       <div class="chart-box">
         <h4 class="chart-title">Count by Content Type</h4>
-        <canvas id="chart-count"></canvas>
+        <div id="chart-count" class="chart-svg"></div>
         <p class="chart-note">Number of requests per content type</p>
         <div id="legend-count" class="chart-legend"></div>
       </div>
       <div class="chart-box">
         <h4 class="chart-title">Transferred by Content Type</h4>
-        <canvas id="chart-transfer"></canvas>
+        <div id="chart-transfer" class="chart-svg"></div>
         <p class="chart-note">Total transfer size per content type</p>
         <div id="legend-transfer" class="chart-legend"></div>
       </div>
       <div class="chart-box">
         <h4 class="chart-title">Decoded by Content Type</h4>
-        <canvas id="chart-decoded"></canvas>
+        <div id="chart-decoded" class="chart-svg"></div>
         <p class="chart-note">Total decoded size per content type</p>
         <div id="legend-decoded" class="chart-legend"></div>
       </div>
       <div class="chart-box">
         <h4 class="chart-title">HTTP Versions</h4>
-        <canvas id="chart-http"></canvas>
+        <div id="chart-http" class="chart-svg"></div>
         <p class="chart-note">Request count by HTTP protocol version</p>
         <div id="legend-http" class="chart-legend"></div>
       </div>
@@ -230,6 +270,51 @@ const tables = [
     padding: 2rem 1rem;
   }
 
+  .blocking-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .blocking-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    padding: 0.125rem 0;
+    margin-bottom: 0.375rem;
+  }
+  .blocking-summary::-webkit-details-marker {
+    display: none;
+  }
+  .blocking-summary::before {
+    content: '▶';
+    font-size: 0.5rem;
+    color: var(--muted);
+    transition: transform 0.15s;
+    flex-shrink: 0;
+  }
+  .blocking-details[open] > .blocking-summary::before {
+    transform: rotate(90deg);
+  }
+
+  .blocking-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .blocking-count {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    padding: 0.1em 0.45em;
+  }
+
   .charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -261,7 +346,7 @@ const tables = [
     text-align: center;
   }
 
-  canvas {
+  .chart-svg {
     display: block;
     width: 100%;
     height: 250px;
@@ -290,18 +375,16 @@ const tables = [
 </style>
 
 <script>
-  import { renderBottleneckCharts } from '@/lib/bottlenecks/render.js';
+  import { renderBottleneckCharts } from '@/lib/bottlenecks/charts.js';
 
-  const countCanvas = document.getElementById(
-    'chart-count',
-  ) as HTMLCanvasElement;
-  const transferCanvas = document.getElementById(
+  const countContainer = document.getElementById('chart-count') as HTMLElement;
+  const transferContainer = document.getElementById(
     'chart-transfer',
-  ) as HTMLCanvasElement;
-  const decodedCanvas = document.getElementById(
+  ) as HTMLElement;
+  const decodedContainer = document.getElementById(
     'chart-decoded',
-  ) as HTMLCanvasElement;
-  const httpCanvas = document.getElementById('chart-http') as HTMLCanvasElement;
+  ) as HTMLElement;
+  const httpContainer = document.getElementById('chart-http') as HTMLElement;
 
   async function drawCharts() {
     const testId = new URLPattern({ pathname: '/results/:testId' }).exec(
@@ -309,10 +392,10 @@ const tables = [
     )?.pathname.groups.testId;
     if (!testId) return;
     await renderBottleneckCharts(
-      countCanvas,
-      transferCanvas,
-      decodedCanvas,
-      httpCanvas,
+      countContainer,
+      transferContainer,
+      decodedContainer,
+      httpContainer,
       testId,
     );
   }
