@@ -243,20 +243,25 @@ const formattedDate = date.toLocaleString('en-US', {
         }
       </div>
 
-      <div slot="console">
-        <Console messages={consoleMessages} />
-      </div>
-
       <div slot="bottlenecks">
         {
-          resources.length > 0 ? (
-            <Bottlenecks resources={resources} testId={testId} />
+          resources.length > 0 || metrics?.navigationTiming ? (
+            <Bottlenecks
+              resources={resources}
+              url={test.url}
+              navigationTiming={metrics?.navigationTiming}
+              testId={testId}
+            />
           ) : (
             <div class="resources-unavailable">
               <p>Resources data unavailable for this test.</p>
             </div>
           )
         }
+      </div>
+
+      <div slot="console">
+        <Console messages={consoleMessages} />
       </div>
     </Tabs>
   </div>

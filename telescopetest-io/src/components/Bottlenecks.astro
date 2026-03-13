@@ -1,5 +1,6 @@
 ---
 import type { ResourceTiming } from '@/lib/types/resources';
+import type { NavigationTiming } from '@/lib/types/metrics';
 import {
   enrichResources,
   formatBytes,
@@ -9,11 +10,43 @@ import {
 
 export interface Props {
   resources: ResourceTiming[];
+  url: string;
+  navigationTiming?: NavigationTiming;
   testId: string;
 }
 
-const { resources, testId } = Astro.props;
-const enrichedResources = enrichResources(resources);
+const { resources, url, navigationTiming, testId } = Astro.props;
+
+const allResources: ResourceTiming[] = navigationTiming
+  ? [
+      {
+        name: url,
+        entryType: 'navigation',
+        startTime: 0,
+        duration: navigationTiming.duration,
+        initiatorType: 'navigation',
+        deliveryType: navigationTiming.deliveryType,
+        nextHopProtocol: navigationTiming.nextHopProtocol,
+        renderBlockingStatus: navigationTiming.renderBlockingStatus,
+        fetchStart: navigationTiming.fetchStart,
+        domainLookupStart: navigationTiming.domainLookupStart,
+        domainLookupEnd: navigationTiming.domainLookupEnd,
+        connectStart: navigationTiming.connectStart,
+        connectEnd: navigationTiming.connectEnd,
+        secureConnectionStart: navigationTiming.secureConnectionStart,
+        requestStart: navigationTiming.requestStart,
+        responseStart: navigationTiming.responseStart,
+        responseEnd: navigationTiming.responseEnd,
+        transferSize: navigationTiming.transferSize ?? 0,
+        encodedBodySize: navigationTiming.encodedBodySize ?? 0,
+        decodedBodySize: navigationTiming.decodedBodySize ?? 0,
+        responseStatus: navigationTiming.responseStatus,
+      },
+      ...resources,
+    ]
+  : resources;
+
+const enrichedResources = enrichResources(allResources);
 
 const tables = [
   {
@@ -130,7 +163,7 @@ const blockingResources = enrichedResources.filter(r => r.isBlocking);
 
   <div class="bn-section">
     <h3 class="bn-title">Distribution Charts</h3>
-    <div class="charts-grid">
+    <div class="charts-grid" data-url={url}>
       <div class="chart-box">
         <h4 class="chart-title">Count by Content Type</h4>
         <div id="chart-count" class="chart-svg"></div>
@@ -391,12 +424,15 @@ const blockingResources = enrichedResources.filter(r => r.isBlocking);
       window.location.href,
     )?.pathname.groups.testId;
     if (!testId) return;
+    const chartsGrid = document.querySelector('.charts-grid') as HTMLElement;
+    const url = chartsGrid?.dataset.url ?? '';
     await renderBottleneckCharts(
       countContainer,
       transferContainer,
       decodedContainer,
       httpContainer,
       testId,
+      url,
     );
   }
 
