@@ -5,12 +5,14 @@ import type { TestConfig } from '@/lib/types/tests';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
-import { TestSource } from '@/lib/types/tests';
+import { TestSource, ContentRating } from '@/lib/types/tests';
 import { getPrismaClient } from '@/lib/prisma/client';
 import {
   createTest,
   findTestIdByZipKey,
+  updateContentRating,
 } from '@/lib/repositories/testRepository';
+import { rateUrlContent } from '@/lib/ai/ai-content-rater';
 
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
@@ -90,13 +92,14 @@ export const POST: APIRoute = async (context: APIContext) => {
     const env = context.locals.runtime.env;
     // Check if this exact content already exists in D1
     const prisma = getPrismaClient(context);
-    const existingTestId = await findTestIdByZipKey(prisma, zipKey);
-    if (existingTestId) {
+    const existing = await findTestIdByZipKey(prisma, zipKey);
+    if (existing) {
       return new Response(
         JSON.stringify({
           success: false,
           error: `Duplicate uploads are not allowed.`,
-          testId: existingTestId,
+          testId: existing.testId,
+          contentRating: existing.contentRating,
         }),
         {
           status: 409,
@@ -197,13 +200,13 @@ export const POST: APIRoute = async (context: APIContext) => {
     }
     // store all unzipped files in R2 with {testId}/{filename} format
     for (const filename of files) {
-      await env.RESULTS_BUCKET.put(`${testId}/${filename}`, unzipped[filename]);
+      await env.RESULTS_BUCKET!.put(
+        `${testId}/${filename}`,
+        unzipped[filename],
+      );
     }
-
-    // no need to disconnect manually b/c using Workers
-
-    // return success
-    return new Response(
+    // Build success response first
+    const response = new Response(
       JSON.stringify({
         success: true,
         testId: testId,
@@ -214,11 +217,26 @@ export const POST: APIRoute = async (context: APIContext) => {
         headers: { 'Content-Type': 'application/json' },
       },
     );
+
+    // Rate the URL content via Workers AI — fire-and-forget after response is built
+    if (env.ENABLE_AI_RATING === 'true' && env.AI) {
+      context.locals.runtime.ctx.waitUntil(
+        (async () => {
+          await updateContentRating(prisma, testId, ContentRating.IN_PROGRESS);
+          const rating = await rateUrlContent(
+            env.AI!,
+            testConfig.url,
+            unzipped['metrics.json'],
+            unzipped['screenshot.png'],
+          );
+          await updateContentRating(prisma, testId, rating);
+        })(),
+      );
+    }
+
+    return response;
   } catch (error) {
     console.error('Upload error:', error);
-
-    // no need to disconnect manually b/c using Workers
-
     return new Response(
       JSON.stringify({
         success: false,
