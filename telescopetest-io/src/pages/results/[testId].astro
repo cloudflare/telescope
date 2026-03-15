@@ -6,6 +6,7 @@ import TestInfoPanel from '@/components/TestInfoPanel.astro';
 import Tabs from '@/components/Tabs.astro';
 import AllMetrics from '@/components/AllMetrics.astro';
 import Waterfall from '@/components/Waterfall.astro';
+import FilmstripVideo from '@/components/FilmstripVideo.astro';
 import Resources from '@/components/Resources.astro';
 import Console from '@/components/Console.astro';
 import Bottlenecks from '@/components/Bottlenecks.astro';
@@ -295,6 +296,10 @@ if (!isUnsafe) {
 
             <div slot="waterfall">
               <Waterfall testId={testId} hasHar={hasHar} />
+            </div>
+
+            <div slot="filmstrip-video">
+              <FilmstripVideo />
             </div>
 
             <div slot="resources">
