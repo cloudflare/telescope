@@ -6,6 +6,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     iproute2 \
+    kmod \
     sudo \
     # Chromium/Firefox dependencies
     libnss3 \
