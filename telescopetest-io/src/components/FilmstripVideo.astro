@@ -5,12 +5,29 @@ interface Props {
   metrics: MetricsJson | null;
   frameRate?: number;
 }
-const { testId, metrics, frameRate = 1 } = Astro.props;
+const { testId, metrics } = Astro.props;
 const env = Astro.locals.runtime.env;
-const fcpMs = metrics?.paintTiming?.find(p => p.name === 'first-contentful-paint')?.startTime;
-const lcpEntry = metrics?.largestContentfulPaint?.[metrics.largestContentfulPaint.length - 1];
-const lcpMs = lcpEntry?.renderTime && lcpEntry.renderTime > 0 ? lcpEntry.renderTime : lcpEntry?.startTime;
-const layoutShifts = metrics?.layoutShifts?.filter(s => !s.hadRecentInput) || [];
+let frameRate = 1;
+try {
+  const configObj = await env.RESULTS_BUCKET.get(`${testId}/config.json`);
+  if (configObj) {
+    const config = await configObj.json<{ options?: { frameRate?: number } }>();
+    frameRate = config?.options?.frameRate || 1;
+  }
+} catch (error) {
+  console.error('Error reading config.json:', error);
+}
+const fcpMs = metrics?.paintTiming?.find(
+  p => p.name === 'first-contentful-paint',
+)?.startTime;
+const lcpEntry =
+  metrics?.largestContentfulPaint?.[metrics.largestContentfulPaint.length - 1];
+const lcpMs =
+  lcpEntry?.renderTime && lcpEntry.renderTime > 0
+    ? lcpEntry.renderTime
+    : lcpEntry?.startTime;
+const layoutShifts =
+  metrics?.layoutShifts?.filter(s => !s.hadRecentInput) || [];
 interface FilmstripFrame {
   filename: string;
   frameNum: number;
@@ -26,7 +43,11 @@ let videoUrl: string | null = null;
 try {
   const listed = await env.RESULTS_BUCKET.list({ prefix: `${testId}/` });
   const frames = listed.objects
-    .filter(obj => obj.key.includes('/filmstrip/') && (obj.key.endsWith('.jpg') || obj.key.endsWith('.png')))
+    .filter(
+      obj =>
+        obj.key.includes('/filmstrip/') &&
+        (obj.key.endsWith('.jpg') || obj.key.endsWith('.png')),
+    )
     .map(obj => {
       const filename = obj.key.split('/').pop() || '';
       const match = filename.match(/frame_\d+x\d+_(\d+)\.(jpg|png)/);
@@ -39,18 +60,26 @@ try {
     })
     .sort((a, b) => a.frameNum - b.frameNum);
   filmstripFrames = frames.map(frame => {
-    const ms = Math.floor((frame.frameNum * 1000) / frameRate);
+    // try to calculate filmstrip timestamps, assume frame # happesn at # second. might be wrong in telescope because ffmpeg in telescope extracts frames from video ?
+    // to get more precise framerates, also store video duration.
+    const ms = Math.floor(((frame.frameNum - 1) * 1000) / frameRate);
     const timeLabel = ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
-    const tolerance = (1000 / frameRate) / 2;
-    const isFcp = fcpMs !== null && fcpMs !== undefined && Math.abs(ms - fcpMs) < tolerance;
-    const isLcp = lcpMs !== null && lcpMs !== undefined && Math.abs(ms - lcpMs) < tolerance;
-    const hasShift = layoutShifts.some(shift => Math.abs(ms - shift.startTime) < tolerance);
+    // tolerance is half frame interval, use this to determine highlights
+    const tolerance = 1000 / frameRate / 2;
+    const isFcp =
+      fcpMs !== null && fcpMs !== undefined && Math.abs(ms - fcpMs) < tolerance;
+    const isLcp =
+      lcpMs !== null && lcpMs !== undefined && Math.abs(ms - lcpMs) < tolerance;
+    const hasShift = layoutShifts.some(
+      shift => Math.abs(ms - shift.startTime) < tolerance,
+    );
     return { ...frame, ms, timeLabel, isFcp, isLcp, hasShift };
   });
-  const videoFile = listed.objects.find(obj =>
-    obj.key.startsWith(`${testId}/`) &&
-    !obj.key.includes('/filmstrip/') &&
-    (obj.key.endsWith('.webm') || obj.key.endsWith('.mp4'))
+  const videoFile = listed.objects.find(
+    obj =>
+      obj.key.startsWith(`${testId}/`) &&
+      !obj.key.includes('/filmstrip/') &&
+      obj.key.endsWith('.webm'),
   );
   if (videoFile) {
     videoUrl = `/api/tests/${testId}/${videoFile.key.replace(`${testId}/`, '')}`;
@@ -63,36 +92,47 @@ try {
 <div class="filmstrip-video-container">
   <section class="filmstrip-section">
     <h3>Filmstrip Timeline</h3>
-    {filmstripFrames.length > 0 ? (
-      <div class="filmstrip-timeline">
-        {filmstripFrames.map(frame => (
-          <div class="frame-wrapper">
-            <img
-              src={frame.url}
-              alt={`Frame at ${frame.ms}ms`}
-              loading="lazy"
-              class:list={['frame-image', { fcp: frame.isFcp, lcp: frame.isLcp, shift: frame.hasShift }]}
-            />
-            <span class="frame-timestamp">{frame.timeLabel}</span>
-            {frame.isFcp && <span class="frame-label fcp">FCP</span>}
-            {frame.isLcp && <span class="frame-label lcp">LCP</span>}
-            {frame.hasShift && <span class="frame-label shift">Shift</span>}
-          </div>
-        ))}
-      </div>
-    ) : (
-      <div class="empty-state">No filmstrip frames available for this test.</div>
-    )}
+    {
+      filmstripFrames.length > 0 ? (
+        <div class="filmstrip-timeline">
+          {filmstripFrames.map(frame => (
+            <div class="frame-wrapper">
+              <img
+                src={frame.url}
+                alt={`Frame at ${frame.ms}ms`}
+                loading="lazy"
+                class:list={[
+                  'frame-image',
+                  { fcp: frame.isFcp, lcp: frame.isLcp, shift: frame.hasShift },
+                ]}
+              />
+              <span class="frame-timestamp">{frame.timeLabel}</span>
+              {frame.isFcp && <span class="frame-label fcp">FCP</span>}
+              {frame.isLcp && <span class="frame-label lcp">LCP</span>}
+              {frame.hasShift && <span class="frame-label shift">Shift</span>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="empty-state">
+          No filmstrip frames available for this test.
+        </div>
+      )
+    }
   </section>
   <section class="video-section">
     <h3>Page Load Recording</h3>
-    {videoUrl ? (
-      <div class="video-container">
-        <video src={videoUrl} controls preload="metadata"></video>
-      </div>
-    ) : (
-      <div class="empty-state">No video recording available for this test.</div>
-    )}
+    {
+      videoUrl ? (
+        <div class="video-container">
+          <video src={videoUrl} controls preload="metadata" />
+        </div>
+      ) : (
+        <div class="empty-state">
+          No video recording available for this test.
+        </div>
+      )
+    }
   </section>
 </div>
 
