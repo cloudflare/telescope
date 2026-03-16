@@ -7,6 +7,7 @@ import { ContentRating } from '@/lib/types/tests';
 /**
  * Serve files from R2 bucket
  * Route: /api/tests/{testId}/{filename}
+ * Supports nested paths like filmstrip/frame_1.jpg or video files
  * Used for serving screenshots and other test artifacts
  */
 export const GET: APIRoute = async (context: APIContext) => {
@@ -29,7 +30,6 @@ export const GET: APIRoute = async (context: APIContext) => {
     if (!object) {
       return new Response('File not found', { status: 404 });
     }
-    // Determine content type based on file extension
     const ext = filename.toLowerCase().split('.').pop();
     const contentTypeMap: Record<string, string> = {
       png: 'image/png',
@@ -44,12 +44,14 @@ export const GET: APIRoute = async (context: APIContext) => {
       css: 'text/css',
       js: 'application/javascript',
       txt: 'text/plain',
+      webm: 'video/webm',
+      mp4: 'video/mp4',
     };
-    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // ensure contentType always valid string
+    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream';
     return new Response(object.body, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable', // 1 year and immutable, aggressive
+        'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
   } catch (error) {
