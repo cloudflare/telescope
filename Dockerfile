@@ -47,7 +47,7 @@ RUN groupadd -r telescope && useradd -r -g telescope -G audio,video telescope \
     && mkdir -p /home/telescope ${PLAYWRIGHT_BROWSERS_PATH} \
     && chown -R telescope:telescope /home/telescope ${PLAYWRIGHT_BROWSERS_PATH}
 
-RUN echo "telescope ALL=(ALL) NOPASSWD: /sbin/tc, /sbin/ip, /usr/sbin/tc, /usr/sbin/ip" >> /etc/sudoers
+RUN echo "telescope ALL=(ALL) NOPASSWD: /sbin/tc, /sbin/ip, /usr/sbin/tc, /usr/sbin/ip, /bin/ip, /usr/bin/ip, /sbin/modprobe, /usr/sbin/modprobe" >> /etc/sudoers
 
 # Set working directory
 WORKDIR /app
