@@ -162,7 +162,8 @@ const formattedDate = date.toLocaleString('en-US', {
           >
             <strong>Rating timed out.</strong>
             <p>
-              Content rating could not be completed. Please refresh to try again.
+              Content rating could not be completed. Please refresh to try
+              again.
             </p>
           </div>
         </>
@@ -200,117 +201,114 @@ const formattedDate = date.toLocaleString('en-US', {
           </section>
 
           <Tabs>
-      <div slot="summary">
-        {
-          metrics ? (
-            <div class="metrics-row">
-              <MetricCard
-                heading="Core Web Vitals"
-                metrics={[
-                  {
-                    label: 'LCP',
-                    value: lcp.formatted,
-                    unit: 'ms',
-                    rating: lcp.rating,
-                  },
-                  { label: 'CLS', value: cls.formatted, rating: cls.rating },
-                ]}
-              />
-              <MetricCard
-                heading="Performance Metrics"
-                metrics={[
-                  {
-                    label: 'FCP',
-                    value: fcp.formatted,
-                    unit: 'ms',
-                    rating: fcp.rating,
-                  },
-                  {
-                    label: 'TTFB',
-                    value: ttfb.formatted,
-                    unit: 'ms',
-                    rating: ttfb.rating,
-                  },
-                  {
-                    label: 'Transfer Size',
-                    value: formatKb(transferBytes),
-                    unit: 'KB',
-                  },
-                  {
-                    label: 'Page Load Time',
-                    value: formatMs(durationMs),
-                    unit: 'ms',
-                  },
-                ]}
-              />
+            <div slot="summary">
+              {metrics ? (
+                <div class="metrics-row">
+                  <MetricCard
+                    heading="Core Web Vitals"
+                    metrics={[
+                      {
+                        label: 'LCP',
+                        value: lcp.formatted,
+                        unit: 'ms',
+                        rating: lcp.rating,
+                      },
+                      {
+                        label: 'CLS',
+                        value: cls.formatted,
+                        rating: cls.rating,
+                      },
+                    ]}
+                  />
+                  <MetricCard
+                    heading="Performance Metrics"
+                    metrics={[
+                      {
+                        label: 'FCP',
+                        value: fcp.formatted,
+                        unit: 'ms',
+                        rating: fcp.rating,
+                      },
+                      {
+                        label: 'TTFB',
+                        value: ttfb.formatted,
+                        unit: 'ms',
+                        rating: ttfb.rating,
+                      },
+                      {
+                        label: 'Transfer Size',
+                        value: formatKb(transferBytes),
+                        unit: 'KB',
+                      },
+                      {
+                        label: 'Page Load Time',
+                        value: formatMs(durationMs),
+                        unit: 'ms',
+                      },
+                    ]}
+                  />
+                </div>
+              ) : (
+                <div class="metrics-unavailable panel">
+                  <p>Metrics unavailable for this test.</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div class="metrics-unavailable panel">
-              <p>Metrics unavailable for this test.</p>
+
+            <div slot="all-metrics">
+              {metrics ? (
+                <AllMetrics metrics={metrics} />
+              ) : (
+                <div class="metrics-unavailable panel">
+                  <p>Metrics unavailable for this test.</p>
+                </div>
+              )}
             </div>
-          )
-        }
-      </div>
 
-      <div slot="all-metrics">
-        {
-          metrics ? (
-            <AllMetrics metrics={metrics} />
-          ) : (
-            <div class="metrics-unavailable panel">
-              <p>Metrics unavailable for this test.</p>
+            <div slot="waterfall">
+              <Waterfall testId={testId} hasHar={hasHar} />
             </div>
-          )
-        }
-      </div>
 
-      <div slot="waterfall">
-        <Waterfall testId={testId} hasHar={hasHar} />
-      </div>
-
-      <div slot="resources">
-        {
-          resources.length > 0 || metrics?.navigationTiming ? (
-            <Resources
-              resources={resources}
-              url={test.url}
-              navigationTiming={metrics?.navigationTiming}
-            />
-          ) : (
-            <div class="resources-unavailable">
-              <p>Resources data unavailable for this test.</p>
+            <div slot="resources">
+              {resources.length > 0 || metrics?.navigationTiming ? (
+                <Resources
+                  resources={resources}
+                  url={test.url}
+                  navigationTiming={metrics?.navigationTiming}
+                />
+              ) : (
+                <div class="resources-unavailable">
+                  <p>Resources data unavailable for this test.</p>
+                </div>
+              )}
             </div>
-          )
-        }
-      </div>
 
-      <div slot="bottlenecks">
-        {
-          resources.length > 0 ? (
-            <Bottlenecks
-              resources={resources}
-              url={test.url}
-              navigationTiming={metrics?.navigationTiming}
-              testId={testId}
-            />
-          ) : (
-            <div class="resources-unavailable">
-              <p>Resources data unavailable for this test.</p>
+            <div slot="bottlenecks">
+              {resources.length > 0 ? (
+                <Bottlenecks
+                  resources={resources}
+                  url={test.url}
+                  navigationTiming={metrics?.navigationTiming}
+                  testId={testId}
+                />
+              ) : (
+                <div class="resources-unavailable">
+                  <p>Resources data unavailable for this test.</p>
+                </div>
+              )}
             </div>
-          )
-        }
-      </div>
 
-      <div slot="console">
-        <Console messages={consoleMessages} />
-      </div>
-    </Tabs>
+            <div slot="console">
+              <Console messages={consoleMessages} />
+            </div>
+          </Tabs>
         </>
       )
     }
   </div>
+</Page>
 
-  <style>
+<style>
   .banner {
     margin-top: 1.5rem;
     padding: 1.25rem 1.5rem;
@@ -538,6 +536,4 @@ const formattedDate = date.toLocaleString('en-US', {
       toggle.textContent = expanded ? 'more' : 'less';
     });
   }
-  </script>
-</Page>
-
+</script>
