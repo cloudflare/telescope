@@ -9,23 +9,17 @@ import {
   unlinkSync,
   existsSync,
 } from 'fs';
-import os from 'os';
-
 import path from 'path';
 import url from 'url';
 import { exec } from 'child_process';
 
-function isEmulatedX86OnArm(): boolean {
+function isDockerDesktop(): boolean {
   const inDocker = existsSync('/.dockerenv');
   if (!inDocker) return false;
 
-  const containerArch = os.arch();
-  if (containerArch !== 'x64') return false;
-
-  // Docker Desktop on Apple Silicon shows "VirtualApple" in cpuinfo
   try {
-    const cpuinfo = readFileSync('/proc/cpuinfo', 'utf8');
-    return cpuinfo.includes('VirtualApple');
+    const kernel = readFileSync('/proc/version', 'utf8');
+    return kernel.includes('linuxkit');
   } catch {
     return false;
   }
@@ -548,12 +542,12 @@ class TestRunner {
       return;
     }
 
-    // Check for emulated environment before attempting throttling
-    if (isEmulatedX86OnArm()) {
+    // Check for Docker Desktop environment before attempting throttling
+    if (isDockerDesktop()) {
       console.error(
-        'Network throttling is not supported in this environment. ' +
-          'You are running an x86 container on an ARM host (likely Docker Desktop on Apple Silicon Mac). ' +
-          'The emulation layer cannot access host kernel modules needed for network throttling.',
+        'Network throttling is not supported in Docker Desktop (Mac or Windows). ' +
+          'The Docker Desktop Linux VM does not include the ifb kernel module required for traffic shaping. ' +
+          'Run on a native Linux host, or run without --connectionType.',
       );
       process.exit(1);
     }

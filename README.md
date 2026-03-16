@@ -180,7 +180,7 @@ Supports: Chrome, Chrome Beta, Edge, Firefox, and Safari (WebKit).
 
 ### Network Throttling Limitation
 
-Network throttling (`--connectionType`) requires OS-level traffic shaping via Linux kernel modules. This works on native x86_64/amd64 Linux machines but **does not work on Apple Silicon (ARM) Macs** running Docker, because the x86 emulation layer cannot access host kernel modules.
+Network throttling (`--connectionType`) requires OS-level traffic shaping via the Linux `ifb` kernel module. This works on native Linux machines but **does not work in Docker Desktop (Mac or Windows)**, because the Docker Desktop Linux VM does not include the required kernel module.
 
 ## Installation
 
