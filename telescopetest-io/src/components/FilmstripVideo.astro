@@ -3,7 +3,6 @@ import type { MetricsJson } from '@/lib/types/metrics';
 interface Props {
   testId: string;
   metrics: MetricsJson | null;
-  frameRate?: number;
 }
 const { testId, metrics } = Astro.props;
 const env = Astro.locals.runtime.env;
@@ -92,15 +91,15 @@ try {
 <div class="filmstrip-video-container">
   <section class="filmstrip-section">
     <h3>Filmstrip Timeline</h3>
-    {
-      filmstripFrames.length > 0 ? (
-        <div class="filmstrip-timeline">
-          {filmstripFrames.map(frame => (
+    <div class="filmstrip-timeline">
+      {
+        filmstripFrames.length > 0 ? (
+          filmstripFrames.map(frame => (
             <div class="frame-wrapper">
               <img
                 src={frame.url}
                 alt={`Frame at ${frame.ms}ms`}
-                loading="lazy"
+                loading="eager"
                 class:list={[
                   'frame-image',
                   { fcp: frame.isFcp, lcp: frame.isLcp, shift: frame.hasShift },
@@ -111,14 +110,14 @@ try {
               {frame.isLcp && <span class="frame-label lcp">LCP</span>}
               {frame.hasShift && <span class="frame-label shift">Shift</span>}
             </div>
-          ))}
-        </div>
-      ) : (
-        <div class="empty-state">
-          No filmstrip frames available for this test.
-        </div>
-      )
-    }
+          ))
+        ) : (
+          <div class="empty-state">
+            No filmstrip frames available for this test.
+          </div>
+        )
+      }
+    </div>
   </section>
   <section class="video-section">
     <h3>Page Load Recording</h3>
@@ -180,15 +179,40 @@ try {
     align-items: center;
     gap: 0.125rem;
     flex-shrink: 0;
+    min-width: 90px;
   }
   .frame-image {
     height: 70px;
     width: auto;
     max-width: 125px;
+    min-width: 90px;
     object-fit: contain;
     display: block;
     border: 2px solid transparent;
     border-radius: 2px;
+    background: linear-gradient(
+      90deg,
+      var(--panel) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      var(--panel) 100%
+    );
+    background-size: 200% 100%;
+    animation:
+      shimmer 1.5s infinite,
+      fadeIn 0.3s ease-in forwards;
+  }
+  @keyframes fadeIn {
+    to {
+      background: none;
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
   }
   .frame-image.fcp {
     border-color: var(--color-warning);
@@ -202,6 +226,7 @@ try {
     border-color: var(--color-danger);
     border-width: 3px;
   }
+
   .frame-timestamp {
     font-size: 0.5625rem;
     color: var(--muted);
