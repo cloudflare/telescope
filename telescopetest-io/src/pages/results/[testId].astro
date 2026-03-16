@@ -286,7 +286,7 @@ const formattedDate = date.toLocaleString('en-US', {
 
       <div slot="bottlenecks">
         {
-          resources.length > 0 || metrics?.navigationTiming ? (
+          resources.length > 0 ? (
             <Bottlenecks
               resources={resources}
               url={test.url}
@@ -305,9 +305,12 @@ const formattedDate = date.toLocaleString('en-US', {
         <Console messages={consoleMessages} />
       </div>
     </Tabs>
+        </>
+      )
+    }
   </div>
 
-<style>
+  <style>
   .banner {
     margin-top: 1.5rem;
     padding: 1.25rem 1.5rem;
@@ -535,5 +538,6 @@ const formattedDate = date.toLocaleString('en-US', {
       toggle.textContent = expanded ? 'more' : 'less';
     });
   }
-</script>
+  </script>
 </Page>
+
