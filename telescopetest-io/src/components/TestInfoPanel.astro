@@ -9,6 +9,17 @@ export interface Props {
 
 const { testId, url, browser, browserVersion, formattedDate } = Astro.props;
 
+// Validate URL is http:// or https:// to prevent javascript: XSS
+let safeUrl = url;
+try {
+  const parsed = new URL(url);
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    safeUrl = 'about:blank'; // Fallback for non-HTTP(S) URLs
+  }
+} catch {
+  safeUrl = 'about:blank'; // Fallback for invalid URLs
+}
+
 // Map Playwright browser names to icon filenames
 const browserIconMap: Record<string, string> = {
   chromium: 'chrome.png',
@@ -48,7 +59,7 @@ const browserIcon = browserIconMap[browser.toLowerCase()];
       <dt>URL</dt>
       <dd class="url-wrap">
         <!-- rel="noopener noreferrer" for security/privacy -->
-        <a href={url} target="_blank" rel="noopener noreferrer" class="url-link"
+        <a href={safeUrl} target="_blank" rel="noopener noreferrer" class="url-link"
           >{url}</a
         >
       </dd>

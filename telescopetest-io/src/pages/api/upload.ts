@@ -160,7 +160,19 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     const configSchema = z.object({
-      url: z.string(),
+      url: z.string().refine(
+        url => {
+          try {
+            const parsed = new URL(url);
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+          } catch {
+            return false;
+          }
+        },
+        {
+          message: 'URL must be a valid HTTP or HTTPS URL',
+        },
+      ),
       date: z.string(),
       options: z.object({
         browser: z.string(),
