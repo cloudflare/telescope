@@ -107,6 +107,56 @@ export const POST: APIRoute = async (context: APIContext) => {
         },
       );
     }
+    // Allowlist of safe file extensions (Telescope output files only)
+    const ALLOWED_EXTENSIONS = new Set([
+      'json',
+      'png',
+      'jpg',
+      'jpeg',
+      'webp',
+      'webm',
+      'gif',
+      'har',
+      'txt',
+    ]);
+    // Validate all files against allowlist
+    const invalidFiles = files.filter(filename => {
+      const ext = filename.toLowerCase().split('.').pop();
+      return !ext || !ALLOWED_EXTENSIONS.has(ext);
+    });
+    if (invalidFiles.length > 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `ZIP contains disallowed file types: ${invalidFiles.join(', ')}. Only ${Array.from(ALLOWED_EXTENSIONS).join(', ')} files are permitted.`,
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    // Sanitize filenames: reject path traversal and special characters
+    // Allow single-level folders (e.g., filmstrip/frame.jpg) but block ../
+    const unsafeFiles = files.filter(filename => {
+      // Block parent directory traversal
+      if (filename.includes('..')) return true;
+      // Block backslashes (Windows paths)
+      if (filename.includes('\\')) return true;
+      // Block encoded path traversal
+      if (/%2e|%2f|%5c/i.test(filename)) return true;
+      // Block special shell/XSS characters
+      if (/<|>|&|\||;|`|\$|\(|\)|\{|\}|\[|\]|'|"/.test(filename)) return true;
+      // Block absolute paths
+      if (filename.startsWith('/')) return true;
+      return false;
+    });
+    if (unsafeFiles.length > 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `ZIP contains unsafe filenames: ${unsafeFiles.join(', ')}`,
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
     // Confirm the config file exists
     const configFile = `config.json`;
     if (!files.includes(configFile)) {
@@ -144,7 +194,19 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     const configSchema = z.object({
-      url: z.string(),
+      url: z.string().refine(
+        url => {
+          try {
+            const parsed = new URL(url);
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+          } catch {
+            return false;
+          }
+        },
+        {
+          message: 'URL must be a valid HTTP or HTTPS URL',
+        },
+      ),
       date: z.string(),
       options: z.object({
         browser: z.string(),

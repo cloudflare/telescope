@@ -11,6 +11,35 @@ export const GET: APIRoute = async (context: APIContext) => {
   if (!testId || !filename) {
     return new Response('Missing testId or filename', { status: 400 });
   }
+  // Validate testId format: YYYY_MM_DD_HH_MM_SS_UUID
+  const testIdPattern =
+    /^\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+  if (!testIdPattern.test(testId)) {
+    return new Response('Invalid testId format', { status: 400 });
+  }
+  // Validate filename: no path separators or traversal attempts
+  const pathTraversalPattern = /(\.\.|\/|\\|%2e|%2f|%5c)/i;
+  if (pathTraversalPattern.test(filename)) {
+    return new Response('Invalid filename: path traversal not allowed', {
+      status: 400,
+    });
+  }
+  // Ensure filename has valid extension from allowlist
+  const ext = filename.toLowerCase().split('.').pop();
+  const allowedExtensions = [
+    'json',
+    'png',
+    'jpg',
+    'jpeg',
+    'webp',
+    'webm',
+    'gif',
+    'har',
+    'txt',
+  ];
+  if (!ext || !allowedExtensions.includes(ext)) {
+    return new Response('Invalid file extension', { status: 400 });
+  }
   const env = context.locals.runtime.env;
   const key = `${testId}/${filename}`;
   try {
@@ -26,21 +55,26 @@ export const GET: APIRoute = async (context: APIContext) => {
       jpeg: 'image/jpeg',
       gif: 'image/gif',
       webp: 'image/webp',
-      svg: 'image/svg+xml',
+      webm: 'video/webm',
       json: 'application/json',
       har: 'application/json',
-      html: 'text/html',
-      css: 'text/css',
-      js: 'application/javascript',
       txt: 'text/plain',
     };
-    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // ensure contentType always valid string
-    return new Response(object.body, {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable', // 1 year and immutable, aggressive
-      },
-    });
+    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // downloaded default
+    // Security headers to prevent XSS execution
+    const headers: Record<string, string> = {
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff', // can't execute as code
+      'Content-Security-Policy':
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox", // allows inline css only, other files in sandbox
+    };
+    // For non-media files, force download to prevent inline rendering
+    // Allow images and videos to render inline
+    if (!['png', 'jpg', 'jpeg', 'gif', 'webp', 'webm'].includes(ext || '')) {
+      headers['Content-Disposition'] = `attachment; filename="${filename}"`;
+    }
+    return new Response(object.body, { headers });
   } catch (error) {
     console.error('R2 fetch error:', error);
     return new Response('Internal server error', { status: 500 });
