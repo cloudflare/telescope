@@ -47,7 +47,7 @@ RUN groupadd -r telescope && useradd -r -g telescope -G audio,video telescope \
     && mkdir -p /home/telescope ${PLAYWRIGHT_BROWSERS_PATH} \
     && chown -R telescope:telescope /home/telescope ${PLAYWRIGHT_BROWSERS_PATH}
 
-RUN echo "telescope ALL=(ALL) NOPASSWD: /sbin/tc, /sbin/ip, /usr/sbin/tc, /usr/sbin/ip, /bin/ip, /usr/bin/ip, /sbin/modprobe, /usr/sbin/modprobe, /bin/chown, /usr/bin/chown" >> /etc/sudoers
+RUN echo "telescope ALL=(ALL) NOPASSWD: /sbin/tc, /sbin/ip, /usr/sbin/tc, /usr/sbin/ip, /bin/ip, /usr/bin/ip, /sbin/modprobe, /usr/sbin/modprobe" >> /etc/sudoers
 
 # Set working directory
 WORKDIR /app
@@ -72,13 +72,9 @@ RUN npm run build
 RUN mkdir -p /app/results /app/tmp /app/recordings \
     && chown -R telescope:telescope /app ${PLAYWRIGHT_BROWSERS_PATH}
 
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
 # Switch to non-root user for running Chrome with sandbox enabled
 USER telescope
 
 # Default command - show help
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+ENTRYPOINT ["node", "dist/src/cli.js"]
 CMD ["--help"]
