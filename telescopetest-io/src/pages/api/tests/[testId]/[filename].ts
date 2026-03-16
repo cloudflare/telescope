@@ -1,4 +1,9 @@
 import type { APIContext, APIRoute } from 'astro';
+import {
+  isValidTestId,
+  isPathSafe,
+  hasAllowedExtension,
+} from '@/lib/utils/security';
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
 /**
@@ -12,32 +17,17 @@ export const GET: APIRoute = async (context: APIContext) => {
     return new Response('Missing testId or filename', { status: 400 });
   }
   // Validate testId format: YYYY_MM_DD_HH_MM_SS_UUID
-  const testIdPattern =
-    /^\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
-  if (!testIdPattern.test(testId)) {
+  if (!isValidTestId(testId)) {
     return new Response('Invalid testId format', { status: 400 });
   }
-  // Validate filename: no path separators or traversal attempts
-  const pathTraversalPattern = /(\.\.|\/|\\|%2e|%2f|%5c)/i;
-  if (pathTraversalPattern.test(filename)) {
+  // Validate filename: no path traversal attempts
+  if (!isPathSafe(filename)) {
     return new Response('Invalid filename: path traversal not allowed', {
       status: 400,
     });
   }
   // Ensure filename has valid extension from allowlist
-  const ext = filename.toLowerCase().split('.').pop();
-  const allowedExtensions = [
-    'json',
-    'png',
-    'jpg',
-    'jpeg',
-    'webp',
-    'webm',
-    'gif',
-    'har',
-    'txt',
-  ];
-  if (!ext || !allowedExtensions.includes(ext)) {
+  if (!hasAllowedExtension(filename)) {
     return new Response('Invalid file extension', { status: 400 });
   }
   const env = context.locals.runtime.env;

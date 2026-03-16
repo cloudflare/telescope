@@ -4,6 +4,7 @@ import type { TestConfig } from '@/lib/types/tests';
 
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
+import { filterValidFiles } from '@/lib/utils/security';
 
 import { TestSource, ContentRating } from '@/lib/types/tests';
 import { getPrismaClient } from '@/lib/prisma/client';
@@ -107,59 +108,30 @@ export const POST: APIRoute = async (context: APIContext) => {
         },
       );
     }
-    // Allowlist of safe file extensions (Telescope output files only)
-    const ALLOWED_EXTENSIONS = new Set([
-      'json',
-      'png',
-      'jpg',
-      'jpeg',
-      'webp',
-      'webm',
-      'gif',
-      'har',
-      'txt',
-    ]);
-    // Validate all files against allowlist
-    const invalidFiles = files.filter(filename => {
-      const ext = filename.toLowerCase().split('.').pop();
-      return !ext || !ALLOWED_EXTENSIONS.has(ext);
-    });
-    if (invalidFiles.length > 0) {
+    // Filter files: silently drop invalid extensions, unsafe paths, and unexpected patterns
+    // This allows uploads with extra files (e.g., HTML from --html flag) to succeed
+    const { validFiles, droppedByExtension, droppedByPath, droppedByPattern } =
+      filterValidFiles(files);
+    // Log dropped files for debugging (but don't fail the upload)
+    if (droppedByExtension > 0 || droppedByPath > 0 || droppedByPattern > 0) {
+      console.log(
+        `Dropped ${droppedByExtension + droppedByPath + droppedByPattern} files from upload: ` +
+          `${droppedByExtension} by extension, ${droppedByPath} by path, ${droppedByPattern} by pattern`,
+      );
+    }
+    // Ensure at least one valid file remains
+    if (validFiles.length === 0) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: `ZIP contains disallowed file types: ${invalidFiles.join(', ')}. Only ${Array.from(ALLOWED_EXTENSIONS).join(', ')} files are permitted.`,
+          error: 'No valid Telescope output files found in ZIP after filtering',
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // Sanitize filenames: reject path traversal and special characters
-    // Allow single-level folders (e.g., filmstrip/frame.jpg) but block ../
-    const unsafeFiles = files.filter(filename => {
-      // Block parent directory traversal
-      if (filename.includes('..')) return true;
-      // Block backslashes (Windows paths)
-      if (filename.includes('\\')) return true;
-      // Block encoded path traversal
-      if (/%2e|%2f|%5c/i.test(filename)) return true;
-      // Block special shell/XSS characters
-      if (/<|>|&|\||;|`|\$|\(|\)|\{|\}|\[|\]|'|"/.test(filename)) return true;
-      // Block absolute paths
-      if (filename.startsWith('/')) return true;
-      return false;
-    });
-    if (unsafeFiles.length > 0) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `ZIP contains unsafe filenames: ${unsafeFiles.join(', ')}`,
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } },
-      );
-    }
-    // Confirm the config file exists
+    // Confirm the config file exists in valid files
     const configFile = `config.json`;
-    if (!files.includes(configFile)) {
+    if (!validFiles.includes(configFile)) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -260,8 +232,8 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // store all unzipped files in R2 with {testId}/{filename} format
-    for (const filename of files) {
+    // store only valid files in R2 with {testId}/{filename} format
+    for (const filename of validFiles) {
       await env.RESULTS_BUCKET!.put(
         `${testId}/${filename}`,
         unzipped[filename],
