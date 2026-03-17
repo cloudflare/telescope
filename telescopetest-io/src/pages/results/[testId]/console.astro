@@ -1,0 +1,37 @@
+---
+import ResultLayout from '@/layouts/ResultLayout.astro';
+import ConsoleView from '@/components/Console.astro';
+import { loadTestResult } from '@/lib/loaders/testResult';
+import { getR2Json } from '@/lib/cache/r2Cache';
+import type { ConsoleMessage } from '@/lib/types/console';
+
+export const prerender = false;
+
+const result = await loadTestResult(Astro);
+if (!result) {
+  return Astro.redirect('/results');
+}
+
+const { testId, test, isUnknown, isUnsafe, screenshotUrl, harBrowser, formattedDate } = result;
+
+// --- Console Messages ---
+const env = (Astro.locals as any).runtime.env;
+const consoleMessages = await getR2Json<ConsoleMessage[]>(env.RESULTS_BUCKET, `${testId}/console.json`) ?? [];
+---
+
+<ResultLayout
+  testId={testId}
+  title={`Console · ${test.name ?? testId}`}
+  url={test.url}
+  name={test.name}
+  description={test.description}
+  browser={test.browser}
+  browserVersion={harBrowser?.version ?? null}
+  formattedDate={formattedDate}
+  screenshotUrl={screenshotUrl}
+  isUnknown={isUnknown}
+  isUnsafe={isUnsafe}
+  activeTab="console"
+>
+  <ConsoleView messages={consoleMessages} />
+</ResultLayout>
