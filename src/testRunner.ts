@@ -74,7 +74,7 @@ class TestRunner {
   }
 
   setupPaths(testID: string): void {
-    this.paths['temporaryContext'] = './tmp/';
+    this.paths['temporaryContext'] = `./tmp/${testID}`;
     this.paths['results'] = './results/' + testID;
     this.paths['filmstrip'] = this.paths.results + '/filmstrip';
     mkdirSync(this.paths['results'], { recursive: true });
@@ -247,7 +247,7 @@ class TestRunner {
 
     const browser = await browserType.launchPersistentContext(
       this.paths['temporaryContext'],
-      this.selectedBrowser as Parameters<
+      { ...this.selectedBrowser } as Parameters<
         typeof browserType.launchPersistentContext
       >[1],
     );

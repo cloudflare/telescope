@@ -202,9 +202,13 @@ Telescope will automatically run `npx playwright install` to install `chrome`, `
 
 To install Microsoft Edge or Chrome Beta playwright requires root privileges and will not automatically install them, all you have to do that is to run `npx playwright install msedge chrome-beta` from the command line (and provide root password).
 
+**Note:** Chrome Beta can occasionally result in hanging processes when emulating devices using Telescope. Device emulation is not supported for Chrome Beta instances.
+
 ### Chrome Canary
 
 Chrome Canary must be manually installed, please download and install from: https://www.google.com/chrome/canary/
+
+**Note:** Chrome Canary can occasionally result in hanging processes when emulating devices using Telescope. Device emulation is not supported for Chrome Canary instances.
 
 ### ffmpeg
 
@@ -270,6 +274,8 @@ You can run tests in headless mode by setting the `HEADLESS` environment variabl
 ```
 HEADLESS=true npm run test
 ```
+
+**Note:** Headless mode does not work with device emulation.
 
 #### Our CI Pipeline
 

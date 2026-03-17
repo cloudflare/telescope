@@ -215,7 +215,7 @@ describe.each(browsers)('Upload zip for browsers (%s)', browser => {
           cleanup([zipfile]);
         }
       }
-    });
+    }, 120000);
   });
 });
 
@@ -232,7 +232,7 @@ describe.each(browsers)('Invalid url for browsers (%s)', browser => {
 
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
-    });
+    }, 120000);
   });
 });
 

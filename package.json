@@ -56,5 +56,8 @@
     "playwright": "^1.58.2",
     "playwright-webkit": "^1.58.2",
     "zod": "^3.25.76"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
