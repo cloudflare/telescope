@@ -260,7 +260,9 @@ import Page from '@/layouts/Page.astro';
 </style>
 
 <script>
+  document.addEventListener('astro:page-load', () => {
   const form = document.getElementById('upload-form') as HTMLFormElement;
+  if (!form) return;
   const fileInput = document.getElementById('file-upload') as HTMLInputElement;
   const fileUploadArea = document.getElementById(
     'file-upload-area',
@@ -402,4 +404,5 @@ import Page from '@/layouts/Page.astro';
     fileName.textContent = `Selected: ${name}`;
     fileName.style.display = 'block';
   }
+  });
 </script>

@@ -295,9 +295,12 @@ const severityCounts = messages.reduce((acc, msg) => {
 </style>
 
 <script>
+  document.addEventListener('astro:page-load', () => {
   const filtersContainer = document.getElementById('console-filters');
   const tbody = document.getElementById('console-tbody');
   if (filtersContainer && tbody) {
+    // Avoid re-creating buttons if they already exist (e.g. back-navigation)
+    if (filtersContainer.querySelector('.console-filter-btn')) return;
     const countsData = filtersContainer.getAttribute('data-counts');
     const counts = countsData ? JSON.parse(countsData) : {};
     const totalCount = Object.values(counts).reduce((sum: number, count) => sum + (count as number), 0);
@@ -352,4 +355,5 @@ const severityCounts = messages.reduce((acc, msg) => {
       filtersContainer.appendChild(btn);
     });
   }
+  });
 </script>
