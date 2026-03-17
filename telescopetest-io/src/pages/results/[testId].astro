@@ -17,6 +17,7 @@ import { ContentRating } from '@/lib/types/tests';
 import type { MetricsJson } from '@/lib/types/metrics';
 import type { ResourceTiming } from '@/lib/types/resources';
 import type { ConsoleMessage } from '@/lib/types/console';
+import type { Har } from '@/lib/types/har';
 import { getLcp, getCls } from '@/lib/utils/cwv';
 import {
   getFcp,
@@ -59,13 +60,12 @@ const screenshotUrl = screenshotObj
 // --- HAR (browser version + existence check for Waterfall) ---
 let harBrowser: { name: string; version: string } | null = null;
 let hasHar = false;
+let har: Har | null = null;
 try {
   const harObj = await env.RESULTS_BUCKET.get(`${testId}/pageload.har`);
   if (harObj) {
     hasHar = true;
-    const har = await harObj.json<{
-      log: { browser: { name: string; version: string } };
-    }>();
+    har = await harObj.json<Har>();
     harBrowser = har?.log?.browser ?? null;
   }
 } catch (err) {
@@ -289,7 +289,7 @@ const formattedDate = date.toLocaleString('en-US', {
                   resources={resources}
                   url={test.url}
                   navigationTiming={metrics?.navigationTiming}
-                  testId={testId}
+                  har={har}
                 />
               ) : (
                 <div class="resources-unavailable">

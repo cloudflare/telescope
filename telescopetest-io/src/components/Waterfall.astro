@@ -81,49 +81,37 @@ const { testId, hasHar } = Astro.props;
 )}
 
 <style>
-  /* ── Color tokens ───────────────────────────────────────────────────────── */
+  /* ── Waterfall-specific colors ─────────────────────────────────────────────── */
   :root {
-    /* Connection-phase colors (thin bars) */
-    --wf-blocked: #a0a0a0;
-    --wf-wait:    #c8b432;
-    --wf-dns:     #1a6b52;
-    --wf-connect: #e07820;
-    --wf-ssl:     #7b3fb0;
-    --wf-send:    #4a90d9;
+    /* Connection-phase colors - using consolidated chart colors from Layout.astro */
+    --wf-blocked: var(--chart-blocked);
+    --wf-wait:    var(--chart-wait);
+    --wf-dns:     var(--chart-dns);
+    --wf-connect: var(--chart-connect);
+    --wf-ssl:     var(--chart-ssl);
+    --wf-send:    var(--chart-send);
 
     /* Resource type colors — light = send+wait, dark = receive */
+    /* Lighter versions derived from consolidated chart colors */
     --wf-html-light:  #a8c8f0;
-    --wf-html-dark:   #4a7ec8;
-    --wf-js-light:    #e8d4a0;
-    --wf-js-dark:     #c8a040;
-    --wf-css-light:   #a8d8a8;
-    --wf-css-dark:    #4a9850;
-    --wf-image-light: #d0b8e8;
-    --wf-image-dark:  #8050b8;
-    --wf-font-light:  #f0a898;
-    --wf-font-dark:   #c83820;
-    --wf-video-light: #a8e0b8;
-    --wf-video-dark:  #2a8048;
-    --wf-other-light: #c8c8c8;
-    --wf-other-dark:  #787878;
+    --wf-html-dark:   var(--chart-document);
+    --wf-js-light:    #fdd199;
+    --wf-js-dark:     var(--chart-script);
+    --wf-css-light:   #c99ef3;
+    --wf-css-dark:    var(--chart-stylesheet);
+    --wf-image-light: #87d9ac;
+    --wf-image-dark:  var(--chart-image);
+    --wf-font-light:  #f49b8a;
+    --wf-font-dark:   var(--chart-font);
+    --wf-video-light: #a3e0e7;
+    --wf-video-dark:  var(--chart-video);
+    --wf-other-light: #c0c3c7;
+    --wf-other-dark:  var(--chart-other);
 
     /* Row highlight tints */
     --wf-row-blocking-bg:       rgba(239, 68,  68,  0.05);
     --wf-row-blocking-bg-hover: rgba(239, 68,  68,  0.10);
     --wf-row-open-bg:           rgba( 14, 165, 233, 0.07);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --wf-wait:       #d4c040;
-      --wf-ssl:        #9060c8;
-      --wf-other-dark: #909090;
-    }
-  }
-  [data-theme-override='dark'] {
-    --wf-wait:       #d4c040;
-    --wf-ssl:        #9060c8;
-    --wf-other-dark: #909090;
   }
 
   /* ── Unavailable state ──────────────────────────────────────────────────── */

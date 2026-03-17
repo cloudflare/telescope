@@ -60,6 +60,36 @@ const themeOverride =
     --color-success: #22c55e;
     --color-warning: #eab308;
     --color-danger: #ef4444;
+
+    /* Resource type colors - Chrome DevTools inspired, unified across components */
+    --chart-document: #4285F4;
+    --chart-script: #F9AB00;
+    --chart-stylesheet: #9334E6;
+    --chart-image: #0F9D58;
+    --chart-font: #EA4335;
+    --chart-video: #46BDC6;
+    --chart-fetch: #FF6D01;
+    --chart-other: #80868B;
+
+    /* Waterfall connection phase colors */
+    --chart-blocked: #a0a0a0;
+    --chart-dns: #1a6b52;
+    --chart-connect: #e07820;
+    --chart-ssl: #7b3fb0;
+    --chart-send: #4a90d9;
+    --chart-wait: #c8b432;
+
+    /* HTTP version colors (for pie charts) */
+    --chart-http-0: #4a7ec8;
+    --chart-http-1: #c8a040;
+    --chart-http-2: #4a9850;
+    --chart-http-3: #8050b8;
+    --chart-http-4: #c83820;
+    --chart-http-5: #2a8048;
+    --chart-http-6: #787878;
+    --chart-http-7: #e07820;
+    --chart-http-8: #7b3fb0;
+    --chart-http-9: #1a6b52;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -75,10 +105,15 @@ const themeOverride =
       --brand-hover: rgba(14, 165, 233, 0.35);
       --brand-bg: rgba(14, 165, 233, 0.1);
       --brand-bg-alt: rgba(59, 130, 246, 0.1);
-      --color-success: #22c55e;
-      --color-warning: #eab308;
-      --color-danger: #ef4444;
-    }
+    --color-success: #22c55e;
+    --color-warning: #eab308;
+    --color-danger: #ef4444;
+
+    /* Dark mode adjustments for specific colors */
+    --chart-wait: #d4c040;
+    --chart-ssl: #9060c8;
+    --chart-other: #909090;
+  }
   }
 
   [data-theme-override='light'] {
@@ -113,6 +148,10 @@ const themeOverride =
     --color-success: #22c55e;
     --color-warning: #eab308;
     --color-danger: #ef4444;
+
+    --chart-wait: #d4c040;
+    --chart-ssl: #9060c8;
+    --chart-other: #909090;
   }
 
   html,

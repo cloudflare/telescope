@@ -1,21 +1,29 @@
 ---
 import type { ResourceTiming } from '@/lib/types/resources';
 import type { NavigationTiming } from '@/lib/types/metrics';
+import type { Har } from '@/lib/types/har';
 import {
   enrichResources,
   formatBytes,
   formatDuration,
   shortenUrl,
 } from '@/lib/utils/resources';
+import PieChart from '@/components/PieChart.astro';
+import {
+  calculateFileTypeCountStats,
+  calculateFileTypeTransferStats,
+  calculateFileTypeDecodedStats,
+  calculateHttpVersionStats,
+} from '@/lib/bottlenecks/chartData';
 
 export interface Props {
   resources: ResourceTiming[];
   url: string;
   navigationTiming?: NavigationTiming;
-  testId: string;
+  har: Har | null;
 }
 
-const { resources, url, navigationTiming, testId } = Astro.props;
+const { resources, url, navigationTiming, har } = Astro.props;
 
 const allResources: ResourceTiming[] = navigationTiming
   ? [
@@ -65,6 +73,12 @@ const tables = [
   },
 ];
 const blockingResources = enrichedResources.filter(r => r.isBlocking);
+
+// Calculate chart data server-side
+const countStats = calculateFileTypeCountStats(allResources);
+const transferStats = calculateFileTypeTransferStats(allResources);
+const decodedStats = calculateFileTypeDecodedStats(allResources);
+const httpStats = calculateHttpVersionStats(har);
 ---
 
 <div class="bottlenecks-container">
@@ -163,30 +177,66 @@ const blockingResources = enrichedResources.filter(r => r.isBlocking);
 
   <div class="bn-section">
     <h3 class="bn-title">Distribution Charts</h3>
-    <div class="charts-grid" data-url={url}>
+    <div class="charts-grid">
       <div class="chart-box">
         <h4 class="chart-title">Count by Content Type</h4>
-        <div id="chart-count" class="chart-svg"></div>
+        <div class="chart-svg">
+          <PieChart data={countStats} />
+        </div>
         <p class="chart-note">Number of requests per content type</p>
-        <div id="legend-count" class="chart-legend"></div>
+        <div class="chart-legend">
+          {countStats.map(item => (
+            <div class="legend-item">
+              <div class="legend-color" data-color={item.colorType}></div>
+              <span>{item.label}: {item.value} ({item.percentage})</span>
+            </div>
+          ))}
+        </div>
       </div>
       <div class="chart-box">
         <h4 class="chart-title">Transferred by Content Type</h4>
-        <div id="chart-transfer" class="chart-svg"></div>
+        <div class="chart-svg">
+          <PieChart data={transferStats} />
+        </div>
         <p class="chart-note">Total transfer size per content type</p>
-        <div id="legend-transfer" class="chart-legend"></div>
+        <div class="chart-legend">
+          {transferStats.map(item => (
+            <div class="legend-item">
+              <div class="legend-color" data-color={item.colorType}></div>
+              <span>{item.label}: {formatBytes(item.value)} ({item.percentage})</span>
+            </div>
+          ))}
+        </div>
       </div>
       <div class="chart-box">
         <h4 class="chart-title">Decoded by Content Type</h4>
-        <div id="chart-decoded" class="chart-svg"></div>
+        <div class="chart-svg">
+          <PieChart data={decodedStats} />
+        </div>
         <p class="chart-note">Total decoded size per content type</p>
-        <div id="legend-decoded" class="chart-legend"></div>
+        <div class="chart-legend">
+          {decodedStats.map(item => (
+            <div class="legend-item">
+              <div class="legend-color" data-color={item.colorType}></div>
+              <span>{item.label}: {formatBytes(item.value)} ({item.percentage})</span>
+            </div>
+          ))}
+        </div>
       </div>
       <div class="chart-box">
         <h4 class="chart-title">HTTP Versions</h4>
-        <div id="chart-http" class="chart-svg"></div>
+        <div class="chart-svg">
+          <PieChart data={httpStats} />
+        </div>
         <p class="chart-note">Request count by HTTP protocol version</p>
-        <div id="legend-http" class="chart-legend"></div>
+        <div class="chart-legend">
+          {httpStats.map(item => (
+            <div class="legend-item">
+              <div class="legend-color" data-color={item.colorType}></div>
+              <span>{item.label}: {item.value} ({item.percentage})</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   </div>
@@ -393,75 +443,37 @@ const blockingResources = enrichedResources.filter(r => r.isBlocking);
     align-items: flex-start;
   }
 
-  .chart-legend :global(.legend-item) {
+  .legend-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
 
-  .chart-legend :global(.legend-color) {
+  .legend-color {
     width: 10px;
     height: 10px;
     border-radius: 2px;
     flex-shrink: 0;
   }
+
+  /* Use consolidated chart colors from Layout.astro */
+  .legend-color[data-color="document"] { background: var(--chart-document); }
+  .legend-color[data-color="script"] { background: var(--chart-script); }
+  .legend-color[data-color="stylesheet"] { background: var(--chart-stylesheet); }
+  .legend-color[data-color="image"] { background: var(--chart-image); }
+  .legend-color[data-color="font"] { background: var(--chart-font); }
+  .legend-color[data-color="video"] { background: var(--chart-video); }
+  .legend-color[data-color="fetch"] { background: var(--chart-fetch); }
+  .legend-color[data-color="other"] { background: var(--chart-other); }
+
+  .legend-color[data-color="http-0"] { background: var(--chart-http-0); }
+  .legend-color[data-color="http-1"] { background: var(--chart-http-1); }
+  .legend-color[data-color="http-2"] { background: var(--chart-http-2); }
+  .legend-color[data-color="http-3"] { background: var(--chart-http-3); }
+  .legend-color[data-color="http-4"] { background: var(--chart-http-4); }
+  .legend-color[data-color="http-5"] { background: var(--chart-http-5); }
+  .legend-color[data-color="http-6"] { background: var(--chart-http-6); }
+  .legend-color[data-color="http-7"] { background: var(--chart-http-7); }
+  .legend-color[data-color="http-8"] { background: var(--chart-http-8); }
+  .legend-color[data-color="http-9"] { background: var(--chart-http-9); }
 </style>
-
-<script>
-  import { renderBottleneckCharts } from '@/lib/bottlenecks/charts.js';
-
-  const countContainer = document.getElementById('chart-count') as HTMLElement;
-  const transferContainer = document.getElementById(
-    'chart-transfer',
-  ) as HTMLElement;
-  const decodedContainer = document.getElementById(
-    'chart-decoded',
-  ) as HTMLElement;
-  const httpContainer = document.getElementById('chart-http') as HTMLElement;
-
-  async function drawCharts() {
-    const testId = new URLPattern({ pathname: '/results/:testId' }).exec(
-      window.location.href,
-    )?.pathname.groups.testId;
-    if (!testId) return;
-    const chartsGrid = document.querySelector('.charts-grid') as HTMLElement;
-    const url = chartsGrid?.dataset.url ?? '';
-    await renderBottleneckCharts(
-      countContainer,
-      transferContainer,
-      decodedContainer,
-      httpContainer,
-      testId,
-      url,
-    );
-  }
-
-  const bottlenecksBtn = document.querySelector('[data-tab="bottlenecks"]');
-  if (bottlenecksBtn) {
-    bottlenecksBtn.addEventListener('click', () => {
-      setTimeout(drawCharts, 200);
-    });
-  }
-
-  if (
-    document
-      .querySelector('[data-pane="bottlenecks"]')
-      ?.classList.contains('active')
-  ) {
-    setTimeout(drawCharts, 200);
-  }
-
-  const themeObserver = new MutationObserver(() => {
-    if (
-      document
-        .querySelector('[data-pane="bottlenecks"]')
-        ?.classList.contains('active')
-    ) {
-      drawCharts();
-    }
-  });
-  themeObserver.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['data-theme-override'],
-  });
-</script>
