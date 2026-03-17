@@ -73,12 +73,12 @@ try {
 let metrics: MetricsJson | null = null;
 let resources: ResourceTiming[] = [];
 let consoleMessages: ConsoleMessage[] = [];
-let lcp;
-let cls;
-let fcp;
-let ttfb;
-let transferBytes;
-let durationMs;
+let lcp = getLcp(null);
+let cls = getCls(null);
+let fcp = getFcp(null);
+let ttfb = getTtfb(null);
+let transferBytes = extractTransferSize(null);
+let durationMs = extractDuration(null);
 
 if (!isUnsafe && !isUnknown) {
   // --- Screenshot ---
