@@ -1,0 +1,4 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["@mohak34/opencode-notifier@latest"]
+}
