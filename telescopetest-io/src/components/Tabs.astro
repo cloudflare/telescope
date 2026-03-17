@@ -1,84 +1,71 @@
+---
+export interface Props {
+  testId: string;
+  activeTab: string;
+}
+
+const { testId, activeTab } = Astro.props;
+
+const tabs = [
+  { id: 'summary', label: 'Summary', href: `/results/${testId}` },
+  { id: 'metrics', label: 'All Metrics', href: `/results/${testId}/metrics` },
+  { id: 'waterfall', label: 'Waterfall', href: `/results/${testId}/waterfall` },
+  { id: 'resources', label: 'Resources', href: `/results/${testId}/resources` },
+  { id: 'console', label: 'Console', href: `/results/${testId}/console` },
+];
+---
+
 <div class="tabs-container">
-  <div class="tabs-header">
-    <button class="tab-btn active" data-tab="summary">Summary</button>
-    <button class="tab-btn" data-tab="all-metrics">All Metrics</button>
-    <button class="tab-btn" data-tab="waterfall">Waterfall</button>
-    <button class="tab-btn" data-tab="resources">Resources</button>
-    <button class="tab-btn" data-tab="console">Console</button>
-  </div>
+  <nav class="tabs-header" aria-label="Result tabs">
+    {
+      tabs.map((tab) => (
+        <a
+          class={`tab-link${tab.id === activeTab ? ' active' : ''}`}
+          href={tab.href}
+          aria-current={tab.id === activeTab ? 'page' : undefined}
+        >
+          {tab.label}
+        </a>
+      ))
+    }
+  </nav>
   <div class="tabs-content">
-    <div class="tab-pane active" data-pane="summary">
-      <slot name="summary" />
-    </div>
-    <div class="tab-pane" data-pane="all-metrics">
-      <slot name="all-metrics" />
-    </div>
-    <div class="tab-pane" data-pane="waterfall">
-      <slot name="waterfall" />
-    </div>
-    <div class="tab-pane" data-pane="resources">
-      <slot name="resources" />
-    </div>
-    <div class="tab-pane" data-pane="console">
-      <slot name="console" />
-    </div>
+    <slot />
   </div>
-
-  <style>
-    .tabs-container {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .tabs-header {
-      display: flex;
-      gap: 0.5rem;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 1.5rem;
-    }
-
-    .tab-btn {
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      padding: 0.75rem 1rem;
-      font-size: 0.9375rem;
-      font-weight: 500;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .tab-btn:hover {
-      color: var(--text);
-    }
-
-    .tab-btn.active {
-      color: var(--brand);
-      border-bottom-color: var(--brand);
-    }
-
-    .tab-pane {
-      display: none;
-    }
-
-    .tab-pane.active {
-      display: block;
-    }
-  </style>
-
-  <script>
-    const buttons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
-    const panes = document.querySelectorAll<HTMLElement>('.tab-pane');
-
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab;
-        buttons.forEach(b => b.classList.remove('active'));
-        panes.forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.querySelector(`[data-pane="${tab}"]`)?.classList.add('active');
-      });
-    });
-  </script>
 </div>
+
+<style>
+  .tabs-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tabs-header {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+
+  .tab-link {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .tab-link:hover {
+    color: var(--text);
+  }
+
+  .tab-link.active {
+    color: var(--brand);
+    border-bottom-color: var(--brand);
+  }
+</style>

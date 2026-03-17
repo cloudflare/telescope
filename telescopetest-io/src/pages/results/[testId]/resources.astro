@@ -1,0 +1,66 @@
+---
+import ResultLayout from '@/layouts/ResultLayout.astro';
+import ResourcesView from '@/components/Resources.astro';
+import { loadTestResult } from '@/lib/loaders/testResult';
+import { getR2Json } from '@/lib/cache/r2Cache';
+import type { MetricsJson } from '@/lib/types/metrics';
+import type { ResourceTiming } from '@/lib/types/resources';
+
+export const prerender = false;
+
+const result = await loadTestResult(Astro);
+if (!result) {
+  return Astro.redirect('/results');
+}
+
+const { testId, test, isUnknown, isUnsafe, screenshotUrl, harBrowser, formattedDate } = result;
+
+// --- Metrics (needed for navigationTiming) + Resources ---
+const env = (Astro.locals as any).runtime.env;
+const [metrics, resources] = await Promise.all([
+  getR2Json<MetricsJson>(env.RESULTS_BUCKET, `${testId}/metrics.json`),
+  getR2Json<ResourceTiming[]>(env.RESULTS_BUCKET, `${testId}/resources.json`).then(r => r ?? []),
+]);
+---
+
+<ResultLayout
+  testId={testId}
+  title={`Resources · ${test.name ?? testId}`}
+  url={test.url}
+  name={test.name}
+  description={test.description}
+  browser={test.browser}
+  browserVersion={harBrowser?.version ?? null}
+  formattedDate={formattedDate}
+  screenshotUrl={screenshotUrl}
+  isUnknown={isUnknown}
+  isUnsafe={isUnsafe}
+  activeTab="resources"
+>
+  {
+    resources.length > 0 || metrics?.navigationTiming ? (
+      <ResourcesView
+        resources={resources}
+        url={test.url}
+        navigationTiming={metrics?.navigationTiming}
+      />
+    ) : (
+      <div class="resources-unavailable">
+        <p>Resources data unavailable for this test.</p>
+      </div>
+    )
+  }
+</ResultLayout>
+
+<style>
+  .resources-unavailable {
+    padding: 2.5rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .resources-unavailable p {
+    margin: 0;
+  }
+</style>

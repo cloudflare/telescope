@@ -1,0 +1,61 @@
+---
+import ResultLayout from '@/layouts/ResultLayout.astro';
+import AllMetrics from '@/components/AllMetrics.astro';
+import { loadTestResult } from '@/lib/loaders/testResult';
+import { getR2Json } from '@/lib/cache/r2Cache';
+import type { MetricsJson } from '@/lib/types/metrics';
+
+export const prerender = false;
+
+const result = await loadTestResult(Astro);
+if (!result) {
+  return Astro.redirect('/results');
+}
+
+const { testId, test, isUnknown, isUnsafe, screenshotUrl, harBrowser, formattedDate } = result;
+
+// --- Metrics ---
+const env = (Astro.locals as any).runtime.env;
+const metrics = await getR2Json<MetricsJson>(env.RESULTS_BUCKET, `${testId}/metrics.json`);
+---
+
+<ResultLayout
+  testId={testId}
+  title={`Metrics · ${test.name ?? testId}`}
+  url={test.url}
+  name={test.name}
+  description={test.description}
+  browser={test.browser}
+  browserVersion={harBrowser?.version ?? null}
+  formattedDate={formattedDate}
+  screenshotUrl={screenshotUrl}
+  isUnknown={isUnknown}
+  isUnsafe={isUnsafe}
+  activeTab="metrics"
+>
+  {
+    metrics ? (
+      <AllMetrics metrics={metrics} />
+    ) : (
+      <div class="metrics-unavailable">
+        <p>Metrics unavailable for this test.</p>
+      </div>
+    )
+  }
+</ResultLayout>
+
+<style>
+  .metrics-unavailable {
+    padding: 2.5rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+  }
+
+  .metrics-unavailable p {
+    margin: 0;
+  }
+</style>

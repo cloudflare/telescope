@@ -1,0 +1,32 @@
+---
+import ResultLayout from '@/layouts/ResultLayout.astro';
+import WaterfallChart from '@/components/Waterfall.astro';
+import { loadTestResult } from '@/lib/loaders/testResult';
+
+export const prerender = false;
+
+const result = await loadTestResult(Astro);
+if (!result) {
+  return Astro.redirect('/results');
+}
+
+const { testId, test, isUnknown, isUnsafe, screenshotUrl, harBrowser, hasHar, formattedDate } =
+  result;
+---
+
+<ResultLayout
+  testId={testId}
+  title={`Waterfall · ${test.name ?? testId}`}
+  url={test.url}
+  name={test.name}
+  description={test.description}
+  browser={test.browser}
+  browserVersion={harBrowser?.version ?? null}
+  formattedDate={formattedDate}
+  screenshotUrl={screenshotUrl}
+  isUnknown={isUnknown}
+  isUnsafe={isUnsafe}
+  activeTab="waterfall"
+>
+  <WaterfallChart testId={testId} hasHar={hasHar} />
+</ResultLayout>
