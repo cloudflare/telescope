@@ -182,26 +182,28 @@ const navItems = [
     document.cookie = `${name}=${value};expires=${expires};path=/;SameSite=Lax${secure}`;
   }
 
-  const savedTheme = getCookie('theme-override');
+  document.addEventListener('astro:page-load', () => {
+    const savedTheme = getCookie('theme-override');
 
-  if (savedTheme === 'light' || savedTheme === 'dark') {
-    document.documentElement.setAttribute('data-theme-override', savedTheme);
-  }
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme-override', savedTheme);
+    }
 
-  const button = document.querySelector('.theme-toggle') as HTMLButtonElement;
+    const button = document.querySelector('.theme-toggle') as HTMLButtonElement;
 
-  if (button) {
-    button.addEventListener('click', () => {
-      const isDark = document.documentElement.getAttribute(
-        'data-theme-override',
-      )
-        ? document.documentElement.getAttribute('data-theme-override') ===
-          'dark'
-        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (button) {
+      button.addEventListener('click', () => {
+        const isDark = document.documentElement.getAttribute(
+          'data-theme-override',
+        )
+          ? document.documentElement.getAttribute('data-theme-override') ===
+            'dark'
+          : window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-      const newTheme = isDark ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme-override', newTheme);
-      setCookie('theme-override', newTheme, 365);
-    });
-  }
+        const newTheme = isDark ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme-override', newTheme);
+        setCookie('theme-override', newTheme, 365);
+      });
+    }
+  });
 </script>

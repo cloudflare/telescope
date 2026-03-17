@@ -605,10 +605,10 @@ const { testId, hasHar } = Astro.props;
 
   type HarPageTimings = HarPage['pageTimings'];
 
-  // ── State ────────────────────────────────────────────────────────────────
+  // ── State (reset on each page load) ──────────────────────────────────────
   let allEntries: HarEntry[] = [];
   let activeFilters = new Set<string>(['all']);
-  const openPanels = new Map<number, HTMLElement>();
+  let openPanels = new Map<number, HTMLElement>();
   let pageTimings: HarPageTimings = {};
   let totalMs = 0;
   let originMs = 0;
@@ -901,5 +901,14 @@ const { testId, hasHar } = Astro.props;
     }
   }
 
-  init();
+  document.addEventListener('astro:page-load', () => {
+    // Reset state for fresh navigation
+    allEntries = [];
+    activeFilters = new Set(['all']);
+    openPanels = new Map();
+    pageTimings = {};
+    totalMs = 0;
+    originMs = 0;
+    init();
+  });
 </script>

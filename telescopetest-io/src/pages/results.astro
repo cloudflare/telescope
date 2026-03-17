@@ -178,22 +178,21 @@ export const prerender = false;
 </style>
 
 <script>
-  const buttons = document.querySelectorAll('.toggle-button');
-  const container = document.querySelector('.results-container');
-  if (buttons.length && container) {
-    buttons.forEach(button => {
-      button.addEventListener('click', () => {
-        const view = button.getAttribute('data-view');
-        if (!view) return;
-        // Update active state
-        buttons.forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        // Update layout
-        container.setAttribute('data-layout', view);
-        // Save to both localStorage and cookie
-        localStorage.setItem('resultsView', view);
-        document.cookie = `resultsView=${view};path=/;max-age=31536000;SameSite=Lax`;
+  document.addEventListener('astro:page-load', () => {
+    const buttons = document.querySelectorAll('.toggle-button');
+    const container = document.querySelector('.results-container');
+    if (buttons.length && container) {
+      buttons.forEach(button => {
+        button.addEventListener('click', () => {
+          const view = button.getAttribute('data-view');
+          if (!view) return;
+          buttons.forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+          container.setAttribute('data-layout', view);
+          localStorage.setItem('resultsView', view);
+          document.cookie = `resultsView=${view};path=/;max-age=31536000;SameSite=Lax`;
+        });
       });
-    });
-  }
+    }
+  });
 </script>

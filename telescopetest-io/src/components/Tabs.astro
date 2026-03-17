@@ -16,7 +16,7 @@ const tabs = [
 ---
 
 <div class="tabs-container">
-  <nav class="tabs-header" aria-label="Result tabs">
+  <nav class="tabs-header" aria-label="Result tabs" transition:name={`tabs-nav-${testId}`} transition:animate="none">
     {
       tabs.map((tab) => (
         <a

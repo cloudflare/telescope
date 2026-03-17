@@ -901,6 +901,7 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
 </style>
 
 <script>
+  document.addEventListener('astro:page-load', () => {
   const legend = document.getElementById('nt-legend');
   const diagram = document.getElementById('nt-diagram');
   const clearBtn = document.getElementById('nt-legend-clear');
@@ -987,4 +988,5 @@ const marks = userTiming.filter(u => u.entryType === 'mark');
         .forEach(bracket => bracket.classList.remove('nt-tick-bracket--hover'));
     });
   }
+  });
 </script>

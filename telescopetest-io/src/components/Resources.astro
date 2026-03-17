@@ -573,6 +573,7 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
 </style>
 
 <script>
+  document.addEventListener('astro:page-load', () => {
   const resourceRows = document.querySelectorAll('.resource-row');
   resourceRows.forEach((row) => {
     row.addEventListener('click', () => {
@@ -641,5 +642,6 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
     protocolFilter.selectedIndex = -1;
     blockingFilter.checked = false;
     applyFilters();
+  });
   });
 </script>
