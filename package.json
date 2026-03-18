@@ -29,7 +29,7 @@
     "lint:fix": "eslint . --fix",
     "prettier": "npx prettier --write .",
     "prepublishOnly": "npm run build",
-    "postinstall": "npx playwright install"
+    "postinstall": "patch-package && npx playwright install"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
@@ -40,6 +40,7 @@
     "@typescript-eslint/parser": "^8.54.0",
     "@vitest/coverage-v8": "^4.0.6",
     "eslint": "^9.39.2",
+    "patch-package": "^8.0.1",
     "prettier": "^3.6.2",
     "prettier-plugin-ejs": "^1.0.3",
     "ts-node": "^10.9.2",
@@ -56,5 +57,8 @@
     "playwright": "^1.58.2",
     "playwright-webkit": "^1.58.2",
     "zod": "^3.25.76"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
