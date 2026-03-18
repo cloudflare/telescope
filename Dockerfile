@@ -2,9 +2,12 @@ FROM --platform=linux/amd64 node:24-bookworm
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Install system dependencies for Playwright browsers and ffmpeg
+# Install system dependencies for Playwright browsers, ffmpeg, and throttling
 RUN apt-get update && apt-get install -y \
     ffmpeg \
+    iproute2 \
+    kmod \
+    sudo \
     # Chromium/Firefox dependencies
     libnss3 \
     libnspr4 \
@@ -44,6 +47,8 @@ RUN apt-get update && apt-get install -y \
 RUN groupadd -r telescope && useradd -r -g telescope -G audio,video telescope \
     && mkdir -p /home/telescope ${PLAYWRIGHT_BROWSERS_PATH} \
     && chown -R telescope:telescope /home/telescope ${PLAYWRIGHT_BROWSERS_PATH}
+
+RUN echo "telescope ALL=(ALL) NOPASSWD: /sbin/tc, /sbin/ip, /usr/sbin/tc, /usr/sbin/ip, /bin/ip, /usr/bin/ip, /sbin/modprobe, /usr/sbin/modprobe" >> /etc/sudoers
 
 # Set working directory
 WORKDIR /app

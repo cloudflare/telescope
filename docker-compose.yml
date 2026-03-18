@@ -9,6 +9,8 @@ services:
     # Security options needed for browser sandboxing
     security_opt:
       - seccomp=unconfined
+    cap_add:
+      - NET_ADMIN
     environment:
       # Run browsers in headless mode (required for Docker without display)
       - HEADLESS=true
