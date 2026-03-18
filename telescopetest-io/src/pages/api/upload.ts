@@ -16,12 +16,7 @@ import { rateUrlContent } from '@/lib/ai/ai-content-rater';
 
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
-/**
- * Extract file list from ZIP archive
- * Works in both Node.js (adm-zip) and Cloudflare Workers (fflate) environments
- * @param buffer - ArrayBuffer containing ZIP file data
- * @returns Promise<Unzipped> - Unzipped type return
- */
+// Extract file list from ZIP archive
 async function getUnzipped(buffer: ArrayBuffer): Promise<Unzipped> {
   const uint8Array = new Uint8Array(buffer);
   const unzipped = unzipSync(uint8Array, {
@@ -33,16 +28,34 @@ async function getUnzipped(buffer: ArrayBuffer): Promise<Unzipped> {
   return unzipped;
 }
 
-/**
- * Generate a SHA-256 hash of the buffer contents to use as unique identifier
- * @param buffer - ArrayBuffer containing the file data
- * @returns Promise<string> - Hex string of the hash
- */
+// Generate a SHA-256 hash of the buffer contents to use as unique identifier
 async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
+}
+
+// Files to exclude from ZIP processing (OS metadata files)
+const EXCLUDED_FILE_PREFIXES = ['__MACOSX/']; // macOS resource forks
+const EXCLUDED_FILE_NAMES = ['.DS_Store', 'Thumbs.db']; // macOS/Windows metadata
+
+// Normalize ZIP file paths by stripping directory prefix and filtering unwanted files
+function normalizeZipFiles(
+  unzipped: Unzipped,
+  prefixToStrip: string,
+): Unzipped {
+  const normalized: Unzipped = {};
+  for (const [path, content] of Object.entries(unzipped)) {
+    if (EXCLUDED_FILE_PREFIXES.some(prefix => path.startsWith(prefix)))
+      continue;
+    const fileName = path.split('/').pop() || '';
+    if (EXCLUDED_FILE_NAMES.includes(fileName)) continue;
+    if (path.startsWith(prefixToStrip)) {
+      normalized[path.slice(prefixToStrip.length)] = content;
+    }
+  }
+  return normalized;
 }
 
 // Generate a test_id
@@ -83,12 +96,10 @@ export const POST: APIRoute = async (context: APIContext) => {
     const { file, name, description, source } = result.data;
     // Read file buffer
     const buffer = await file.arrayBuffer();
-    const unzipped = await getUnzipped(buffer);
-    const files = Object.keys(unzipped);
+    let unzipped = await getUnzipped(buffer);
+    let files = Object.keys(unzipped);
     // Generate hash for unique R2 storage key
-    // TODO: make hash content-based, not ZIP based
     const zipKey = await generateContentHash(buffer);
-    // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
     const env = context.locals.runtime.env;
     // Check if this exact content already exists in D1
     const prisma = getPrismaClient(context);
@@ -107,9 +118,11 @@ export const POST: APIRoute = async (context: APIContext) => {
         },
       );
     }
-    // Confirm the config file exists
-    const configFile = `config.json`;
-    if (!files.includes(configFile)) {
+    // Find config.json to determine the path prefix
+    const configPath = files.find(
+      f => f.endsWith('/config.json') || f === 'config.json',
+    );
+    if (!configPath) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -118,8 +131,12 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
+    // Strip the directory prefix from all files (e.g., "folder/config.json" → "config.json")
+    const prefixToStrip = configPath.replace('config.json', '');
+    unzipped = normalizeZipFiles(unzipped, prefixToStrip);
+    files = Object.keys(unzipped);
     // Extract config.json
-    const configBytes = unzipped[configFile];
+    const configBytes = unzipped['config.json'];
     if (!configBytes) {
       return new Response(
         JSON.stringify({
