@@ -2,6 +2,7 @@ import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
 import type { TestConfig } from '@/lib/types/tests';
 
+import path from 'node:path';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
@@ -36,26 +37,21 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   return hashHex;
 }
 
-// Files to exclude from ZIP processing (OS metadata files)
-const EXCLUDED_FILE_PREFIXES = ['__MACOSX/']; // macOS resource forks
-const EXCLUDED_FILE_NAMES = ['.DS_Store', 'Thumbs.db']; // macOS/Windows metadata
-
-// Normalize ZIP file paths by stripping directory prefix and filtering unwanted files
-function normalizeZipFiles(
+// Normalize ZIP file paths: filter to only files under the prefix, then strip the prefix
+function normalizeZipFilePaths(
   unzipped: Unzipped,
   prefixToStrip: string,
 ): Unzipped {
-  const normalized: Unzipped = {};
-  for (const [path, content] of Object.entries(unzipped)) {
-    if (EXCLUDED_FILE_PREFIXES.some(prefix => path.startsWith(prefix)))
-      continue;
-    const fileName = path.split('/').pop() || '';
-    if (EXCLUDED_FILE_NAMES.includes(fileName)) continue;
-    if (path.startsWith(prefixToStrip)) {
-      normalized[path.slice(prefixToStrip.length)] = content;
-    }
-  }
-  return normalized;
+  return Object.entries(unzipped)
+    .filter(([fullFilePath]) => fullFilePath.startsWith(prefixToStrip))
+    .map(
+      ([originalFilePath, contents]) =>
+        [originalFilePath.slice(prefixToStrip.length), contents] as const,
+    )
+    .reduce((acc, [normalizedFilePath, contents]) => {
+      acc[normalizedFilePath] = contents;
+      return acc;
+    }, {} as Unzipped);
 }
 
 // Generate a test_id
@@ -118,9 +114,9 @@ export const POST: APIRoute = async (context: APIContext) => {
         },
       );
     }
-    // Find config.json to determine the path prefix
+    // Find if some ' .../config.json' exists
     const configPath = files.find(
-      f => f.endsWith('/config.json') || f === 'config.json',
+      file => path.basename(file) === 'config.json',
     );
     if (!configPath) {
       return new Response(
@@ -132,8 +128,11 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     // Strip the directory prefix from all files (e.g., "folder/config.json" → "config.json")
-    const prefixToStrip = configPath.replace('config.json', '');
-    unzipped = normalizeZipFiles(unzipped, prefixToStrip);
+    const dirName = path.dirname(configPath);
+    const prefixToStrip = dirName === '.' ? '' : dirName + '/';
+    if (prefixToStrip) {
+      unzipped = normalizeZipFilePaths(unzipped, prefixToStrip);
+    }
     files = Object.keys(unzipped);
     // Extract config.json
     const configBytes = unzipped['config.json'];
