@@ -16,26 +16,26 @@ const { testId, hasHar } = Astro.props;
     <div class="wf-legend" aria-label="Waterfall chart legend">
       <div class="wf-legend-row">
         <span class="wf-legend-heading">Connection phases</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--blocked"></span>Blocked</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--dns"    ></span>DNS</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--connect"></span>Connect</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--ssl"    ></span>SSL</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--send"   ></span>Send</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--wait"   ></span>Wait</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin" data-phase="blocked"></span>Blocked</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin" data-phase="dns"></span>DNS</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin" data-phase="connect"></span>Connect</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin" data-phase="ssl"></span>SSL</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin" data-phase="send"></span>Send</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin" data-phase="wait"></span>Wait</span>
       </div>
       <div class="wf-legend-row">
         <span class="wf-legend-heading">File type <span class="wf-legend-note">(light&nbsp;=&nbsp;sent · dark&nbsp;=&nbsp;received)</span></span>
-        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--html" ></span>HTML</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--js"   ></span>JS</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--css"  ></span>CSS</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--image"></span>Image</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--font" ></span>Font</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--video"></span>Video</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--other"></span>Other</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--gradient-html"></span>HTML</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--gradient-js"></span>JS</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--gradient-css"></span>CSS</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--gradient-image"></span>Image</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--gradient-font"></span>Font</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--gradient-video"></span>Video</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thick swatch--gradient-other"></span>Other</span>
       </div>
       <div class="wf-legend-row">
         <span class="wf-legend-heading">Events</span>
-        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--ev-dcl" ></span>DCL</span>
+        <span class="wf-legend-item"><span class="swatch swatch--thin swatch--ev-dcl"></span>DCL</span>
         <span class="wf-legend-item"><span class="swatch swatch--thin swatch--ev-load"></span>Load</span>
       </div>
     </div>
@@ -193,22 +193,18 @@ const { testId, hasHar } = Astro.props;
   .swatch--thin  { height: 3px; }
   .swatch--thick { height: 8px; }
 
-  .swatch--blocked { background: var(--wf-blocked); }
-  .swatch--wait    { background: var(--wf-wait); }
-  .swatch--dns     { background: var(--wf-dns); }
-  .swatch--connect { background: var(--wf-connect); }
-  .swatch--ssl     { background: var(--wf-ssl); }
-  .swatch--send    { background: var(--wf-send); }
+  /* Event colors (not part of global data attributes) */
   .swatch--ev-dcl  { background: #d060d0; }
   .swatch--ev-load { background: #4060d0; }
 
-  .swatch--html  { background: linear-gradient(to right, var(--wf-html-light)  50%, var(--wf-html-dark)  50%); }
-  .swatch--js    { background: linear-gradient(to right, var(--wf-js-light)    50%, var(--wf-js-dark)    50%); }
-  .swatch--css   { background: linear-gradient(to right, var(--wf-css-light)   50%, var(--wf-css-dark)   50%); }
-  .swatch--image { background: linear-gradient(to right, var(--wf-image-light) 50%, var(--wf-image-dark) 50%); }
-  .swatch--font  { background: linear-gradient(to right, var(--wf-font-light)  50%, var(--wf-font-dark)  50%); }
-  .swatch--video { background: linear-gradient(to right, var(--wf-video-light) 50%, var(--wf-video-dark) 50%); }
-  .swatch--other { background: linear-gradient(to right, var(--wf-other-light) 50%, var(--wf-other-dark) 50%); }
+  /* Resource type gradients for legend */
+  .swatch--gradient-html  { background: linear-gradient(to right, var(--wf-html-light)  50%, var(--wf-html-dark)  50%); }
+  .swatch--gradient-js    { background: linear-gradient(to right, var(--wf-js-light)    50%, var(--wf-js-dark)    50%); }
+  .swatch--gradient-css   { background: linear-gradient(to right, var(--wf-css-light)   50%, var(--wf-css-dark)   50%); }
+  .swatch--gradient-image { background: linear-gradient(to right, var(--wf-image-light) 50%, var(--wf-image-dark) 50%); }
+  .swatch--gradient-font  { background: linear-gradient(to right, var(--wf-font-light)  50%, var(--wf-font-dark)  50%); }
+  .swatch--gradient-video { background: linear-gradient(to right, var(--wf-video-light) 50%, var(--wf-video-dark) 50%); }
+  .swatch--gradient-other { background: linear-gradient(to right, var(--wf-other-light) 50%, var(--wf-other-dark) 50%); }
 
   /* ── Toolbar ────────────────────────────────────────────────────────────── */
   .wf-toolbar {
@@ -364,28 +360,6 @@ const { testId, hasHar } = Astro.props;
     border-radius: 1px;
     min-width: 1.5px;
   }
-
-  .wb--blocked { background: var(--wf-blocked); }
-  .wb--dns     { background: var(--wf-dns); }
-  .wb--connect { background: var(--wf-connect); }
-  .wb--ssl     { background: var(--wf-ssl); }
-  .wb--send    { background: var(--wf-send); }
-  .wb--wait    { background: var(--wf-wait); }
-
-  .wb--html-light  { background: var(--wf-html-light); }
-  .wb--html-dark   { background: var(--wf-html-dark); }
-  .wb--js-light    { background: var(--wf-js-light); }
-  .wb--js-dark     { background: var(--wf-js-dark); }
-  .wb--css-light   { background: var(--wf-css-light); }
-  .wb--css-dark    { background: var(--wf-css-dark); }
-  .wb--image-light { background: var(--wf-image-light); }
-  .wb--image-dark  { background: var(--wf-image-dark); }
-  .wb--font-light  { background: var(--wf-font-light); }
-  .wb--font-dark   { background: var(--wf-font-dark); }
-  .wb--video-light { background: var(--wf-video-light); }
-  .wb--video-dark  { background: var(--wf-video-dark); }
-  .wb--other-light { background: var(--wf-other-light); }
-  .wb--other-dark  { background: var(--wf-other-dark); }
 
   /* ── Ruler ticks ────────────────────────────────────────────────────────── */
   .wf-tick {
@@ -639,33 +613,34 @@ const { testId, hasHar } = Astro.props;
     const offsetPct = totalMs > 0 ? ((+new Date(entry.startedDateTime) - originMs) / totalMs) * 100 : 0;
     const wrap = el('div', { className: 'wf-bar-wrap' });
     wrap.style.height = `${rowH}px`;
-    function addBar(cls: string, leftPct: number, widthPct: number, heightPx: number, tooltip: string) {
+    function addBar(dataAttr: string, dataValue: string, leftPct: number, widthPct: number, heightPx: number, tooltip: string) {
       if (widthPct <= 0) return;
-      const b = el('div', { className: `wb ${cls}`, title: tooltip });
+      const b = el('div', { className: 'wb', title: tooltip });
+      b.setAttribute(dataAttr, dataValue);
       b.style.left = `${leftPct}%`;
       b.style.width = `${Math.max(widthPct, 0.1)}%`;
       b.style.height = `${heightPx}px`;
       wrap.appendChild(b);
     }
     const phases: Array<[string, number, string]> = [
-      ['wb--blocked', blocked, 'Blocked'],
-      ['wb--dns',     dns,     'DNS Lookup'],
-      ['wb--connect', connect, 'TCP Connect'],
-      ['wb--ssl',     ssl,     'SSL Handshake'],
-      ['wb--send',    send,    'Send'],
-      ['wb--wait',    wait,    'Wait (TTFB)'],
+      ['blocked', blocked, 'Blocked'],
+      ['dns',     dns,     'DNS Lookup'],
+      ['connect', connect, 'TCP Connect'],
+      ['ssl',     ssl,     'SSL Handshake'],
+      ['send',    send,    'Send'],
+      ['wait',    wait,    'Wait (TTFB)'],
     ];
     let cursor = offsetPct;
-    for (const [cls, val, label] of phases) {
+    for (const [phase, val, label] of phases) {
       const pct = (val / totalMs) * 100;
-      addBar(cls, cursor, pct, 3, `${label}: ${fmtMs(val)}`);
+      addBar('data-phase', phase, cursor, pct, 3, `${label}: ${fmtMs(val)}`);
       cursor += pct;
     }
     const resCursor = offsetPct + ((blocked + dns + connect + ssl) / totalMs) * 100;
     const sentPct = ((send + wait) / totalMs) * 100;
     const recvPct = (receive / totalMs) * 100;
-    addBar(`wb--${key}-light`, resCursor, sentPct, barH, `Send+Wait: ${fmtMs(send + wait)}`);
-    addBar(`wb--${key}-dark`, resCursor + sentPct, recvPct, barH, `Receive: ${fmtMs(receive)}`);
+    addBar('data-resource', `${key}-light`, resCursor, sentPct, barH, `Send+Wait: ${fmtMs(send + wait)}`);
+    addBar('data-resource', `${key}-dark`, resCursor + sentPct, recvPct, barH, `Receive: ${fmtMs(receive)}`);
     td.appendChild(wrap);
     return td;
   }
@@ -718,20 +693,22 @@ const { testId, hasHar } = Astro.props;
     body.appendChild(section('General', generalWrap));
     const blocked = Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0));
     const timingRows: Array<[string, string, number]> = [
-      ['wb--blocked', 'Blocked/Queued', blocked],
-      ['wb--dns',     'DNS Lookup',     Math.max(0, t.dns)],
-      ['wb--connect', 'TCP Connect',    Math.max(0, t.connect)],
-      ['wb--ssl',     'SSL Handshake',  Math.max(0, t.ssl ?? 0)],
-      ['wb--send',    'Send',           Math.max(0, t.send)],
-      ['wb--wait',    'Wait (TTFB)',    Math.max(0, t.wait)],
-      ['wb--wait',    'Receive',        Math.max(0, t.receive)],
+      ['blocked', 'Blocked/Queued', blocked],
+      ['dns',     'DNS Lookup',     Math.max(0, t.dns)],
+      ['connect', 'TCP Connect',    Math.max(0, t.connect)],
+      ['ssl',     'SSL Handshake',  Math.max(0, t.ssl ?? 0)],
+      ['send',    'Send',           Math.max(0, t.send)],
+      ['wait',    'Wait (TTFB)',    Math.max(0, t.wait)],
+      ['wait',    'Receive',        Math.max(0, t.receive)],
     ];
     const timingFrag = document.createDocumentFragment();
-    for (const [cls, label, val] of timingRows) {
+    for (const [phase, label, val] of timingRows) {
       if (val <= 0) continue;
       const row = el('div', { className: 'wf-timing-row' });
       const lbl = el('span', { className: 'wf-timing-label' });
-      lbl.appendChild(el('span', { className: `wf-timing-swatch ${cls}` }));
+      const swatch = el('span', { className: 'wf-timing-swatch' });
+      swatch.setAttribute('data-phase', phase);
+      lbl.appendChild(swatch);
       lbl.appendChild(document.createTextNode(label));
       row.appendChild(lbl);
       row.appendChild(el('span', { className: 'wf-timing-val' }, fmtMs(val)));

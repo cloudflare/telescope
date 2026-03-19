@@ -466,15 +466,6 @@ const hasSegment = (start: number, end: number) => start > 0 && end > 0;
     flex-shrink: 0;
   }
 
-  /* Use consolidated chart colors from Layout.astro */
-  .type-swatch[data-type="html"]  { background: var(--chart-document); }
-  .type-swatch[data-type="js"]    { background: var(--chart-script); }
-  .type-swatch[data-type="css"]   { background: var(--chart-stylesheet); }
-  .type-swatch[data-type="image"] { background: var(--chart-image); }
-  .type-swatch[data-type="font"]  { background: var(--chart-font); }
-  .type-swatch[data-type="video"] { background: var(--chart-video); }
-  .type-swatch[data-type="other"] { background: var(--chart-other); }
-
   .blocking-badge {
     display: inline-block;
     background: var(--color-danger);
