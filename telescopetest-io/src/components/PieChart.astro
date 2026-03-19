@@ -1,0 +1,84 @@
+---
+export interface ChartDataItem {
+  label: string;
+  value: number;
+  percentage: string;
+  colorType: string;
+}
+
+export interface Props {
+  data: ChartDataItem[];
+  size?: number;
+}
+
+const { data, size = 250 } = Astro.props;
+
+const filteredData = data.filter(item => item.value > 0);
+const total = filteredData.reduce((sum, item) => sum + item.value, 0);
+
+const centerX = size / 2;
+const centerY = size / 2;
+const radius = size / 2 - 10;
+
+function createPieSlicePath(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number,
+): string {
+  const x1 = centerX + radius * Math.cos(startAngle);
+  const y1 = centerY + radius * Math.sin(startAngle);
+  const x2 = centerX + radius * Math.cos(endAngle);
+  const y2 = centerY + radius * Math.sin(endAngle);
+  const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0;
+  return `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+}
+
+let slices: Array<{ path: string; colorType: string }> = [];
+if (total > 0 && filteredData.length > 0) {
+  if (filteredData.length === 1) {
+    slices = [{ path: '', colorType: filteredData[0].colorType }];
+  } else {
+    let currentAngle = -Math.PI / 2;
+    slices = filteredData.map(item => {
+      const sliceAngle = (item.value / total) * Math.PI * 2;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + sliceAngle;
+      currentAngle = endAngle;
+      const pathData = createPieSlicePath(centerX, centerY, radius, startAngle, endAngle);
+      return { path: pathData, colorType: item.colorType };
+    });
+  }
+}
+---
+
+{total === 0 || filteredData.length === 0 ? (
+  <div class="chart-empty">No data</div>
+) : filteredData.length === 1 ? (
+  <svg viewBox={`0 0 ${size} ${size}`} class="chart-svg-element">
+    <circle cx={centerX} cy={centerY} r={radius} data-color={slices[0].colorType} />
+  </svg>
+) : (
+  <svg viewBox={`0 0 ${size} ${size}`} class="chart-svg-element">
+    {slices.map(slice => (
+      <path d={slice.path} data-color={slice.colorType} />
+    ))}
+  </svg>
+)}
+
+<style>
+  .chart-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 250px;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .chart-svg-element {
+    width: 100%;
+    height: 250px;
+  }
+</style>

@@ -8,6 +8,7 @@ import AllMetrics from '@/components/AllMetrics.astro';
 import Waterfall from '@/components/Waterfall.astro';
 import Resources from '@/components/Resources.astro';
 import Console from '@/components/Console.astro';
+import Bottlenecks from '@/components/Bottlenecks.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/testRepository';
@@ -16,6 +17,7 @@ import { ContentRating } from '@/lib/types/tests';
 import type { MetricsJson } from '@/lib/types/metrics';
 import type { ResourceTiming } from '@/lib/types/resources';
 import type { ConsoleMessage } from '@/lib/types/console';
+import type { Har } from '@/lib/types/har';
 import { getLcp, getCls } from '@/lib/utils/cwv';
 import {
   getFcp,
@@ -58,13 +60,12 @@ const screenshotUrl = screenshotObj
 // --- HAR (browser version + existence check for Waterfall) ---
 let harBrowser: { name: string; version: string } | null = null;
 let hasHar = false;
+let har: Har | null = null;
 try {
   const harObj = await env.RESULTS_BUCKET.get(`${testId}/pageload.har`);
   if (harObj) {
     hasHar = true;
-    const har = await harObj.json<{
-      log: { browser: { name: string; version: string } };
-    }>();
+    har = await harObj.json<Har>();
     harBrowser = har?.log?.browser ?? null;
   }
 } catch (err) {
@@ -161,7 +162,8 @@ const formattedDate = date.toLocaleString('en-US', {
           >
             <strong>Rating timed out.</strong>
             <p>
-              Content rating could not be completed. Please refresh to try again.
+              Content rating could not be completed. Please refresh to try
+              again.
             </p>
           </div>
         </>
@@ -199,89 +201,102 @@ const formattedDate = date.toLocaleString('en-US', {
           </section>
 
           <Tabs>
-      <div slot="summary">
-        {
-          metrics ? (
-            <div class="metrics-row">
-              <MetricCard
-                heading="Core Web Vitals"
-                metrics={[
-                  {
-                    label: 'LCP',
-                    value: lcp.formatted,
-                    unit: 'ms',
-                    rating: lcp.rating,
-                  },
-                  { label: 'CLS', value: cls.formatted, rating: cls.rating },
-                ]}
-              />
-              <MetricCard
-                heading="Performance Metrics"
-                metrics={[
-                  {
-                    label: 'FCP',
-                    value: fcp.formatted,
-                    unit: 'ms',
-                    rating: fcp.rating,
-                  },
-                  {
-                    label: 'TTFB',
-                    value: ttfb.formatted,
-                    unit: 'ms',
-                    rating: ttfb.rating,
-                  },
-                  {
-                    label: 'Transfer Size',
-                    value: formatKb(transferBytes),
-                    unit: 'KB',
-                  },
-                  {
-                    label: 'Page Load Time',
-                    value: formatMs(durationMs),
-                    unit: 'ms',
-                  },
-                ]}
-              />
+            <div slot="summary">
+              {metrics ? (
+                <div class="metrics-row">
+                  <MetricCard
+                    heading="Core Web Vitals"
+                    metrics={[
+                      {
+                        label: 'LCP',
+                        value: lcp.formatted,
+                        unit: 'ms',
+                        rating: lcp.rating,
+                      },
+                      {
+                        label: 'CLS',
+                        value: cls.formatted,
+                        rating: cls.rating,
+                      },
+                    ]}
+                  />
+                  <MetricCard
+                    heading="Performance Metrics"
+                    metrics={[
+                      {
+                        label: 'FCP',
+                        value: fcp.formatted,
+                        unit: 'ms',
+                        rating: fcp.rating,
+                      },
+                      {
+                        label: 'TTFB',
+                        value: ttfb.formatted,
+                        unit: 'ms',
+                        rating: ttfb.rating,
+                      },
+                      {
+                        label: 'Transfer Size',
+                        value: formatKb(transferBytes),
+                        unit: 'KB',
+                      },
+                      {
+                        label: 'Page Load Time',
+                        value: formatMs(durationMs),
+                        unit: 'ms',
+                      },
+                    ]}
+                  />
+                </div>
+              ) : (
+                <div class="metrics-unavailable panel">
+                  <p>Metrics unavailable for this test.</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div class="metrics-unavailable panel">
-              <p>Metrics unavailable for this test.</p>
-            </div>
-          )
-        }
-      </div>
 
-      <div slot="all-metrics">
-        {
-          metrics ? (
-            <AllMetrics metrics={metrics} />
-          ) : (
-            <div class="metrics-unavailable panel">
-              <p>Metrics unavailable for this test.</p>
+            <div slot="all-metrics">
+              {metrics ? (
+                <AllMetrics metrics={metrics} />
+              ) : (
+                <div class="metrics-unavailable panel">
+                  <p>Metrics unavailable for this test.</p>
+                </div>
+              )}
             </div>
-          )
-        }
-      </div>
 
-      <div slot="waterfall">
-        <Waterfall testId={testId} hasHar={hasHar} />
-      </div>
-
-      <div slot="resources">
-        {
-          resources.length > 0 || metrics?.navigationTiming ? (
-            <Resources
-              resources={resources}
-              url={test.url}
-              navigationTiming={metrics?.navigationTiming}
-            />
-          ) : (
-            <div class="resources-unavailable">
-              <p>Resources data unavailable for this test.</p>
+            <div slot="waterfall">
+              <Waterfall testId={testId} hasHar={hasHar} />
             </div>
-          )
-        }
-      </div>
+
+            <div slot="resources">
+              {resources.length > 0 || metrics?.navigationTiming ? (
+                <Resources
+                  resources={resources}
+                  url={test.url}
+                  navigationTiming={metrics?.navigationTiming}
+                />
+              ) : (
+                <div class="resources-unavailable">
+                  <p>Resources data unavailable for this test.</p>
+                </div>
+              )}
+            </div>
+
+            <div slot="bottlenecks">
+              {resources.length > 0 ? (
+                <Bottlenecks
+                  resources={resources}
+                  url={test.url}
+                  navigationTiming={metrics?.navigationTiming}
+                  har={har}
+                />
+              ) : (
+                <div class="resources-unavailable">
+                  <p>Resources data unavailable for this test.</p>
+                </div>
+              )}
+            </div>
 
             <div slot="console">
               <Console messages={consoleMessages} />
@@ -458,7 +473,6 @@ const formattedDate = date.toLocaleString('en-US', {
     }
 
     .metrics-row {
-      grid-template-columns: 1fr;
       gap: 1.5rem; /* 24px */
     }
   }
@@ -467,7 +481,6 @@ const formattedDate = date.toLocaleString('en-US', {
   @media (max-width: 48rem) {
     /* 768px */
     .metrics-row {
-      display: flex;
       flex-direction: column;
     }
   }

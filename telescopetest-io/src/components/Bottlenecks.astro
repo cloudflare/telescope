@@ -1,0 +1,458 @@
+---
+import type { ResourceTiming } from '@/lib/types/resources';
+import type { NavigationTiming } from '@/lib/types/metrics';
+import type { Har } from '@/lib/types/har';
+import {
+  enrichResources,
+  formatBytes,
+  formatDuration,
+  shortenUrl,
+} from '@/lib/utils/resources';
+import PieChart from '@/components/PieChart.astro';
+import {
+  calculateFileTypeCountStats,
+  calculateFileTypeTransferStats,
+  calculateFileTypeDecodedStats,
+  calculateHttpVersionStats,
+} from '@/lib/bottlenecks/chartData';
+
+export interface Props {
+  resources: ResourceTiming[];
+  url: string;
+  navigationTiming?: NavigationTiming;
+  har: Har | null;
+}
+
+const { resources, url, navigationTiming, har } = Astro.props;
+
+const allResources: ResourceTiming[] = navigationTiming
+  ? [
+      {
+        name: url,
+        entryType: 'navigation',
+        startTime: 0,
+        duration: navigationTiming.duration,
+        initiatorType: 'navigation',
+        deliveryType: navigationTiming.deliveryType,
+        nextHopProtocol: navigationTiming.nextHopProtocol,
+        renderBlockingStatus: navigationTiming.renderBlockingStatus,
+        fetchStart: navigationTiming.fetchStart,
+        domainLookupStart: navigationTiming.domainLookupStart,
+        domainLookupEnd: navigationTiming.domainLookupEnd,
+        connectStart: navigationTiming.connectStart,
+        connectEnd: navigationTiming.connectEnd,
+        secureConnectionStart: navigationTiming.secureConnectionStart,
+        requestStart: navigationTiming.requestStart,
+        responseStart: navigationTiming.responseStart,
+        responseEnd: navigationTiming.responseEnd,
+        transferSize: navigationTiming.transferSize ?? 0,
+        encodedBodySize: navigationTiming.encodedBodySize ?? 0,
+        decodedBodySize: navigationTiming.decodedBodySize ?? 0,
+        responseStatus: navigationTiming.responseStatus,
+      },
+      ...resources,
+    ]
+  : resources;
+
+const enrichedResources = enrichResources(allResources);
+
+const tables = [
+  {
+    title: 'Top 5 Largest Files',
+    data: [...enrichedResources]
+      .sort((a, b) => b.transferSize - a.transferSize)
+      .slice(0, 5),
+    emptyMessage: 'No resource data available',
+  },
+  {
+    title: 'Top 5 Longest Requests',
+    data: [...enrichedResources]
+      .sort((a, b) => b.duration - a.duration)
+      .slice(0, 5),
+    emptyMessage: 'No resource data available',
+  },
+];
+const blockingResources = enrichedResources.filter(r => r.isBlocking);
+
+// Calculate chart data server-side
+const countStats = calculateFileTypeCountStats(allResources);
+const transferStats = calculateFileTypeTransferStats(allResources);
+const decodedStats = calculateFileTypeDecodedStats(allResources);
+const httpStats = calculateHttpVersionStats(har);
+---
+
+<div class="bottlenecks-container">
+  {
+    tables.map(({ title, data, emptyMessage }) => (
+      <div class="bn-section">
+        <h3 class="bn-title">{title}</h3>
+        <div class="bn-table-wrap">
+          <table class="bn-table">
+            <thead>
+              <tr>
+                <th class="col-idx">#</th>
+                <th class="col-url">URL</th>
+                <th class="col-type">Type</th>
+                <th class="col-metric">Duration</th>
+                <th class="col-metric">Size</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.length === 0 ? (
+                <tr>
+                  <td colspan="5" class="empty-message">
+                    {emptyMessage}
+                  </td>
+                </tr>
+              ) : (
+                data.map((resource, index) => (
+                  <tr class="bn-row">
+                    <td class="td-idx">{index + 1}</td>
+                    <td class="td-url" title={resource.name}>
+                      {shortenUrl(resource.name)}
+                    </td>
+                    <td class="td-type">{resource.fileType}</td>
+                    <td class="td-metric">
+                      {formatDuration(resource.duration)}
+                    </td>
+                    <td class="td-metric">
+                      {formatBytes(resource.transferSize)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ))
+  }
+
+  <div class="bn-section">
+    <details class="blocking-details">
+      <summary class="blocking-summary">
+        <span class="blocking-label">All Blocking Requests</span>
+        <span class="blocking-count">{blockingResources.length}</span>
+      </summary>
+      <div class="bn-table-wrap">
+        <table class="bn-table">
+          <thead>
+            <tr>
+              <th class="col-idx">#</th>
+              <th class="col-url">URL</th>
+              <th class="col-type">Type</th>
+              <th class="col-metric">Duration</th>
+              <th class="col-metric">Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            {blockingResources.length === 0 ? (
+              <tr>
+                <td colspan="5" class="empty-message">
+                  No blocking requests found
+                </td>
+              </tr>
+            ) : (
+              blockingResources.map((resource, index) => (
+                <tr class="bn-row bn-row--blocking">
+                  <td class="td-idx">{index + 1}</td>
+                  <td class="td-url" title={resource.name}>
+                    {shortenUrl(resource.name)}
+                  </td>
+                  <td class="td-type">{resource.fileType}</td>
+                  <td class="td-metric">
+                    {formatDuration(resource.duration)}
+                  </td>
+                  <td class="td-metric">
+                    {formatBytes(resource.transferSize)}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <div class="bn-section">
+    <h3 class="bn-title">Distribution Charts</h3>
+    <div class="charts-grid">
+      <div class="chart-box">
+        <h4 class="chart-title">Count by Content Type</h4>
+        <div class="chart-svg">
+          <PieChart data={countStats} />
+        </div>
+        <p class="chart-note">Number of requests per content type</p>
+        <div class="chart-legend">
+          {countStats.map(item => (
+            <div class="legend-item">
+              <div class="legend-color" data-color={item.colorType}></div>
+              <span>{item.label}: {item.value} ({item.percentage})</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div class="chart-box">
+        <h4 class="chart-title">Transferred by Content Type</h4>
+        <div class="chart-svg">
+          <PieChart data={transferStats} />
+        </div>
+        <p class="chart-note">Total transfer size per content type</p>
+        <div class="chart-legend">
+          {transferStats.map(item => (
+            <div class="legend-item">
+              <div class="legend-color" data-color={item.colorType}></div>
+              <span>{item.label}: {formatBytes(item.value)} ({item.percentage})</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div class="chart-box">
+        <h4 class="chart-title">Decoded by Content Type</h4>
+        <div class="chart-svg">
+          <PieChart data={decodedStats} />
+        </div>
+        <p class="chart-note">Total decoded size per content type</p>
+        <div class="chart-legend">
+          {decodedStats.map(item => (
+            <div class="legend-item">
+              <div class="legend-color" data-color={item.colorType}></div>
+              <span>{item.label}: {formatBytes(item.value)} ({item.percentage})</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div class="chart-box">
+        <h4 class="chart-title">HTTP Versions</h4>
+        <div class="chart-svg">
+          <PieChart data={httpStats} />
+        </div>
+        <p class="chart-note">Request count by HTTP protocol version</p>
+        <div class="chart-legend">
+          {httpStats.map(item => (
+            <div class="legend-item">
+              <div class="legend-color" data-color={item.colorType}></div>
+              <span>{item.label}: {item.value} ({item.percentage})</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .bottlenecks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .bn-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .bn-title {
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .bn-table-wrap {
+    position: relative;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+  }
+
+  .bn-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    table-layout: fixed;
+  }
+
+  .bn-table thead th {
+    padding: 0.375rem 0.625rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .col-idx {
+    width: 2.25rem;
+    text-align: center;
+  }
+  .col-url {
+    min-width: 15rem;
+  }
+  .col-type {
+    width: 5.5rem;
+  }
+  .col-metric {
+    width: 6.5rem;
+    text-align: right;
+  }
+
+  .bn-row {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .bn-row:last-child {
+    border-bottom: none;
+  }
+
+  .bn-row td {
+    padding: 0.375rem 0.625rem;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .td-idx {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .td-url {
+    font-size: 0.775rem;
+    color: var(--text);
+  }
+
+  .td-type {
+    color: var(--text);
+  }
+
+  .td-metric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+
+  .bn-row--blocking {
+    background: rgba(239, 68, 68, 0.05);
+  }
+
+  .empty-message {
+    text-align: center;
+    color: var(--muted);
+    padding: 2rem 1rem;
+  }
+
+  .blocking-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .blocking-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    padding: 0.125rem 0;
+    margin-bottom: 0.375rem;
+  }
+  .blocking-summary::-webkit-details-marker {
+    display: none;
+  }
+  .blocking-summary::before {
+    content: '▶';
+    font-size: 0.5rem;
+    color: var(--muted);
+    transition: transform 0.15s;
+    flex-shrink: 0;
+  }
+  .blocking-details[open] > .blocking-summary::before {
+    transform: rotate(90deg);
+  }
+
+  .blocking-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .blocking-count {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    padding: 0.1em 0.45em;
+  }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .chart-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .chart-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+    text-align: center;
+  }
+
+  .chart-note {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .chart-svg {
+    display: block;
+    width: 100%;
+    height: 250px;
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .legend-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+</style>
