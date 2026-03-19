@@ -92,8 +92,8 @@ export const POST: APIRoute = async (context: APIContext) => {
     const { file, name, description, source } = result.data;
     // Read file buffer
     const buffer = await file.arrayBuffer();
-    let unzipped = await getUnzipped(buffer);
-    let files = Object.keys(unzipped);
+    const unzipped = await getUnzipped(buffer);
+    const files = Object.keys(unzipped);
     // Generate hash for unique R2 storage key
     const zipKey = await generateContentHash(buffer);
     const env = context.locals.runtime.env;
@@ -130,12 +130,12 @@ export const POST: APIRoute = async (context: APIContext) => {
     // Strip the directory prefix from all files (e.g., "folder/config.json" → "config.json")
     const dirName = path.dirname(configPath);
     const prefixToStrip = dirName === '.' ? '' : dirName + '/';
-    if (prefixToStrip) {
-      unzipped = normalizeZipFilePaths(unzipped, prefixToStrip);
-    }
-    files = Object.keys(unzipped);
+    const normalizedUnzipped = prefixToStrip
+      ? normalizeZipFilePaths(unzipped, prefixToStrip)
+      : unzipped;
+    const normalizedFiles = Object.keys(normalizedUnzipped);
     // Extract config.json
-    const configBytes = unzipped['config.json'];
+    const configBytes = normalizedUnzipped['config.json'];
     if (!configBytes) {
       return new Response(
         JSON.stringify({
@@ -214,11 +214,11 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // store all unzipped files in R2 with {testId}/{filename} format
-    for (const filename of files) {
+    // store all normalizedUnzipped files in R2 with {testId}/{filename} format
+    for (const filename of normalizedFiles) {
       await env.RESULTS_BUCKET!.put(
         `${testId}/${filename}`,
-        unzipped[filename],
+        normalizedUnzipped[filename],
       );
     }
     // Build success response first
@@ -242,8 +242,8 @@ export const POST: APIRoute = async (context: APIContext) => {
           const rating = await rateUrlContent(
             env.AI!,
             testConfig.url,
-            unzipped['metrics.json'],
-            unzipped['screenshot.png'],
+            normalizedUnzipped['metrics.json'],
+            normalizedUnzipped['screenshot.png'],
           );
           await updateContentRating(prisma, testId, rating);
         })(),
