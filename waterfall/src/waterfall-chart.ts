@@ -963,7 +963,7 @@ export class WaterfallChart extends HTMLElement {
     cell.style.setProperty('--wf-bar-end', `${barEndPct}%`);
 
     const durLabel = el('span', { className: 'wf-bar-dur' });
-    durLabel.textContent = `${Math.round(entry.time)} ms`;
+    durLabel.textContent = fmtMs(entry.time);
 
     wrap.appendChild(durLabel);
     cell.append(wrap);
