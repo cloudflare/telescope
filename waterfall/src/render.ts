@@ -237,7 +237,7 @@ function renderTimelineCell(
   );
 
   const barEndPct = (offsetPct + (entry.time / totalMs) * 100).toFixed(4);
-  const durLabel = `${Math.round(entry.time)} ms`;
+  const durLabel = fmtMs(entry.time);
   return `<span class="wf-cell wf-cell--timeline" style="--wf-bar-end:${barEndPct}%">
         <div class="wf-bar-wrap">
           ${bars.join('\n          ')}
