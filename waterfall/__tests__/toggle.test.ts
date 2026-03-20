@@ -224,7 +224,7 @@ describe('system preference change', () => {
   it('no override: changing system to dark checks the knob', async () => {
     const ctx = await browser.newContext({ colorScheme: 'light' });
     const page = await ctx.newPage();
-    await page.goto(`${baseUrl}/static.html`);
+    await page.goto(`${baseUrl}/index.html`);
 
     // Initially light system, no override → unchecked
     expect(await isChecked(page)).toBe(false);
@@ -244,7 +244,7 @@ describe('system preference change', () => {
     const page = await ctx.newPage();
     // Set stored dark override before navigating
     await page.addInitScript(() => localStorage.setItem('wf-theme', 'dark'));
-    await page.goto(`${baseUrl}/static.html`);
+    await page.goto(`${baseUrl}/index.html`);
 
     // Override dark → checked
     expect(await isChecked(page)).toBe(true);

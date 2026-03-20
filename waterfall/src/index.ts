@@ -1,5 +1,5 @@
 /**
- * @telescope/waterfall — HAR waterfall web component
+ * @cloudflare/waterfall — HAR waterfall web component
  *
  * Exports the custom element class and all supporting types/helpers so
  * consumers can import them individually if needed.

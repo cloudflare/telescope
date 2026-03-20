@@ -41,25 +41,25 @@ describe('light mode backgrounds', () => {
 
   it('inactive filter button background is white', async () => {
     const page = await openPage(browser, baseUrl, 'light', {
-      htmlPage: 'index.html',
+      htmlPage: 'interactive.html',
     });
-    await page.waitForSelector('waterfall-chart.wf-ready, .wf-scrubber');
+    await page.waitForSelector('.wf-scrubber');
     expect(await bgColor(page, '.wf-filter-btn:not(.active)')).toBe(WHITE);
   });
 
   it('active filter button background is brand blue', async () => {
     const page = await openPage(browser, baseUrl, 'light', {
-      htmlPage: 'index.html',
+      htmlPage: 'interactive.html',
     });
-    await page.waitForSelector('waterfall-chart.wf-ready, .wf-scrubber');
+    await page.waitForSelector('.wf-scrubber');
     expect(await bgColor(page, '.wf-filter-btn.active')).toBe(BRAND_BLUE);
   });
 
   it('toggle button background is transparent', async () => {
     const page = await openPage(browser, baseUrl, 'light', {
-      htmlPage: 'index.html',
+      htmlPage: 'interactive.html',
     });
-    await page.waitForSelector('waterfall-chart.wf-ready, .wf-scrubber');
+    await page.waitForSelector('.wf-scrubber');
     expect(await bgColor(page, '.wf-toggle-cols')).toBe('rgba(0, 0, 0, 0)');
   });
 });

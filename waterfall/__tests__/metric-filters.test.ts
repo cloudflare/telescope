@@ -5,7 +5,7 @@
  * for metrics that are actually present in the HAR's pageTimings. Buttons for
  * missing metrics must not be rendered.
  *
- * Uses index.html (JS-upgraded) so HAR data can be injected programmatically.
+ * Uses interactive.html (JS-upgraded) so HAR data can be injected programmatically.
  */
 
 import { type Browser, type Page } from 'playwright';
@@ -77,7 +77,7 @@ function makeHar(pageTimings: Record<string, number>) {
 async function openIndex(): Promise<Page> {
   const ctx = await browser.newContext({ colorScheme: 'light' });
   const page = await ctx.newPage();
-  await page.goto(`${baseUrl}/index.html`);
+  await page.goto(`${baseUrl}/interactive.html`);
   return page;
 }
 
