@@ -367,9 +367,8 @@ export class WaterfallChart extends HTMLElement {
   private _entryFromRow(li: HTMLElement): HarEntry {
     const d = li.dataset;
     const url = li.querySelector('.wf-cell--url')?.getAttribute('title') ?? '';
-    const method =
-      li.querySelector('.wf-cell--info')?.textContent?.trim() ?? 'GET';
     const cells = li.querySelectorAll('.wf-cell--info');
+    const method = cells[0]?.textContent?.trim() ?? 'GET';
     const protocol = cells[1]?.textContent?.trim() ?? 'h2';
     const statusText = cells[2]?.textContent?.trim() ?? '200';
     const type = cells[3]?.textContent?.trim() ?? 'other';
