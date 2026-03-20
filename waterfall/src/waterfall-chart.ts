@@ -84,7 +84,6 @@ export class WaterfallChart extends HTMLElement {
   static observedAttributes = ['src'];
 
   // ── Light-DOM refs (populated by _buildDOM or _adoptDOM) ──────────────────
-  private _allGroupEl!: HTMLElement;
   private _filtersEl!: HTMLElement;
   private _phaseGroupEl!: HTMLElement;
   private _eventGroupEl!: HTMLElement;
@@ -490,12 +489,6 @@ export class WaterfallChart extends HTMLElement {
       return btn;
     };
 
-    this._allGroupEl = el('div', {
-      className: 'wf-legend-group wf-all-group',
-      role: 'group',
-      'aria-label': 'Reset filters',
-    });
-
     this._filtersEl = el('div', {
       className: 'wf-legend-group wf-filters',
       role: 'group',
@@ -535,12 +528,7 @@ export class WaterfallChart extends HTMLElement {
     this._toggleBtn.addEventListener('click', () => this._onToggleCols());
 
     const toolbar = el('div', { className: 'wf-toolbar' });
-    toolbar.append(
-      this._allGroupEl,
-      this._filtersEl,
-      this._phaseGroupEl,
-      this._eventGroupEl,
-    );
+    toolbar.append(this._filtersEl, this._phaseGroupEl, this._eventGroupEl);
 
     // ── List wrapper ──────────────────────────────────────────────────────────
 
