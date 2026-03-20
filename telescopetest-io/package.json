@@ -17,7 +17,7 @@
     "studio": "prisma studio"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^12.6.12",
+    "@astrojs/cloudflare": "^13.1.2",
     "@astrojs/react": "^4.4.2",
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-d1": "^7.3.0",
@@ -34,7 +34,7 @@
     "@types/node": "^24.0.0",
     "dotenv": "^17.2.4",
     "prisma": "^7.3.0",
-    "wrangler": "^4.61.0"
+    "wrangler": "^4.75.0"
   },
   "engines": {
     "node": ">=24",
