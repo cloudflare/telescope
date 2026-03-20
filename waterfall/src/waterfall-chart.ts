@@ -100,6 +100,9 @@ export class WaterfallChart extends HTMLElement {
   private _errorEl!: HTMLElement;
   private _toggleBtn!: HTMLButtonElement;
 
+  // ── Observers ─────────────────────────────────────────────────────────────
+  private _resizeObserver: ResizeObserver | null = null;
+
   // ── Component state ───────────────────────────────────────────────────────
   private _allEntries: HarEntry[] = [];
   private _activeFilters = new Set<string>(['all']);
@@ -128,6 +131,11 @@ export class WaterfallChart extends HTMLElement {
       this._adoptDOM();
     }
     // else: empty element, nothing to do until src/har are set
+  }
+
+  disconnectedCallback() {
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = null;
   }
 
   attributeChangedCallback(
@@ -359,13 +367,7 @@ export class WaterfallChart extends HTMLElement {
     this._wireScrubber();
 
     // Re-position event lines with accurate pixel measurements
-    const ro = new ResizeObserver(() => {
-      if (this._rulerEl.offsetWidth > 0) {
-        ro.disconnect();
-        this._renderEventLines();
-      }
-    });
-    ro.observe(this._rulerEl);
+    this._observeRulerForEventLines();
   }
 
   /**
@@ -447,6 +449,26 @@ export class WaterfallChart extends HTMLElement {
         else if (line.classList.contains('wf-event--lcp')) timings._lcp = ms;
       });
     return timings;
+  }
+
+  // ── ResizeObserver helper ─────────────────────────────────────────────────
+
+  /**
+   * Watch the ruler element for a non-zero width, then render event lines
+   * once and disconnect. Stores the observer in _resizeObserver so that
+   * disconnectedCallback can clean it up if the element is removed before
+   * the ruler gains layout.
+   */
+  private _observeRulerForEventLines() {
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this._rulerEl.offsetWidth > 0) {
+        this._resizeObserver!.disconnect();
+        this._resizeObserver = null;
+        this._renderEventLines();
+      }
+    });
+    this._resizeObserver.observe(this._rulerEl);
   }
 
   // ── Initial DOM construction (dynamic path) ───────────────────────────────
@@ -644,13 +666,7 @@ export class WaterfallChart extends HTMLElement {
       this._renderRows();
       this._wireScrubber();
       // Defer event lines until layout has settled
-      const ro = new ResizeObserver(() => {
-        if (this._rulerEl.offsetWidth > 0) {
-          ro.disconnect();
-          this._renderEventLines();
-        }
-      });
-      ro.observe(this._rulerEl);
+      this._observeRulerForEventLines();
     } catch (err) {
       this._showError(`Failed to render waterfall: ${(err as Error).message}`);
     }
