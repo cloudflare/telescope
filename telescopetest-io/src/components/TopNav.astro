@@ -1,4 +1,8 @@
 ---
+interface Props {
+  hideThemeSwitcher?: boolean;
+}
+const { hideThemeSwitcher = false } = Astro.props;
 const currentPath = Astro.url.pathname;
 
 const navItems = [
@@ -29,8 +33,10 @@ const navItems = [
     </nav>
   </div>
   <div class="actions">
-    <button class="theme-toggle" type="button" aria-label="Toggle theme"
-    ></button>
+    {!hideThemeSwitcher && (
+      <button class="theme-toggle" type="button" aria-label="Toggle theme"
+      ></button>
+    )}
     <a
       class="gh"
       href="https://github.com/cloudflare/telescope"
