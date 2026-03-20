@@ -136,10 +136,13 @@ export class WaterfallChart extends HTMLElement {
   ) {
     // Ignore the initial attribute parse (old === null) — connectedCallback
     // handles the first render. Only react to genuine changes after connection.
-    if (name === 'src' && old !== null && next !== null && this.isConnected) {
-      this._teardownAndBuild();
+    if (name !== 'src' || old === null || !this.isConnected) return;
+    this._teardownAndBuild();
+    if (next) {
       this._fetchAndRender(next);
     }
+    // next === null means src was removed — _teardownAndBuild() already left
+    // the element in a clean empty/loading state; nothing more to do.
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
