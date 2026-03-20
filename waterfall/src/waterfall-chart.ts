@@ -144,12 +144,20 @@ export class WaterfallChart extends HTMLElement {
 
   // ── Public API ────────────────────────────────────────────────────────────
 
-  /** Set a HAR object directly — bypasses the src attribute fetch. */
-  set har(data: Har) {
+  /** Set a HAR object directly — bypasses the src attribute fetch.
+   *  Set to null to clear the chart; if a src attribute is present it will
+   *  be re-fetched, otherwise the element returns to its empty state.
+   */
+  set har(data: Har | null) {
     this._harData = data;
-    if (this.isConnected) {
+    if (!this.isConnected) return;
+    if (data) {
       this._teardownAndBuild();
       this._loadHarData(data);
+    } else {
+      this._teardownAndBuild();
+      const src = this.getAttribute('src');
+      if (src) this._fetchAndRender(src);
     }
   }
 
