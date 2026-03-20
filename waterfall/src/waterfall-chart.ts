@@ -1133,7 +1133,14 @@ export class WaterfallChart extends HTMLElement {
 
   private _renderEventLines() {
     this._gridOverlayEl.innerHTML = '';
-    this._overlayEl.innerHTML = '';
+    // Remove all overlay children except the scrubber so the stored
+    // _scrubberEl reference stays valid (innerHTML='' would detach it).
+    let child = this._overlayEl.firstChild;
+    while (child) {
+      const next = child.nextSibling;
+      if (child !== this._scrubberEl) this._overlayEl.removeChild(child);
+      child = next;
+    }
     if (this._totalMs <= 0) return;
 
     // Both overlays live inside .wf-col-header--timeline, so their width equals
@@ -1166,8 +1173,9 @@ export class WaterfallChart extends HTMLElement {
       this._overlayEl.appendChild(line);
     }
 
-    // Scrubber must always be the last child of the overlay so it renders
-    // on top of event lines.
+    // Ensure the scrubber is the last child so it renders on top of event
+    // lines. It may already be last if no lines were added, but appending it
+    // again moves it to the end without cloning.
     this._overlayEl.appendChild(this._scrubberEl);
   }
 
