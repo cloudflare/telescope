@@ -48,7 +48,8 @@ export async function findTestIdByZipKey(
 
 /**
  * Find a single test by its testId
- * Returns the test or null if not found
+ * Returns the test object if found, null otherwise
+ * Caller should check content_rating if needed for safety logic
  */
 export async function getTestById(
   prisma: PrismaClient,
@@ -96,7 +97,6 @@ export async function getAllTests(
 
 /**
  * Get the content_rating and url for a single test.
- * Used by the rating endpoint to check rating and re-trigger AI if still unknown.
  */
 export async function getTestRating(
   prisma: PrismaClient,

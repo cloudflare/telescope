@@ -43,21 +43,14 @@ if (!test) {
   return Astro.redirect('/results');
 }
 
-// When AI rating is disabled, treat everything as safe
+const isUnsafe = aiEnabled && test.content_rating === ContentRating.UNSAFE;
 const isUnknown =
   aiEnabled &&
   (test.content_rating === ContentRating.UNKNOWN ||
     test.content_rating === ContentRating.IN_PROGRESS);
-const isUnsafe = aiEnabled && test.content_rating === ContentRating.UNSAFE;
 
-// --- Screenshot ---
-const screenshotKey = `${testId}/screenshot.png`;
-const screenshotObj = await env.RESULTS_BUCKET.head(screenshotKey);
-const screenshotUrl = screenshotObj
-  ? `/api/tests/${testId}/screenshot.png`
-  : null;
-
-// --- HAR (browser version + existence check for Waterfall) ---
+// Only read R2 files if content is safe to display
+let screenshotUrl: string | null = null;
 let harBrowser: { name: string; version: string } | null = null;
 let hasHar = false;
 let har: Har | null = null;
@@ -75,61 +68,96 @@ try {
 
 // --- Metrics ---
 let metrics: MetricsJson | null = null;
-try {
-  const metricsObj = await env.RESULTS_BUCKET.get(`${testId}/metrics.json`);
-  if (metricsObj) {
-    metrics = await metricsObj.json<MetricsJson>();
-  }
-} catch (err) {
-  console.error('Error reading metrics.json:', err);
-  // metrics unavailable — render without them
-}
-
-// --- Resources ---
 let resources: ResourceTiming[] = [];
-try {
-  const resourcesObj = await env.RESULTS_BUCKET.get(`${testId}/resources.json`);
-  if (resourcesObj) {
-    resources = await resourcesObj.json<ResourceTiming[]>();
-  }
-} catch (err) {
-  console.error('Error reading resources.json:', err);
-  // resources unavailable — render without them
-}
-
-// --- Console Messages ---
 let consoleMessages: ConsoleMessage[] = [];
-try {
-  const consoleObj = await env.RESULTS_BUCKET.get(`${testId}/console.json`);
-  if (consoleObj) {
-    consoleMessages = await consoleObj.json<ConsoleMessage[]>();
-  }
-} catch (err) {
-  console.error('Error reading console.json:', err);
-  // console messages unavailable — render without them
-}
+let lcp = getLcp(null);
+let cls = getCls(null);
+let fcp = getFcp(null);
+let ttfb = getTtfb(null);
+let transferBytes = extractTransferSize(null);
+let durationMs = extractDuration(null);
 
-// Extract metric values
-const lcp = getLcp(metrics);
-const cls = getCls(metrics);
-const fcp = getFcp(metrics);
-const ttfb = getTtfb(metrics);
-const transferBytes = extractTransferSize(metrics);
-const durationMs = extractDuration(metrics);
+if (!isUnsafe && !isUnknown) {
+  // --- Screenshot ---
+  const screenshotKey = `${testId}/screenshot.png`;
+  const screenshotObj = await env.RESULTS_BUCKET.head(screenshotKey);
+  screenshotUrl = screenshotObj ? `/api/tests/${testId}/screenshot.png` : null;
+
+  // --- HAR (browser version + existence check for Waterfall) ---
+  try {
+    const harObj = await env.RESULTS_BUCKET.get(`${testId}/pageload.har`);
+    if (harObj) {
+      hasHar = true;
+      const har = await harObj.json<{
+        log: { browser: { name: string; version: string } };
+      }>();
+      harBrowser = har?.log?.browser ?? null;
+    }
+  } catch (err) {
+    console.error('Error reading HAR browser info:', err);
+    // HAR unavailable — render without browser version
+  }
+
+  // --- Metrics ---
+  try {
+    const metricsObj = await env.RESULTS_BUCKET.get(`${testId}/metrics.json`);
+    if (metricsObj) {
+      metrics = await metricsObj.json<MetricsJson>();
+    }
+  } catch (err) {
+    console.error('Error reading metrics.json:', err);
+    // metrics unavailable — render without them
+  }
+
+  // --- Resources ---
+  try {
+    const resourcesObj = await env.RESULTS_BUCKET.get(
+      `${testId}/resources.json`,
+    );
+    if (resourcesObj) {
+      resources = await resourcesObj.json<ResourceTiming[]>();
+    }
+  } catch (err) {
+    console.error('Error reading resources.json:', err);
+    // resources unavailable — render without them
+  }
+
+  // --- Console Messages ---
+  try {
+    const consoleObj = await env.RESULTS_BUCKET.get(`${testId}/console.json`);
+    if (consoleObj) {
+      consoleMessages = await consoleObj.json<ConsoleMessage[]>();
+    }
+  } catch (err) {
+    console.error('Error reading console.json:', err);
+    // console messages unavailable — render without them
+  }
+
+  // Extract metric values
+  lcp = getLcp(metrics);
+  cls = getCls(metrics);
+  fcp = getFcp(metrics);
+  ttfb = getTtfb(metrics);
+  transferBytes = extractTransferSize(metrics);
+  durationMs = extractDuration(metrics);
+}
 
 // Formatted date
-const date = new Date(test.test_date * 1000);
-const formattedDate = date.toLocaleString('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  timeZoneName: 'short',
-});
+let formattedDate = '';
+if (!isUnsafe) {
+  const date = new Date(test.test_date * 1000);
+  formattedDate = date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  });
+}
 ---
 
-<Page title={test.name ?? `Test ${testId}`}>
+<Page title={isUnsafe ? `Test ${testId}` : (test.name ?? `Test ${testId}`)}>
   <div class="detail-header">
     <a href="/results" class="back-link">← Back to all results</a>
   </div>
