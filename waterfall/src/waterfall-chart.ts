@@ -586,7 +586,8 @@ export class WaterfallChart extends HTMLElement {
 
     this._listWrapEl = el('div', { className: 'wf-list-wrap' });
     this._listWrapEl.append(this._colHeadersEl, this._listEl);
-    this._wireScrubber();
+    // _wireScrubber() is called by _loadHarData() after data and the overlay
+    // are ready, not here during skeleton construction.
 
     // ── State messages ────────────────────────────────────────────────────────
     this._loadingEl = el(
@@ -650,6 +651,7 @@ export class WaterfallChart extends HTMLElement {
       this._renderEventFilters();
       this._renderRuler();
       this._renderRows();
+      this._wireScrubber();
       // Defer event lines until layout has settled
       const ro = new ResizeObserver(() => {
         if (this._rulerEl.offsetWidth > 0) {
