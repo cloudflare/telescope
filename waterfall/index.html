@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>waterfall-chart · full interactive demo</title>
+    <title>waterfall-chart · progressive enhancement demo</title>
     <link rel="stylesheet" href="waterfall.css" />
     <link rel="stylesheet" href="demo.css" />
   </head>
@@ -11,9 +11,10 @@
     <header class="demo-header">
       <nav aria-label="Demo pages">
         <ul class="demo-nav">
-          <li><a href="static.html">Static HTML+CSS</a></li>
-          <li><a href="progressive.html">Progressive enhancement</a></li>
-          <li><a href="index.html" aria-current="page">Full interactive</a></li>
+          <li>
+            <a href="index.html" aria-current="page">Progressive enhancement</a>
+          </li>
+          <li><a href="interactive.html">Interactive</a></li>
           <li><a href="src-attr.html">src attribute</a></li>
         </ul>
       </nav>
@@ -31,31 +32,21 @@
       </label>
     </header>
 
-    <h1>Full interactive</h1>
+    <h1>Progressive enhancement</h1>
     <p class="demo-desc">
-      Load any HAR file by URL or from disk. The pre-rendered chart is visible
-      immediately; the web component upgrades it with filters and row details.
+      The waterfall renders from pre-generated HTML and
+      <code>waterfall.css</code> immediately — no JavaScript required. Click the
+      button below to load the web component and unlock filters, row details,
+      and accurate event-line positioning.
     </p>
 
-    <div class="controls">
-      <label class="controls-label" for="har-url">HAR URL:</label>
-      <input
-        type="url"
-        id="har-url"
-        placeholder="https://example.com/path/to/file.har"
-      />
-      <button id="load-btn">Load URL</button>
-
-      <div class="controls-separator"></div>
-
-      <label class="file-label">
-        📂 Open local file…
-        <input type="file" id="har-file" accept=".har,application/json" />
-      </label>
-
-      <div class="controls-separator"></div>
-
-      <button id="reset-btn">Reset to example</button>
+    <div class="enhance-bar">
+      <button id="enhance-btn">Enable interactivity</button>
+      <span
+        class="enhance-status"
+        id="enhance-status"
+        aria-live="polite"
+      ></span>
     </div>
 
     <waterfall-chart id="wf">
@@ -1006,72 +997,6 @@
     </waterfall-chart>
 
     <script src="theme.js"></script>
-    <script type="module">
-      import './dist/index.js';
-
-      const wf = document.getElementById('wf');
-      const urlInput = document.getElementById('har-url');
-
-      /**
-       * Sanitize a user-supplied HAR URL.
-       *
-       * Returns the resolved href string when the URL is safe to fetch
-       * (http/https, same origin), or null when it should be rejected.
-       * Returning the resolved URL rather than the raw input ensures any
-       * relative paths or encoded characters are normalised before use.
-       */
-      function sanitizeURL(str) {
-        if (!str) return null;
-        try {
-          const url = new URL(str, window.location.href);
-          if (url.protocol !== 'http:' && url.protocol !== 'https:')
-            return null;
-          if (url.origin !== window.location.origin) return null;
-          return url.href;
-        } catch {
-          return null;
-        }
-      }
-
-      // ── Load URL ───────────────────────────────────────────────────────────
-      document.getElementById('load-btn').addEventListener('click', () => {
-        const src = sanitizeURL(urlInput.value.trim());
-        if (src) {
-          wf.setAttribute('src', src);
-        }
-      });
-
-      urlInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          const src = sanitizeURL(urlInput.value.trim());
-          if (src) {
-            wf.setAttribute('src', src);
-          }
-        }
-      });
-
-      // ── Reset to example ───────────────────────────────────────────────────
-      // Reload the page to restore the pre-rendered static HTML.
-      document.getElementById('reset-btn').addEventListener('click', () => {
-        location.reload();
-      });
-
-      // ── Local file picker ──────────────────────────────────────────────────
-      document.getElementById('har-file').addEventListener('change', (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.addEventListener('load', () => {
-          try {
-            const har = JSON.parse(reader.result);
-            wf.har = har;
-          } catch {
-            alert('Could not parse HAR file — make sure it is valid JSON.');
-          }
-        });
-        reader.readAsText(file);
-        e.target.value = ''; // allow re-picking the same file
-      });
-    </script>
+    <script src="progressive.js"></script>
   </body>
 </html>

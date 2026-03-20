@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>waterfall-chart · static demo</title>
+    <title>waterfall-chart · interactive demo</title>
     <link rel="stylesheet" href="waterfall.css" />
     <link rel="stylesheet" href="demo.css" />
   </head>
@@ -11,9 +11,10 @@
     <header class="demo-header">
       <nav aria-label="Demo pages">
         <ul class="demo-nav">
-          <li><a href="static.html" aria-current="page">Static HTML+CSS</a></li>
-          <li><a href="progressive.html">Progressive enhancement</a></li>
-          <li><a href="index.html">Full interactive</a></li>
+          <li><a href="index.html">Progressive enhancement</a></li>
+          <li>
+            <a href="interactive.html" aria-current="page">Interactive</a>
+          </li>
           <li><a href="src-attr.html">src attribute</a></li>
         </ul>
       </nav>
@@ -31,15 +32,24 @@
       </label>
     </header>
 
-    <h1>Static HTML + CSS</h1>
+    <h1>Interactive</h1>
     <p class="demo-desc">
-      No JavaScript. The waterfall renders from pre-generated HTML and
-      <code>waterfall.css</code> alone.
+      Load any HAR file from disk. The pre-rendered chart is visible
+      immediately; the web component upgrades it with filters and row details.
     </p>
 
-    <script src="theme.js"></script>
+    <div class="controls">
+      <label class="file-label">
+        📂 Open local file…
+        <input type="file" id="har-file" accept=".har,application/json" />
+      </label>
 
-    <waterfall-chart>
+      <div class="controls-separator"></div>
+
+      <button id="reset-btn">Reset to example</button>
+    </div>
+
+    <waterfall-chart id="wf">
       <!-- wf-demo-start -->
       <div class="wf-toolbar">
         <div
@@ -985,5 +995,35 @@
       <p class="wf-message wf-message--error wf-error" hidden></p>
       <!-- wf-demo-end -->
     </waterfall-chart>
+
+    <script src="theme.js"></script>
+    <script type="module">
+      import './dist/index.js';
+
+      const wf = document.getElementById('wf');
+
+      // ── Reset to example ───────────────────────────────────────────────────
+      // Reload the page to restore the pre-rendered static HTML.
+      document.getElementById('reset-btn').addEventListener('click', () => {
+        location.reload();
+      });
+
+      // ── Local file picker ──────────────────────────────────────────────────
+      document.getElementById('har-file').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+          try {
+            const har = JSON.parse(reader.result);
+            wf.har = har;
+          } catch {
+            alert('Could not parse HAR file — make sure it is valid JSON.');
+          }
+        });
+        reader.readAsText(file);
+        e.target.value = ''; // allow re-picking the same file
+      });
+    </script>
   </body>
 </html>

@@ -34,8 +34,7 @@ const ROOT = resolve(__dirname, '..');
 // All pages that contain the wf-demo markers
 const DEMO_PAGES = [
   resolve(ROOT, 'index.html'),
-  resolve(ROOT, 'static.html'),
-  resolve(ROOT, 'progressive.html'),
+  resolve(ROOT, 'interactive.html'),
 ];
 
 // ── Resolve HAR file path ─────────────────────────────────────────────────────
