@@ -20,11 +20,12 @@ export const ROOT = path.resolve(import.meta.dirname, '..');
  * `/../../../etc/passwd` could read arbitrary files from disk.
  */
 const ALLOWED_PATHS: Record<string, string> = {
-  '/': 'index.html',
-  '/index.html': 'index.html',
-  '/interactive.html': 'interactive.html',
-  '/src-attr.html': 'src-attr.html',
+  '/': 'public/index.html',
+  '/index.html': 'public/index.html',
+  '/interactive.html': 'public/interactive.html',
+  '/src-attr.html': 'public/src-attr.html',
   '/waterfall.css': 'waterfall.css',
+  '/demo.har': 'public/demo.har',
   '/src/demo/demo.css': 'src/demo/demo.css',
   '/src/demo/theme.js': 'src/demo/theme.js',
   '/src/demo/progressive.js': 'src/demo/progressive.js',

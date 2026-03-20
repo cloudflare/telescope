@@ -4,8 +4,8 @@
  * Verifies that the gap between the right edge of the last bar segment and the
  * left edge of the duration label is consistent across all request rows.
  *
- * Uses index.html (JS-upgraded) so that bar positions are computed accurately
- * from the live layout rather than SSR percentage estimates.
+ * Uses interactive.html (JS-upgraded) so that bar positions are computed
+ * accurately from the live layout rather than SSR percentage estimates.
  */
 
 import { type Browser, type Page } from 'playwright';
@@ -31,13 +31,13 @@ afterAll(async () => {
 async function openIndex(): Promise<Page> {
   const ctx = await browser.newContext({ colorScheme: 'light' });
   const page = await ctx.newPage();
-  await page.goto(`${baseUrl}/index.html`);
+  await page.goto(`${baseUrl}/interactive.html`);
   // Wait until the JS upgrade has injected the scrubber (signals render complete)
   await page.waitForSelector('.wf-scrubber');
   return page;
 }
 
-describe('duration label gap (index.html)', () => {
+describe('duration label gap (interactive.html)', () => {
   let page: Page;
 
   beforeAll(async () => {

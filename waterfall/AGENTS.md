@@ -1,4 +1,4 @@
-# AGENTS.md — `@telescope/waterfall`
+# AGENTS.md — `@cloudflare/waterfall`
 
 Guidance for AI coding agents working in this package.
 
@@ -6,10 +6,10 @@ Guidance for AI coding agents working in this package.
 
 ## What this package is
 
-`@telescope/waterfall` is a standalone, framework-free **web component** that
-renders an HTTP Archive (HAR) waterfall chart. It lives at `/waterfall/` in
-the Telescope monorepo and was extracted from the Astro/SvelteKit site at
-`telescopetest-io/src/`.
+`@cloudflare/waterfall` is a standalone, framework-free **web component** that
+renders an HTTP Archive (HAR) waterfall chart.
+
+It lives at `/waterfall/` in the Telescope monorepo.
 
 The custom element `<waterfall-chart>` can be used in three ways:
 
@@ -230,3 +230,47 @@ Add or adjust properties in the `@media (prefers-color-scheme: dark)` block on
 `:root` in `waterfall.css`. For demo-page chrome (nav, body, controls), the
 dark-mode block is in `demo.css`. Consumers can override tokens on
 `waterfall-chart` or any ancestor.
+
+## Package layout
+
+```
+waterfall/
+├── src/                    Source code
+│   ├── demo/               Demo page source
+├── __tests__/              Test files
+├── dist/                   Compiled JS + type declarations (after build)
+├── scripts/
+│   └── gen-demo.js         Regenerates pre-rendered HTML in demo pages
+├── waterfall.css           Standalone stylesheet — link in <head>
+├── index.html              Demo: pre-rendered + lazy JS upgrade
+├── interactive.html        Demo: fully dynamic + file picker
+└── src-attrs.html          Demo: load HAR from src attribute
+```
+
+waterfall/
+├── src/
+│ ├── har.ts HAR 1.2 TypeScript types
+│ ├── config.ts Resource-type → bar-height / colour-key map
+│ ├── formatters.ts fmtSize / fmtMs helpers
+│ ├── helpers.ts Pure analysis helpers (parseUrl, computeTotalMs, …)
+│ ├── render.ts renderToHTML(har) — pure server/build-time renderer
+│ ├── waterfall-chart.ts Custom element implementation
+│ └── index.ts Barrel export
+├── **tests**/
+│ └── theme.test.ts Playwright-driven visual/theme tests (Vitest)
+├── dist/ Compiled JS + type declarations (after build)
+├── scripts/
+│ └── gen-demo.js Regenerates pre-rendered HTML in demo pages
+├── waterfall.css Standalone stylesheet — link in <head>
+├── demo.css Demo page styles
+├── static.html Demo: pure HTML+CSS, no JS
+├── progressive.html Demo: pre-rendered + lazy JS upgrade
+├── index.html Demo: fully dynamic, URL input + file picker
+├── theme.js Sun/Moon theme toggle helper
+├── vitest.config.ts Vitest configuration
+├── package.json
+└── tsconfig.json
+
+```
+
+```

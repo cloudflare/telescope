@@ -1,10 +1,14 @@
 /**
  * Overlay tests — event-line (metric) labels and the scrubber.
  *
- * Event-line label tests use static.html (CSS-only) for data-label / data-name
- * and pill style properties; snap/visibility tests use index.html (JS upgraded)
- * because the scrubber is injected by the custom element and snapping requires
- * the accurate pixel positions that JS computes.
+ * Event-line label tests use index.html (pre-rendered, progressive enhancement)
+ * for data-label / data-name and pill style properties; snap/visibility tests
+ * use interactive.html (JS upgraded, HAR injectable) because the scrubber is
+ * injected by the custom element and snapping requires the accurate pixel
+ * positions that JS computes.
+ *
+ * index.html    = progressive enhancement (pre-rendered children, JS upgrades in place)
+ * interactive.html = fully dynamic (builds DOM from scratch, .har injectable)
  */
 
 import { type Browser, type Page } from 'playwright';
@@ -97,10 +101,10 @@ async function moveToOverlayPct(page: Page, pct: number): Promise<DOMRect> {
 
 // ── Event-line (metric) label — static properties ─────────────────────────────
 
-describe('event-line labels (static.html)', () => {
+describe('event-line labels (index.html)', () => {
   let page: Page;
   beforeAll(async () => {
-    page = await openUrl(`${baseUrl}/static.html`);
+    page = await openUrl(`${baseUrl}/index.html`);
   });
 
   // data-label (full value with space before unit)
@@ -229,11 +233,11 @@ describe('event-line labels (static.html)', () => {
 
 // ── Scrubber — free movement ──────────────────────────────────────────────────
 
-describe('scrubber free movement (index.html)', () => {
+describe('scrubber free movement (interactive.html)', () => {
   let page: Page;
 
   beforeAll(async () => {
-    page = await openUrl(`${baseUrl}/index.html`);
+    page = await openUrl(`${baseUrl}/interactive.html`);
     await page.waitForSelector('.wf-scrubber');
   });
 
@@ -325,11 +329,11 @@ describe('scrubber free movement (index.html)', () => {
 
 // ��─ Scrubber — snap to metric ─────────────────────────────────────────────────
 
-describe('scrubber snap to metric (index.html)', () => {
+describe('scrubber snap to metric (interactive.html)', () => {
   let page: Page;
 
   beforeAll(async () => {
-    page = await openUrl(`${baseUrl}/index.html`);
+    page = await openUrl(`${baseUrl}/interactive.html`);
     await page.waitForSelector('.wf-scrubber');
   });
 

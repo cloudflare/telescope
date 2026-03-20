@@ -845,7 +845,17 @@ export class WaterfallChart extends HTMLElement {
     ];
 
     const present = EVENTS.filter((e) => e.hasValue);
-    this._eventGroupEl.hidden = present.length === 0;
+    // Remove the group from the toolbar entirely when no metrics are present,
+    // so that querySelector('.wf-legend-group[aria-label="Toggle metrics"]')
+    // returns null (matching the static renderer, which omits it entirely).
+    if (present.length === 0) {
+      this._eventGroupEl.remove();
+      return;
+    }
+    // Re-attach if it was previously removed
+    if (!this._eventGroupEl.isConnected) {
+      this.querySelector('.wf-toolbar')?.appendChild(this._eventGroupEl);
+    }
 
     for (const { key, label } of present) {
       const btn = el('button', {

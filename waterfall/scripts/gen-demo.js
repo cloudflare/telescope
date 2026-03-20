@@ -33,8 +33,8 @@ const ROOT = resolve(__dirname, '..');
 
 // All pages that contain the wf-demo markers
 const DEMO_PAGES = [
-  resolve(ROOT, 'index.html'),
-  resolve(ROOT, 'interactive.html'),
+  resolve(ROOT, 'public', 'index.html'),
+  resolve(ROOT, 'public', 'interactive.html'),
 ];
 
 // ── Resolve HAR file path ─────────────────────────────────────────────────────

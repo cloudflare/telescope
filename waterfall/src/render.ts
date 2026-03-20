@@ -313,14 +313,14 @@ function renderRow(
  *
  * @example
  * // Node.js / build script
- * import { renderToHTML } from '@telescope/waterfall';
+ * import { renderToHTML } from '@cloudflare/waterfall';
  * const html = renderToHTML(har);
  * fs.writeFileSync('waterfall.html', `<waterfall-chart>${html}</waterfall-chart>`);
  *
  * @example
  * // SSR (e.g. Astro)
  * ---
- * import { renderToHTML } from '@telescope/waterfall';
+ * import { renderToHTML } from '@cloudflare/waterfall';
  * const html = renderToHTML(har);
  * ---
  * <waterfall-chart set:html={html} />
