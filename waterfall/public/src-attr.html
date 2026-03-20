@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>waterfall-chart · src attribute demo</title>
+    <link rel="stylesheet" href="../waterfall.css" />
+    <link rel="stylesheet" href="../src/demo/demo.css" />
+  </head>
+  <body>
+    <header class="demo-header">
+      <nav aria-label="Demo pages">
+        <ul class="demo-nav">
+          <li><a href="index.html">Progressive enhancement</a></li>
+          <li><a href="interactive.html">Interactive</a></li>
+          <li><a href="src-attr.html" aria-current="page">src attribute</a></li>
+        </ul>
+      </nav>
+      <label
+        class="theme-toggle"
+        aria-label="Toggle colour theme"
+        title="Toggle colour theme"
+      >
+        <span class="theme-toggle__icon">☀️</span>
+        <input type="checkbox" id="theme-btn" />
+        <span class="theme-toggle__track"
+          ><span class="theme-toggle__knob"></span
+        ></span>
+        <span class="theme-toggle__icon">🌙</span>
+      </label>
+    </header>
+
+    <h1>src attribute</h1>
+    <p class="demo-desc">
+      The HAR file is loaded by the web component via the <code>src</code>
+      attribute — no pre-rendered children, no JavaScript outside the bundle.
+    </p>
+
+    <waterfall-chart src="../demo.har"></waterfall-chart>
+
+    <script type="module" src="../dist/index.js"></script>
+    <script src="../src/demo/theme.js"></script>
+  </body>
+</html>
