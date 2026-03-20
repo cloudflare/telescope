@@ -2,6 +2,7 @@ import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
 import type { TestConfig } from '@/lib/types/tests';
 
+import path from 'node:path';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 
@@ -16,12 +17,7 @@ import { rateUrlContent } from '@/lib/ai/ai-content-rater';
 
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
-/**
- * Extract file list from ZIP archive
- * Works in both Node.js (adm-zip) and Cloudflare Workers (fflate) environments
- * @param buffer - ArrayBuffer containing ZIP file data
- * @returns Promise<Unzipped> - Unzipped type return
- */
+// Extract file list from ZIP archive
 async function getUnzipped(buffer: ArrayBuffer): Promise<Unzipped> {
   const uint8Array = new Uint8Array(buffer);
   const unzipped = unzipSync(uint8Array, {
@@ -33,16 +29,29 @@ async function getUnzipped(buffer: ArrayBuffer): Promise<Unzipped> {
   return unzipped;
 }
 
-/**
- * Generate a SHA-256 hash of the buffer contents to use as unique identifier
- * @param buffer - ArrayBuffer containing the file data
- * @returns Promise<string> - Hex string of the hash
- */
+// Generate a SHA-256 hash of the buffer contents to use as unique identifier
 async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
+}
+
+// Normalize ZIP file paths: filter to only files under the prefix, then strip the prefix
+function normalizeZipFilePaths(
+  unzipped: Unzipped,
+  prefixToStrip: string,
+): Unzipped {
+  return Object.entries(unzipped)
+    .filter(([fullFilePath]) => fullFilePath.startsWith(prefixToStrip))
+    .map(
+      ([originalFilePath, contents]) =>
+        [originalFilePath.slice(prefixToStrip.length), contents] as const,
+    )
+    .reduce((acc, [normalizedFilePath, contents]) => {
+      acc[normalizedFilePath] = contents;
+      return acc;
+    }, {} as Unzipped);
 }
 
 // Generate a test_id
@@ -86,9 +95,7 @@ export const POST: APIRoute = async (context: APIContext) => {
     const unzipped = await getUnzipped(buffer);
     const files = Object.keys(unzipped);
     // Generate hash for unique R2 storage key
-    // TODO: make hash content-based, not ZIP based
     const zipKey = await generateContentHash(buffer);
-    // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
     const env = context.locals.runtime.env;
     // Check if this exact content already exists in D1
     const prisma = getPrismaClient(context);
@@ -107,9 +114,11 @@ export const POST: APIRoute = async (context: APIContext) => {
         },
       );
     }
-    // Confirm the config file exists
-    const configFile = `config.json`;
-    if (!files.includes(configFile)) {
+    // Find if some ' .../config.json' exists
+    const configPath = files.find(
+      file => path.basename(file) === 'config.json',
+    );
+    if (!configPath) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -118,8 +127,15 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
+    // Strip the directory prefix from all files (e.g., "folder/config.json" → "config.json")
+    const dirName = path.dirname(configPath);
+    const prefixToStrip = dirName === '.' ? '' : dirName + '/';
+    const normalizedUnzipped = prefixToStrip
+      ? normalizeZipFilePaths(unzipped, prefixToStrip)
+      : unzipped;
+    const normalizedFiles = Object.keys(normalizedUnzipped);
     // Extract config.json
-    const configBytes = unzipped[configFile];
+    const configBytes = normalizedUnzipped['config.json'];
     if (!configBytes) {
       return new Response(
         JSON.stringify({
@@ -198,11 +214,11 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // store all unzipped files in R2 with {testId}/{filename} format
-    for (const filename of files) {
+    // store all normalizedUnzipped files in R2 with {testId}/{filename} format
+    for (const filename of normalizedFiles) {
       await env.RESULTS_BUCKET!.put(
         `${testId}/${filename}`,
-        unzipped[filename],
+        normalizedUnzipped[filename],
       );
     }
     // Build success response first
@@ -226,8 +242,8 @@ export const POST: APIRoute = async (context: APIContext) => {
           const rating = await rateUrlContent(
             env.AI!,
             testConfig.url,
-            unzipped['metrics.json'],
-            unzipped['screenshot.png'],
+            normalizedUnzipped['metrics.json'],
+            normalizedUnzipped['screenshot.png'],
           );
           await updateContentRating(prisma, testId, rating);
         })(),
