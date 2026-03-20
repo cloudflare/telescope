@@ -132,6 +132,13 @@ input[type='url'] {
   white-space: nowrap;
 }
 
+.har-title {
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--wf-text, #111827);
+}
+
 .controls-separator {
   width: 1px;
   height: 1.5rem;
