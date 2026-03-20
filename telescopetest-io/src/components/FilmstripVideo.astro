@@ -1,0 +1,280 @@
+---
+import type { MetricsJson } from '@/lib/types/metrics';
+interface Props {
+  testId: string;
+  metrics: MetricsJson | null;
+}
+const { testId, metrics } = Astro.props;
+const env = Astro.locals.runtime.env;
+let frameRate = 1;
+try {
+  const configObj = await env.RESULTS_BUCKET.get(`${testId}/config.json`);
+  if (configObj) {
+    const config = await configObj.json<{ options?: { frameRate?: number } }>();
+    frameRate = config?.options?.frameRate || 1;
+  }
+} catch (error) {
+  console.error('Error reading config.json:', error);
+}
+const fcpMs = metrics?.paintTiming?.find(
+  p => p.name === 'first-contentful-paint',
+)?.startTime;
+const lcpEntry =
+  metrics?.largestContentfulPaint?.[metrics.largestContentfulPaint.length - 1];
+const lcpMs =
+  lcpEntry?.renderTime && lcpEntry.renderTime > 0
+    ? lcpEntry.renderTime
+    : lcpEntry?.startTime;
+const layoutShifts =
+  metrics?.layoutShifts?.filter(s => !s.hadRecentInput) || [];
+interface FilmstripFrame {
+  filename: string;
+  frameNum: number;
+  url: string;
+  ms: number;
+  timeLabel: string;
+  isFcp: boolean;
+  isLcp: boolean;
+  hasShift: boolean;
+}
+let filmstripFrames: FilmstripFrame[] = [];
+let videoUrl: string | null = null;
+try {
+  const listed = await env.RESULTS_BUCKET.list({ prefix: `${testId}/` });
+  const frames = listed.objects
+    .filter(
+      obj =>
+        obj.key.includes('/filmstrip/') &&
+        (obj.key.endsWith('.jpg') || obj.key.endsWith('.png')),
+    )
+    .map(obj => {
+      const filename = obj.key.split('/').pop() || '';
+      const match = filename.match(/frame_\d+x\d+_(\d+)\.(jpg|png)/);
+      const frameNum = match ? parseInt(match[1], 10) : 0;
+      return {
+        filename,
+        frameNum,
+        url: `/api/tests/${testId}/filmstrip/${filename}`,
+      };
+    })
+    .sort((a, b) => a.frameNum - b.frameNum);
+  filmstripFrames = frames.map(frame => {
+    // try to calculate filmstrip timestamps, assumes frame # happens at # second.
+    // to get more precise framerates, also store video duration.
+    const ms = Math.floor(((frame.frameNum - 1) * 1000) / frameRate);
+    const timeLabel = ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+    // tolerance is half frame interval, use this to determine highlights
+    const tolerance = 1000 / frameRate / 2;
+    const isFcp =
+      fcpMs !== null && fcpMs !== undefined && Math.abs(ms - fcpMs) < tolerance;
+    const isLcp =
+      lcpMs !== null && lcpMs !== undefined && Math.abs(ms - lcpMs) < tolerance;
+    const hasShift = layoutShifts.some(
+      shift => Math.abs(ms - shift.startTime) < tolerance,
+    );
+    return { ...frame, ms, timeLabel, isFcp, isLcp, hasShift };
+  });
+  const videoFile = listed.objects.find(
+    obj =>
+      obj.key.startsWith(`${testId}/`) &&
+      !obj.key.includes('/filmstrip/') &&
+      obj.key.endsWith('.webm'),
+  );
+  if (videoFile) {
+    videoUrl = `/api/tests/${testId}/${videoFile.key.replace(`${testId}/`, '')}`;
+  }
+} catch (error) {
+  console.error('Error loading filmstrip/video:', error);
+}
+---
+
+<div class="filmstrip-video-container">
+  <section class="filmstrip-section">
+    <h3>Filmstrip Timeline</h3>
+    <div class="filmstrip-timeline">
+      {
+        filmstripFrames.length > 0 ? (
+          filmstripFrames.map(frame => (
+            <div class="frame-wrapper">
+              <img
+                src={frame.url}
+                alt={`Frame at ${frame.ms}ms`}
+                loading="eager"
+                class:list={[
+                  'frame-image',
+                  { fcp: frame.isFcp, lcp: frame.isLcp, shift: frame.hasShift },
+                ]}
+              />
+              <span class="frame-timestamp">{frame.timeLabel}</span>
+              {frame.isFcp && <span class="frame-label fcp">FCP</span>}
+              {frame.isLcp && <span class="frame-label lcp">LCP</span>}
+              {frame.hasShift && <span class="frame-label shift">Shift</span>}
+            </div>
+          ))
+        ) : (
+          <div class="empty-state">
+            No filmstrip frames available for this test.
+          </div>
+        )
+      }
+    </div>
+  </section>
+  <section class="video-section">
+    <h3>Page Load Recording</h3>
+    {
+      videoUrl ? (
+        <div class="video-container">
+          <video src={videoUrl} controls preload="metadata" />
+        </div>
+      ) : (
+        <div class="empty-state">
+          No video recording available for this test.
+        </div>
+      )
+    }
+  </section>
+</div>
+
+<style>
+  .filmstrip-video-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  .filmstrip-section,
+  .video-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  h3 {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .filmstrip-timeline {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    padding: 0.5rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+  }
+  .filmstrip-timeline::-webkit-scrollbar {
+    height: 6px;
+  }
+  .filmstrip-timeline::-webkit-scrollbar-track {
+    background: var(--background);
+    border-radius: 3px;
+  }
+  .filmstrip-timeline::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+  .frame-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+    flex-shrink: 0;
+    min-width: 90px;
+  }
+  .frame-image {
+    height: 70px;
+    width: auto;
+    max-width: 125px;
+    min-width: 90px;
+    object-fit: contain;
+    display: block;
+    border: 2px solid transparent;
+    border-radius: 2px;
+    background: linear-gradient(
+      90deg,
+      var(--panel) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      var(--panel) 100%
+    );
+    background-size: 200% 100%;
+    animation:
+      shimmer 1.5s infinite,
+      fadeIn 0.3s ease-in forwards;
+  }
+  @keyframes fadeIn {
+    to {
+      background: none;
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  .frame-image.fcp {
+    border-color: var(--color-warning);
+    border-width: 3px;
+  }
+  .frame-image.lcp {
+    border-color: var(--brand);
+    border-width: 3px;
+  }
+  .frame-image.shift {
+    border-color: var(--color-danger);
+    border-width: 3px;
+  }
+
+  .frame-timestamp {
+    font-size: 0.5625rem;
+    color: var(--muted);
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    line-height: 1;
+  }
+  .frame-label {
+    font-size: 0.5rem;
+    font-weight: 500;
+    padding: 0.0625rem 0.1875rem;
+    border-radius: 0.125rem;
+    text-transform: uppercase;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .frame-label.fcp {
+    background: rgba(251, 191, 36, 0.2);
+    color: var(--color-warning);
+  }
+  .frame-label.lcp {
+    background: rgba(99, 102, 241, 0.2);
+    color: var(--brand);
+  }
+  .frame-label.shift {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--color-danger);
+  }
+  .video-container {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .video-container video {
+    width: 100%;
+    max-width: 1000px;
+    border-radius: 0.375rem;
+  }
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem;
+    padding: 2.5rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+  }
+</style>
