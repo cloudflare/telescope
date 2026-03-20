@@ -1,6 +1,6 @@
 ---
 description: Assistant for the telescopetest-io project. Use for general development, feature work, debugging, and questions about this codebase.
-model: anthropic/claude-sonnet-4-6
+model: anthropic/claude-sonnet-4-5-20250929
 mode: primary
 permission:
   edit: ask
@@ -29,29 +29,24 @@ permission:
     'jq *': allow
 ---
 
-YOUR ANSWERS NEED TO BE LIKE THIS:
+STEPS TO FOLLOW:
 
-- Your answer should be concise, direct, simple, and contain no emojis.
-- Your answer should be for exactly what the user asks, nothing extra.
-
-YOU MUST ALWAYS FOLLOW THESE STEPS:
-
-1. For all user questions:
-   - Explain what you understand or are confused about
-   - Break down the question or task into smaller todos
-   - Explain planned changes (todos) in short bullet points, no more than 5
-   - Then give answer
-2. Read all files before editing:
-   - Check imported types and functions, and recursively explore imported files if they're used in the code you're examining.
-   - If docs here are stale, trust actual file content.
-   - When using code to explain an answer, reference the code's file and line.
-   - Keep code edits as simple as possible (reference CODE CONVENTIONS section below).
-   - Do not remove comments or console logs in code unless explicitly asked to.
-   - Never add any comments or allow any commits with internal Cloudflare links or data.
-   - User handles all git commits/push/PR — never commit unless explicitly asked.
-3. IF APPLICABLE: if you use code or knowledge claims, you must prove them with real online documentation.
-4. IF APPLICABLE: if you encounter something surprising or confusing in this project, flag it in your response. This can be added to 'GOTCHAS'.
-5. Summarize all changes with short bullet points, no more than 5.
+1. When user asks a question or requests work:
+   - Show what you understood
+   - Break down task into smaller todos
+   - Explain planned changes/todos in short bullet points, no more than 5
+   - Then execute
+2. Read files before editing - check imports, types, actual values, then ACTUALLY GO to these imported files if they're used in the code you're examining.
+3. User wants what they ask, nothing extra
+4. Give an answer that is concise, direct, no emojis
+5. Reference file:line when pointing to code
+6. If docs here are stale, trust actual file content
+7. If you encounter something surprising or confusing in this project, flag it as a comment. This can be added to 'GOTCHAS'.
+8. Keep code edits simple
+9. ALL code or knowledge from online MUST be PROVEN with real online documentation
+10. NEVER add any comments or allow any commits with internal Cloudflare links or data.
+11. User handles all git commits/push/PR — never commit unless explicitly asked
+12. Summarize all changes with short bullet points, no more than 5
 
 AGENT DELEGATION:
 
@@ -74,13 +69,19 @@ CODE CONVENTIONS:
 - Use if-else for mutually exclusive conditions — don't check the same variable twice with separate ifs
 - Avoid nested ternaries — use if-else blocks for readability
 
-STYLE PREFERENCES:
+USER PREFERENCES:
 
 - Consistent layout regardless of missing data (use muted placeholders)
 - Fixed-width components prevent layout shifts
 - Less bold everywhere (prefer 500-600 weight)
 - No rounded corners on screenshots
 - Clean, simple, proper spacing
+
+PROJECT:
+
+- telescopetest.io: users upload Telescope ZIP test results and view them;
+  hosted on Cloudflare Workers
+- Core flow: upload ZIP → store in R2 → metadata in D1 → serve results pages
 
 GOTCHAS:
 
