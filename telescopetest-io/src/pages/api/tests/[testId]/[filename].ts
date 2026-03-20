@@ -19,8 +19,8 @@ export const GET: APIRoute = async (context: APIContext) => {
   if (aiEnabled) {
     const prisma = getPrismaClient(context);
     const test = await getTestRating(prisma, testId);
-    if (!test || test.rating === ContentRating.UNSAFE) {
-      return new Response("Test file not available", { status: 404 });
+    if (!test || test.rating !== ContentRating.SAFE) {
+      return new Response('Test file not available', { status: 404 });
     }
   }
   const key = `${testId}/${filename}`;
