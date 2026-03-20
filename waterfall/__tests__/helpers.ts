@@ -20,10 +20,9 @@ export const ROOT = path.resolve(import.meta.dirname, '..');
  * `/../../../etc/passwd` could read arbitrary files from disk.
  */
 const ALLOWED_PATHS: Record<string, string> = {
-  '/': 'static.html',
-  '/static.html': 'static.html',
+  '/': 'index.html',
   '/index.html': 'index.html',
-  '/progressive.html': 'progressive.html',
+  '/interactive.html': 'interactive.html',
   '/src-attr.html': 'src-attr.html',
   '/waterfall.css': 'waterfall.css',
   '/demo.css': 'demo.css',
@@ -95,7 +94,7 @@ export async function launchBrowser(): Promise<Browser> {
 }
 
 /**
- * Open static.html with the given system color-scheme.
+ * Open a demo page with the given system color-scheme.
  * If `storedTheme` is provided it is written to localStorage before navigation,
  * simulating a returning user with a saved preference.
  * If `dataTheme` is provided it is set on <html> after navigation (useful for
@@ -108,8 +107,8 @@ export async function openPage(
   opts: {
     storedTheme?: 'light' | 'dark';
     dataTheme?: 'light' | 'dark';
-    /** Which demo page to load. Defaults to 'static.html'. */
-    htmlPage?: 'static.html' | 'index.html' | 'progressive.html';
+    /** Which demo page to load. Defaults to 'index.html' (progressive enhancement). */
+    htmlPage?: 'index.html' | 'interactive.html';
   } = {},
 ): Promise<Page> {
   const ctx = await browser.newContext({ colorScheme: systemScheme });
@@ -122,7 +121,7 @@ export async function openPage(
     );
   }
 
-  await page.goto(`${baseUrl}/${opts.htmlPage ?? 'static.html'}`);
+  await page.goto(`${baseUrl}/${opts.htmlPage ?? 'index.html'}`);
 
   if (opts.dataTheme) {
     await page.evaluate(
