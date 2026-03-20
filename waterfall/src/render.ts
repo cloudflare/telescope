@@ -161,7 +161,7 @@ function renderEventLines(
     .map(({ ms, cls, label }) => {
       const leftPct = ((ms / totalMs) * 100).toFixed(4);
       const dataLabel = fmtEventLabel(label, ms);
-      return `<div class="wf-event-line ${cls}" data-label="${esc(dataLabel)}" data-name="${esc(label)}" style="left:${leftPct}%"></div>`;
+      return `<div class="wf-event-line ${cls}" data-ms="${ms}" data-label="${esc(dataLabel)}" data-name="${esc(label)}" style="left:${leftPct}%"></div>`;
     })
     .join('\n      ');
 }
