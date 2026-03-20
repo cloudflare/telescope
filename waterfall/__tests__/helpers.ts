@@ -25,9 +25,10 @@ const ALLOWED_PATHS: Record<string, string> = {
   '/interactive.html': 'interactive.html',
   '/src-attr.html': 'src-attr.html',
   '/waterfall.css': 'waterfall.css',
-  '/demo.css': 'demo.css',
-  '/theme.js': 'theme.js',
-  '/progressive.js': 'progressive.js',
+  '/src/demo/demo.css': 'src/demo/demo.css',
+  '/src/demo/theme.js': 'src/demo/theme.js',
+  '/src/demo/progressive.js': 'src/demo/progressive.js',
+  '/src/demo/interactive.js': 'src/demo/interactive.js',
   // dist/ ES module bundle — index.js and its sibling chunk files
   '/dist/index.js': 'dist/index.js',
   '/dist/waterfall-chart.js': 'dist/waterfall-chart.js',

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>waterfall-chart · progressive enhancement demo</title>
     <link rel="stylesheet" href="waterfall.css" />
-    <link rel="stylesheet" href="demo.css" />
+    <link rel="stylesheet" href="src/demo/demo.css" />
   </head>
   <body>
     <header class="demo-header">
@@ -35,9 +35,9 @@
     <h1>Progressive enhancement</h1>
     <p class="demo-desc">
       The waterfall renders from pre-generated HTML and
-      <code>waterfall.css</code> immediately — no JavaScript required. Click the
-      button below to load the web component and unlock filters, row details,
-      and accurate event-line positioning.
+      <code>waterfall.css</code> immediately — no JavaScript required.<br />
+      Click the button below to load the web component and unlock filters, row
+      details, and accurate event-line positioning.
     </p>
 
     <div class="enhance-bar">
@@ -102,15 +102,15 @@
           </button>
         </div>
         <div class="wf-legend-group" role="group" aria-label="Toggle metrics">
-          <button class="wf-filter-btn" data-event="ev-dcl">
+          <button class="wf-filter-btn active" data-event="ev-dcl">
             <span class="wf-swatch wf-swatch--thin wf-swatch--ev-dcl"></span>DOM
             Content Loaded
           </button>
-          <button class="wf-filter-btn" data-event="ev-load">
+          <button class="wf-filter-btn active" data-event="ev-load">
             <span class="wf-swatch wf-swatch--thin wf-swatch--ev-load"></span
             >Page Load
           </button>
-          <button class="wf-filter-btn" data-event="ev-lcp">
+          <button class="wf-filter-btn active" data-event="ev-lcp">
             <span class="wf-swatch wf-swatch--thin wf-swatch--ev-lcp"></span
             >Largest Contentful Paint
           </button>
@@ -147,18 +147,21 @@
             <div class="wf-events-overlay" aria-hidden="true">
               <div
                 class="wf-event-line wf-event--dcl"
+                data-ms="340"
                 data-label="DCL 340 ms"
                 data-name="DCL"
                 style="left: 41.9236%"
               ></div>
               <div
                 class="wf-event-line wf-event--load"
+                data-ms="620"
                 data-label="Load 620 ms"
                 data-name="Load"
                 style="left: 76.4488%"
               ></div>
               <div
                 class="wf-event-line wf-event--lcp"
+                data-ms="480"
                 data-label="LCP 480 ms"
                 data-name="LCP"
                 style="left: 59.1862%"
@@ -191,7 +194,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">html</span>
             <span class="wf-cell wf-cell--info wf-cell--size">12.8 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.164s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">164 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 20.2219%"
@@ -199,17 +202,17 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--blocked wb--phase"
-                  title="Blocked: 0.012s"
+                  title="Blocked: 12 ms"
                   style="left: 0%; width: 1.4797%"
                 ></div>
                 <div
                   class="wb wb--html-light"
-                  title="Send+Wait: 0.034s"
+                  title="Send+Wait: 34 ms"
                   style="left: 1.4797%; width: 4.1924%"
                 ></div>
                 <div
                   class="wb wb--html-dark"
-                  title="Receive: 0.118s"
+                  title="Receive: 118 ms"
                   style="left: 5.672%; width: 14.5499%"
                 ></div>
                 <span class="wf-bar-dur">164 ms</span>
@@ -243,7 +246,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">css</span>
             <span class="wf-cell wf-cell--info wf-cell--size">3.4 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.053s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">53 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 24.7842%"
@@ -251,17 +254,17 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--blocked wb--phase"
-                  title="Blocked: 0.002s"
+                  title="Blocked: 2 ms"
                   style="left: 18.2491%; width: 0.2466%"
                 ></div>
                 <div
                   class="wb wb--css-light"
-                  title="Send+Wait: 0.019s"
+                  title="Send+Wait: 19 ms"
                   style="left: 18.4957%; width: 2.3428%"
                 ></div>
                 <div
                   class="wb wb--css-dark"
-                  title="Receive: 0.032s"
+                  title="Receive: 32 ms"
                   style="left: 20.8385%; width: 3.9457%"
                 ></div>
                 <span class="wf-bar-dur">53 ms</span>
@@ -295,7 +298,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">js</span>
             <span class="wf-cell wf-cell--info wf-cell--size">8.7 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.08s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">80 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 28.36%"
@@ -303,17 +306,17 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--blocked wb--phase"
-                  title="Blocked: 0.002s"
+                  title="Blocked: 2 ms"
                   style="left: 18.4957%; width: 0.2466%"
                 ></div>
                 <div
                   class="wb wb--js-light"
-                  title="Send+Wait: 0.023s"
+                  title="Send+Wait: 23 ms"
                   style="left: 18.7423%; width: 2.836%"
                 ></div>
                 <div
                   class="wb wb--js-dark"
-                  title="Receive: 0.055s"
+                  title="Receive: 55 ms"
                   style="left: 21.5783%; width: 6.7818%"
                 ></div>
                 <span class="wf-bar-dur">80 ms</span>
@@ -347,7 +350,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">js</span>
             <span class="wf-cell wf-cell--info wf-cell--size">47.8 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.208s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">208 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 44.3896%"
@@ -355,17 +358,17 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--blocked wb--phase"
-                  title="Blocked: 0.002s"
+                  title="Blocked: 2 ms"
                   style="left: 18.7423%; width: 0.2466%"
                 ></div>
                 <div
                   class="wb wb--js-light"
-                  title="Send+Wait: 0.026s"
+                  title="Send+Wait: 26 ms"
                   style="left: 18.9889%; width: 3.2059%"
                 ></div>
                 <div
                   class="wb wb--js-dark"
-                  title="Receive: 0.18s"
+                  title="Receive: 180 ms"
                   style="left: 22.1948%; width: 22.1948%"
                 ></div>
                 <span class="wf-bar-dur">208 ms</span>
@@ -399,7 +402,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">font</span>
             <span class="wf-cell wf-cell--info wf-cell--size">15.5 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.159s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">159 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 38.7176%"
@@ -407,27 +410,27 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--dns wb--phase"
-                  title="DNS Lookup: 0.012s"
+                  title="DNS Lookup: 12 ms"
                   style="left: 19.1122%; width: 1.4797%"
                 ></div>
                 <div
                   class="wb wb--connect wb--phase"
-                  title="TCP Connect: 0.028s"
+                  title="TCP Connect: 28 ms"
                   style="left: 20.5919%; width: 3.4525%"
                 ></div>
                 <div
                   class="wb wb--ssl wb--phase"
-                  title="TLS Handshake: 0.018s"
+                  title="TLS Handshake: 18 ms"
                   style="left: 24.0444%; width: 2.2195%"
                 ></div>
                 <div
                   class="wb wb--font-light"
-                  title="Send+Wait: 0.039s"
+                  title="Send+Wait: 39 ms"
                   style="left: 26.2639%; width: 4.8089%"
                 ></div>
                 <div
                   class="wb wb--font-dark"
-                  title="Receive: 0.062s"
+                  title="Receive: 62 ms"
                   style="left: 31.0727%; width: 7.6449%"
                 ></div>
                 <span class="wf-bar-dur">159 ms</span>
@@ -461,7 +464,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">font</span>
             <span class="wf-cell wf-cell--info wf-cell--size">13.7 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.157s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">157 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 38.8409%"
@@ -469,27 +472,27 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--dns wb--phase"
-                  title="DNS Lookup: 0.012s"
+                  title="DNS Lookup: 12 ms"
                   style="left: 19.4821%; width: 1.4797%"
                 ></div>
                 <div
                   class="wb wb--connect wb--phase"
-                  title="TCP Connect: 0.028s"
+                  title="TCP Connect: 28 ms"
                   style="left: 20.9618%; width: 3.4525%"
                 ></div>
                 <div
                   class="wb wb--ssl wb--phase"
-                  title="TLS Handshake: 0.018s"
+                  title="TLS Handshake: 18 ms"
                   style="left: 24.4143%; width: 2.2195%"
                 ></div>
                 <div
                   class="wb wb--font-light"
-                  title="Send+Wait: 0.041s"
+                  title="Send+Wait: 41 ms"
                   style="left: 26.6338%; width: 5.0555%"
                 ></div>
                 <div
                   class="wb wb--font-dark"
-                  title="Receive: 0.058s"
+                  title="Receive: 58 ms"
                   style="left: 31.6893%; width: 7.1517%"
                 ></div>
                 <span class="wf-bar-dur">157 ms</span>
@@ -523,7 +526,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">image</span>
             <span class="wf-cell wf-cell--info wf-cell--size">66.8 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.41s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">410 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 75.2158%"
@@ -531,27 +534,27 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--dns wb--phase"
-                  title="DNS Lookup: 0.008s"
+                  title="DNS Lookup: 8 ms"
                   style="left: 24.6609%; width: 0.9864%"
                 ></div>
                 <div
                   class="wb wb--connect wb--phase"
-                  title="TCP Connect: 0.022s"
+                  title="TCP Connect: 22 ms"
                   style="left: 25.6473%; width: 2.7127%"
                 ></div>
                 <div
                   class="wb wb--ssl wb--phase"
-                  title="TLS Handshake: 0.014s"
+                  title="TLS Handshake: 14 ms"
                   style="left: 28.36%; width: 1.7263%"
                 ></div>
                 <div
                   class="wb wb--image-light"
-                  title="Send+Wait: 0.056s"
+                  title="Send+Wait: 56 ms"
                   style="left: 30.0863%; width: 6.9051%"
                 ></div>
                 <div
                   class="wb wb--image-dark"
-                  title="Receive: 0.31s"
+                  title="Receive: 310 ms"
                   style="left: 36.9914%; width: 38.2244%"
                 ></div>
                 <span class="wf-bar-dur">410 ms</span>
@@ -585,7 +588,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">image</span>
             <span class="wf-cell wf-cell--info wf-cell--size">1.5 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.031s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">31 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 29.0999%"
@@ -593,12 +596,12 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--image-light"
-                  title="Send+Wait: 0.013s"
+                  title="Send+Wait: 13 ms"
                   style="left: 25.2774%; width: 1.603%"
                 ></div>
                 <div
                   class="wb wb--image-dark"
-                  title="Receive: 0.018s"
+                  title="Receive: 18 ms"
                   style="left: 26.8804%; width: 2.2195%"
                 ></div>
                 <span class="wf-bar-dur">31 ms</span>
@@ -632,7 +635,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">js</span>
             <span class="wf-cell wf-cell--info wf-cell--size">3.7 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.299s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">299 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 81.2577%"
@@ -640,32 +643,32 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--blocked wb--phase"
-                  title="Blocked: 0.13s"
+                  title="Blocked: 130 ms"
                   style="left: 44.3896%; width: 16.0296%"
                 ></div>
                 <div
                   class="wb wb--dns wb--phase"
-                  title="DNS Lookup: 0.018s"
+                  title="DNS Lookup: 18 ms"
                   style="left: 60.4192%; width: 2.2195%"
                 ></div>
                 <div
                   class="wb wb--connect wb--phase"
-                  title="TCP Connect: 0.038s"
+                  title="TCP Connect: 38 ms"
                   style="left: 62.6387%; width: 4.6856%"
                 ></div>
                 <div
                   class="wb wb--ssl wb--phase"
-                  title="TLS Handshake: 0.022s"
+                  title="TLS Handshake: 22 ms"
                   style="left: 67.3243%; width: 2.7127%"
                 ></div>
                 <div
                   class="wb wb--js-light"
-                  title="Send+Wait: 0.063s"
+                  title="Send+Wait: 63 ms"
                   style="left: 70.037%; width: 7.7682%"
                 ></div>
                 <div
                   class="wb wb--js-dark"
-                  title="Receive: 0.028s"
+                  title="Receive: 28 ms"
                   style="left: 77.8052%; width: 3.4525%"
                 ></div>
                 <span class="wf-bar-dur">299 ms</span>
@@ -699,37 +702,37 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">js</span>
             <span class="wf-cell wf-cell--info wf-cell--size">26.7 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.449s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">449 ms</span>
             <span class="wf-cell wf-cell--timeline" style="--wf-bar-end: 100%">
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--blocked wb--phase"
-                  title="Blocked: 0.125s"
+                  title="Blocked: 125 ms"
                   style="left: 44.6363%; width: 15.4131%"
                 ></div>
                 <div
                   class="wb wb--dns wb--phase"
-                  title="DNS Lookup: 0.022s"
+                  title="DNS Lookup: 22 ms"
                   style="left: 60.0493%; width: 2.7127%"
                 ></div>
                 <div
                   class="wb wb--connect wb--phase"
-                  title="TCP Connect: 0.042s"
+                  title="TCP Connect: 42 ms"
                   style="left: 62.762%; width: 5.1788%"
                 ></div>
                 <div
                   class="wb wb--ssl wb--phase"
-                  title="TLS Handshake: 0.026s"
+                  title="TLS Handshake: 26 ms"
                   style="left: 67.9408%; width: 3.2059%"
                 ></div>
                 <div
                   class="wb wb--js-light"
-                  title="Send+Wait: 0.089s"
+                  title="Send+Wait: 89 ms"
                   style="left: 71.1467%; width: 10.9741%"
                 ></div>
                 <div
                   class="wb wb--js-dark"
-                  title="Receive: 0.145s"
+                  title="Receive: 145 ms"
                   style="left: 82.1208%; width: 17.8792%"
                 ></div>
                 <span class="wf-bar-dur">449 ms</span>
@@ -763,7 +766,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">image</span>
             <span class="wf-cell wf-cell--info wf-cell--size">19.7 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.114s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">114 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 62.1455%"
@@ -771,12 +774,12 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--image-light"
-                  title="Send+Wait: 0.019s"
+                  title="Send+Wait: 19 ms"
                   style="left: 48.0888%; width: 2.3428%"
                 ></div>
                 <div
                   class="wb wb--image-dark"
-                  title="Receive: 0.095s"
+                  title="Receive: 95 ms"
                   style="left: 50.4316%; width: 11.7139%"
                 ></div>
                 <span class="wf-bar-dur">114 ms</span>
@@ -810,7 +813,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">image</span>
             <span class="wf-cell wf-cell--info wf-cell--size">21.8 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.123s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">123 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 63.5018%"
@@ -818,12 +821,12 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--image-light"
-                  title="Send+Wait: 0.021s"
+                  title="Send+Wait: 21 ms"
                   style="left: 48.3354%; width: 2.5894%"
                 ></div>
                 <div
                   class="wb wb--image-dark"
-                  title="Receive: 0.102s"
+                  title="Receive: 102 ms"
                   style="left: 50.9248%; width: 12.5771%"
                 ></div>
                 <span class="wf-bar-dur">123 ms</span>
@@ -857,7 +860,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">image</span>
             <span class="wf-cell wf-cell--info wf-cell--size">17.2 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.111s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">111 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 62.3921%"
@@ -865,12 +868,12 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--image-light"
-                  title="Send+Wait: 0.023s"
+                  title="Send+Wait: 23 ms"
                   style="left: 48.7053%; width: 2.836%"
                 ></div>
                 <div
                   class="wb wb--image-dark"
-                  title="Receive: 0.088s"
+                  title="Receive: 88 ms"
                   style="left: 51.5413%; width: 10.8508%"
                 ></div>
                 <span class="wf-bar-dur">111 ms</span>
@@ -904,7 +907,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">other</span>
             <span class="wf-cell wf-cell--info wf-cell--size">1.3 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.108s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">108 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 65.1048%"
@@ -912,27 +915,27 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--dns wb--phase"
-                  title="DNS Lookup: 0.01s"
+                  title="DNS Lookup: 10 ms"
                   style="left: 51.7879%; width: 1.233%"
                 ></div>
                 <div
                   class="wb wb--connect wb--phase"
-                  title="TCP Connect: 0.024s"
+                  title="TCP Connect: 24 ms"
                   style="left: 53.021%; width: 2.9593%"
                 ></div>
                 <div
                   class="wb wb--ssl wb--phase"
-                  title="TLS Handshake: 0.016s"
+                  title="TLS Handshake: 16 ms"
                   style="left: 55.9803%; width: 1.9729%"
                 ></div>
                 <div
                   class="wb wb--other-light"
-                  title="Send+Wait: 0.046s"
+                  title="Send+Wait: 46 ms"
                   style="left: 57.9531%; width: 5.672%"
                 ></div>
                 <div
                   class="wb wb--other-dark"
-                  title="Receive: 0.012s"
+                  title="Receive: 12 ms"
                   style="left: 63.6252%; width: 1.4797%"
                 ></div>
                 <span class="wf-bar-dur">108 ms</span>
@@ -966,7 +969,7 @@
             <span class="wf-cell wf-cell--info wf-cell--stat s2xx">200</span>
             <span class="wf-cell wf-cell--info">other</span>
             <span class="wf-cell wf-cell--info wf-cell--size">4.5 KB</span>
-            <span class="wf-cell wf-cell--info wf-cell--dur">0.182s</span>
+            <span class="wf-cell wf-cell--info wf-cell--dur">182 ms</span>
             <span
               class="wf-cell wf-cell--timeline"
               style="--wf-bar-end: 76.6954%"
@@ -974,12 +977,12 @@
               <div class="wf-bar-wrap">
                 <div
                   class="wb wb--other-light"
-                  title="Send+Wait: 0.144s"
+                  title="Send+Wait: 144 ms"
                   style="left: 54.254%; width: 17.7559%"
                 ></div>
                 <div
                   class="wb wb--other-dark"
-                  title="Receive: 0.038s"
+                  title="Receive: 38 ms"
                   style="left: 72.0099%; width: 4.6856%"
                 ></div>
                 <span class="wf-bar-dur">182 ms</span>
@@ -996,7 +999,7 @@
       <!-- wf-demo-end -->
     </waterfall-chart>
 
-    <script src="theme.js"></script>
-    <script src="progressive.js"></script>
+    <script src="src/demo/theme.js"></script>
+    <script src="src/demo/progressive.js"></script>
   </body>
 </html>
