@@ -38,16 +38,13 @@ const env = Astro.locals.runtime.env;
 const aiEnabled = env.ENABLE_AI_RATING === 'true';
 
 const prisma = getPrismaClient(Astro);
-const test = await getTestById(prisma, testId, aiEnabled);
+const test = await getTestById(prisma, testId);
 if (!test) {
   return Astro.redirect('/results');
 }
 
-const isUnsafe = 'unsafe' in test;
-
-// When AI rating is disabled, treat everything as safe
+const isUnsafe = aiEnabled && test.content_rating === ContentRating.UNSAFE;
 const isUnknown =
-  !isUnsafe &&
   aiEnabled &&
   (test.content_rating === ContentRating.UNKNOWN ||
     test.content_rating === ContentRating.IN_PROGRESS);

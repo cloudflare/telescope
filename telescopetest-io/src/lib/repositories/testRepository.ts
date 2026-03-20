@@ -48,15 +48,13 @@ export async function findTestIdByZipKey(
 
 /**
  * Find a single test by its testId
- * Returns null if test doesn't exist.
- * Returns { unsafe: true } if test exists but is unsafe and AI rating is enabled.
- * Returns full test object otherwise.
+ * Returns the test object if found, null otherwise
+ * Caller should check content_rating if needed for safety logic
  */
 export async function getTestById(
   prisma: PrismaClient,
   testId: string,
-  aiEnabled: boolean,
-): Promise<Tests | { unsafe: true } | null> {
+): Promise<Tests | null> {
   const row = await prisma.tests.findUnique({
     where: { test_id: testId },
     select: {
@@ -69,10 +67,6 @@ export async function getTestById(
       content_rating: true,
     },
   });
-  if (!row) return null;
-  if (aiEnabled && row.content_rating === ContentRating.UNSAFE) {
-    return { unsafe: true };
-  }
   return row;
 }
 
