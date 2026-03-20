@@ -95,6 +95,7 @@ export class WaterfallChart extends HTMLElement {
   private _gridOverlayEl!: HTMLElement;
   private _overlayEl!: HTMLElement;
   private _scrubberEl!: HTMLElement;
+  private _eventLineEls: HTMLElement[] = [];
   private _loadingEl!: HTMLElement;
   private _errorEl!: HTMLElement;
   private _toggleBtn!: HTMLButtonElement;
@@ -1149,6 +1150,12 @@ export class WaterfallChart extends HTMLElement {
       this._overlayEl.appendChild(line);
     }
 
+    // Cache the rendered event lines so the mousemove handler doesn't need
+    // to query the DOM on every move.
+    this._eventLineEls = Array.from(
+      this._overlayEl.querySelectorAll<HTMLElement>('.wf-event-line'),
+    );
+
     // Ensure the scrubber is the last child so it renders on top of event
     // lines. It may already be last if no lines were added, but appending it
     // again moves it to the end without cloning.
@@ -1189,12 +1196,10 @@ export class WaterfallChart extends HTMLElement {
       const pct = Math.min(1, Math.max(0, x / rect.width));
 
       // Find the closest event line within snap threshold.
-      const eventLines = Array.from(
-        this._overlayEl.querySelectorAll<HTMLElement>('.wf-event-line'),
-      );
+      // Uses the cached list built by _renderEventLines() — no DOM query needed.
       let closest: HTMLElement | null = null;
       let closestDx = Infinity;
-      for (const line of eventLines) {
+      for (const line of this._eventLineEls) {
         const linePct = parseFloat(line.style.left) / 100;
         const linePx = linePct * rect.width;
         const dx = Math.abs(x - linePx);
