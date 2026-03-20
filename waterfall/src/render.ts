@@ -11,7 +11,7 @@
  * Pure function — no DOM, no side-effects. Runs in Node.js or the browser.
  */
 
-import { typeConfig } from './config.js';
+import { typeConfig, TYPE_SWATCH, TYPE_LABEL } from './config.js';
 import { fmtSize, fmtMs } from './formatters.js';
 import {
   parseUrl,
@@ -41,24 +41,6 @@ function esc(s: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 // Legend
 // ─────────────────────────────────────────────────────────────────────────────
-
-/** Maps resource-type filter chip label → swatch CSS key (undefined = no swatch). */
-const TYPE_SWATCH: Record<string, string> = {
-  html: 'html',
-  js: 'js',
-  css: 'css',
-  image: 'image',
-  font: 'font',
-  video: 'video',
-  other: 'other',
-};
-
-/** Display labels for filter chips — uppercase where conventional. */
-const TYPE_LABEL: Record<string, string> = {
-  html: 'HTML',
-  js: 'JS',
-  css: 'CSS',
-};
 
 const typeLabel = (t: string): string => TYPE_LABEL[t] ?? t;
 
