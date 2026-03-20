@@ -67,7 +67,7 @@ export async function getTestById(
       content_rating: true,
     },
   });
-  return row;
+  return row ?? null;
 }
 
 /**
