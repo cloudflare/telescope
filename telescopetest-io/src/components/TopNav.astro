@@ -43,17 +43,24 @@ const navItems = [
 </header>
 
 <style>
+  :root {
+    --nav-height: 3.5rem; /* height (2.5rem) + padding top/bottom (0.5rem each) */
+  }
+
   header {
-    width: max(31.25rem, calc(100% - 4.25rem)); /* 500px, 68px */
+    width: calc(100% - 2.5rem);
+    max-width: calc(100% - 2.5rem);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 1.875rem; /* 30px */
-    margin: 1.25rem; /* 20px */
-    padding: 0 1.25rem; /* 20px */
-    position: sticky;
+    height: 2.5rem; /* 30px */
+    padding: 0.5rem 1.5rem;
+    position: fixed;
     top: 0;
-    z-index: 10;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    z-index: 100;
     background: var(--nav-bg);
     backdrop-filter: blur(0.625rem); /* 10px */
     border-radius: 0.5rem; /* 8px */
