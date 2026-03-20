@@ -168,6 +168,7 @@ export class WaterfallChart extends HTMLElement {
     this._openPanels.clear();
     this._activeFilters = new Set(['all']);
     this._activePhaseFilters = new Set();
+    this._hiddenEvents = new Set();
     this._allEntries = [];
     this._pageTimings = {};
     this._totalMs = 0;
