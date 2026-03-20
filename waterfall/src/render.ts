@@ -62,7 +62,7 @@ function renderToolbar(types: string[], pageTimings: HarPageTimings): string {
   const phaseBtn = (key: string, label: string) =>
     `<button class="wf-filter-btn" data-phase="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`;
   const eventBtn = (key: string, label: string) =>
-    `<button class="wf-filter-btn" data-event="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`;
+    `<button class="wf-filter-btn active" data-event="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`;
 
   const eventBtns: string[] = [];
   if ((pageTimings.onContentLoad ?? 0) > 0)
