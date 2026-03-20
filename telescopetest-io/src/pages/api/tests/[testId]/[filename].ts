@@ -1,4 +1,9 @@
 import type { APIContext, APIRoute } from 'astro';
+import {
+  isValidTestId,
+  isPathSafe,
+  hasAllowedExtension,
+} from '@/lib/utils/security';
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
 /**
@@ -10,6 +15,20 @@ export const GET: APIRoute = async (context: APIContext) => {
   const { testId, filename } = context.params;
   if (!testId || !filename) {
     return new Response('Missing testId or filename', { status: 400 });
+  }
+  // Validate testId format: YYYY_MM_DD_HH_MM_SS_UUID
+  if (!isValidTestId(testId)) {
+    return new Response('Invalid testId format', { status: 400 });
+  }
+  // Validate filename: no path traversal attempts
+  if (!isPathSafe(filename)) {
+    return new Response('Invalid filename: path traversal not allowed', {
+      status: 400,
+    });
+  }
+  // Ensure filename has valid extension from allowlist
+  if (!hasAllowedExtension(filename)) {
+    return new Response('Invalid file extension', { status: 400 });
   }
   const env = context.locals.runtime.env;
   const key = `${testId}/${filename}`;
@@ -26,21 +45,26 @@ export const GET: APIRoute = async (context: APIContext) => {
       jpeg: 'image/jpeg',
       gif: 'image/gif',
       webp: 'image/webp',
-      svg: 'image/svg+xml',
+      webm: 'video/webm',
       json: 'application/json',
       har: 'application/json',
-      html: 'text/html',
-      css: 'text/css',
-      js: 'application/javascript',
       txt: 'text/plain',
     };
-    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // ensure contentType always valid string
-    return new Response(object.body, {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable', // 1 year and immutable, aggressive
-      },
-    });
+    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // downloaded default
+    // Security headers to prevent XSS execution
+    const headers: Record<string, string> = {
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff', // can't execute as code
+      'Content-Security-Policy':
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox", // allows inline css only, other files in sandbox
+    };
+    // For non-media files, force download to prevent inline rendering
+    // Allow images and videos to render inline
+    if (!['png', 'jpg', 'jpeg', 'gif', 'webp', 'webm'].includes(ext || '')) {
+      headers['Content-Disposition'] = `attachment; filename="${filename}"`;
+    }
+    return new Response(object.body, { headers });
   } catch (error) {
     console.error('R2 fetch error:', error);
     return new Response('Internal server error', { status: 500 });

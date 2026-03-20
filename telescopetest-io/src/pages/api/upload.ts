@@ -4,6 +4,7 @@ import type { TestConfig } from '@/lib/types/tests';
 
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
+import { filterValidFiles } from '@/lib/utils/security';
 
 import { TestSource, ContentRating } from '@/lib/types/tests';
 import { getPrismaClient } from '@/lib/prisma/client';
@@ -107,9 +108,30 @@ export const POST: APIRoute = async (context: APIContext) => {
         },
       );
     }
-    // Confirm the config file exists
+    // Filter files: silently drop invalid extensions, unsafe paths, and unexpected patterns
+    // This allows uploads with extra files (e.g., HTML from --html flag) to succeed
+    const { validFiles, droppedByExtension, droppedByPath, droppedByPattern } =
+      filterValidFiles(files);
+    // Log dropped files for debugging (but don't fail the upload)
+    if (droppedByExtension > 0 || droppedByPath > 0 || droppedByPattern > 0) {
+      console.log(
+        `Dropped ${droppedByExtension + droppedByPath + droppedByPattern} files from upload: ` +
+          `${droppedByExtension} by extension, ${droppedByPath} by path, ${droppedByPattern} by pattern`,
+      );
+    }
+    // Ensure at least one valid file remains
+    if (validFiles.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'No valid Telescope output files found in ZIP after filtering',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    // Confirm the config file exists in valid files
     const configFile = `config.json`;
-    if (!files.includes(configFile)) {
+    if (!validFiles.includes(configFile)) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -144,7 +166,19 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     const configSchema = z.object({
-      url: z.string(),
+      url: z.string().refine(
+        url => {
+          try {
+            const parsed = new URL(url);
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+          } catch {
+            return false;
+          }
+        },
+        {
+          message: 'URL must be a valid HTTP or HTTPS URL',
+        },
+      ),
       date: z.string(),
       options: z.object({
         browser: z.string(),
@@ -198,8 +232,8 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // store all unzipped files in R2 with {testId}/{filename} format
-    for (const filename of files) {
+    // store only valid files in R2 with {testId}/{filename} format
+    for (const filename of validFiles) {
       await env.RESULTS_BUCKET!.put(
         `${testId}/${filename}`,
         unzipped[filename],
