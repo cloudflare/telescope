@@ -30,6 +30,7 @@ export const GET: APIRoute = async (context: APIContext) => {
     if (!object) {
       return new Response('File not found', { status: 404 });
     }
+    // Determine content type based on file extension
     const ext = filename.toLowerCase().split('.').pop();
     const contentTypeMap: Record<string, string> = {
       png: 'image/png',
@@ -45,13 +46,12 @@ export const GET: APIRoute = async (context: APIContext) => {
       js: 'application/javascript',
       txt: 'text/plain',
       webm: 'video/webm',
-      mp4: 'video/mp4',
     };
-    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream';
+    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // ensure contentType always valid string
     return new Response(object.body, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'public, max-age=31536000, immutable', // 1 year and immutable, aggressive
       },
     });
   } catch (error) {

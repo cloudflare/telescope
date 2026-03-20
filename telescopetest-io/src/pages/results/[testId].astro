@@ -55,19 +55,6 @@ let screenshotUrl: string | null = null;
 let harBrowser: { name: string; version: string } | null = null;
 let hasHar = false;
 let har: Har | null = null;
-try {
-  const harObj = await env.RESULTS_BUCKET.get(`${testId}/pageload.har`);
-  if (harObj) {
-    hasHar = true;
-    har = await harObj.json<Har>();
-    harBrowser = har?.log?.browser ?? null;
-  }
-} catch (err) {
-  console.error('Error reading HAR browser info:', err);
-  // HAR unavailable — render without browser version
-}
-
-// --- Metrics ---
 let metrics: MetricsJson | null = null;
 let resources: ResourceTiming[] = [];
 let consoleMessages: ConsoleMessage[] = [];
@@ -89,9 +76,7 @@ if (!isUnsafe && !isUnknown) {
     const harObj = await env.RESULTS_BUCKET.get(`${testId}/pageload.har`);
     if (harObj) {
       hasHar = true;
-      const har = await harObj.json<{
-        log: { browser: { name: string; version: string } };
-      }>();
+      har = await harObj.json<Har>();
       harBrowser = har?.log?.browser ?? null;
     }
   } catch (err) {
@@ -299,7 +284,7 @@ if (!isUnsafe) {
             </div>
 
             <div slot="filmstrip-video">
-              <FilmstripVideo />
+              <FilmstripVideo testId={testId} metrics={metrics} />
             </div>
 
             <div slot="resources">

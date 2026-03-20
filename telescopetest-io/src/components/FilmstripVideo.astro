@@ -59,7 +59,7 @@ try {
     })
     .sort((a, b) => a.frameNum - b.frameNum);
   filmstripFrames = frames.map(frame => {
-    // try to calculate filmstrip timestamps, assume frame # happesn at # second. might be wrong in telescope because ffmpeg in telescope extracts frames from video ?
+    // try to calculate filmstrip timestamps, assumes frame # happens at # second.
     // to get more precise framerates, also store video duration.
     const ms = Math.floor(((frame.frameNum - 1) * 1000) / frameRate);
     const timeLabel = ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
