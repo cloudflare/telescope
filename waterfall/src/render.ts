@@ -343,12 +343,8 @@ export function renderToHTML(har: Har): string {
   const eventLinesHTML = renderEventLines(pageTimings, totalMs);
 
   // Request rows
-  let visIdx = 0;
   const rowsHTML = entries
-    .map((entry, i) => {
-      visIdx++;
-      return renderRow(entry, i, visIdx, totalMs, originMs);
-    })
+    .map((entry, i) => renderRow(entry, i, i + 1, totalMs, originMs))
     .join('\n    ');
 
   return `
