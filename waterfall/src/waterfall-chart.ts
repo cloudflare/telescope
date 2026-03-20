@@ -42,7 +42,7 @@
  *   har   Set a Har object directly (overrides src).
  */
 
-import { typeConfig } from './config.js';
+import { typeConfig, TYPE_SWATCH, TYPE_LABEL } from './config.js';
 import { fmtSize, fmtMs } from './formatters.js';
 import {
   parseUrl,
@@ -440,17 +440,7 @@ export class WaterfallChart extends HTMLElement {
   // ── Initial DOM construction (dynamic path) ───────────────────────────────
 
   private _buildDOM() {
-    // ── Legend ──────────────────────────────────────────────────────────────
     // ── Toolbar (filters + phase/event legend groups + col toggle) ────────────
-    const TYPE_SWATCH: Record<string, string> = {
-      html: 'html',
-      js: 'js',
-      css: 'css',
-      image: 'image',
-      font: 'font',
-      video: 'video',
-      other: 'other',
-    };
 
     const mkSwatch = (thin: boolean, key: string) =>
       el('span', {
@@ -693,20 +683,6 @@ export class WaterfallChart extends HTMLElement {
   // ── Filter chips ──────────────────────────────────────────────────────────
 
   private _renderFilters(types: string[]) {
-    const TYPE_SWATCH: Record<string, string> = {
-      html: 'html',
-      js: 'js',
-      css: 'css',
-      image: 'image',
-      font: 'font',
-      video: 'video',
-      other: 'other',
-    };
-    const TYPE_LABEL: Record<string, string> = {
-      html: 'HTML',
-      js: 'JS',
-      css: 'CSS',
-    };
     this._filtersEl.innerHTML = '';
     for (const type of types) {
       const active =

@@ -7,7 +7,7 @@
 
 export { WaterfallChart } from './waterfall-chart.js';
 export { renderToHTML } from './render.js';
-export { typeConfig } from './config.js';
+export { typeConfig, TYPE_SWATCH, TYPE_LABEL } from './config.js';
 export type { TypeConfig } from './config.js';
 export { fmtSize, fmtMs } from './formatters.js';
 export {
