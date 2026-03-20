@@ -419,32 +419,22 @@ export class WaterfallChart extends HTMLElement {
   }
 
   /**
-   * Read page timings from the overlay's event-line data-label attributes.
-   * The static renderer encodes the ms value in the formatted label
-   * (e.g. "DCL 340ms" or "Load 1.23s"). We parse it back out.
+   * Read page timings from the overlay's event-line data-ms attributes.
+   * The static renderer encodes the raw ms value in data-ms so we can read
+   * it back directly without parsing formatted label strings.
    */
   private _readPageTimings(): HarPageTimings {
     const timings: HarPageTimings = {};
     this._overlayEl
       ?.querySelectorAll<HTMLElement>('.wf-event-line')
       .forEach((line) => {
-        const label = line.dataset.label ?? '';
-        const ms = this._parseLabelMs(label);
+        const ms = parseFloat(line.dataset.ms ?? '0');
         if (line.classList.contains('wf-event--dcl'))
           timings.onContentLoad = ms;
         else if (line.classList.contains('wf-event--load')) timings.onLoad = ms;
         else if (line.classList.contains('wf-event--lcp')) timings._lcp = ms;
       });
     return timings;
-  }
-
-  /** Parse ms back out of a formatted label like "DCL 340ms" or "Load 1.23s". */
-  private _parseLabelMs(label: string): number {
-    const secMatch = label.match(/([\d.]+) ?s$/);
-    if (secMatch) return parseFloat(secMatch[1]!) * 1000;
-    const msMatch = label.match(/(\d+) ?ms$/);
-    if (msMatch) return parseInt(msMatch[1]!, 10);
-    return 0;
   }
 
   // ── Initial DOM construction (dynamic path) ───────────────────────────────
