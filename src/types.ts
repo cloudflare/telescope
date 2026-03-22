@@ -141,7 +141,19 @@ export interface BrowserConfigOptions {
     isEnabled: (name: string, severity: string) => boolean;
     log: (name: string, severity: string, message: string) => void;
   };
+  userAgent?: string;
 }
+
+/**
+ * Simplified browser configuration
+ */
+export type SimplifiedBrowserConfigOptions = Omit<BrowserConfigOptions,
+  'httpCredentials' |
+  'javaScriptEnabled' |
+  'logger' |
+  'recordHar' |
+  'recordVideo' |
+  'userAgent'>;
 
 // ============================================================================
 // Launch Options
@@ -175,6 +187,8 @@ export interface LaunchOptions {
   zip?: boolean;
   uploadUrl?: string | null;
   dry?: boolean;
+  userAgent?: string;
+  agentExtra?: string;
   command?: string[];
   delay?: Record<string, number>;
   delayUsing?: DelayMethod;
@@ -521,12 +535,21 @@ export interface SavedConfig {
 // ============================================================================
 
 /**
+ * HTTP Header entry
+ */
+export interface HTTPHeader {
+  name: string;
+  value: string;
+}
+
+/**
  * HAR entry with extended timing data
  */
 export interface HarEntry {
   request: {
     url: string;
     method: string;
+    headers: HTTPHeader[];
   };
   response: {
     status: number;
@@ -606,34 +629,41 @@ declare global {
 // ============================================================================
 
 /**
- * Raw CLI options from Commander.js (all strings)
+ * CLI options from Commander.js
+ * Numeric and JSON fields are parsed at the CLI boundary via argParser.
  */
 export interface CLIOptions {
   url: string;
   browser?: string;
-  headers?: string;
-  cookies?: string;
-  flags?: string;
+  headers?: Record<string, string>;
+  cookies?: Cookie | Cookie[];
+  flags?: string[];
   blockDomains?: string[];
   block?: string[];
-  firefoxPrefs?: string;
-  cpuThrottle?: string;
+  firefoxPrefs?: Record<string, string | number | boolean>;
+  cpuThrottle?: number;
   connectionType?: string;
-  width?: string;
-  height?: string;
-  frameRate?: string | number;
+  width?: number;
+  height?: number;
+  frameRate?: number;
   disableJS?: boolean;
   debug?: boolean;
-  auth?: string;
-  timeout?: string | number;
+  auth?: HTTPCredentials | false;
+  timeout?: number;
   html?: boolean;
   openHtml?: boolean;
   list?: boolean;
-  overrideHost?: string;
+  overrideHost?: Record<string, string>;
   zip?: boolean;
   uploadUrl?: string;
   dry?: boolean;
-  delay?: string;
-  delayUsing?: string;
-  a11y?: string;
+  delay?: Record<string, number>;
+  delayUsing?: DelayMethod;
+  userAgent?: string;
+  agentExtra?: string;
+  a11y?: {
+    disable?: string[],
+    exclude?: string[],
+    tags: string[],
+  };
 }

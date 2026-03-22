@@ -1,0 +1,39 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "telescope",
+  "agent": {
+    "telescope": {
+      "permission": {
+        "edit": "ask",
+        "webfetch": "allow",
+        "bash": {
+          "*": "ask",
+          "git status *": "allow",
+          "git branch --show-current": "allow",
+          "git diff *": "allow",
+          "git log *": "allow",
+          "git show *": "allow",
+          "gh pr list *": "allow",
+          "gh pr view *": "allow",
+          "gh pr checks *": "allow",
+          "gh issue list *": "allow",
+          "gh issue view *": "allow",
+          "gh api /repos/cloudflare/telescope/pulls*": "allow",
+          "gh api /repos/cloudflare/telescope/issues*": "allow",
+          "ls *": "allow",
+          "cat *": "allow",
+          "grep *": "allow",
+          "find *": "allow",
+          "wc *": "allow",
+          "jq *": "allow",
+          "npm run build": "allow",
+          "npm run test *": "allow",
+          "npx playwright *": "ask",
+          "npm install": "ask",
+          "npm *": "ask",
+          "node *": "ask"
+        }
+      }
+    }
+  }
+}

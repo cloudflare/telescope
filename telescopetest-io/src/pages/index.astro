@@ -400,14 +400,33 @@ const year = new Date().getFullYear();
         border: 1px solid rgba(139, 58, 140, 0.3);
         box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
         position: relative;
-        opacity: 0;
-        transform: translateY(50px);
-        transition: all 0.6s ease;
-      }
-
-      section.visible {
         opacity: 1;
         transform: translateY(0);
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        @supports (animation-timeline: view()) {
+          section {
+            animation-delay: calc(0.1s * var(--idx, attr(data-idx number, 1)));
+            animation-name: fadeIn;
+            animation-range: cover 10% exit 100%;
+            animation-timeline: view(block);
+            animation-timing-function: ease;
+            opacity: 0;
+            transform: translateY(50px);
+          }
+        }
+
+        @keyframes fadeIn {
+          22% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
       }
 
       section::before {
@@ -598,16 +617,34 @@ const year = new Date().getFullYear();
         padding: 30px;
         border-radius: 15px;
         border-left: 5px solid var(--pink);
-        transition: all 0.4s ease;
         position: relative;
         overflow: hidden;
-        opacity: 0;
-        transform: translateX(-30px);
-      }
-
-      .param-card.visible {
         opacity: 1;
         transform: translateX(0);
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        @supports (animation-timeline: view()) {
+          .param-card {
+            animation-delay: calc(50ms * var(--idx, attr(data-idx number, 1)));
+            animation-name: quickFadeIn;
+            animation-range: cover 10% exit 100%;
+            animation-timeline: view(block);
+            animation-timing-function: ease;
+            opacity: 0;
+            transform: translateX(-30px);
+          }
+        }
+
+        @keyframes quickFadeIn {
+          30% {
+            opacity: 1;
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
       }
 
       /* Sliding gradient effect */
@@ -705,11 +742,34 @@ const year = new Date().getFullYear();
         padding: 40px;
         border-radius: 18px;
         border: 2px solid rgba(216, 74, 140, 0.4);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         text-align: center;
         transform-style: preserve-3d;
-        opacity: 0;
-        transform: translateY(30px);
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        @supports (animation-timeline: view()) {
+          .metric-item {
+            animation-delay: calc(0.1s * var(--idx, attr(data-idx number, 1)));
+            animation-name: quickFadeIn;
+            animation-range: cover 10% exit 100%;
+            animation-timeline: view(block);
+            animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            transform: translateY(30px);
+          }
+        }
+
+        @keyframes itemFadeIn {
+          33% {
+            opacity: 1;
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
       }
 
       .metric-item.visible {
@@ -1208,7 +1268,7 @@ const year = new Date().getFullYear();
 
     <div class="container">
       <!-- Features Overview -->
-      <section data-emoji="✨" id="why-telescope">
+      <section data-idx="1" data-emoji="✨" id="why-telescope">
         <h2>Why Cloudflare Telescope?</h2>
         <div class="feature-grid">
           <div class="feature-card">
@@ -1251,7 +1311,7 @@ const year = new Date().getFullYear();
       </section>
 
       <!-- How to Run Section -->
-      <section id="how-to-run" data-emoji="🚀">
+      <section data-idx="2" id="how-to-run" data-emoji="🚀">
         <h2>How to Run a Test</h2>
         <p>
           Get started with Cloudflare Telescope by cloning the repository and
@@ -1322,7 +1382,7 @@ cd telescope</code></pre>
       </section>
 
       <!-- Parameters Section -->
-      <section id="parameters" data-emoji="⚙️">
+      <section data-idx="3" id="parameters" data-emoji="⚙️">
         <h2>Configuration Parameters</h2>
         <p>
           Cloudflare Telescope provides extensive configuration options to
@@ -1330,7 +1390,7 @@ cd telescope</code></pre>
         </p>
 
         <div class="params-grid" id="paramsGrid">
-          <div class="param-card">
+          <div class="param-card" data-idx="1">
             <div class="param-name">-u, --url &lt;url&gt;</div>
             <div class="param-desc">
               URL to run tests against. This is the target website you want to
@@ -1338,7 +1398,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="2">
             <div class="param-name">-b, --browser &lt;browser&gt;</div>
             <div class="param-desc">
               Browser to test against. Options: chrome, chrome-beta, canary,
@@ -1346,7 +1406,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="3">
             <div class="param-name">-h, --headers &lt;object&gt;</div>
             <div class="param-desc">
               Custom headers to apply to requests. Useful for authentication or
@@ -1354,7 +1414,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="4">
             <div class="param-name">-c, --cookies &lt;object&gt;</div>
             <div class="param-desc">
               Custom cookies to apply. Test authenticated pages or user-specific
@@ -1362,7 +1422,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="5">
             <div class="param-name">--connectionType &lt;string&gt;</div>
             <div class="param-desc">
               Network throttling. Options: cable, dls, 4g, 3g, 3gfast, 3gslow,
@@ -1370,7 +1430,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="6">
             <div class="param-name">--cpuThrottle &lt;int&gt;</div>
             <div class="param-desc">
               CPU throttling factor to simulate slower devices. Higher values =
@@ -1378,7 +1438,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="7">
             <div class="param-name">--width / --height &lt;int&gt;</div>
             <div class="param-desc">
               Viewport dimensions in pixels (default: 1366x768). Test responsive
@@ -1386,7 +1446,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="8">
             <div class="param-name">--blockDomains &lt;domains...&gt;</div>
             <div class="param-desc">
               Block specific domains during testing. Useful for excluding ads or
@@ -1394,7 +1454,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="9">
             <div class="param-name">--block &lt;substrings...&gt;</div>
             <div class="param-desc">
               Block URLs based on substring match. More granular control than
@@ -1402,7 +1462,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="10">
             <div class="param-name">--disableJS</div>
             <div class="param-desc">
               Disable JavaScript execution. Test how your site performs without
@@ -1410,7 +1470,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="11">
             <div class="param-name">--timeout &lt;int&gt;</div>
             <div class="param-desc">
               Maximum test duration in milliseconds (default: 30000). Prevent
@@ -1418,21 +1478,21 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="12">
             <div class="param-name">--html</div>
             <div class="param-desc">
               Generate an HTML report of the test results for easy viewing.
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="13">
             <div class="param-name">--auth &lt;object&gt;</div>
             <div class="param-desc">
               Basic HTTP authentication credentials with username and password.
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="14">
             <div class="param-name">--frameRate &lt;int&gt;</div>
             <div class="param-desc">
               Filmstrip frame rate in FPS (default: 1). Higher values = smoother
@@ -1440,14 +1500,14 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="15">
             <div class="param-name">-f, --flags &lt;string&gt;</div>
             <div class="param-desc">
               Comma-separated Chromium flags for advanced browser configuration.
             </div>
           </div>
 
-          <div class="param-card">
+          <div class="param-card" data-idx="16">
             <div class="param-name">--firefoxPrefs &lt;object&gt;</div>
             <div class="param-desc">
               Firefox-specific user preferences (Firefox only).
@@ -1457,7 +1517,7 @@ cd telescope</code></pre>
       </section>
 
       <!-- Test Results Section -->
-      <section id="test-results" data-emoji="📊">
+      <section data-idx="4" id="test-results" data-emoji="📊">
         <h2>What Telescope Collects</h2>
         <p>
           Each test generates comprehensive performance data stored in a
@@ -1465,7 +1525,7 @@ cd telescope</code></pre>
         </p>
 
         <div class="metrics-list" id="metricsList">
-          <div class="metric-item">
+          <div class="metric-item" data-idx="1">
             <div class="metric-icon">🎬</div>
             <div class="metric-title">Video Recording</div>
             <div class="metric-description">
@@ -1474,7 +1534,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="metric-item">
+          <div class="metric-item" data-idx="2">
             <div class="metric-icon">📸</div>
             <div class="metric-title">Screenshots</div>
             <div class="metric-description">
@@ -1483,7 +1543,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="metric-item">
+          <div class="metric-item" data-idx="3">
             <div class="metric-icon">📈</div>
             <div class="metric-title">Performance Metrics</div>
             <div class="metric-description">
@@ -1492,7 +1552,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="metric-item">
+          <div class="metric-item" data-idx="4">
             <div class="metric-icon">🌐</div>
             <div class="metric-title">HAR File</div>
             <div class="metric-description">
@@ -1501,7 +1561,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="metric-item">
+          <div class="metric-item" data-idx="5">
             <div class="metric-icon">⚡</div>
             <div class="metric-title">Resource Timing</div>
             <div class="metric-description">
@@ -1510,7 +1570,7 @@ cd telescope</code></pre>
             </div>
           </div>
 
-          <div class="metric-item">
+          <div class="metric-item" data-idx="6">
             <div class="metric-icon">🔍</div>
             <div class="metric-title">Console Output</div>
             <div class="metric-description">
@@ -1536,7 +1596,7 @@ cd telescope</code></pre>
       </section>
 
       <!-- Contributors Section -->
-      <section id="contributors" data-emoji="👥">
+      <section data-idx="5" id="contributors" data-emoji="👥">
         <h2>Leading Contributors</h2>
         <p style="text-align: center; font-size: 1.2rem; margin-bottom: 40px;">
           Cloudflare Telescope is built and maintained by talented developers
@@ -1644,69 +1704,6 @@ cd telescope</code></pre>
         }
       }
 
-      // Intersection Observer for scroll animations
-      const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -100px 0px',
-      };
-
-      const observer = new IntersectionObserver(entries => {
-        entries.forEach((entry, index) => {
-          if (entry.isIntersecting) {
-            setTimeout(() => {
-              entry.target.classList.add('visible');
-            }, index * 100);
-          }
-        });
-      }, observerOptions);
-
-      // Observe sections
-      document.querySelectorAll('section').forEach(section => {
-        if (prefersReducedMotion) {
-          section.classList.add('visible');
-        } else {
-          observer.observe(section);
-        }
-      });
-
-      // Observe param cards with stagger
-      const paramCards = document.querySelectorAll('.param-card');
-      paramCards.forEach((card, index) => {
-        if (prefersReducedMotion) {
-          card.classList.add('visible');
-          return;
-        }
-        const cardObserver = new IntersectionObserver(entries => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              setTimeout(() => {
-                entry.target.classList.add('visible');
-              }, index * 50);
-            }
-          });
-        }, observerOptions);
-        cardObserver.observe(card);
-      });
-
-      // Observe metric items
-      const metricItems = document.querySelectorAll('.metric-item');
-      metricItems.forEach((item, index) => {
-        if (prefersReducedMotion) {
-          item.classList.add('visible');
-          return;
-        }
-        const metricObserver = new IntersectionObserver(entries => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              setTimeout(() => {
-                entry.target.classList.add('visible');
-              }, index * 100);
-            }
-          });
-        }, observerOptions);
-        metricObserver.observe(item);
-      });
-
       // Copy code functionality
       function copyCode(button) {
         const codeBlock = button.nextElementSibling;
@@ -1723,14 +1720,15 @@ cd telescope</code></pre>
         });
       }
 
-      // Mouse trail effect (subtle stars)
-      document.addEventListener('mousemove', e => {
-        if (prefersReducedMotion) return;
-        // Create subtle sparkle occasionally
-        if (Math.random() > 0.98) {
-          createSparkle(e.clientX, e.clientY);
-        }
-      });
+      if (!prefersReducedMotion) {
+        // Mouse trail effect (subtle stars)
+        document.addEventListener('mousemove', e => {
+          // Create subtle sparkle occasionally
+          if (Math.random() > 0.98) {
+            createSparkle(e.clientX, e.clientY);
+          }
+        });
+      }
 
       const sparkleTemplate = document.getElementById('sparkle-template');
       sparkleTemplate.removeAttribute('id');

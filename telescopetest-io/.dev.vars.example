@@ -1,0 +1,12 @@
+# Local development variable overrides for wrangler dev (npm run preview).
+# Copy this file to .dev.vars and fill in your values.
+# .dev.vars is gitignored — never commit it.
+
+
+# Override the AI rating flag from wrangler.jsonc for local testing.
+# Default in wrangler.jsonc development env is "false".
+# Set to "true" to test AI rating locally (requires the AI binding to be active).
+# WARNING: using AI rating may incur costs, even locally.
+
+ENABLE_AI_RATING=false
+
