@@ -429,6 +429,7 @@ export interface RequestData {
   url: string;
   timing: RequestTiming;
   rawTimings?: boolean;
+  resourceType: string;
 }
 
 /**
@@ -458,12 +459,10 @@ export interface ResourceTiming {
  * Request priority information
  */
 export type PriorityObject = {
-  requestId: string,
   initialPriority: string,
-  resourceType: string,
 };
 export interface PriorityInfo {
-  [key: string]: PriorityObject[];
+  [key: string]: PriorityObject;
 }
 
 // ============================================================================

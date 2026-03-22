@@ -2,6 +2,7 @@ import { TestRunner } from './testRunner.js';
 import { log } from './helpers.js';
 import type { BrowserConfigOptions, LaunchOptions, PriorityInfo } from './types.js';
 import type { BrowserContext, Page, CDPSession } from 'playwright';
+import crypto from 'crypto';
 
 class ChromeRunner extends TestRunner {
   constructor(options: LaunchOptions, browserConfig: BrowserConfigOptions) {
@@ -22,29 +23,26 @@ class ChromeRunner extends TestRunner {
 
     // Just before request is sent
     client.on('Network.requestWillBeSent', (params) => {
-      const { requestId, request, type } = params;
-      const fullURL = request.url + (request.urlFragment || '');
-      const resourceType = type || 'Other';
+      const { requestId, request } = params;
 
-      if (occasion.priorities[fullURL as keyof PriorityInfo]) {
-        occasion.priorities[fullURL].push({
-          requestId: requestId,
-          initialPriority: request.initialPriority,
-          resourceType: resourceType
-        });
-      } else {
-        occasion.priorities[fullURL as keyof PriorityInfo] = [{
-          requestId: requestId,
-          initialPriority: request.initialPriority,
-          resourceType: resourceType
-        }];
-      }
+      occasion.priorities[requestId as keyof PriorityInfo] = {
+        initialPriority: request.initialPriority,
+      };
     });
 
     client.on('Network.resourceChangedPriority', (params) => {
       const { requestId, newPriority } = params;
 
       occasion.newPriorities[requestId] = newPriority;
+    });
+
+    client.on('Network.responseReceived', (params) => {
+      const { requestId, response } = params;
+
+      if (response.timing) {
+        const hashString = crypto.createHash('sha256').update(response.url + response.timing.sendStart).digest('hex');
+        occasion.requestHashToId[hashString] = requestId;
+      }
     });
 
     if (this.options.cpuThrottle) {

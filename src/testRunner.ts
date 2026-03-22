@@ -34,6 +34,7 @@ import ffmpeg from 'ffmpeg';
 import ejs from 'ejs';
 import { log, logTimer, generateTestID } from './helpers.js';
 import AdmZip from 'adm-zip';
+import crypto from 'crypto';
 import type {
   BrowserConfigOptions,
   SimplifiedBrowserConfigOptions,
@@ -67,6 +68,7 @@ class TestRunner {
   paths: TestPaths = {} as TestPaths;
   priorities: PriorityInfo = {} as PriorityInfo;
   requests: RequestData[] = [];
+  requestHashToId: Record<string, string> = {};
   resultAssets: ResultAssets = {
     filmstripFiles: [],
     videoFile: null,
@@ -313,6 +315,7 @@ class TestRunner {
       const reqData: RequestData = {
         url: data.url(),
         timing: data.timing(),
+        resourceType: data.resourceType(),
       };
       this.requests.push(reqData);
     });
@@ -885,24 +888,26 @@ class TestRunner {
           _request_end: request.timing.responseStart,
           _response_start: request.timing.responseStart,
           _response_end: request.timing.responseEnd,
+          _resourceType: request.resourceType,
         };
         if (request.url == lcpURL) {
           updatedObject._is_lcp = true;
         }
 
-        if (this.priorities && this.priorities[request.url]) {
-          const priority_obj = this.priorities[request.url].shift();
-          if (priority_obj) {
-            updatedObject._initialPriority = priority_obj.initialPriority;
+        if (this.requestHashToId) {
+          const hashString = crypto.createHash('sha256').update(request.url + request.timing.requestStart).digest('hex');
+          const requestId = this.requestHashToId[hashString];
 
-            if (priority_obj.resourceType) {
-              updatedObject._resourceType = priority_obj.resourceType;
-            }
+          if (requestId && this.priorities && this.priorities[requestId]) {
+            const priority_obj = this.priorities[requestId];
+            if (priority_obj) {
+              updatedObject._initialPriority = priority_obj.initialPriority;
 
-            if (this.newPriorities && this.newPriorities[priority_obj.requestId]) {
-              updatedObject._priority = this.newPriorities[priority_obj.requestId];
-            } else {
-              updatedObject._priority = updatedObject._initialPriority;
+              if (this.newPriorities && this.newPriorities[requestId]) {
+                updatedObject._priority = this.newPriorities[requestId];
+              } else {
+                updatedObject._priority = updatedObject._initialPriority;
+              }
             }
           }
         }
