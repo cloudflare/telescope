@@ -11,6 +11,22 @@ export enum TestSource {
   UNKNOWN = 'unknown',
 }
 
+export enum ContentRating {
+  SAFE = 'safe', // was rated, is safe
+  UNSAFE = 'unsafe', // was rated, is unsafe
+  UNKNOWN = 'unknown', // not yet rated, default on test creation, will prevent test from being listed if AI rating enabled
+  IN_PROGRESS = 'in_progress', // in process of running an AI rating, prevents duplicate jobs
+}
+
+// Config.json structure from Telescope test archives
+export interface ConfigJson {
+  url: string;
+  date: string;
+  options: {
+    browser: string;
+  };
+}
+
 // Return type from D1
 export type Tests = {
   test_id: string;
@@ -19,6 +35,7 @@ export type Tests = {
   browser: string;
   name: string | null;
   description: string | null;
+  content_rating: string;
 };
 
 // Upload type into D1

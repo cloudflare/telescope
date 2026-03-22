@@ -1,43 +1,65 @@
 ---
 export interface Props {
-  label: string;
-  value: string | null;
-  unit?: string;
-  rating?: 'good' | 'needs-improvement' | 'poor';
+  heading: string;
+  metrics: Array<{
+    label: string;
+    value: string | null;
+    unit?: string;
+    rating?: 'good' | 'needs-improvement' | 'poor';
+  }>;
 }
 
-const { label, value, unit, rating } = Astro.props;
+const { heading, metrics } = Astro.props;
 ---
 
-<div class="metric-card">
-  <p class="label">{label}</p>
-  {
-    value !== null ? (
-      <p class={`value ${rating ?? ''}`}>
-        {value}
-        {unit && <span class="unit">{unit}</span>}
-      </p>
-    ) : (
-      <p class="value empty">—</p>
-    )
-  }
-</div>
+<section class="metrics-section">
+  <h3>{heading}</h3>
+  <div class="metrics-grid">
+    {
+      metrics.map(m => (
+        <div class="metric-card">
+          <p class="label">{m.label}</p>
+          {m.value !== null ? (
+            <p class={`value ${m.rating ?? ''}`}>
+              {m.value}
+              {m.unit && <span class="unit">{m.unit}</span>}
+            </p>
+          ) : (
+            <p class="value empty">—</p>
+          )}
+        </div>
+      ))
+    }
+  </div>
+</section>
 
 <style>
+  .metrics-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .metrics-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
   .metric-card {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 0.75rem; /* 12px */
-    padding: 1rem 0.75rem; /* 16px 12px - reduced right padding */
+    border-radius: 0.75rem;
+    padding: 1rem 0.75rem;
     display: flex;
     flex-direction: column;
-    gap: 0.375rem; /* 6px */
-    min-width: 7rem; /* 112px */
-    width: 7rem; /* 112px */
+    gap: 0.375rem;
+    min-width: 7rem;
+    width: 7rem;
   }
 
   .label {
-    font-size: 0.6875rem; /* 11px */
+    font-size: 0.6875rem;
     font-weight: 500;
     color: var(--muted);
     margin: 0;
@@ -46,7 +68,7 @@ const { label, value, unit, rating } = Astro.props;
   }
 
   .value {
-    font-size: 1.5rem; /* 24px */
+    font-size: 1.5rem;
     font-weight: 600;
     margin: 0;
     color: var(--text);
@@ -70,9 +92,9 @@ const { label, value, unit, rating } = Astro.props;
   }
 
   .unit {
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
     font-weight: 400;
     color: var(--muted);
-    margin-left: 0.25rem; /* 4px */
+    margin-left: 0.25rem;
   }
 </style>

@@ -1,6 +1,7 @@
 /**
- * Core Web Vitals rating thresholds and utilities
- * Based on https://web.dev/vitals/
+ * Rating thresholds for web performance metrics.
+ * CWV (LCP, CLS) and diagnostic metrics (FCP, TTFB) all use the same
+ * good / needs-improvement / poor bands published by Google.
  */
 
 export type Rating = 'good' | 'needs-improvement' | 'poor';

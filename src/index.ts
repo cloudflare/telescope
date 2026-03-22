@@ -1,4 +1,4 @@
-import { Command, Option } from 'commander';
+import { Command, Option, InvalidArgumentError } from 'commander';
 const program = new Command();
 import { BrowserConfig } from './browsers.js';
 import { TestRunner } from './testRunner.js';
@@ -6,6 +6,35 @@ import { ChromeRunner } from './chromeRunner.js';
 import { log } from './helpers.js';
 import { normalizeCLIConfig } from './config.js';
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
+import {
+  PositiveIntSchema,
+  PositiveFloatSchema,
+  CookiesSchema,
+  HeadersSchema,
+  AuthSchema,
+  FirefoxPrefsSchema,
+  OverrideHostSchema,
+  DelaySchema,
+} from './schemas.js';
+import { parseWithSchema, parseCLIOption } from './validation.js';
+import type { ZodSchema } from 'zod';
+
+function parseNumeric<T>(schema: ZodSchema<T>, value: string, flag: string): T {
+  try {
+    return parseWithSchema(schema, value, flag);
+  } catch (err) {
+    throw new InvalidArgumentError((err as Error).message);
+  }
+}
+
+function parseJSON<T>(flag: string, value: string, schema: ZodSchema<T>): T {
+  try {
+    return parseCLIOption(flag, value, schema);
+  } catch (err) {
+    throw new InvalidArgumentError((err as Error).message);
+  }
+}
+
 import type {
   LaunchOptions,
   BrowserConfigOptions,
@@ -173,16 +202,17 @@ export default function browserAgent(): void {
       new Option(
         '-h, --headers <object>',
         'Any custom headers to apply to requests',
-      ),
+      ).argParser((v) => parseJSON('--headers', v, HeadersSchema)),
     )
     .addOption(
-      new Option('-c, --cookies <object>', 'Any custom cookies to apply'),
+      new Option('-c, --cookies <object>', 'Any custom cookies to apply')
+        .argParser((v) => parseJSON('--cookies', v, CookiesSchema)),
     )
     .addOption(
       new Option(
         '-f, --flags <string>',
         'A comma separated list of Chromium flags to launch Chrome with. See: https://peter.sh/experiments/chromium-command-line-switches/',
-      ),
+      ).argParser((v) => v.length === 0 ? [] : v.split(',').map((flag) => flag.trim()).filter(Boolean)),
     )
     .addOption(
       new Option(
@@ -200,7 +230,7 @@ export default function browserAgent(): void {
       new Option(
         '--delay <object>',
         'An object mapping request regexes to response delays. Example: \'{".css$": 2000, ".js$": 5000}\'',
-      ),
+      ).argParser((v) => parseJSON('--delay', v, DelaySchema)),
     )
     .addOption(
       new Option('--delayUsing <string>', 'Method to use to delay responses')
@@ -211,9 +241,12 @@ export default function browserAgent(): void {
       new Option(
         '--firefoxPrefs <object>',
         'Any Firefox User Preferences to apply (Firefox only). Example: \'{"network.trr.mode": 2}\'',
-      ),
+      ).argParser((v) => parseJSON('--firefoxPrefs', v, FirefoxPrefsSchema)),
     )
-    .addOption(new Option('--cpuThrottle <int>', 'CPU throttling factor'))
+    .addOption(
+      new Option('--cpuThrottle <number>', 'CPU throttling factor')
+        .argParser((v) => parseNumeric(PositiveFloatSchema, v, '--cpuThrottle')),
+    )
     .addOption(
       new Option(
         '--connectionType <string>',
@@ -232,20 +265,22 @@ export default function browserAgent(): void {
         ]),
     )
     .addOption(
-      new Option('--width <int>', 'Viewport width, in pixels').default(
-        String(DEFAULT_OPTIONS.width),
-      ),
+      new Option('--width <int>', 'Viewport width, in pixels')
+        .default(DEFAULT_OPTIONS.width)
+        .argParser((v) => parseNumeric(PositiveIntSchema, v, '--width')),
     )
     .addOption(
-      new Option('--height <int>', 'Viewport height, in pixels').default(
-        String(DEFAULT_OPTIONS.height),
-      ),
+      new Option('--height <int>', 'Viewport height, in pixels')
+        .default(DEFAULT_OPTIONS.height)
+        .argParser((v) => parseNumeric(PositiveIntSchema, v, '--height')),
     )
     .addOption(
       new Option(
         '--frameRate <int>',
         'Filmstrip frame rate, in frames per second',
-      ).default(DEFAULT_OPTIONS.frameRate),
+      )
+        .default(DEFAULT_OPTIONS.frameRate)
+        .argParser((v) => parseNumeric(PositiveIntSchema, v, '--frameRate')),
     )
     .addOption(
       new Option('--disableJS', 'Disable JavaScript').default(
@@ -261,13 +296,17 @@ export default function browserAgent(): void {
       new Option(
         '--auth <object>',
         'Basic HTTP authentication (Expects: {"username": "", "password": ""})',
-      ).default(DEFAULT_OPTIONS.auth),
+      )
+        .argParser((v) => parseJSON('--auth', v, AuthSchema))
+        .default(DEFAULT_OPTIONS.auth),
     )
     .addOption(
       new Option(
         '--timeout <int>',
         'Maximum time (in milliseconds) to wait for test to complete',
-      ).default(DEFAULT_OPTIONS.timeout),
+      )
+        .default(DEFAULT_OPTIONS.timeout)
+        .argParser((v) => parseNumeric(PositiveIntSchema, v, '--timeout')),
     )
     .addOption(
       new Option('--html', 'Generate HTML report').default(
@@ -289,7 +328,7 @@ export default function browserAgent(): void {
       new Option(
         '--overrideHost <object>',
         'Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})',
-      ),
+      ).argParser((v) => parseJSON('--overrideHost', v, OverrideHostSchema)),
     )
     .addOption(
       new Option(
@@ -308,6 +347,18 @@ export default function browserAgent(): void {
         '--dry',
         'Dry run (do not run test, just save config and cleanup)',
       ).default(DEFAULT_OPTIONS.dry),
+    )
+    .addOption(
+      new Option(
+        '--userAgent <string>',
+        'Set the browser User Agent'
+      )
+    )
+    .addOption(
+      new Option(
+        '--agentExtra <string>',
+        'Append to the browser User Agent. Takes precedence over --userAgent'
+      )
     )
     .parse(process.argv);
 

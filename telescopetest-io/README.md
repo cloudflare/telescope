@@ -4,27 +4,36 @@ This is the website for users to upload and view Telescope ZIP results. This is 
 
 ## Project Setup
 
-This is how to set up the project. These steps are neccessary for local testing.
+To set up for local development, you need to install project dependencies:
 
-1. First, make sure your Node version is set to version 'lts/jod' and your current directory is `telescopetest-io/`.
-2. Run `npm install` and make sure you don't run into any problems. If you do, update Node to version 'lts/jod' nvm or a different Node version manager.
-3. Next, we need to create and get a local database url (used below in Initial Prisma Setup). To create a local D1 dev database, run `npx wrangler d1 execute telescope-db-development --local --env development --command "SELECT 1;"`. This will create a local D1 dev database called `telescope-db-development`.
-4. Next, to create a local R2 Bucket, run `npx wrangler r2 bucket create results-bucket-development`. This step may prompt you to log in with wrangler.
-5. For type safety, Worker and binding types are defined in `worker-configuration.d.ts`. For setup, you should generate this file by running `npm run cf-typegen`. Any changes to the `wrangler.jsonc` require regenerating this file, which you can do by running the same command again. This generaated file is now in the .gitignore.
+```
+npm install
+```
 
-#### Initial Prisma Setup
+And initialize a few things:
 
-Once you've finished the steps above, run these to set up Prisma, the ORM we're with D1. This is a [preview feature](https://www.prisma.io/docs/orm/overview/databases/cloudflare-d1#migration-workflows) that Prisma has been building out since 2024.
+- create local database (will prompt you to confirm that you want to perform the DB migrations)
+- generate Prisma client (in `generated/prisma` folder)
+- create R2 bucket (might prompt you to log into your Cloudflare account)
+- generate TypeScript types to match wrangler configuration (`worker-configuration.d.ts`)
 
-1. Make sure you have the local `telescope-db-development` table (step 3 above).
-2. Copy the relative path (without telescopetest-io/) of this local `.sqlite` file in the folder `.wrangler/state/v3/d1/miniflare... ` and put this into a new `.env` file at the root of the `telescopetest-io` project as `DATABASE_URL="file:{{relative_path}}`.
-3. Run `npm run generate` to generate a Prisma Client.
+To accomplish all that, you can simply run:
 
-You should now be able to run `npm run studio` to view local D1 data in Prisma Studio, as well as create migrations.
+```
+npm run dev:setup
+```
 
-## Migrations
+You should now be able to use the application and run `npm run studio` to view local D1 data in Prisma Studio and create migrations.
 
-Prisma migrate does not support D1 yet, so you cannot follow the default prisma migrate workflows. Instead, migration files need to be created as follows.
+## Running Locally
+
+Make sure you've followed all steps in Project Setup above.
+
+Then, you can run `npm run build` and then `npm run dev` to view the site with Astro's hot reload (instantly reflect changes) using the adapter for Cloudflare. Alternatively, you can run `npm run preview` to see Astro with Workers together in one step, but there's no hot reload.
+
+## DB Migrations
+
+We use Prisma to generate SQL for migrations, and Wrangler to apply them. Prisma migrate does not fully support D1 yet, so you cannot follow the default prisma migrate workflows. Instead, migration need to be done as follows:
 
 #### Normal Use
 
@@ -42,14 +51,12 @@ npx prisma migrate diff \
 
 This should fill your created file with the raw SQLite for your changes.
 
-4. Run `npx wrangler d1 migrations apply telescope-db-development --local --env development`
-5. Regenerate a Prisma Client that reflects your new changes in `schema.prisma` with `npm run generate`.
+4. Run `npm run generate` to regenerate a Prisma Client that reflects your new changes in `schema.prisma`.
+5. Run `npm run migrate:local` to apply this new migration to your local database.
 
-## Running Locally
+### Note about Workers AI (AI content review)
 
-Make sure you've followed all steps in Project Setup and Migrations -> Initial Local Setup.
-
-Then, you can run `npm run build` and then `npm run dev` to view the site with Astro's hot reload (instantly reflect changes) using the adapter for Cloudflare. Alternatively, you can run `npm run preview` to see Astro with Workers together in one step, but there's no hot reload.
+One thing to note is that telescopetest-io uses Workers AI for AI content review on uploads. Wokers AI _always_ uses tokens that can incur costs, even in local/remote testing. AI content review is disabled locally by default. You can optionally enable AI content review (which may start costing money) by running the command `cp .dev.vars.example .dev.vars` and setting `ENABLE_AI_RATING=true`.
 
 ## Testing in Staging
 

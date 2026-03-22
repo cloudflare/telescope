@@ -1,4 +1,5 @@
 import { launchTest } from '../src/index.js';
+import { describe, expect, test } from 'vitest';
 import fs from 'fs';
 
 import { BrowserConfig } from '../src/browsers.js';

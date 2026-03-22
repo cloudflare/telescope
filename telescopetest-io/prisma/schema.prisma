@@ -9,18 +9,20 @@ datasource db {
 }
 
 model tests {
-  test_id     String @id
-  zip_key     String  @unique(map: "sqlite_autoindex_tests_2")
-  name        String?
-  description String?
-  source      String?
-  url         String
-  test_date   Int
-  browser     String
-  created_at  Int?    @default(dbgenerated("unixepoch()"))
-  updated_at  Int?    @default(dbgenerated("unixepoch()"))
+  test_id        String  @id
+  zip_key        String  @unique
+  name           String?
+  description    String?
+  source         String
+  url            String
+  test_date      Int
+  browser        String
+  content_rating String  @default("unknown")
+  created_at     Int?    @default(dbgenerated("(unixepoch())"))
+  updated_at     Int?    @default(dbgenerated("(unixepoch())"))
 
   @@index([zip_key], map: "idx_tests_file_key")
+  @@index([content_rating], map: "idx_tests_content_rating")
   @@index([updated_at(sort: Desc)], map: "idx_tests_updated_at")
   @@index([created_at(sort: Desc)], map: "idx_tests_created_at")
 }
