@@ -53,14 +53,10 @@ export const GET: APIRoute = async (context: APIContext) => {
     const contentTypeMap: Record<string, string> = {
       png: 'image/png',
       jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      gif: 'image/gif',
-      webp: 'image/webp',
       webm: 'video/webm',
       json: 'application/json',
       har: 'application/json',
       txt: 'text/plain',
-      webm: 'video/webm',
     };
     const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // downloaded default
     // Security headers to prevent XSS execution
@@ -73,7 +69,7 @@ export const GET: APIRoute = async (context: APIContext) => {
     };
     // For non-media files, force download to prevent inline rendering
     // Allow images and videos to render inline
-    if (!['png', 'jpg', 'jpeg', 'gif', 'webp', 'webm'].includes(ext || '')) {
+    if (!['png', 'jpg', 'webm'].includes(ext || '')) {
       headers['Content-Disposition'] = `attachment; filename="${filename}"`;
     }
     return new Response(object.body, { headers });
