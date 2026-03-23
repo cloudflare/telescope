@@ -5,9 +5,8 @@ import { ContentRating } from '@/lib/types/tests';
 import {
   isValidTestId,
   isPathSafe,
-  hasAllowedExtension,
+  isExpectedTelescopeFile,
 } from '@/lib/utils/security';
-// route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
 /**
  * Serve files from R2 bucket
@@ -30,9 +29,9 @@ export const GET: APIRoute = async (context: APIContext) => {
       status: 400,
     });
   }
-  // Ensure filename has valid extension from allowlist
-  if (!hasAllowedExtension(filename)) {
-    return new Response('Invalid file extension', { status: 400 });
+  // Ensure filename matches expected Telescope output files
+  if (!isExpectedTelescopeFile(filename)) {
+    return new Response('Invalid file', { status: 400 });
   }
   const env = context.locals.runtime.env;
   const aiEnabled = env.ENABLE_AI_RATING === 'true';
