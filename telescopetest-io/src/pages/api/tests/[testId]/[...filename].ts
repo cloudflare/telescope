@@ -7,6 +7,7 @@ import { ContentRating } from '@/lib/types/tests';
 /**
  * Serve files from R2 bucket
  * Route: /api/tests/{testId}/{filename}
+ * Supports nested paths like filmstrip/frame_1.jpg or video files
  * Used for serving screenshots and other test artifacts
  */
 export const GET: APIRoute = async (context: APIContext) => {
@@ -44,6 +45,7 @@ export const GET: APIRoute = async (context: APIContext) => {
       css: 'text/css',
       js: 'application/javascript',
       txt: 'text/plain',
+      webm: 'video/webm',
     };
     const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // ensure contentType always valid string
     return new Response(object.body, {

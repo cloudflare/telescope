@@ -68,6 +68,7 @@ CODE CONVENTIONS:
 - `type` for read/data models; `interface` for component Props
 - Use if-else for mutually exclusive conditions — don't check the same variable twice with separate ifs
 - Avoid nested ternaries — use if-else blocks for readability
+- Do not remove comments when asked to clean up code unless explicitly told to remove comments
 
 USER PREFERENCES:
 
