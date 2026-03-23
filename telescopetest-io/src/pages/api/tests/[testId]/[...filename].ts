@@ -118,6 +118,10 @@ export const GET: APIRoute = async (context: APIContext) => {
       headers['Content-Disposition'] =
         `attachment; filename="${normalizedFilename}"`;
     }
+    // Add download header for HAR files when accessed via link with download attribute
+    if (ext === 'har') {
+      headers['Content-Disposition'] = `attachment; filename="${testId}.har"`;
+    }
     return new Response(object.body, { headers });
   } catch (error) {
     console.error(

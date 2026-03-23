@@ -24,6 +24,47 @@ export interface ConfigJson {
   date: string;
   options: {
     browser: string;
+    width?: number;
+    height?: number;
+    frameRate?: number;
+    timeout?: number;
+    blockDomains?: string[];
+    block?: string[];
+    disableJS?: boolean;
+    debug?: boolean;
+    html?: boolean;
+    openHtml?: boolean;
+    list?: boolean;
+    overrideHost?: Record<string, string>;
+    connectionType?: string | false;
+    cpuThrottle?: number;
+    auth?: boolean | string;
+    zip?: boolean;
+    dry?: boolean;
+    device?: boolean | string;
+    deviceName?: string | false;
+    url?: string;
+    command?: string[];
+  };
+  browserConfig?: {
+    engine?: string;
+    headless?: boolean;
+    firefoxUserPrefs?: Record<string, unknown>;
+    mozLog?: boolean;
+    viewport?: {
+      width: number;
+      height: number;
+    };
+    recordHar?: {
+      path: string;
+    };
+    recordVideo?: {
+      dir: string;
+      size?: {
+        width: number;
+        height: number;
+      };
+    };
   };
 }
 

@@ -8,6 +8,7 @@
     <button class="tab-btn" data-tab="resources">Resources</button>
     <button class="tab-btn" data-tab="bottlenecks">Bottlenecks</button>
     <button class="tab-btn" data-tab="console">Console</button>
+    <button class="tab-btn" data-tab="config">Configuration</button>
   </div>
   <div class="tabs-content">
     <div class="tab-pane active" data-pane="summary">
@@ -30,6 +31,9 @@
     </div>
     <div class="tab-pane" data-pane="console">
       <slot name="console" />
+    </div>
+    <div class="tab-pane" data-pane="config">
+      <slot name="config" />
     </div>
   </div>
 </div>

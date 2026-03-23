@@ -162,9 +162,11 @@ export const POST: APIRoute = async (context: APIContext) => {
         },
       ),
       date: z.string(),
-      options: z.object({
-        browser: z.string(),
-      }),
+      options: z
+        .object({
+          browser: z.string(),
+        })
+        .passthrough(),
     });
     type ConfigJson = z.infer<typeof configSchema>;
     let config: ConfigJson;

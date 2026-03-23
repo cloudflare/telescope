@@ -12,6 +12,7 @@ import FilmstripVideo from '@/components/FilmstripVideo.astro';
 import Resources from '@/components/Resources.astro';
 import Console from '@/components/Console.astro';
 import Bottlenecks from '@/components/Bottlenecks.astro';
+import ConfigTab from '@/components/ConfigTab.astro';
 
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/testRepository';
@@ -21,6 +22,7 @@ import type { MetricsJson } from '@/lib/types/metrics';
 import type { ResourceTiming } from '@/lib/types/resources';
 import type { ConsoleMessage } from '@/lib/types/console';
 import type { Har } from '@/lib/types/har';
+import type { ConfigJson } from '@/lib/types/tests';
 import { getLcp, getCls } from '@/lib/utils/cwv';
 import {
   getFcp,
@@ -59,6 +61,7 @@ let har: Har | null = null;
 let metrics: MetricsJson | null = null;
 let resources: ResourceTiming[] = [];
 let consoleMessages: ConsoleMessage[] = [];
+let config: ConfigJson | null = null;
 let lcp = getLcp(null);
 let cls = getCls(null);
 let fcp = getFcp(null);
@@ -118,6 +121,17 @@ if (!isUnsafe && !isUnknown) {
   } catch (err) {
     console.error('Error reading console.json:', err);
     // console messages unavailable — render without them
+  }
+
+  // --- Config ---
+  try {
+    const configObj = await env.RESULTS_BUCKET.get(`${testId}/config.json`);
+    if (configObj) {
+      config = await configObj.json<ConfigJson>();
+    }
+  } catch (err) {
+    console.error('Error reading config.json:', err);
+    // config unavailable — render without it
   }
 
   // Extract metric values
@@ -319,6 +333,10 @@ if (!isUnsafe) {
 
             <div slot="console">
               <Console messages={consoleMessages} />
+            </div>
+
+            <div slot="config">
+              <ConfigTab testId={testId} config={config} hasHar={hasHar} />
             </div>
           </Tabs>
         </>
