@@ -12,18 +12,6 @@ export const EXPECTED_TELESCOPE_FILES = new Set([
   'screenshot.png',
 ]);
 
-// Validate filename doesn't attempt path traversal (allows single-level folders like "filmstrip/frame.jpg")
-export function isPathSafe(filename: string): boolean {
-  if (!filename || filename.trim() === '') return false;
-  if (filename.startsWith('/')) return false;
-  if (filename.includes('\\')) return false;
-  if (/%2e|%2f|%5c/i.test(filename)) return false;
-  const norm = path.normalize(filename);
-  if (norm.startsWith('..')) return false;
-  if (norm.includes('..')) return false;
-  return true;
-}
-
 // Validate testId format: YYYY_MM_DD_HH_MM_SS_UUID
 export function isValidTestId(testId: string): boolean {
   const testIdPattern =
@@ -38,10 +26,11 @@ export function isExpectedTelescopeFile(filename: string): boolean {
   if (EXPECTED_TELESCOPE_FILES.has(lower)) {
     return true;
   }
-  if (!lower.includes('/') && lower.endsWith('.webm')) {
+  const dir = path.dirname(lower);
+  if (dir === '.' && lower.endsWith('.webm')) {
     return true;
   }
-  if (lower.startsWith('filmstrip/') && lower.endsWith('.jpg')) {
+  if (dir === 'filmstrip' && lower.endsWith('.jpg')) {
     return true;
   }
   return false;
@@ -56,9 +45,11 @@ export function normalizeAndFilterZipFiles(
     .filter(([originalFilePath]) => originalFilePath.startsWith(prefixToStrip))
     .map(
       ([originalFilePath, contents]) =>
-        [originalFilePath.slice(prefixToStrip.length), contents] as const,
+        [
+          path.normalize(originalFilePath.slice(prefixToStrip.length)),
+          contents,
+        ] as const,
     )
-    .filter(([normalizedFilePath]) => isPathSafe(normalizedFilePath))
     .filter(([normalizedFilePath]) =>
       isExpectedTelescopeFile(normalizedFilePath),
     )

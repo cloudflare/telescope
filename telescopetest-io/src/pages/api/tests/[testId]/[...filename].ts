@@ -1,12 +1,9 @@
 import type { APIContext, APIRoute } from 'astro';
+import path from 'node:path';
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestRating } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
-import {
-  isValidTestId,
-  isPathSafe,
-  isExpectedTelescopeFile,
-} from '@/lib/utils/security';
+import { isValidTestId, isExpectedTelescopeFile } from '@/lib/utils/security';
 
 /**
  * Serve files from R2 bucket
@@ -16,21 +13,16 @@ import {
  */
 export const GET: APIRoute = async (context: APIContext) => {
   const { testId, filename } = context.params;
-  if (!testId || !filename) {
+  const normalizedFilename = filename ? path.normalize(filename) : undefined;
+  if (!testId || !normalizedFilename) {
     return new Response('Missing testId or filename', { status: 400 });
   }
   // Validate testId format: YYYY_MM_DD_HH_MM_SS_UUID
   if (!isValidTestId(testId)) {
     return new Response('Invalid testId format', { status: 400 });
   }
-  // Validate filename: no path traversal attempts
-  if (!isPathSafe(filename)) {
-    return new Response('Invalid filename: path traversal not allowed', {
-      status: 400,
-    });
-  }
   // Ensure filename matches expected Telescope output files
-  if (!isExpectedTelescopeFile(filename)) {
+  if (!isExpectedTelescopeFile(normalizedFilename)) {
     return new Response('Invalid file', { status: 400 });
   }
   const env = context.locals.runtime.env;
@@ -42,14 +34,14 @@ export const GET: APIRoute = async (context: APIContext) => {
       return new Response('Test file not available', { status: 404 });
     }
   }
-  const key = `${testId}/${filename}`;
+  const key = `${testId}/${normalizedFilename}`;
   try {
     const object = await env.RESULTS_BUCKET.get(key);
     if (!object) {
       return new Response('File not found', { status: 404 });
     }
     // Determine content type based on file extension
-    const ext = filename.toLowerCase().split('.').pop();
+    const ext = normalizedFilename.toLowerCase().split('.').pop();
     const contentTypeMap: Record<string, string> = {
       png: 'image/png',
       jpg: 'image/jpeg',
@@ -70,7 +62,8 @@ export const GET: APIRoute = async (context: APIContext) => {
     // For non-media files, force download to prevent inline rendering
     // Allow images and videos to render inline
     if (!['png', 'jpg', 'webm'].includes(ext || '')) {
-      headers['Content-Disposition'] = `attachment; filename="${filename}"`;
+      headers['Content-Disposition'] =
+        `attachment; filename="${normalizedFilename}"`;
     }
     return new Response(object.body, { headers });
   } catch (error) {
