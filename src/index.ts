@@ -183,6 +183,9 @@ export async function launchTest(options: LaunchOptions): Promise<TestResult> {
 }
 
 export default function browserAgent(): void {
+  const boldOn = '\x1b[1m';
+  const boldOff = '\x1b[0m';
+
   program
     .name('telescope')
     .description('Cross-browser synthetic testing agent')
@@ -352,7 +355,15 @@ export default function browserAgent(): void {
     .addOption(
       new Option(
         '--a11y <object>',
-        'Perform an accessibility test using Axe (Expects: {"tags": "best-practice"})',
+        'Perform an accessibility test using aXe (Expects: \'{"tags": ["best-practice"]}\')\n' +
+        `${boldOn}tags${boldOff} can be "wcag2a", "wcag2aa", "wcag2aaa", "wcag21a", "wcag21aa", "wcag22aa", ` +
+        '"best-practice", "ACT", "section508", "TTv5", "EN-301-549" and "RGAAv4a".\n' +
+        'See https://github.com/dequelabs/axe-core/blob/develop/doc/rule-descriptions.md for details.\n' +
+        `Other sub-options are ${boldOn}exclude${boldOff} and ${boldOn}disable${boldOff}.\n` +
+        `${boldOn}exclude${boldOff} is an array of CSS selectors to exclude those HTML nodes from checking.\n` +
+        'Example: "exclude": [".back-to-top", ".mobile-footer"]\n' +
+        `${boldOn}disable${boldOff} is an array of rule names to be disabled.\n` +
+        'Example: "disable": ["meta-viewport", "svg-img-alt"]',
       ).argParser((v) => parseJSON('--a11y', v, A11ySchema)),
     )
     .addOption(
