@@ -37,7 +37,7 @@ panel, column toggle, timeline scrubber) without re-rendering.
 
 ```html
 <link rel="stylesheet" href="/waterfall/waterfall.css" />
-<script type="module" src="/waterfall/dist/index.js"></script>
+<script type="module" src="/waterfall/index.js"></script>
 
 <waterfall-chart>
   <!-- pre-rendered children -->
@@ -51,7 +51,7 @@ The element builds its own DOM from scratch.
 
 ```html
 <link rel="stylesheet" href="/waterfall/waterfall.css" />
-<script type="module" src="/waterfall/dist/index.js"></script>
+<script type="module" src="/waterfall/index.js"></script>
 
 <!-- fetch from a URL -->
 <waterfall-chart src="/api/tests/abc123/pageload.har"></waterfall-chart>
@@ -118,25 +118,19 @@ document.documentElement.setAttribute('data-theme', 'dark');
 ```bash
 npm install           # install dependencies
 npm run build         # compile TypeScript → dist/
-npm run dev           # watch mode
+npx start            # serve demo pages
 npm run typecheck     # type-check without emitting
 npm run gen-demo      # regenerate pre-rendered HTML in all three demo pages
 npm run format        # run Prettier
 npm test              # run Vitest + Playwright tests (64 tests)
-npx serve .           # serve demo pages at http://localhost:3000
 ```
 
-After changing `src/render.ts`, `src/config.ts`, or the demo HAR data, run
-`npm run build && npm run gen-demo` to keep the pre-rendered demo pages in sync.`
+After changing `src/render.ts`, `src/config.ts`, or the demo HAR data, run `npm run build && npm run gen-demo` to keep the pre-rendered demo pages in sync.
 
 ### Demo pages
 
-| Page               | What it demonstrates                                         |
-| ------------------ | ------------------------------------------------------------ |
-| `static.html`      | Pre-rendered HTML+CSS only — no JS loaded                    |
-| `progressive.html` | Pre-rendered + button to lazily load JS and upgrade          |
-| `index.html`       | Fully dynamic — URL input and file picker for arbitrary HARs |
-
-```
-
-```
+| Page                | What it demonstrates                                         |
+| ------------------- | ------------------------------------------------------------ |
+| `/`                 | Pre-rendered + button to lazily load JS and upgrade          |
+| `/interactive.html` | Fully dynamic + file picker                                  |
+| `/src-attr.html`    | Fully dynamic — URL input and file picker for arbitrary HARs |

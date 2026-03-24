@@ -44,7 +44,7 @@ const harPath = harArg
   ? isAbsolute(harArg)
     ? harArg
     : resolve(process.cwd(), harArg)
-  : resolve(ROOT, 'demo.har');
+  : resolve(ROOT, 'public', 'demo.har');
 
 let harJson;
 try {
