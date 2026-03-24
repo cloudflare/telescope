@@ -1,8 +1,9 @@
 import type { APIContext, APIRoute } from 'astro';
+import path from 'node:path';
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestRating } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
-// route is server-rendered by default b/c `astro.config.mjs` has `output: server`
+import { isValidTestId, isExpectedTelescopeFile } from '@/lib/utils/security';
 
 /**
  * Serve files from R2 bucket
@@ -12,8 +13,17 @@ import { ContentRating } from '@/lib/types/tests';
  */
 export const GET: APIRoute = async (context: APIContext) => {
   const { testId, filename } = context.params;
-  if (!testId || !filename) {
+  const normalizedFilename = filename ? path.normalize(filename) : undefined;
+  if (!testId || !normalizedFilename) {
     return new Response('Missing testId or filename', { status: 400 });
+  }
+  // Validate testId format: YYYY_MM_DD_HH_MM_SS_UUID
+  if (!isValidTestId(testId)) {
+    return new Response('Invalid testId format', { status: 400 });
+  }
+  // Ensure filename matches expected Telescope output files
+  if (!isExpectedTelescopeFile(normalizedFilename)) {
+    return new Response('Invalid file', { status: 400 });
   }
   const env = context.locals.runtime.env;
   const aiEnabled = env.ENABLE_AI_RATING === 'true';
@@ -24,36 +34,38 @@ export const GET: APIRoute = async (context: APIContext) => {
       return new Response('Test file not available', { status: 404 });
     }
   }
-  const key = `${testId}/${filename}`;
+  const key = `${testId}/${normalizedFilename}`;
   try {
     const object = await env.RESULTS_BUCKET.get(key);
     if (!object) {
       return new Response('File not found', { status: 404 });
     }
     // Determine content type based on file extension
-    const ext = filename.toLowerCase().split('.').pop();
+    const ext = normalizedFilename.toLowerCase().split('.').pop();
     const contentTypeMap: Record<string, string> = {
       png: 'image/png',
       jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      gif: 'image/gif',
-      webp: 'image/webp',
-      svg: 'image/svg+xml',
+      webm: 'video/webm',
       json: 'application/json',
       har: 'application/json',
-      html: 'text/html',
-      css: 'text/css',
-      js: 'application/javascript',
       txt: 'text/plain',
-      webm: 'video/webm',
     };
-    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // ensure contentType always valid string
-    return new Response(object.body, {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable', // 1 year and immutable, aggressive
-      },
-    });
+    const contentType = contentTypeMap[ext || ''] || 'application/octet-stream'; // downloaded default
+    // Security headers to prevent XSS execution
+    const headers: Record<string, string> = {
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff', // can't execute as code
+      'Content-Security-Policy':
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox", // allows inline css only, other files in sandbox
+    };
+    // For non-media files, force download to prevent inline rendering
+    // Allow images and videos to render inline
+    if (!['png', 'jpg', 'webm'].includes(ext || '')) {
+      headers['Content-Disposition'] =
+        `attachment; filename="${normalizedFilename}"`;
+    }
+    return new Response(object.body, { headers });
   } catch (error) {
     console.error('R2 fetch error:', error);
     return new Response('Internal server error', { status: 500 });

@@ -5,6 +5,7 @@ import type { TestConfig } from '@/lib/types/tests';
 import path from 'node:path';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
+import { normalizeAndFilterZipFiles } from '@/lib/utils/security';
 
 import { TestSource, ContentRating } from '@/lib/types/tests';
 import { getPrismaClient } from '@/lib/prisma/client';
@@ -35,23 +36,6 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
-}
-
-// Normalize ZIP file paths: filter to only files under the prefix, then strip the prefix
-function normalizeZipFilePaths(
-  unzipped: Unzipped,
-  prefixToStrip: string,
-): Unzipped {
-  return Object.entries(unzipped)
-    .filter(([fullFilePath]) => fullFilePath.startsWith(prefixToStrip))
-    .map(
-      ([originalFilePath, contents]) =>
-        [originalFilePath.slice(prefixToStrip.length), contents] as const,
-    )
-    .reduce((acc, [normalizedFilePath, contents]) => {
-      acc[normalizedFilePath] = contents;
-      return acc;
-    }, {} as Unzipped);
 }
 
 // Generate a test_id
@@ -127,13 +111,26 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // Strip the directory prefix from all files (e.g., "folder/config.json" → "config.json")
+    // Strip the directory prefix from all files and filter to only valid, secure files
     const dirName = path.dirname(configPath);
     const prefixToStrip = dirName === '.' ? '' : dirName + '/';
-    const normalizedUnzipped = prefixToStrip
-      ? normalizeZipFilePaths(unzipped, prefixToStrip)
-      : unzipped;
-    const normalizedFiles = Object.keys(normalizedUnzipped);
+    // Parse filepaths and filter files in one function
+    // IMPORTANT: silently drops all files not in expected list (such as index.html)
+    const normalizedUnzipped = normalizeAndFilterZipFiles(
+      unzipped,
+      prefixToStrip,
+    );
+    const validFiles = Object.keys(normalizedUnzipped);
+    // Ensure at least one valid file remains
+    if (validFiles.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'No valid Telescope output files found in ZIP after filtering',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
     // Extract config.json
     const configBytes = normalizedUnzipped['config.json'];
     if (!configBytes) {
@@ -160,7 +157,19 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     const configSchema = z.object({
-      url: z.string(),
+      url: z.string().refine(
+        url => {
+          try {
+            const parsed = new URL(url);
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+          } catch {
+            return false;
+          }
+        },
+        {
+          message: 'URL must be a valid HTTP or HTTPS URL',
+        },
+      ),
       date: z.string(),
       options: z.object({
         browser: z.string(),
@@ -214,8 +223,8 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // store all normalizedUnzipped files in R2 with {testId}/{filename} format
-    for (const filename of normalizedFiles) {
+    // store all valid files in R2 with {testId}/{filename} format
+    for (const filename of validFiles) {
       await env.RESULTS_BUCKET!.put(
         `${testId}/${filename}`,
         normalizedUnzipped[filename],
