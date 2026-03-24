@@ -7,7 +7,8 @@ import type { TestConfig } from '@/lib/types/tests';
 import path from 'node:path';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
-import { normalizeAndFilterZipFiles } from '@/lib/utils/security';
+import { normalizeAndFilterZipFiles, toPosixPath } from '@/lib/utils/security';
+import { generateTestId } from '@/lib/utils/test-id';
 
 import { TestSource, ContentRating } from '@/lib/types/tests';
 import { getPrismaClient } from '@/lib/prisma/client';
@@ -38,18 +39,6 @@ async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
-}
-
-// Generate a test_id
-export function generateTestId(config_date: string): string {
-  const date_ob = new Date(config_date);
-  const date = date_ob.getDate().toString().padStart(2, '0');
-  const month = (date_ob.getMonth() + 1).toString().padStart(2, '0');
-  const year = date_ob.getFullYear();
-  const hour = date_ob.getHours().toString().padStart(2, '0');
-  const minute = date_ob.getMinutes().toString().padStart(2, '0');
-  const second = date_ob.getSeconds().toString().padStart(2, '0');
-  return `${year}_${month}_${date}_${hour}_${minute}_${second}_${crypto.randomUUID()}`;
 }
 
 export const POST: APIRoute = async (context: APIContext) => {
@@ -101,7 +90,7 @@ export const POST: APIRoute = async (context: APIContext) => {
     }
     // Find if some ' .../config.json' exists
     const configPath = files.find(
-      file => path.basename(file) === 'config.json',
+      file => path.posix.basename(toPosixPath(file)) === 'config.json',
     );
     if (!configPath) {
       return new Response(
@@ -113,7 +102,8 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     // Strip the directory prefix from all files and filter to only valid, secure files
-    const dirName = path.dirname(configPath);
+    const normalizedConfigPath = toPosixPath(configPath);
+    const dirName = path.posix.dirname(normalizedConfigPath);
     const prefixToStrip = dirName === '.' ? '' : dirName + '/';
     // Parse filepaths and filter files in one function
     // IMPORTANT: silently drops all files not in expected list (such as index.html)
