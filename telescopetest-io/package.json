@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "CLOUDFLARE_ENV=development astro dev",
+    "dev": "cross-env CLOUDFLARE_ENV=development astro dev",
     "dev:setup": "./scripts/dev-setup.sh",
     "dev:clean": "rm -rf .wrangler .env",
     "build": "astro build",
@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.2.4",
     "prisma": "^7.3.0",
     "wrangler": "^4.61.0"
