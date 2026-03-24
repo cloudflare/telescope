@@ -8,7 +8,7 @@ import { isValidTestId, isExpectedTelescopeFile } from '@/lib/utils/security';
 /**
  * Check test rating with cache
  * Cache key format: https://rating/{testId}
- * TTL: 1 hour via Cache-Control header
+ * TTL: immutable (ratings never change once final)
  * Only caches final ratings (SAFE or UNSAFE), not UNKNOWN or IN_PROGRESS
  */
 async function checkTestRating(
@@ -17,8 +17,8 @@ async function checkTestRating(
 ): Promise<string> {
   const cacheKey = `https://rating/${testId}`;
   // try cache read
+  const cache = await caches.open('rating-cache');
   try {
-    const cache = await caches.open('rating-cache');
     const cached = await cache.match(cacheKey);
     if (cached) {
       return await cached.text();
@@ -37,11 +37,10 @@ async function checkTestRating(
     test.rating === ContentRating.SAFE || test.rating === ContentRating.UNSAFE;
   if (isFinalRating) {
     try {
-      const cache = await caches.open('rating-cache');
       await cache.put(
         cacheKey,
         new Response(test.rating, {
-          headers: { 'Cache-Control': 'public, max-age=3600' },
+          headers: { 'Cache-Control': 'public, max-age=31536000, immutable' },
         }),
       );
     } catch (error) {
