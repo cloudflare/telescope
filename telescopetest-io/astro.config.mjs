@@ -11,27 +11,23 @@ export default defineConfig({
     imageService: 'cloudflare',
   }),
   vite: {
-    ssr: {
-      external: [
-        'node:path',
-        'node:fs/promises',
-        'node:url',
-        'node:crypto',
-        'node:process',
-        'node:buffer',
-        'node:module',
-        'node:fs',
-        'node:async_hooks',
-        'node:events',
-        'node:os',
-      ],
-    },
-    optimizeDeps: {
-      include: [
-        '@prisma/adapter-d1',
-        '@prisma/client/runtime/wasm-compiler-edge',
-      ],
-    },
+    plugins: [
+      {
+        name: 'pre-compile-deps',
+        configEnvironment(name) {
+          if (name !== 'client') {
+            return {
+              optimizeDeps: {
+                // wasm-compiler-edge must never be bundled by esbuild — it contains a ?module import that only workerd can handle natively
+                // https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-module-imports
+                // https://developers.cloudflare.com/workers/wrangler/bundling/#including-non-javascript-modules
+                exclude: ['@prisma/client/runtime/wasm-compiler-edge'],
+              },
+            };
+          }
+        },
+      },
+    ],
   },
   integrations: [react()],
 });
