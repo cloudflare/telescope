@@ -1,3 +1,5 @@
+import { env } from 'cloudflare:workers';
+
 import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
 import type { TestConfig } from '@/lib/types/tests';
@@ -80,7 +82,6 @@ export const POST: APIRoute = async (context: APIContext) => {
     const files = Object.keys(unzipped);
     // Generate hash for unique R2 storage key
     const zipKey = await generateContentHash(buffer);
-    const env = context.locals.runtime.env;
     // Check if this exact content already exists in D1
     const prisma = getPrismaClient(context);
     const existing = await findTestIdByZipKey(prisma, zipKey);
@@ -245,7 +246,7 @@ export const POST: APIRoute = async (context: APIContext) => {
 
     // Rate the URL content via Workers AI — fire-and-forget after response is built
     if (env.ENABLE_AI_RATING === 'true' && env.AI) {
-      context.locals.runtime.ctx.waitUntil(
+      context.locals.cfContext.waitUntil(
         (async () => {
           await updateContentRating(prisma, testId, ContentRating.IN_PROGRESS);
           const rating = await rateUrlContent(

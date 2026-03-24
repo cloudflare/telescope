@@ -1,3 +1,5 @@
+import { env } from 'cloudflare:workers';
+
 import type { APIContext, APIRoute } from 'astro';
 import path from 'node:path';
 import { getPrismaClient } from '@/lib/prisma/client';
@@ -25,7 +27,6 @@ export const GET: APIRoute = async (context: APIContext) => {
   if (!isExpectedTelescopeFile(normalizedFilename)) {
     return new Response('Invalid file', { status: 400 });
   }
-  const env = context.locals.runtime.env;
   const aiEnabled = env.ENABLE_AI_RATING === 'true';
   if (aiEnabled) {
     const prisma = getPrismaClient(context);

@@ -8,13 +8,6 @@ import react from '@astrojs/react';
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({
-    platformProxy: {
-      // only used for `astro dev`: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#platformproxy
-      enabled: true,
-      configPath: './wrangler.jsonc',
-      environment: 'development',
-    },
-
     imageService: 'cloudflare',
   }),
   vite: {
@@ -31,6 +24,12 @@ export default defineConfig({
         'node:async_hooks',
         'node:events',
         'node:os',
+      ],
+    },
+    optimizeDeps: {
+      include: [
+        '@prisma/adapter-d1',
+        '@prisma/client/runtime/wasm-compiler-edge',
       ],
     },
   },

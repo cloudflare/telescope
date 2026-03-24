@@ -1,4 +1,6 @@
 ---
+import { env } from 'cloudflare:workers';
+
 import type { Tests } from '@/lib/types/tests';
 
 import Page from '@/layouts/Page.astro';
@@ -15,7 +17,6 @@ const viewLayout =
   savedView === 'grid' || savedView === 'vertical' ? savedView : 'vertical';
 
 // Fetch all tests from D1
-const env = Astro.locals.runtime.env;
 const aiEnabled = env.ENABLE_AI_RATING === 'true';
 const prisma = getPrismaClient(Astro);
 const tests = await getAllTests(prisma, aiEnabled);
