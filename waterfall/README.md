@@ -115,19 +115,25 @@ document.documentElement.setAttribute('data-theme', 'dark');
 
 ## Building and testing
 
+After changing `src/render.ts`, `src/config.ts`, or the demo HAR data, run `npm run build && npm run gen-demo` to keep the pre-rendered demo pages in sync.
+
+### Waterfall component
+
 ```bash
 npm install           # install dependencies
 npm run build         # compile TypeScript → dist/
-npx start            # serve demo pages
 npm run typecheck     # type-check without emitting
-npm run gen-demo      # regenerate pre-rendered HTML in all three demo pages
 npm run format        # run Prettier
 npm test              # run Vitest + Playwright tests (64 tests)
 ```
 
-After changing `src/render.ts`, `src/config.ts`, or the demo HAR data, run `npm run build && npm run gen-demo` to keep the pre-rendered demo pages in sync.
-
 ### Demo pages
+
+```bash
+npm install           # install dependencies
+npx start             # serve demo pages for local development
+npm run build:demo    # generate demo HTML pages statically
+```
 
 | Page                | What it demonstrates                                         |
 | ------------------- | ------------------------------------------------------------ |

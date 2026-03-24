@@ -18,13 +18,15 @@
   ],
   "scripts": {
     "build": "tsc",
+    "build:demo": "npm run gen-demo && vite build",
     "start": "vite",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "gen-demo": "node scripts/gen-demo.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "clean": "rm -rf dist node_modules"
   },
   "devDependencies": {
     "@vitest/browser": "^4.0.18",
