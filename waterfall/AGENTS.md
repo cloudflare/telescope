@@ -236,41 +236,15 @@ dark-mode block is in `demo.css`. Consumers can override tokens on
 ```
 waterfall/
 ├── src/                    Source code
-│   ├── demo/               Demo page source
-├── __tests__/              Test files
+│   ├── waterfall.css       Standalone stylesheet — link in <head>
+│   ├── index.ts            JS entrypoint
+│   └── ...                 Other source files
+├── public/                 Demo pages
 ├── dist/                   Compiled JS + type declarations (after build)
-├── scripts/
-│   └── gen-demo.js         Regenerates pre-rendered HTML in demo pages
-├── waterfall.css           Standalone stylesheet — link in <head>
-├── index.html              Demo: pre-rendered + lazy JS upgrade
-├── interactive.html        Demo: fully dynamic + file picker
-└── src-attrs.html          Demo: load HAR from src attribute
-```
-
-waterfall/
-├── src/
-│ ├── har.ts HAR 1.2 TypeScript types
-│ ├── config.ts Resource-type → bar-height / colour-key map
-│ ├── formatters.ts fmtSize / fmtMs helpers
-│ ├── helpers.ts Pure analysis helpers (parseUrl, computeTotalMs, …)
-│ ├── render.ts renderToHTML(har) — pure server/build-time renderer
-│ ├── waterfall-chart.ts Custom element implementation
-│ └── index.ts Barrel export
-├── **tests**/
-│ └── theme.test.ts Playwright-driven visual/theme tests (Vitest)
-├── dist/ Compiled JS + type declarations (after build)
-├── scripts/
-│ └── gen-demo.js Regenerates pre-rendered HTML in demo pages
-├── waterfall.css Standalone stylesheet — link in <head>
-├── demo.css Demo page styles
-├── static.html Demo: pure HTML+CSS, no JS
-├── progressive.html Demo: pre-rendered + lazy JS upgrade
-├── index.html Demo: fully dynamic, URL input + file picker
-├── theme.js Sun/Moon theme toggle helper
-├── vitest.config.ts Vitest configuration
-├── package.json
-└── tsconfig.json
-
-```
-
+│   ├── index.html          Demo: pre-rendered + lazy JS upgrade
+│   ├── interactive.html    Demo: fully dynamic + file picker
+│   └── src-attrs.html      Demo: load HAR from src attribute
+├── __tests__/              Test files
+└── scripts/
+    └── gen-demo.js         Regenerates pre-rendered HTML in demo pages
 ```

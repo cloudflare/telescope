@@ -4,8 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>waterfall-chart · interactive demo</title>
-    <link rel="stylesheet" href="../waterfall.css" />
-    <link rel="stylesheet" href="../src/demo/demo.css" />
+    <link rel="stylesheet" href="/demo.css" />
+    <script defer src="/theme.js"></script>
+    <script defer src="/interactive.js"></script>
+
+    <!-- Load CSS to render static HTML -->
+    <link rel="stylesheet" href="/waterfall/waterfall.css" />
+    <!-- JS type="module" is automatically deferred and registers the component progressively enhancing the experience -->
+    <script type="module" src="/waterfall/index.ts"></script>
   </head>
   <body>
     <header class="demo-header">
@@ -1002,8 +1008,5 @@
       <p class="wf-message wf-message--error wf-error" hidden></p>
       <!-- wf-demo-end -->
     </waterfall-chart>
-
-    <script src="../src/demo/theme.js"></script>
-    <script type="module" src="../src/demo/interactive.js"></script>
   </body>
 </html>

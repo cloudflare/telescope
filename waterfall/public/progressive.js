@@ -9,7 +9,7 @@ btn.addEventListener(
 
     const s = document.createElement('script');
     s.type = 'module';
-    s.src = './dist/index.js';
+    s.src = '/waterfall/index.ts';
     s.addEventListener('load', function () {
       status.textContent =
         '✓ Web component active — filters and row details now work.';

@@ -4,8 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>waterfall-chart · src attribute demo</title>
-    <link rel="stylesheet" href="../waterfall.css" />
-    <link rel="stylesheet" href="../src/demo/demo.css" />
+    <link rel="stylesheet" href="/demo.css" />
+    <script defer src="/theme.js"></script>
+
+    <!-- Load CSS to render static HTML -->
+    <link rel="stylesheet" href="/waterfall/waterfall.css" />
+    <!-- JS type="module" is automatically deferred and registers the component progressively enhancing the experience -->
+    <script type="module" src="/waterfall/index.ts"></script>
   </head>
   <body>
     <header class="demo-header">
@@ -36,9 +41,6 @@
       attribute — no pre-rendered children, no JavaScript outside the bundle.
     </p>
 
-    <waterfall-chart src="../demo.har"></waterfall-chart>
-
-    <script type="module" src="../dist/index.js"></script>
-    <script src="../src/demo/theme.js"></script>
+    <waterfall-chart src="/demo.har"></waterfall-chart>
   </body>
 </html>

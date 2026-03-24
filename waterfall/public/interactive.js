@@ -1,5 +1,3 @@
-import '../../dist/index.js';
-
 const wf = document.getElementById('wf');
 const harTitle = document.getElementById('har-title');
 
