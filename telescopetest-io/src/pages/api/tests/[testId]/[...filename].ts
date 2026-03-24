@@ -6,6 +6,52 @@ import { ContentRating } from '@/lib/types/tests';
 import { isValidTestId, isExpectedTelescopeFile } from '@/lib/utils/security';
 
 /**
+ * Check test rating with cache
+ * Cache key format: https://rating/{testId}
+ * TTL: 1 hour via Cache-Control header
+ * Only caches final ratings (SAFE or UNSAFE), not UNKNOWN or IN_PROGRESS
+ */
+async function checkTestRating(
+  context: APIContext,
+  testId: string,
+): Promise<string> {
+  const cacheKey = `https://rating/${testId}`;
+  // try cache read
+  try {
+    const cache = await caches.open('rating-cache');
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      return await cached.text();
+    }
+  } catch (error) {
+    console.warn(`[Cache] Cache read error (ignoring):`, error);
+  }
+  // otherwise read from DB
+  const prisma = getPrismaClient(context);
+  const test = await getTestRating(prisma, testId);
+  if (!test) {
+    return ContentRating.UNKNOWN;
+  }
+  // if not UNKNOWN or IN_PROGRESS (temp states), write cache
+  const isFinalRating =
+    test.rating === ContentRating.SAFE || test.rating === ContentRating.UNSAFE;
+  if (isFinalRating) {
+    try {
+      const cache = await caches.open('rating-cache');
+      await cache.put(
+        cacheKey,
+        new Response(test.rating, {
+          headers: { 'Cache-Control': 'public, max-age=3600' },
+        }),
+      );
+    } catch (error) {
+      console.warn(`[Cache] Cache write error (ignoring):`, error);
+    }
+  }
+  return test.rating;
+}
+
+/**
  * Serve files from R2 bucket
  * Route: /api/tests/{testId}/{filename}
  * Supports nested paths like filmstrip/frame_1.jpg or video files
@@ -28,32 +74,9 @@ export const GET: APIRoute = async (context: APIContext) => {
   const env = context.locals.runtime.env;
   const aiEnabled = env.ENABLE_AI_RATING === 'true';
   if (aiEnabled) {
-    try {
-      const prisma = getPrismaClient(context);
-      const queryStart = Date.now();
-      const timeoutMs = 500;
-      const test = await Promise.race([
-        getTestRating(prisma, testId),
-        new Promise<null>((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`DB query timeout after ${timeoutMs}ms`)),
-            timeoutMs,
-          ),
-        ),
-      ]);
-      const queryDuration = Date.now() - queryStart;
-      console.log(
-        `[D1] DB query took ${queryDuration}ms - testId: ${testId}, file: ${normalizedFilename}`,
-      );
-      if (!test || test.rating !== ContentRating.SAFE) {
-        return new Response('Test file not available', { status: 404 });
-      }
-    } catch (dbError) {
-      console.error(
-        `[D1] Database error checking rating - testId: ${testId}, file: ${normalizedFilename}`,
-        dbError,
-      );
-      return new Response('Internal server error', { status: 500 });
+    const rating = await checkTestRating(context, testId);
+    if (rating !== ContentRating.SAFE) {
+      return new Response('Test file not available', { status: 404 });
     }
   }
   const key = `${testId}/${normalizedFilename}`;
