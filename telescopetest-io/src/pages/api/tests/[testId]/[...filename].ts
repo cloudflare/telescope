@@ -28,16 +28,42 @@ export const GET: APIRoute = async (context: APIContext) => {
   const env = context.locals.runtime.env;
   const aiEnabled = env.ENABLE_AI_RATING === 'true';
   if (aiEnabled) {
-    const prisma = getPrismaClient(context);
-    const test = await getTestRating(prisma, testId);
-    if (!test || test.rating !== ContentRating.SAFE) {
-      return new Response('Test file not available', { status: 404 });
+    try {
+      const prisma = getPrismaClient(context);
+      const queryStart = Date.now();
+      const timeoutMs = 500;
+      const test = await Promise.race([
+        getTestRating(prisma, testId),
+        new Promise<null>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`DB query timeout after ${timeoutMs}ms`)),
+            timeoutMs,
+          ),
+        ),
+      ]);
+      const queryDuration = Date.now() - queryStart;
+      console.log(
+        `[D1] DB query took ${queryDuration}ms - testId: ${testId}, file: ${normalizedFilename}`,
+      );
+      if (!test || test.rating !== ContentRating.SAFE) {
+        return new Response('Test file not available', { status: 404 });
+      }
+    } catch (dbError) {
+      console.error(
+        `[D1] Database error checking rating - testId: ${testId}, file: ${normalizedFilename}`,
+        dbError,
+      );
+      return new Response('Internal server error', { status: 500 });
     }
   }
   const key = `${testId}/${normalizedFilename}`;
   try {
+    const r2Start = Date.now();
     const object = await env.RESULTS_BUCKET.get(key);
+    const r2Duration = Date.now() - r2Start;
+    console.log(`[R2] Fetch took ${r2Duration}ms - key: ${key}`);
     if (!object) {
+      console.warn(`[R2] File not found in bucket - key: ${key}`);
       return new Response('File not found', { status: 404 });
     }
     // Determine content type based on file extension
@@ -67,7 +93,10 @@ export const GET: APIRoute = async (context: APIContext) => {
     }
     return new Response(object.body, { headers });
   } catch (error) {
-    console.error('R2 fetch error:', error);
+    console.error(
+      `[R2] Fetch error - key: ${key}, testId: ${testId}, file: ${normalizedFilename}`,
+      error,
+    );
     return new Response('Internal server error', { status: 500 });
   }
 };
