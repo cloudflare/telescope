@@ -12,7 +12,7 @@
     "preview": "astro preview",
     "migrate:development": "npx wrangler d1 migrations apply telescope-db-development --local --env development",
     "migrate:staging": "npx wrangler d1 migrations apply telescope-db-staging --remote --env staging",
-    "deploy:development": "npm run build && wrangler deploy --env development",
+    "deploy:development": "npm run build:development && wrangler deploy --env development",
     "deploy:staging": "npm run build:staging && wrangler deploy --env staging",
     "generate": "prisma generate",
     "studio": "prisma studio"
