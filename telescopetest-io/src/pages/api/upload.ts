@@ -59,7 +59,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       file: z.instanceof(File),
       name: z.string().optional(),
       description: z.string().optional(),
-      source: z.nativeEnum(TestSource),
+      source: z.enum(TestSource),
     });
     const formData = await context.request.formData();
     const result = uploadSchema.safeParse({
