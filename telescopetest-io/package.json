@@ -8,7 +8,7 @@
     "dev:clean": "rm -rf .wrangler .env dist node_modules",
     "cf-typegen": "wrangler types",
     "build:development": "cross-env CLOUDFLARE_ENV=development astro build",
-    "build:staging": "cross-env CLOUDFLARE_ENV=production astro build",
+    "build:staging": "cross-env CLOUDFLARE_ENV=staging astro build",
     "preview": "astro preview",
     "migrate:development": "npx wrangler d1 migrations apply telescope-db-development --local --env development",
     "migrate:staging": "npx wrangler d1 migrations apply telescope-db-staging --remote --env staging",

@@ -27,9 +27,7 @@ You should now be able to use the application and run `npm run studio` to view l
 
 ## Running Locally
 
-Make sure you've followed all steps in Project Setup above.
-
-Then, you can run `npm run build` and then `npm run dev` to view the site with Astro's hot reload (instantly reflect changes) using the adapter for Cloudflare. Alternatively, you can run `npm run preview` to see Astro with Workers together in one step, but there's no hot reload.
+Run `npm run dev` to view the site with Astro's hot reload (instantly reflect changes) using the adapter for Cloudflare.
 
 ## DB Migrations
 
@@ -52,7 +50,7 @@ npx prisma migrate diff \
 This should fill your created file with the raw SQLite for your changes.
 
 4. Run `npm run generate` to regenerate a Prisma Client that reflects your new changes in `schema.prisma`.
-5. Run `npm run migrate:local` to apply this new migration to your local database.
+5. Run `npm run migrate:development` to apply this new migration to your local database.
 
 ### Note about Workers AI (AI content review)
 
