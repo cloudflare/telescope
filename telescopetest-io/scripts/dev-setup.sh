@@ -23,7 +23,7 @@ fi
 
 # 3. Apply migrations to the local D1 database
 echo "Applying migrations to local D1 database..."
-npm run migrate:local
+npm run migrate:development
 
 # 4. Generate Prisma Client
 echo "Generating Prisma Client..."
