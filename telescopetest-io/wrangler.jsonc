@@ -2,29 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "telescopetest-io",
   "account_id": "4b1c95badf17540db82cd8b431ae3eb0",
-  "main": "./dist/_worker.js/index.js",
-  "compatibility_date": "2025-11-18",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-03-17",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "observability": {
     "enabled": true,
   },
-  "assets": {
-    "binding": "ASSETS",
-    "directory": "./dist",
-  },
-  "d1_databases": [
-    {
-      "binding": "TELESCOPE_DB",
-      "database_name": "db-placeholder",
-      "database_id": "anything-just-need-id-field",
-    },
-  ],
-  "r2_buckets": [
-    {
-      "binding": "RESULTS_BUCKET",
-      "bucket_name": "bucket-placeholder",
-    },
-  ],
   "env": {
     "development": {
       "vars": {

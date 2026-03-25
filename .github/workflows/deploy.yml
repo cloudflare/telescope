@@ -36,12 +36,11 @@ jobs:
 
       - name: generate prisma client
         working-directory: ./telescopetest-io
-        run: npm run generate
+        run: npx prisma generate
 
       - name: build astro site
         working-directory: ./telescopetest-io
-        run: npm run build
-
+        run: CLOUDFLARE_ENV=production npx astro build
       - name: deploy to cloudflare workers
         working-directory: ./telescopetest-io
         run: npx wrangler deploy --env production

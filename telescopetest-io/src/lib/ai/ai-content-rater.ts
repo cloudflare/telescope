@@ -1,7 +1,5 @@
 import { ContentRating } from '@/lib/types/tests';
 
-type Ai = import('@cloudflare/workers-types').Ai;
-
 // helper to extract text from metrics.json
 function extractTextFromMetrics(metricsBytes: Uint8Array): string {
   const metricsJson = JSON.parse(new TextDecoder('utf-8').decode(metricsBytes));

@@ -1,4 +1,6 @@
 ---
+import { env } from 'cloudflare:workers';
+
 import Page from '@/layouts/Page.astro';
 import MetricCard from '@/components/MetricCard.astro';
 import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
@@ -35,7 +37,6 @@ if (!testId) {
   return Astro.redirect('/results');
 }
 
-const env = Astro.locals.runtime.env;
 const aiEnabled = env.ENABLE_AI_RATING === 'true';
 
 const prisma = getPrismaClient(Astro);

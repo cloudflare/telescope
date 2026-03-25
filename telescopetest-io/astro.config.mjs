@@ -8,31 +8,26 @@ import react from '@astrojs/react';
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({
-    platformProxy: {
-      // only used for `astro dev`: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#platformproxy
-      enabled: true,
-      configPath: './wrangler.jsonc',
-      environment: 'development',
-    },
-
     imageService: 'cloudflare',
   }),
   vite: {
-    ssr: {
-      external: [
-        'node:path',
-        'node:fs/promises',
-        'node:url',
-        'node:crypto',
-        'node:process',
-        'node:buffer',
-        'node:module',
-        'node:fs',
-        'node:async_hooks',
-        'node:events',
-        'node:os',
-      ],
-    },
+    plugins: [
+      {
+        name: 'pre-compile-deps',
+        configEnvironment(name) {
+          if (name !== 'client') {
+            return {
+              optimizeDeps: {
+                // wasm-compiler-edge must never be bundled by esbuild — it contains a ?module import that only workerd can handle natively
+                // https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-module-imports
+                // https://developers.cloudflare.com/workers/wrangler/bundling/#including-non-javascript-modules
+                exclude: ['@prisma/client/runtime/wasm-compiler-edge'],
+              },
+            };
+          }
+        },
+      },
+    ],
   },
   integrations: [react()],
 });
