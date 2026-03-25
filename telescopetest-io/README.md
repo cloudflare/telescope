@@ -65,7 +65,7 @@ Staging allows you to test changes in a remote environment that isn't production
 Changes to the production website should only be deployed on Cloudflare workers on successful PR into @cloudflare/telescope. To run this deployment, we have a GitHub workflow `.github/workflows/deploy.yml`. This is what that workflow does:
 
 1. Checks out code
-2. Installs Node.js 20
+2. Installs Node.js 24
 3. Installs project dependencies
 4. Applies any new D1 migrations
 5. Generates Prisma client
