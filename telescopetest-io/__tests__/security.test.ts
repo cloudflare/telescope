@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import type { Unzipped } from 'fflate';
 
 import { normalizeAndFilterZipFiles } from '@/lib/utils/security';
-import { generateTestId } from '@/lib/utils/test-id';
+import { generateTestId } from '@/lib/utils/testId';
 
 // Helpers
 const enc = (s: string): Uint8Array => new TextEncoder().encode(s);

@@ -8,7 +8,7 @@ import path from 'node:path';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 import { normalizeAndFilterZipFiles, toPosixPath } from '@/lib/utils/security';
-import { generateTestId } from '@/lib/utils/test-id';
+import { generateTestId } from '@/lib/utils/testId';
 
 import { TestSource, ContentRating } from '@/lib/types/tests';
 import { getPrismaClient } from '@/lib/prisma/client';

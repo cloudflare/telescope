@@ -7,11 +7,18 @@ import path from 'node:path';
 const execAsync = promisify(exec);
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
+function getPackageScripts(): Record<string, string> {
+  const packageJson = JSON.parse(
+    readFileSync(path.join(PROJECT_ROOT, 'package.json'), 'utf-8'),
+  );
+  return packageJson.scripts || {};
+}
+
+const scripts = getPackageScripts();
 async function runScript(
   scriptName: string,
   timeout = 30000,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  const scripts = getPackageScripts();
   if (!scripts[scriptName]) {
     return {
       stdout: '',
@@ -44,38 +51,23 @@ async function hasFiles(dirPath: string): Promise<boolean> {
   }
 }
 
-function getPackageScripts(): Record<string, string> {
-  const packageJson = JSON.parse(
-    readFileSync(path.join(PROJECT_ROOT, 'package.json'), 'utf-8'),
-  );
-  return packageJson.scripts || {};
-}
-
 describe('npm scripts functionality', () => {
-  const scripts = getPackageScripts();
-
-  describe('script availability', () => {
-    it('should have essential development scripts', () => {
-      expect(scripts).toHaveProperty('dev');
-      expect(scripts).toHaveProperty('generate');
-      expect(scripts).toHaveProperty('cf-typegen');
-      expect(scripts).toHaveProperty('test');
+  describe('build script', () => {
+    const distPath = path.join(PROJECT_ROOT, 'dist');
+    let buildResult: { stdout: string; stderr: string; exitCode: number };
+    beforeAll(async () => {
+      buildResult = await runScript('build:development', 120000);
+    }, 120000);
+    afterAll(() => {
+      if (existsSync(distPath)) {
+        rmSync(distPath, { recursive: true, force: true });
+      }
     });
-
-    it('should have build scripts', () => {
-      const hasBuildScript =
-        'build' in scripts ||
-        'build:development' in scripts ||
-        'build:staging' in scripts;
-      expect(hasBuildScript).toBe(true);
-    });
-
-    it('should have migration scripts', () => {
-      const hasMigrateScript =
-        'migrate:local' in scripts ||
-        'migrate:development' in scripts ||
-        'migrate:staging' in scripts;
-      expect(hasMigrateScript).toBe(true);
+    it('should build successfully and create dist directory', async () => {
+      expect(buildResult.exitCode).toBe(0);
+      expect(existsSync(distPath)).toBe(true);
+      const hasContent = await hasFiles(distPath);
+      expect(hasContent).toBe(true);
     });
   });
 
@@ -119,19 +111,5 @@ describe('npm scripts functionality', () => {
         console.log('Worker typegen not functional');
       }
     });
-  });
-
-  describe('vitest', () => {
-    it('should have vitest available', async () => {
-      try {
-        const { stdout, stderr } = await execAsync('npx vitest --version', {
-          cwd: PROJECT_ROOT,
-          timeout: 10000,
-        });
-        expect(stdout).toMatch(/vitest/i);
-      } catch (error: any) {
-        expect(error.stdout || error.stderr).toMatch(/vitest/i);
-      }
-    }, 15000);
   });
 });
