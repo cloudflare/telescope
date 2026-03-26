@@ -1,155 +1,227 @@
 :root {
   --font-sans: 'FT Kunst Grotesk', sans-serif;
   --font-mono: 'Apercu Mono Pro', monospace;
-  --color-red-50: oklch(97.1% 0.013 17.38);
-  --color-red-100: oklch(93.6% 0.032 17.717);
-  --color-red-300: oklch(80.8% 0.114 19.571);
-  --color-red-400: oklch(70.4% 0.191 22.216);
-  --color-red-500: oklch(63.7% 0.237 25.331);
-  --color-red-600: oklch(57.7% 0.245 27.325);
-  --color-red-700: oklch(50.5% 0.213 27.518);
-  --color-red-800: oklch(44.4% 0.177 26.899);
-  --color-orange-400: oklch(75% 0.183 55.934);
-  --color-orange-500: oklch(70.5% 0.213 47.604);
-  --color-amber-100: oklch(96.2% 0.059 95.617);
-  --color-amber-400: oklch(82.8% 0.189 84.429);
-  --color-amber-500: oklch(76.9% 0.188 70.08);
-  --color-amber-600: oklch(66.6% 0.179 58.318);
-  --color-yellow-50: oklch(98.7% 0.026 102.212);
-  --color-yellow-200: oklch(94.5% 0.129 101.54);
-  --color-yellow-400: oklch(85.2% 0.199 91.936);
-  --color-yellow-500: oklch(79.5% 0.184 86.047);
-  --color-yellow-600: oklch(68.1% 0.162 75.834);
-  --color-yellow-700: oklch(55.4% 0.135 66.442);
-  --color-yellow-800: oklch(47.6% 0.114 61.907);
-  --color-yellow-900: oklch(42.1% 0.095 57.708);
-  --color-green-100: oklch(96.2% 0.044 156.743);
-  --color-green-400: oklch(79.2% 0.209 151.711);
-  --color-green-500: oklch(72.3% 0.219 149.579);
-  --color-green-600: oklch(62.7% 0.194 149.214);
-  --color-green-800: oklch(44.8% 0.119 151.328);
-  --color-emerald-100: oklch(95% 0.052 163.051);
-  --color-emerald-300: oklch(84.5% 0.143 164.978);
-  --color-emerald-400: oklch(76.5% 0.177 163.223);
-  --color-emerald-500: oklch(69.6% 0.17 162.48);
-  --color-emerald-600: oklch(59.6% 0.145 163.225);
-  --color-cyan-500: oklch(71.5% 0.143 215.221);
-  --color-sky-100: oklch(95.1% 0.026 236.824);
-  --color-sky-600: oklch(58.8% 0.158 241.966);
-  --color-blue-300: oklch(80.9% 0.105 251.813);
-  --color-blue-400: oklch(70.7% 0.165 254.624);
-  --color-blue-500: oklch(62.3% 0.214 259.815);
-  --color-blue-600: oklch(54.6% 0.245 262.881);
-  --color-violet-100: oklch(94.3% 0.029 294.588);
-  --color-violet-300: oklch(81.1% 0.111 293.571);
-  --color-violet-400: oklch(70.2% 0.183 293.541);
-  --color-violet-500: oklch(60.6% 0.25 292.717);
-  --color-violet-600: oklch(54.1% 0.281 293.009);
-  --color-purple-400: oklch(71.4% 0.203 305.504);
-  --color-purple-500: oklch(62.7% 0.265 303.9);
-  --color-pink-100: oklch(94.8% 0.028 342.258);
-  --color-pink-500: oklch(65.6% 0.241 354.308);
-  --color-pink-600: oklch(59.2% 0.249 0.584);
-  --color-rose-500: oklch(64.5% 0.246 16.439);
-  --color-gray-50: oklch(98.5% 0.002 247.839);
-  --color-gray-100: oklch(96.7% 0.003 264.542);
-  --color-gray-300: oklch(87.2% 0.01 258.338);
-  --color-gray-500: oklch(55.1% 0.027 264.364);
-  --color-gray-600: oklch(44.6% 0.03 256.802);
-  --color-gray-700: oklch(37.3% 0.034 259.733);
-  --color-gray-900: oklch(21% 0.034 264.665);
-  --color-black: #000;
-  --color-white: #fff;
-  --spacing: 0.25rem;
-  --container-md: 28rem;
-  --container-lg: 32rem;
-  --container-2xl: 42rem;
-  --container-3xl: 48rem;
-  --container-4xl: 56rem;
-  --text-xs: 0.75rem;
-  --text-xs--line-height: calc(1 / 0.75);
-  --text-sm: 0.875rem;
-  --text-sm--line-height: calc(1.25 / 0.875);
-  --text-base: 1rem;
-  --text-base--line-height: 1.5;
-  --text-lg: 1.125rem;
-  --text-lg--line-height: calc(1.75 / 1.125);
-  --text-xl: 1.25rem;
-  --text-xl--line-height: calc(1.75 / 1.25);
-  --text-2xl: 1.5rem;
-  --text-2xl--line-height: calc(2 / 1.5);
-  --text-3xl: 1.875rem;
-  --text-3xl--line-height: 1.2;
-  --text-4xl: 2.25rem;
-  --text-4xl--line-height: calc(2.5 / 2.25);
-  --text-5xl: 3rem;
-  --text-5xl--line-height: 1;
-  --font-weight-light: 300;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --tracking-tight: -0.025em;
-  --tracking-normal: 0em;
-  --tracking-wide: 0.025em;
-  --tracking-wider: 0.05em;
-  --tracking-widest: 0.1em;
-  --leading-tight: 1.25;
-  --leading-snug: 1.375;
-  --leading-relaxed: 1.625;
-  --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
-  --radius-2xl: 1rem;
-  --ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --animate-spin: spin 1s linear infinite;
-  --animate-ping: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  --blur-sm: 8px;
-  --blur-md: 12px;
-  --blur-lg: 16px;
-  --blur-xl: 24px;
-  --blur-2xl: 40px;
-  --aspect-video: 16/9;
-  --default-transition-duration: 0.15s;
-  --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  --default-font-family: var(--font-sans);
-  --default-mono-font-family: var(--font-mono);
-  --color-accent-100: #ff4801;
-  --color-accent-200: #ff7038;
+
   --color-background-100: #fffdfb;
-  --color-background-200: #fffbf5;
-  --color-background-300: #fef7ed;
   --color-foreground-100: #521000;
-  --color-foreground-200: #521000;
-  --color-foreground-300: #140400;
   --color-border-100: #ebd5c1;
-  --color-border-100-50: #ebd5c180;
-  --color-light-foreground: #fffbf5;
-  --color-dark-accent: #ff4801;
-  --color-selection-bg: #ffe9e0;
-  --color-selection-text: #ff500a;
-  --color-shadow-accent-light: #ffa683;
-  --color-shadow-accent-dark: #b13200;
-  --color-compute-100: #0a95ff;
-  --color-compute-200: #0a95ff1a;
-  --color-storage-100: #ee0ddb;
-  --color-storage-200: #ee0ddb1a;
-  --color-ai-100: #19e306;
-  --color-ai-200: #f2f5e1;
-  --color-media-100: #9616ff;
-  --color-media-200: #f8ebee;
-  --color-node-bg: #fffbf5;
-  --color-node-border: #e9d1bb;
-  --color-node-accent: #ff5315;
-  --color-multiplayer-orange: #ff5010;
-  --color-multiplayer-orange-bg: #ffebe2;
-  --color-multiplayer-yellow: #ffb10a;
-  --color-multiplayer-yellow-bg: #fff5e2;
-  --shadow-stack:
-    1px 6px 6px 0 #fff3 inset, 0 0 0px 0 #ffffff59 inset,
-    0 4px 12px 0 #00000005, 0 0 0px 0 #00000005, 0 2px 12px 0 #00000008;
+}
+
+:root {
+  color-scheme: light;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Inter,
+    Arial,
+    sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --bg: #ffffff;
+  --panel: rgba(0, 0, 0, 0.018);
+  --border: rgba(0, 0, 0, 0.09);
+  --text: rgba(0, 0, 0, 0.92);
+  --muted: rgba(0, 0, 0, 0.55);
+  --nav-bg: rgba(255, 255, 255, 0.9);
+  --brand: #0ea5e9;
+  --brand-hover: rgba(14, 165, 233, 0.35);
+  --brand-bg: rgba(14, 165, 233, 0.1);
+  --brand-bg-alt: rgba(59, 130, 246, 0.1);
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-danger: #ef4444;
+
+  /* Resource type colors - Chrome DevTools inspired, unified across components */
+  --chart-document: #4285f4;
+  --chart-script: #f9ab00;
+  --chart-stylesheet: #9334e6;
+  --chart-image: #0f9d58;
+  --chart-font: #ea4335;
+  --chart-video: #46bdc6;
+  --chart-fetch: #ff6d01;
+  --chart-other: #80868b;
+
+  /* Waterfall connection phase colors */
+  --chart-blocked: #a0a0a0;
+  --chart-dns: #1a6b52;
+  --chart-connect: #e07820;
+  --chart-ssl: #7b3fb0;
+  --chart-send: #4a90d9;
+  --chart-wait: #c8b432;
+
+  /* HTTP version colors (for pie charts) */
+  --chart-http-0: #4a7ec8;
+  --chart-http-1: #c8a040;
+  --chart-http-2: #4a9850;
+  --chart-http-3: #8050b8;
+  --chart-http-4: #c83820;
+  --chart-http-5: #2a8048;
+  --chart-http-6: #787878;
+  --chart-http-7: #e07820;
+  --chart-http-8: #7b3fb0;
+  --chart-http-9: #1a6b52;
+}
+
+:root {
+  --tangerine-rgb: rgb(246, 130, 31);
+  --ruby-rgb: rgb(255, 102, 51);
+  --mango-rgb: rgb(251, 173, 64);
+  --workers-rgb: rgb(255, 72, 1);
+
+  --workers: var(--workers-rgb, #ff4801);
+
+  /* rgb( / var(--tw-bg-opacity, 1)) */
+  --orange: var(--workers);
+  --orange-dim: rgba(246, 130, 31, 0.12);
+  --orange-glow: rgba(246, 130, 31, 0.22);
+  --orange-hi: #e8720e;
+
+  /* Dark mode by default */
+  --page-bg: #0d0d0d;
+  --page-elevated: #161616;
+  --page-card: rgba(255, 255, 255, 0.04);
+  --page-border: rgba(255, 255, 255, 0.08);
+  --page-border-hi: rgba(255, 255, 255, 0.16);
+  --page-text: rgba(255, 255, 255, 0.92);
+  --page-mid: rgba(255, 255, 255, 0.64);
+  --page-muted: rgba(255, 255, 255, 0.44);
+  --page-heading: #ffffff;
+  --page-dot: rgba(255, 255, 255, 0.065);
+  --code-bg: #111111;
+  --code-text: rgba(255, 255, 255, 0.78);
+  --code-comment: rgba(255, 255, 255, 0.28);
+  --code-titlebar: rgba(255, 255, 255, 0.025);
+  --code-dot: rgba(255, 255, 255, 0.12);
+
+  --nav-height: 3.5rem;
+  --max-w: 92rem;
+
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Light mode tokens ── */
+@media (prefers-color-scheme: light) {
+  :root {
+    --page-bg: #fafafa;
+    --page-elevated: #f0f0f0;
+    --page-card: rgba(0, 0, 0, 0.03);
+    --page-border: rgba(0, 0, 0, 0.09);
+    --page-border-hi: rgba(0, 0, 0, 0.18);
+    --page-text: rgba(0, 0, 0, 0.88);
+    --page-mid: rgba(0, 0, 0, 0.6);
+    --page-muted: rgba(0, 0, 0, 0.44);
+    --page-heading: #0d0d0d;
+    --page-dot: rgba(0, 0, 0, 0.06);
+    --code-bg: #1a1a1a;
+    --code-text: rgba(255, 255, 255, 0.82);
+    --code-comment: rgba(255, 255, 255, 0.32);
+    --code-titlebar: rgba(255, 255, 255, 0.04);
+    --code-dot: rgba(255, 255, 255, 0.15);
+  }
+}
+[data-theme-override='light'] {
+  --page-bg: var(--color-background-100);
+  --page-elevated: #f0f0f0;
+  --page-card: rgba(0, 0, 0, 0.03);
+  --page-border: rgba(0, 0, 0, 0.09);
+  --page-border-hi: rgba(0, 0, 0, 0.18);
+  --page-text: var(--color-foreground-100);
+  --page-mid: rgba(0, 0, 0, 0.6);
+  --page-muted: rgba(0, 0, 0, 0.44);
+  --page-heading: var(--color-foreground-100);
+  --page-dot: rgba(0, 0, 0, 0.06);
+  --code-bg: #1a1a1a;
+  --code-text: rgba(255, 255, 255, 0.82);
+  --code-comment: rgba(255, 255, 255, 0.32);
+  --code-titlebar: rgba(255, 255, 255, 0.04);
+  --code-dot: rgba(255, 255, 255, 0.15);
+}
+[data-theme-override='dark'] {
+  --page-bg: #0d0d0d;
+  --page-elevated: #161616;
+  --page-card: rgba(255, 255, 255, 0.04);
+  --page-border: rgba(255, 255, 255, 0.08);
+  --page-border-hi: rgba(255, 255, 255, 0.16);
+  --page-text: rgba(255, 255, 255, 0.92);
+  --page-mid: rgba(255, 255, 255, 0.64);
+  --page-muted: rgba(255, 255, 255, 0.44);
+  --page-heading: #ffffff;
+  --page-dot: rgba(255, 255, 255, 0.065);
+  --code-bg: #111111;
+  --code-text: rgba(255, 255, 255, 0.78);
+  --code-comment: rgba(255, 255, 255, 0.28);
+  --code-titlebar: rgba(255, 255, 255, 0.025);
+  --code-dot: rgba(255, 255, 255, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0f0f0f;
+    --panel: rgba(255, 255, 255, 0.04);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: rgba(255, 255, 255, 0.92);
+    --muted: rgba(255, 255, 255, 0.62);
+    --nav-bg: rgba(15, 15, 15, 0.9);
+    --brand: #0ea5e9;
+    --brand-hover: rgba(14, 165, 233, 0.35);
+    --brand-bg: rgba(14, 165, 233, 0.1);
+    --brand-bg-alt: rgba(59, 130, 246, 0.1);
+    --color-success: #22c55e;
+    --color-warning: #eab308;
+    --color-danger: #ef4444;
+
+    /* Dark mode adjustments for specific colors */
+    --chart-wait: #d4c040;
+    --chart-ssl: #9060c8;
+    --chart-other: #909090;
+  }
+}
+
+[data-theme-override='light'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --panel: rgba(0, 0, 0, 0.018);
+  --border: rgba(0, 0, 0, 0.09);
+  --text: rgba(0, 0, 0, 0.92);
+  --muted: rgba(0, 0, 0, 0.55);
+  --nav-bg: rgba(255, 255, 255, 0.9);
+  --brand: #0ea5e9;
+  --brand-hover: rgba(14, 165, 233, 0.35);
+  --brand-bg: rgba(14, 165, 233, 0.1);
+  --brand-bg-alt: rgba(59, 130, 246, 0.1);
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-danger: #ef4444;
+}
+
+[data-theme-override='dark'] {
+  color-scheme: dark;
+  --bg: #0f0f0f;
+  --panel: rgba(255, 255, 255, 0.04);
+  --border: rgba(255, 255, 255, 0.12);
+  --text: rgba(255, 255, 255, 0.92);
+  --muted: rgba(255, 255, 255, 0.62);
+  --nav-bg: rgba(15, 15, 15, 0.9);
+  --brand: #0ea5e9;
+  --brand-hover: rgba(14, 165, 233, 0.35);
+  --brand-bg: rgba(14, 165, 233, 0.1);
+  --brand-bg-alt: rgba(59, 130, 246, 0.1);
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-danger: #ef4444;
+
+  --chart-wait: #d4c040;
+  --chart-ssl: #9060c8;
+  --chart-other: #909090;
 }
