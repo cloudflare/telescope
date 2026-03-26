@@ -1,9 +1,9 @@
 import { env } from 'cloudflare:workers';
+import { zipSync } from 'fflate';
 
 import type { APIContext, APIRoute } from 'astro';
-import { getPrismaClient } from '@/lib/prisma/client';
-import { getTestById } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
+import { checkTestRating } from '@/lib/utils/contentRatingCache';
 
 export const GET: APIRoute = async (context: APIContext) => {
   const { testId } = context.params;
@@ -11,35 +11,35 @@ export const GET: APIRoute = async (context: APIContext) => {
     return new Response('Missing testId', { status: 400 });
   }
   const aiEnabled = env.ENABLE_AI_RATING === 'true';
-  const prisma = getPrismaClient(context);
-  const test = await getTestById(prisma, testId);
-  if (!test) {
-    return new Response('Test not found', { status: 404 });
-  }
-  if (aiEnabled && test.content_rating !== ContentRating.SAFE) {
-    return new Response('Test file not available', { status: 404 });
+  if (aiEnabled) {
+    const rating = await checkTestRating(context, testId);
+    if (rating !== ContentRating.SAFE) {
+      return new Response('Test file not available', { status: 404 });
+    }
   }
   const bucket = env.RESULTS_BUCKET;
   const prefix = `${testId}/`;
   try {
+    // Use R2 list() function that matches the prefix: https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#r2listoptions
     const listed = await bucket.list({ prefix });
     if (!listed.objects || listed.objects.length === 0) {
       return new Response('No files found for this test', { status: 404 });
     }
-    const fflate = await import('fflate');
+    const keys = listed.objects
+      .map(obj => obj.key)
+      .filter(key => key.slice(prefix.length)); // filter out empty paths upfront
     const files: Record<string, Uint8Array> = {};
-    for (const obj of listed.objects) {
-      const key = obj.key;
+    // need for-loop for sequential downloads, doing parallel downloads could overwhelm Worker
+    for (const key of keys) {
       const relativePath = key.slice(prefix.length);
-      if (!relativePath) continue;
       const r2obj = await bucket.get(key);
       if (r2obj) {
         const arrayBuffer = await r2obj.arrayBuffer();
         files[relativePath] = new Uint8Array(arrayBuffer);
       }
     }
-    const zipped = fflate.zipSync(files, {
-      level: 6,
+    const zipped = zipSync(files, {
+      level: 6, // default compression size/quality tradeoff: https://github.com/101arrowz/fflate#usage
     });
     const zipBuffer = zipped.buffer.slice(
       zipped.byteOffset,
@@ -53,7 +53,10 @@ export const GET: APIRoute = async (context: APIContext) => {
       },
     });
   } catch (error) {
-    console.error('ZIP generation error:', error);
+    console.error(
+      `[Download] ZIP generation error for testId: ${testId}`,
+      error,
+    );
     return new Response('Internal server error', { status: 500 });
   }
 };

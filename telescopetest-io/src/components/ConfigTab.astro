@@ -86,9 +86,9 @@ if (config) {
       : null;
   testOptions.push({ label: 'Host Overrides', value: overrideValue });
 
-  // Headers
+  // Headers (show count only, not names, for security)
   const headersValue = opts.headers && Object.keys(opts.headers).length > 0
-    ? Object.keys(opts.headers).join(', ')
+    ? `${Object.keys(opts.headers).length} header(s)`
     : null;
   testOptions.push({ label: 'Custom Headers', value: headersValue });
 
@@ -138,26 +138,28 @@ const cliCommand = config?.options.command
   ? config.options.command.join(' ')
   : null;
 
-// Filter out sensitive fields from config for display
+// Filter out sensitive fields from config for display in full JSON viewer
+// Security: Remove credentials, tokens, and potentially sensitive browser flags
+// Note: The grid view above already shows counts for headers/args without exposing values
 const sanitizedConfig = config ? {
   ...config,
   options: (() => {
     const { 
-      auth,           // Credentials
-      cookies,        // Session tokens
-      headers,        // May contain auth headers/API keys
-      uploadUrl,      // May contain auth tokens in URL
-      zip,            // Not needed for display
+      auth,           // Remove: HTTP credentials (username/password)
+      cookies,        // Remove: Session tokens and auth cookies
+      headers,        // Remove: May contain Authorization headers, API keys
+      uploadUrl,      // Remove: May contain auth tokens in URL params
+      zip,            // Remove: Internal flag, not useful for display
       ...safeOptions 
     } = config.options;
     return safeOptions;
   })(),
   browserConfig: (() => {
     const {
-      httpCredentials,  // Credentials
-      env,              // May contain secrets
-      args,             // May contain sensitive flags
-      ignoreDefaultArgs,// May contain sensitive flags
+      httpCredentials,  // Remove: HTTP auth credentials
+      env,              // Remove: Environment variables may contain secrets
+      args,             // Remove: Browser args may contain auth flags, file paths
+      ignoreDefaultArgs,// Remove: May expose sensitive browser configuration
       ...safeBrowserConfig
     } = config.browserConfig;
     return safeBrowserConfig;
@@ -174,9 +176,9 @@ const sanitizedConfig = config ? {
           <div class="section">
             <div class="actions-grid">
               <a
-                href={`/api/tests/${testId}/download`}
+                href={`/api/tests/${testId}/downloadZIP`}
                 class="action-btn"
-                download
+                download={`${testId}.zip`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -432,27 +434,6 @@ const sanitizedConfig = config ? {
     flex-shrink: 0;
   }
 
-  .copy-btn:hover {
-    border-color: var(--brand);
-    color: var(--brand);
-  }
-
-  .copy-btn.copied {
-    background: rgba(34, 197, 94, 0.1);
-    border-color: rgb(34, 197, 94);
-    color: rgb(34, 197, 94);
-  }
-
-  .copy-btn svg {
-    flex-shrink: 0;
-  }
-
-  .copy-btn-text {
-    display: inline-block;
-    min-width: 3.25rem;
-    text-align: center;
-  }
-
   .config-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -556,8 +537,8 @@ const sanitizedConfig = config ? {
       if (!command) return;
       try {
         await navigator.clipboard.writeText(command);
-        const copyIcon = copyBtn.querySelector('.copy-icon');
-        const checkIcon = copyBtn.querySelector('.check-icon');
+        const copyIcon = copyBtn.querySelector<SVGElement>('.copy-icon');
+        const checkIcon = copyBtn.querySelector<SVGElement>('.check-icon');
         if (copyIcon && checkIcon) {
           copyIcon.style.display = 'none';
           checkIcon.style.display = 'block';
