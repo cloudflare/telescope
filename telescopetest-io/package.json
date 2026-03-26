@@ -15,7 +15,8 @@
     "deploy:development": "npm run build:development && wrangler deploy --env development",
     "deploy:staging": "npm run build:staging && wrangler deploy --env staging",
     "generate": "prisma generate",
-    "studio": "prisma studio"
+    "studio": "prisma studio",
+    "test": "vitest run"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.1.3",
@@ -23,11 +24,13 @@
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-d1": "^7.5.0",
     "@prisma/client": "^7.5.0",
+    "@vitest/coverage-v8": "^4.0.6",
     "astro": "^6.0.8",
     "fflate": "^0.8.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "vitest": "^4.0.6"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",

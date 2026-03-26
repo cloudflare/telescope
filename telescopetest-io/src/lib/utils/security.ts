@@ -19,14 +19,21 @@ export function isValidTestId(testId: string): boolean {
   return testIdPattern.test(testId);
 }
 
+// ZIP files can be created on Windows (with backslashes) or Unix (with forward slashes)
+// Inside telescopetest-io, normalize ALL zip filepaths to POSIX format (forward slashes) for cross-platform ZIP handling
+export function toPosixPath(filepath: string): string {
+  return filepath.split('\\').join('/');
+}
+
 // Check if filename matches expected Telescope output patterns
 // Expected: config.json, metrics.json, screenshot.png, pageload.har, resources.json, console.json, *.webm, filmstrip/*.jpg
+// Assumes filename is already normalized to POSIX format (forward slashes)
 export function isExpectedTelescopeFile(filename: string): boolean {
   const lower = filename.toLowerCase();
   if (EXPECTED_TELESCOPE_FILES.has(lower)) {
     return true;
   }
-  const dir = path.dirname(lower);
+  const dir = path.posix.dirname(lower);
   if (dir === '.' && lower.endsWith('.webm')) {
     return true;
   }
@@ -46,7 +53,7 @@ export function normalizeAndFilterZipFiles(
     .map(
       ([originalFilePath, contents]) =>
         [
-          path.normalize(originalFilePath.slice(prefixToStrip.length)),
+          toPosixPath(originalFilePath.slice(prefixToStrip.length)),
           contents,
         ] as const,
     )
