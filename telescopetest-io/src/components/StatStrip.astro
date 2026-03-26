@@ -1,0 +1,70 @@
+---
+export interface StatItem {
+  value: string;
+  label: string;
+  unit: string;
+}
+
+export interface Props {
+  items: StatItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="stat-strip-inner">
+  {
+    items.map(item => (
+      <div class="stat-item">
+        <div class="stat-num">
+          <span>{item.value}</span>
+          {' '}{item.unit}
+        </div>
+        <div class="stat-label">{item.label}</div>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .stat-strip-inner {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .stat-item {
+    padding: 40px 32px;
+    border-right: 1px solid var(--page-border);
+  }
+  .stat-item:last-child {
+    border-right: none;
+  }
+  .stat-num {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--page-heading);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .stat-num span {
+    color: var(--orange);
+  }
+  .stat-label {
+    font-size: 0.9375rem;
+    color: var(--page-muted);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 768px) {
+    .stat-strip-inner {
+      grid-template-columns: 1fr;
+    }
+    .stat-item {
+      border-right: none;
+      border-bottom: 1px solid var(--page-border);
+    }
+    .stat-item:last-child {
+      border-bottom: none;
+    }
+  }
+</style>

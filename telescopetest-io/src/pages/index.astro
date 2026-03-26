@@ -1,10 +1,16 @@
 ---
+import IconList from '@/components/IconList.astro';
+import CodeWindow from '@/components/CodeWindow.astro';
+import FeatureGrid from '@/components/FeatureGrid.astro';
+import StatStrip from '@/components/StatStrip.astro';
+import StepList from '@/components/StepList.astro';
+import ParamsTable from '@/components/ParamsTable.astro';
+import HomeFooter from '@/components/HomeFooter.astro';
+import TopNav from '@/components/TopNav.astro';
 import '../styles/global.css';
-const year = new Date().getFullYear();
 const cookieValue = Astro.cookies.get('theme-override')?.value;
 const themeOverride =
   cookieValue === 'dark' || cookieValue === 'light' ? cookieValue : undefined;
-import TopNav from '@/components/TopNav.astro';
 import {
   GlobeIcon,
   ChartBarIcon,
@@ -18,6 +24,7 @@ import {
   NetworkIcon,
   LightningIcon,
   BugIcon,
+  ArrowDownIcon,
 } from '@phosphor-icons/react/ssr';
 ---
 
@@ -35,1058 +42,151 @@ import {
       content="Diagnostic performance testing across Chrome, Firefox, Safari, and Edge. Built by Cloudflare."
     />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <style>
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      html {
-        scroll-behavior: smooth;
-      }
-
-      :root {
-        --tangerine-rgb: rgb(246, 130, 31);
-        --ruby-rgb: rgb(255, 102, 51);
-        --mango-rgb: rgb(251, 173, 64);
-        --workers-rgb: rgb(255, 72, 1);
-
-        --tangerine: var(--tangerine-rgb, #f6821f);
-        --ruby: var(--ruby-rgb, #ff6633);
-        --mango: var(--mango-rgb, #fbad41);
-        --workers: var(--workers-rgb, #ff4801);
-
-
-
-        
-
-        /* rgb( / var(--tw-bg-opacity, 1)) */
-        --orange: var(--workers);
-        --orange-dim: rgba(246, 130, 31, 0.12);
-        --orange-glow: rgba(246, 130, 31, 0.22);
-        --orange-hi: #e8720e;
-
-        /* Dark mode by default */
-        --page-bg: #0d0d0d;
-        --page-elevated: #161616;
-        --page-card: rgba(255, 255, 255, 0.04);
-        --page-border: rgba(255, 255, 255, 0.08);
-        --page-border-hi: rgba(255, 255, 255, 0.16);
-        --page-text: rgba(255, 255, 255, 0.92);
-        --page-mid: rgba(255, 255, 255, 0.64);
-        --page-muted: rgba(255, 255, 255, 0.44);
-        --page-heading: #ffffff;
-        --page-dot: rgba(255, 255, 255, 0.065);
-        --page-marquee-stroke: rgba(255, 255, 255, 0.12);
-        --code-bg: #111111;
-        --code-text: rgba(255, 255, 255, 0.78);
-        --code-comment: rgba(255, 255, 255, 0.28);
-        --code-titlebar: rgba(255, 255, 255, 0.025);
-        --code-dot: rgba(255, 255, 255, 0.12);
-
-        --nav-height: 3.5rem;
-        --max-w: 1120px;
-
-        font-family:
-          ui-sans-serif,
-          system-ui,
-          -apple-system,
-          'Segoe UI',
-          sans-serif;
-        -webkit-font-smoothing: antialiased;
-      }
-
-      /* ── Light mode tokens ── */
-      @media (prefers-color-scheme: light) {
-        :root {
-          --page-bg: #fafafa;
-          --page-elevated: #f0f0f0;
-          --page-card: rgba(0, 0, 0, 0.03);
-          --page-border: rgba(0, 0, 0, 0.09);
-          --page-border-hi: rgba(0, 0, 0, 0.18);
-          --page-text: rgba(0, 0, 0, 0.88);
-          --page-mid: rgba(0, 0, 0, 0.6);
-          --page-muted: rgba(0, 0, 0, 0.44);
-          --page-heading: #0d0d0d;
-          --page-dot: rgba(0, 0, 0, 0.06);
-          --page-marquee-stroke: rgba(0, 0, 0, 0.12);
-          --code-bg: #1a1a1a;
-          --code-text: rgba(255, 255, 255, 0.82);
-          --code-comment: rgba(255, 255, 255, 0.32);
-          --code-titlebar: rgba(255, 255, 255, 0.04);
-          --code-dot: rgba(255, 255, 255, 0.15);
-        }
-      }
-      [data-theme-override='light'] {
-        --page-bg: var(--color-background-100);
-        --page-elevated: #f0f0f0;
-        --page-card: rgba(0, 0, 0, 0.03);
-        --page-border: rgba(0, 0, 0, 0.09);
-        --page-border-hi: rgba(0, 0, 0, 0.18);
-        --page-text: var(--color-foreground-100);
-        --page-mid: rgba(0, 0, 0, 0.6);
-        --page-muted: rgba(0, 0, 0, 0.44);
-        --page-heading: var(--color-foreground-100);
-        --page-dot: rgba(0, 0, 0, 0.06);
-        --page-marquee-stroke: rgba(0, 0, 0, 0.12);
-        --code-bg: #1a1a1a;
-        --code-text: rgba(255, 255, 255, 0.82);
-        --code-comment: rgba(255, 255, 255, 0.32);
-        --code-titlebar: rgba(255, 255, 255, 0.04);
-        --code-dot: rgba(255, 255, 255, 0.15);
-      }
-      [data-theme-override='dark'] {
-        --page-bg: #0d0d0d;
-        --page-elevated: #161616;
-        --page-card: rgba(255, 255, 255, 0.04);
-        --page-border: rgba(255, 255, 255, 0.08);
-        --page-border-hi: rgba(255, 255, 255, 0.16);
-        --page-text: rgba(255, 255, 255, 0.92);
-        --page-mid: rgba(255, 255, 255, 0.64);
-        --page-muted: rgba(255, 255, 255, 0.44);
-        --page-heading: #ffffff;
-        --page-dot: rgba(255, 255, 255, 0.065);
-        --page-marquee-stroke: rgba(255, 255, 255, 0.12);
-        --code-bg: #111111;
-        --code-text: rgba(255, 255, 255, 0.78);
-        --code-comment: rgba(255, 255, 255, 0.28);
-        --code-titlebar: rgba(255, 255, 255, 0.025);
-        --code-dot: rgba(255, 255, 255, 0.12);
-      }
-
-      body {
-        background: var(--page-bg);
-        color: var(--page-text);
-        overflow-x: hidden;
-        line-height: 1.6;
-      }
-
-      /* ── Dot grid ── */
-      .bg-dots {
-        pointer-events: none;
-        position: fixed;
-        inset: 0;
-        z-index: 0;
-        background-image: radial-gradient(
-          circle,
-          var(--page-dot) 1px,
-          transparent 1px
-        );
-        background-size: 22px 22px;
-      }
-
-      /* ── Layout ── */
-      .wrap {
-        position: relative;
-        z-index: 1;
-        width: 100%;
-        max-width: var(--max-w);
-        margin: 0 auto;
-        padding: 0 32px;
-      }
-
-      /* ── Section dividers ── */
-      .rule {
-        border: none;
-        border-top: 1px solid var(--page-border);
-      }
-
-      /* ═══════════════════════════════════════════
-         HERO
-      ═══════════════════════════════════════════ */
-      .hero {
-        position: relative;
-        z-index: 1;
-        padding: calc(var(--nav-height) + 100px) 32px 96px;
-        max-width: var(--max-w);
-        margin: 0 auto;
-      }
-
-      /* Vertical orange rule left of hero text — agents.cloudflare.com style */
-      .hero-kicker {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 32px;
-        color: var(--orange);
-        font-size: 0.8125rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      .hero-kicker::before {
-        content: '';
-        display: block;
-        width: 2px;
-        height: 16px;
-        background: var(--orange);
-        border-radius: 2px;
-        flex-shrink: 0;
-      }
-
-      .hero-heading {
-        font-size: clamp(3rem, 7.5vw, 6rem);
-        font-weight: 800;
-        letter-spacing: -0.035em;
-        line-height: 1;
-        color: var(--page-heading);
-        max-width: 820px;
-        margin-bottom: 28px;
-      }
-      .hero-heading em {
-        font-style: normal;
-        color: var(--orange);
-      }
-
-      .hero-sub {
-        font-size: clamp(1rem, 2vw, 1.1875rem);
-        color: var(--page-mid);
-        max-width: 520px;
-        line-height: 1.7;
-        margin-bottom: 48px;
-      }
-
-      .hero-actions {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        flex-wrap: wrap;
-      }
-
-      /* ── Buttons ── */
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 11px 22px;
-        font-size: 0.9375rem;
-        font-weight: 600;
-        text-decoration: none;
-        border-radius: 8px;
-        border: 1px solid transparent;
-        transition:
-          background 0.14s,
-          border-color 0.14s,
-          transform 0.14s,
-          box-shadow 0.14s;
-        line-height: 1;
-        cursor: pointer;
-        white-space: nowrap;
-      }
-      .btn-fill {
-        background: var(--orange);
-        color: #fff;
-        border-color: var(--orange);
-      }
-      .btn-fill:hover {
-        background: var(--orange-hi);
-        border-color: var(--orange-hi);
-        box-shadow: 0 0 20px var(--orange-glow);
-        transform: translateY(-1px);
-      }
-      .btn-outline {
-        background: transparent;
-        color: var(--page-mid);
-        border-color: var(--page-border-hi);
-      }
-      .btn-outline:hover {
-        color: var(--page-text);
-        border-color: var(--page-border-hi);
-        background: var(--page-card);
-        transform: translateY(-1px);
-      }
-
-      /* ── Stat strip (workers style) ── */
-      .stat-strip {
-        position: relative;
-        z-index: 1;
-        border-top: 1px solid var(--page-border);
-        border-bottom: 1px solid var(--page-border);
-      }
-      .stat-strip-inner {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        max-width: var(--max-w);
-        margin: 0 auto;
-        padding: 0 32px;
-      }
-      .stat-item {
-        padding: 40px 32px;
-        border-right: 1px solid var(--page-border);
-      }
-      .stat-item:last-child {
-        border-right: none;
-      }
-      .stat-num {
-        font-size: clamp(2rem, 4vw, 3rem);
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        color: var(--page-heading);
-        line-height: 1;
-        margin-bottom: 8px;
-      }
-      .stat-num span {
-        color: var(--orange);
-      }
-      .stat-label {
-        font-size: 0.9375rem;
-        color: var(--page-muted);
-        line-height: 1.5;
-      }
-
-      /* ═══════════════════════════════════════════
-         MARQUEE (sandbox.cloudflare.com style)
-      ═══════════════════════════════════════════ */
-      .marquee-wrap {
-        position: relative;
-        z-index: 1;
-        overflow: hidden;
-        border-bottom: 1px solid var(--page-border);
-        padding: 20px 0;
-      }
-      .marquee-track {
-        display: flex;
-        gap: 0;
-        animation: marquee 28s linear infinite;
-        width: max-content;
-      }
-      .marquee-item {
-        font-size: clamp(1.75rem, 4vw, 2.75rem);
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        color: transparent;
-        -webkit-text-stroke: 1px var(--page-marquee-stroke);
-        white-space: nowrap;
-        padding: 0 40px;
-        user-select: none;
-      }
-      .marquee-item.lit {
-        color: var(--orange);
-        -webkit-text-stroke: 0;
-      }
-      @keyframes marquee {
-        from {
-          transform: translateX(0);
-        }
-        to {
-          transform: translateX(-50%);
-        }
-      }
-
-      /* ═══════════════════════════════════════════
-         FEATURES — 4-up card grid
-      ═══════════════════════════════════════════ */
-      .section {
-        padding: 96px 0;
-      }
-
-      .section-label {
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--orange);
-        margin-bottom: 14px;
-      }
-      .section-title {
-        font-size: clamp(1.75rem, 3.5vw, 2.625rem);
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        line-height: 1.1;
-        color: var(--page-heading);
-        margin-bottom: 14px;
-      }
-      .section-title em {
-        font-style: italic;
-        color: var(--page-mid);
-      }
-      .section-body {
-        font-size: 1.0625rem;
-        color: var(--page-muted);
-        line-height: 1.7;
-        max-width: 560px;
-      }
-      .section-hdr {
-        margin-bottom: 56px;
-      }
-
-      .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1px;
-        background: var(--page-border);
-        border: 1px solid var(--page-border);
-        border-radius: 12px;
-        overflow: hidden;
-      }
-      .feature-cell {
-        background: var(--page-bg);
-        padding: 32px 28px;
-        transition: background 0.15s;
-      }
-      .feature-cell:hover {
-        background: var(--page-elevated);
-      }
-
-      .fc-icon {
-        color: var(--orange);
-        margin-bottom: 18px;
-        display: block;
-      }
-      .fc-title {
-        font-size: 0.9375rem;
-        font-weight: 700;
-        color: var(--page-heading);
-        margin-bottom: 8px;
-        letter-spacing: -0.01em;
-      }
-      .fc-body {
-        font-size: 0.875rem;
-        color: var(--page-muted);
-        line-height: 1.65;
-      }
-      .fc-body a {
-        color: var(--orange);
-        text-decoration: underline;
-        text-underline-offset: 2px;
-      }
-
-      /* ═══════════════════════════════════════════
-         STEPS — agents.cloudflare.com style
-      ═══════════════════════════════════════════ */
-      .steps-layout {
-        display: grid;
-        grid-template-columns: 380px 1fr;
-        gap: 80px;
-        align-items: start;
-      }
-
-      .steps-list {
-        display: flex;
-        flex-direction: column;
-      }
-      .step-item {
-        padding: 28px 0;
-        border-bottom: 1px solid var(--page-border);
-        cursor: default;
-      }
-      .step-item:first-child {
-        border-top: 1px solid var(--page-border);
-      }
-
-      .step-header {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 10px;
-      }
-      .step-num {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        border: 1px solid var(--page-border-hi);
-        background: var(--page-card);
-        color: var(--orange);
-        font-size: 0.75rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-      .step-title {
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--page-heading);
-        letter-spacing: -0.01em;
-      }
-      .step-desc {
-        font-size: 0.875rem;
-        color: var(--page-muted);
-        line-height: 1.65;
-        padding-left: 44px;
-      }
-      .step-note {
-        font-size: 0.8125rem;
-        color: var(--page-muted);
-        margin-top: 8px;
-        padding-left: 44px;
-      }
-      .step-note a {
-        color: var(--orange);
-        text-decoration: underline;
-        text-underline-offset: 2px;
-      }
-
-      /* sticky code pane */
-      .steps-code {
-        position: sticky;
-        top: calc(var(--nav-height) + 24px);
-      }
-
-      /* ═══════════════════════════════════════════
-         CODE BLOCK — terminal style
-      ═══════════════════════════════════════════ */
-      .code-window {
-        background: var(--code-bg);
-        border: 1px solid var(--page-border);
-        border-radius: 12px;
-        overflow: hidden;
-      }
-      .code-titlebar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--page-border);
-        background: var(--code-titlebar);
-      }
-      .code-dots {
-        display: flex;
-        gap: 6px;
-      }
-      .code-dots span {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--code-dot);
-      }
-      .code-filename {
-        font-size: 0.75rem;
-        color: var(--page-muted);
-        font-family: 'Menlo', 'Monaco', monospace;
-      }
-      .copy-btn {
-        font-size: 0.6875rem;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        color: var(--page-muted);
-        background: none;
-        border: 1px solid var(--page-border);
-        border-radius: 5px;
-        padding: 3px 9px;
-        cursor: pointer;
-        transition:
-          color 0.12s,
-          border-color 0.12s;
-        font-family: inherit;
-      }
-      .copy-btn:hover {
-        color: var(--code-text);
-        border-color: var(--page-border-hi);
-      }
-      .copy-btn.copied {
-        color: #4ade80;
-        border-color: rgba(74, 222, 128, 0.35);
-      }
-
-      pre {
-        margin: 0;
-        padding: 22px 20px;
-        font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-        font-size: 0.8125rem;
-        line-height: 1.8;
-        color: var(--code-text);
-        overflow-x: auto;
-        tab-size: 2;
-      }
-      .token-comment {
-        color: var(--code-comment);
-      }
-      .token-key {
-        color: #79b8ff;
-      }
-      .token-val {
-        color: #9ecbff;
-      }
-      .token-flag {
-        color: var(--orange);
-      }
-      .token-url {
-        color: #b8d4a8;
-      }
-      .token-op {
-        color: var(--page-muted);
-      }
-
-      /* ═══════════════════════════════════════════
-         PARAMS — compact two-col table style
-      ═══════════════════════════════════════════ */
-      .params-table {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1px;
-        background: var(--page-border);
-        border: 1px solid var(--page-border);
-        border-radius: 12px;
-        overflow: hidden;
-      }
-      .param-row {
-        background: var(--page-bg);
-        padding: 18px 22px;
-        transition: background 0.12s;
-      }
-      .param-row:hover {
-        background: var(--page-elevated);
-      }
-      .param-flag {
-        font-family: 'Menlo', 'Monaco', monospace;
-        font-size: 0.8125rem;
-        color: var(--orange);
-        margin-bottom: 5px;
-        display: block;
-      }
-      .param-desc {
-        font-size: 0.8125rem;
-        color: var(--page-muted);
-        line-height: 1.55;
-      }
-
-      /* ═══════════════════════════════════════════
-         OUTPUT SECTION — split with code
-      ═══════════════════════════════════════════ */
-      .output-layout {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 64px;
-        align-items: start;
-      }
-
-      .output-list {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-      }
-      .output-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 14px;
-        padding: 18px 0;
-        border-bottom: 1px solid var(--page-border);
-      }
-      .output-item:first-child {
-        border-top: 1px solid var(--page-border);
-      }
-      .output-icon {
-        flex-shrink: 0;
-        width: 32px;
-        height: 32px;
-        border-radius: 7px;
-        background: var(--orange-dim);
-        border: 1px solid var(--orange-glow);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--orange);
-        margin-top: 2px;
-      }
-      .output-title {
-        font-size: 0.9375rem;
-        font-weight: 600;
-        color: var(--page-text);
-        margin-bottom: 3px;
-        letter-spacing: -0.01em;
-      }
-      .output-desc {
-        font-size: 0.875rem;
-        color: var(--page-muted);
-        line-height: 1.55;
-      }
-
-      /* ═══════════════════════════════════════════
-         DARK CTA BAND
-      ═══════════════════════════════════════════ */
-      .cta-band {
-        position: relative;
-        z-index: 1;
-        border-top: 1px solid var(--page-border);
-        padding: 96px 0;
-        text-align: center;
-        overflow: hidden;
-      }
-      .cta-band::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-          ellipse 60% 70% at 50% 50%,
-          rgba(246, 130, 31, 0.07) 0%,
-          transparent 70%
-        );
-        pointer-events: none;
-      }
-      .cta-band .wrap {
-        position: relative;
-        z-index: 1;
-      }
-      .cta-heading {
-        font-size: clamp(2rem, 5vw, 3.5rem);
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        color: var(--page-heading);
-        line-height: 1.1;
-        margin-bottom: 16px;
-      }
-      .cta-sub {
-        font-size: 1.0625rem;
-        color: var(--page-muted);
-        max-width: 480px;
-        margin: 0 auto 40px;
-        line-height: 1.65;
-      }
-      .cta-actions {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 14px;
-        flex-wrap: wrap;
-      }
-
-      /* ═══════════════════════════════════════════
-         FOOTER
-      ═══════════════════════════════════════════ */
-      footer {
-        position: relative;
-        z-index: 1;
-        border-top: 1px solid var(--page-border);
-        padding: 32px 0;
-      }
-      .footer-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        flex-wrap: wrap;
-      }
-      .footer-copy {
-        font-size: 0.875rem;
-        color: var(--page-muted);
-      }
-      .footer-copy a {
-        color: var(--page-muted);
-        text-decoration: none;
-      }
-      .footer-copy a:hover {
-        color: var(--page-text);
-      }
-      .footer-links {
-        display: flex;
-        gap: 24px;
-      }
-      .footer-links a {
-        font-size: 0.875rem;
-        color: var(--page-muted);
-        text-decoration: none;
-        transition: color 0.12s;
-      }
-      .footer-links a:hover {
-        color: var(--page-text);
-      }
-
-      /* ═══════════════════════════════════════════
-         RESPONSIVE
-      ═══════════════════════════════════════════ */
-      @media (max-width: 1024px) {
-        .feature-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .steps-layout {
-          grid-template-columns: 1fr;
-          gap: 48px;
-        }
-        .steps-code {
-          position: static;
-        }
-        .output-layout {
-          grid-template-columns: 1fr;
-          gap: 48px;
-        }
-      }
-      @media (max-width: 768px) {
-        .stat-strip-inner {
-          grid-template-columns: 1fr;
-        }
-        .stat-item {
-          border-right: none;
-          border-bottom: 1px solid var(--page-border);
-        }
-        .stat-item:last-child {
-          border-bottom: none;
-        }
-        .section {
-          padding: 64px 0;
-        }
-        .params-table {
-          grid-template-columns: 1fr;
-        }
-        .feature-grid {
-          grid-template-columns: 1fr;
-        }
-        .wrap {
-          padding: 0 20px;
-        }
-        .hero {
-          padding: calc(var(--nav-height) + 72px) 20px 72px;
-        }
-        .footer-row {
-          flex-direction: column;
-          text-align: center;
-        }
-        .footer-links {
-          justify-content: center;
-        }
-      }
-      @media (max-width: 480px) {
-        .hero-actions {
-          flex-direction: column;
-          align-items: stretch;
-        }
-        .btn {
-          justify-content: center;
-        }
-        .cta-actions {
-          flex-direction: column;
-          align-items: stretch;
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .marquee-track {
-          animation: none;
-        }
-        *,
-        *::before,
-        *::after {
-          transition-duration: 0.01ms !important;
-        }
-      }
-    </style>
   </head>
   <body>
-    <div class="bg-dots" aria-hidden="true"></div>
-
     <TopNav />
 
-    <!-- ══════════════════════════════════════════
-         HERO
-    ═══════════════════════════════════════════ -->
-    <div class="hero" id="hero">
-      <div class="hero-kicker">Cloudflare Open Source</div>
-      <h1 class="hero-heading">
-        Performance testing<br />
-        across <em>every</em> browser.
-      </h1>
-      <p class="hero-sub">
-        Telescope collects HAR files, screenshots, video recordings, and Core
-        Web Vitals across Chrome, Firefox, Safari, and Edge — with one command.
-      </p>
-      <div class="hero-actions">
-        <a
-          href="https://github.com/cloudflare/telescope"
-          target="_blank"
-          class="btn btn-fill"
+    <section style="padding-bottom:0.5rem;padding-top:4rem;">
+      <div
+        class="container surface"
+        style="min-height:80vh;border-radius:1rem;padding:2rem;display:flex;flex-direction:column;justify-content:center;border:1px solid var(--color-border-100);"
+      >
+        <div class="bg-dots" aria-hidden="true"></div>
+        <div
+          class="hero"
+          id="hero"
+          style="display:flex;flex-direction:column;gap:2rem;width:100%;"
         >
-          <GithubLogoIcon weight="bold" size={16} />
-          View on GitHub
-        </a>
-        <a href="#how-to-run" class="btn btn-outline">
-          Get started
-          <ArrowRightIcon weight="bold" size={14} />
-        </a>
+          <div>
+            <div class="hero-kicker">Telescope</div>
+            <h1 class="hero-heading">
+              <em>Cross-browser</em> web performance testing
+            </h1>
+            <p class="hero-sub">
+              Collect Core Web Vitals, screenshots, video recordings, and HAR
+              files across Chrome, Firefox, Safari, and Edge — with one command.
+            </p>
+          </div>
+          <div class="hero-actions">
+            <a
+              href="https://github.com/cloudflare/telescope"
+              target="_blank"
+              class="btn btn-outline"
+            >
+              <GithubLogoIcon weight="bold" size={16} />
+              View on GitHub
+            </a>
+            <a href="#how-to-run" class="btn btn-fill">
+              Get started
+              <ArrowDownIcon weight="bold" size={14} />
+            </a>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <!-- ── Stat strip ── -->
-    <div class="stat-strip">
-      <div class="stat-strip-inner">
-        <div class="stat-item">
-          <div class="stat-num"><span>4</span> browsers</div>
-          <div class="stat-label">
-            Chrome, Firefox, Safari, Edge — and their variants
-          </div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num"><span>6</span> output types</div>
-          <div class="stat-label">
-            HAR, video, screenshots, metrics, resources, console
-          </div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-num"><span>1</span> command</div>
-          <div class="stat-label">
-            Run with npx — no manual setup, browsers auto-install
-          </div>
-        </div>
+    <section>
+      <div class="container surface">
+        <StatStrip
+          items={[
+            {
+              value: '4',
+              unit: 'browsers',
+              label: 'Chrome, Firefox, Safari, Edge — and their variants',
+            },
+            {
+              value: '6',
+              unit: 'output types',
+              label: 'HAR, video, screenshots, metrics, resources, console',
+            },
+            {
+              value: '1',
+              unit: 'command',
+              label: 'Run with npx — no manual setup, browsers auto-install',
+            },
+          ]}
+        />
       </div>
-    </div>
-
-    <!-- ── Marquee ── -->
-    <div class="marquee-wrap" aria-hidden="true">
-      <div class="marquee-track">
-        <!-- First copy -->
-        <span class="marquee-item">TELESCOPE</span>
-        <span class="marquee-item lit">performance</span>
-        <span class="marquee-item">CROSS-BROWSER</span>
-        <span class="marquee-item">HAR</span>
-        <span class="marquee-item lit">open source</span>
-        <span class="marquee-item">METRICS</span>
-        <span class="marquee-item">WATERFALL</span>
-        <span class="marquee-item lit">cloudflare</span>
-        <span class="marquee-item">FILMSTRIP</span>
-        <span class="marquee-item">CWV</span>
-        <span class="marquee-item lit">telescope</span>
-        <span class="marquee-item">PLAYWRIGHT</span>
-        <!-- Duplicate for seamless loop -->
-        <span class="marquee-item">TELESCOPE</span>
-        <span class="marquee-item lit">performance</span>
-        <span class="marquee-item">CROSS-BROWSER</span>
-        <span class="marquee-item">HAR</span>
-        <span class="marquee-item lit">open source</span>
-        <span class="marquee-item">METRICS</span>
-        <span class="marquee-item">WATERFALL</span>
-        <span class="marquee-item lit">cloudflare</span>
-        <span class="marquee-item">FILMSTRIP</span>
-        <span class="marquee-item">CWV</span>
-        <span class="marquee-item lit">telescope</span>
-        <span class="marquee-item">PLAYWRIGHT</span>
-      </div>
-    </div>
+    </section>
 
     <!-- ══════════════════════════════════════════
          FEATURES
     ═══════════════════════════════════════════ -->
-    <section class="section" id="why-telescope">
-      <div class="wrap">
+    <section id="why-telescope">
+      <div class="container" style="padding-block:4rem;">
         <div class="section-hdr">
           <div class="section-label">Why Telescope</div>
           <h2 class="section-title">
             Built for <em>precision</em>, not approximation.
           </h2>
         </div>
-        <div class="feature-grid">
-          <div class="feature-cell">
-            <GlobeIcon weight="regular" size={24} class="fc-icon" />
-            <div class="fc-title">Cross-browser testing</div>
-            <p class="fc-body">
-              Test against Chrome, Firefox, Safari, Edge, and beta channels from
-              a single command.
-            </p>
-          </div>
-          <div class="feature-cell">
-            <ChartBarIcon weight="regular" size={24} class="fc-icon" />
-            <div class="fc-title">Core Web Vitals</div>
-            <p class="fc-body">
-              LCP, CLS, FCP, TTI, and TTFB collected directly from the browser —
-              not estimated.
-            </p>
-          </div>
-          <div class="feature-cell">
-            <TerminalWindowIcon weight="regular" size={24} class="fc-icon" />
-            <div class="fc-title">Zero install overhead</div>
-            <p class="fc-body">
-              Run with <code style="font-family:monospace;color:var(--orange)"
-                >npx</code
-              > — Playwright and browser binaries install automatically on first
-              run.
-            </p>
-          </div>
-          <div class="feature-cell">
-            <LockSimpleOpenIcon weight="regular" size={24} class="fc-icon" />
-            <div class="fc-title">Apache 2.0 licensed</div>
-            <p class="fc-body">
-              Fully open source. <a
-                href="https://github.com/cloudflare/telescope?tab=License-1-ov-file"
-                target="_blank">Use, modify, contribute.</a
-              >
-            </p>
-          </div>
-        </div>
+        <FeatureGrid
+          items={[
+            {
+              icon: GlobeIcon,
+              title: 'Cross-browser testing',
+              body: 'Test against Chrome, Firefox, Safari, Edge, and beta channels from a single command.',
+            },
+            {
+              icon: ChartBarIcon,
+              title: 'Core Web Vitals',
+              body: 'LCP, CLS, FCP, TTI, and TTFB collected directly from the browser — not estimated.',
+            },
+            {
+              icon: TerminalWindowIcon,
+              title: 'Zero install overhead',
+              body: 'Run with <code style="font-family:monospace;color:var(--orange)">npx</code> — Playwright and browser binaries install automatically on first run.',
+            },
+            {
+              icon: LockSimpleOpenIcon,
+              title: 'Apache 2.0 licensed',
+              body: 'Fully open source. <a href="https://github.com/cloudflare/telescope?tab=License-1-ov-file" target="_blank">Use, modify, contribute.</a>',
+            },
+          ]}
+        />
       </div>
     </section>
-
-    <hr class="rule" />
 
     <!-- ══════════════════════════════════════════
          HOW TO RUN — agents-style numbered steps
     ═══════════════════════════════════════════ -->
-    <section class="section" id="how-to-run">
-      <div class="wrap">
+    <section id="how-to-run">
+      <div class="container" style="padding-block:4rem;">
         <div class="steps-layout">
           <div>
             <div class="section-label">Get started</div>
             <h2 class="section-title" style="margin-bottom:48px;">
               From zero to results<br /><em>in minutes.</em>
             </h2>
-            <div class="steps-list">
-              <div class="step-item">
-                <div class="step-header">
-                  <div class="step-num">1</div>
-                  <div class="step-title">Clone the repository</div>
-                </div>
-                <p class="step-desc">
-                  Pull the repo from GitHub to get the CLI and all supporting
-                  files.
-                </p>
-              </div>
-              <div class="step-item">
-                <div class="step-header">
-                  <div class="step-num">2</div>
-                  <div class="step-title">Install dependencies</div>
-                </div>
-                <p class="step-desc">
-                  Run <code
-                    style="font-family:monospace;font-size:0.8125rem;color:var(--orange)"
-                    >npm install</code
-                  > to pull Playwright and all browser binaries (~700 MB, takes 2–5
-                  min on first run).
-                </p>
-                <p class="step-note">
-                  Need help? See the <a
-                    href="https://github.com/cloudflare/telescope?tab=readme-ov-file#installation"
-                    target="_blank">installation guide.</a
-                  >
-                </p>
-              </div>
-              <div class="step-item">
-                <div class="step-header">
-                  <div class="step-num">3</div>
-                  <div class="step-title">Run your first test</div>
-                </div>
-                <p class="step-desc">
-                  Point Telescope at any URL. Results land in <code
-                    style="font-family:monospace;font-size:0.8125rem;color:var(--orange)"
-                    >/results</code
-                  > as HAR, video, screenshots, and JSON metrics.
-                </p>
-              </div>
-              <div class="step-item">
-                <div class="step-header">
-                  <div class="step-num">4</div>
-                  <div class="step-title">Upload &amp; explore</div>
-                </div>
-                <p class="step-desc">
-                  Drag the results ZIP to <a
-                    href="/upload"
-                    style="color:var(--orange);text-decoration:underline;text-underline-offset:2px;"
-                    >telescopetest.io/upload</a
-                  > to browse the waterfall, filmstrip, bottlenecks, and console
-                  in your browser.
-                </p>
-              </div>
-            </div>
+            <StepList
+              steps={[
+                {
+                  title: 'Clone the repository',
+                  description:
+                    'Pull the repo from GitHub to get the CLI and all supporting files.',
+                },
+                {
+                  title: 'Install dependencies',
+                  description:
+                    'Run <code>npm install</code> to pull Playwright and all browser binaries (~700 MB, takes 2–5 min on first run).',
+                  note: 'Need help? See the <a href="https://github.com/cloudflare/telescope?tab=readme-ov-file#installation" target="_blank">installation guide.</a>',
+                },
+                {
+                  title: 'Run your first test',
+                  description:
+                    'Point Telescope at any URL. Results land in <code>/results</code> as HAR, video, screenshots, and JSON metrics.',
+                },
+                {
+                  title: 'Upload &amp; explore',
+                  description:
+                    'Drag the results ZIP to <a href="/upload">telescopetest.io/upload</a> to browse the waterfall, filmstrip, bottlenecks, and console in your browser.',
+                },
+              ]}
+            />
           </div>
 
           <div class="steps-code">
-            <div class="code-window" style="margin-bottom:20px;">
-              <div class="code-titlebar">
-                <div class="code-dots">
-                  <span></span><span></span><span></span>
-                </div>
-                <span class="code-filename">terminal</span>
-                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-              </div>
+            <CodeWindow filename="terminal" style="margin-bottom:20px;">
               <pre><code><span class="token-comment"># Clone and install</span>
 <span class="token-flag">git</span> clone https://github.com/cloudflare/telescope.git
 <span class="token-flag">cd</span> telescope
@@ -1100,35 +200,26 @@ import {
      <span class="token-key">-b</span> firefox <span class="token-op">\</span>
      <span class="token-key">--connectionType</span> 3g <span class="token-op">\</span>
      <span class="token-key">--cpuThrottle</span> 4</code></pre>
-            </div>
+            </CodeWindow>
 
-            <div class="code-window">
-              <div class="code-titlebar">
-                <div class="code-dots">
-                  <span></span><span></span><span></span>
-                </div>
-                <span class="code-filename">with auth &amp; headers</span>
-                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-              </div>
+            <CodeWindow filename="with auth &amp; headers">
               <pre><code><span class="token-flag">npx</span> . <span class="token-key">-u</span> <span class="token-url">https://example.com</span> <span class="token-op">\</span>
      <span class="token-key">-b</span> edge <span class="token-op">\</span>
      <span class="token-key">-h</span> <span class="token-val">'&lcub;"Authorization":"Bearer token"}'</span> <span class="token-op">\</span>
      <span class="token-key">-c</span> <span class="token-val">'&lcub;"session":"abc123"}'</span> <span class="token-op">\</span>
      <span class="token-key">--blockDomains</span> ads.example.com <span class="token-op">\</span>
      <span class="token-key">--disableJS</span></code></pre>
-            </div>
+            </CodeWindow>
           </div>
         </div>
       </div>
     </section>
 
-    <hr class="rule" />
-
     <!-- ══════════════════════════════════════════
          PARAMETERS
     ═══════════════════════════════════════════ -->
-    <section class="section" id="parameters">
-      <div class="wrap">
+    <section id="parameters">
+      <div class="container" style="padding-block:4rem;">
         <div class="section-hdr">
           <div class="section-label">Configuration</div>
           <h2 class="section-title">Every flag, at a glance.</h2>
@@ -1137,130 +228,87 @@ import {
             custom headers, blocked domains, and more.
           </p>
         </div>
-        <div class="params-table">
-          <div class="param-row">
-            <span class="param-flag">-u, --url &lt;url&gt;</span><p
-              class="param-desc"
-            >
-              Target website to test.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">-b, --browser &lt;browser&gt;</span><p
-              class="param-desc"
-            >
-              chrome · chrome-beta · canary · edge · safari · firefox. Default:
-              chrome.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">-h, --headers &lt;object&gt;</span><p
-              class="param-desc"
-            >
-              Custom HTTP request headers, e.g. for Bearer auth.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">-c, --cookies &lt;object&gt;</span><p
-              class="param-desc"
-            >
-              Custom cookies to inject before navigation.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--connectionType &lt;preset&gt;</span><p
-              class="param-desc"
-            >
-              Network throttle: cable · dsl · 4g · 3g · 3gfast · 3gslow · 2g ·
-              fios.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--cpuThrottle &lt;n&gt;</span><p
-              class="param-desc"
-            >
-              CPU slowdown multiplier. 4 = 4× slower than native.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--width / --height &lt;px&gt;</span><p
-              class="param-desc"
-            >
-              Viewport size. Default: 1366×768.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--blockDomains &lt;...&gt;</span><p
-              class="param-desc"
-            >
-              Block requests to specific domains (ads, trackers, etc).
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--block &lt;...substrings&gt;</span><p
-              class="param-desc"
-            >
-              Block URLs that contain any of the given substrings.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--disableJS</span><p class="param-desc">
-              Disable JavaScript entirely during the test run.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--timeout &lt;ms&gt;</span><p
-              class="param-desc"
-            >
-              Max test duration in milliseconds. Default: 30000.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--html</span><p class="param-desc">
-              Generate a self-contained HTML report alongside JSON output.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--auth &lt;object&gt;</span><p
-              class="param-desc"
-            >
-              HTTP Basic Auth credentials: <code style="font-family:monospace"
-                >&lcub;"username":"…","password":"…"}</code
-              >.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--frameRate &lt;fps&gt;</span><p
-              class="param-desc"
-            >
-              Filmstrip capture rate. Default: 1 fps.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">-f, --flags &lt;string&gt;</span><p
-              class="param-desc"
-            >
-              Comma-separated Chromium launch flags.
-            </p>
-          </div>
-          <div class="param-row">
-            <span class="param-flag">--firefoxPrefs &lt;object&gt;</span><p
-              class="param-desc"
-            >
-              Firefox user preferences (Firefox only).
-            </p>
-          </div>
-        </div>
+        <ParamsTable
+          items={[
+            { flag: '-u, --url <url>', description: 'Target website to test.' },
+            {
+              flag: '-b, --browser <browser>',
+              description:
+                'chrome · chrome-beta · canary · edge · safari · firefox. Default: chrome.',
+            },
+            {
+              flag: '-h, --headers <object>',
+              description:
+                'Custom HTTP request headers, e.g. for Bearer auth.',
+            },
+            {
+              flag: '-c, --cookies <object>',
+              description: 'Custom cookies to inject before navigation.',
+            },
+            {
+              flag: '--connectionType <preset>',
+              description:
+                'Network throttle: cable · dsl · 4g · 3g · 3gfast · 3gslow · 2g · fios.',
+            },
+            {
+              flag: '--cpuThrottle <n>',
+              description: 'CPU slowdown multiplier. 4 = 4× slower than native.',
+            },
+            {
+              flag: '--width / --height <px>',
+              description: 'Viewport size. Default: 1366×768.',
+            },
+            {
+              flag: '--blockDomains <...>',
+              description:
+                'Block requests to specific domains (ads, trackers, etc).',
+            },
+            {
+              flag: '--block <...substrings>',
+              description:
+                'Block URLs that contain any of the given substrings.',
+            },
+            {
+              flag: '--disableJS',
+              description: 'Disable JavaScript entirely during the test run.',
+            },
+            {
+              flag: '--timeout <ms>',
+              description:
+                'Max test duration in milliseconds. Default: 30000.',
+            },
+            {
+              flag: '--html',
+              description:
+                'Generate a self-contained HTML report alongside JSON output.',
+            },
+            {
+              flag: '--auth <object>',
+              description:
+                'HTTP Basic Auth credentials: <code>{"username":"…","password":"…"}</code>.',
+            },
+            {
+              flag: '--frameRate <fps>',
+              description: 'Filmstrip capture rate. Default: 1 fps.',
+            },
+            {
+              flag: '-f, --flags <string>',
+              description: 'Comma-separated Chromium launch flags.',
+            },
+            {
+              flag: '--firefoxPrefs <object>',
+              description: 'Firefox user preferences (Firefox only).',
+            },
+          ]}
+        />
       </div>
     </section>
-
-    <hr class="rule" />
 
     <!-- ══════════════════════════════════════════
          OUTPUT
     ═══════════════════════════════════════════ -->
-    <section class="section" id="output">
-      <div class="wrap">
+    <section id="output">
+      <div class="container" style="padding-block:4rem;">
         <div class="output-layout">
           <div>
             <div class="section-label">Output</div>
@@ -1273,88 +321,50 @@ import {
                 >/results</code
               > with six files covering every dimension of page load performance.
             </p>
-            <ul class="output-list">
-              <li class="output-item">
-                <div class="output-icon">
-                  <FilmStripIcon weight="regular" size={16} />
-                </div>
-                <div>
-                  <div class="output-title">Video recording</div>
-                  <p class="output-desc">
-                    Full-resolution MP4 of the page loading from blank to
-                    complete.
-                  </p>
-                </div>
-              </li>
-              <li class="output-item">
-                <div class="output-icon">
-                  <CameraIcon weight="regular" size={16} />
-                </div>
-                <div>
-                  <div class="output-title">Screenshots &amp; filmstrip</div>
-                  <p class="output-desc">
-                    Final-state PNG plus per-second frames for visual
-                    regression.
-                  </p>
-                </div>
-              </li>
-              <li class="output-item">
-                <div class="output-icon">
-                  <WaveformIcon weight="regular" size={16} />
-                </div>
-                <div>
-                  <div class="output-title">Performance metrics</div>
-                  <p class="output-desc">
-                    FCP, LCP, CLS, TTI, TTFB, and all Navigation Timing entries.
-                  </p>
-                </div>
-              </li>
-              <li class="output-item">
-                <div class="output-icon">
-                  <NetworkIcon weight="regular" size={16} />
-                </div>
-                <div>
-                  <div class="output-title">HAR &amp; resource timing</div>
-                  <p class="output-desc">
-                    Complete network waterfall plus Resource Timing API data per
-                    asset.
-                  </p>
-                </div>
-              </li>
-              <li class="output-item">
-                <div class="output-icon">
-                  <LightningIcon weight="regular" size={16} />
-                </div>
-                <div>
-                  <div class="output-title">Resource breakdown</div>
-                  <p class="output-desc">
-                    Transfer size, decoded size, type, and protocol per request.
-                  </p>
-                </div>
-              </li>
-              <li class="output-item">
-                <div class="output-icon">
-                  <BugIcon weight="regular" size={16} />
-                </div>
-                <div>
-                  <div class="output-title">Console output</div>
-                  <p class="output-desc">
-                    Every log, warning, and JS error captured during page load.
-                  </p>
-                </div>
-              </li>
-            </ul>
+            <IconList
+              items={[
+                {
+                  icon: FilmStripIcon,
+                  title: 'Video recording',
+                  subtitle:
+                    'Full-resolution MP4 of the page loading from blank to complete.',
+                },
+                {
+                  icon: CameraIcon,
+                  title: 'Screenshots & filmstrip',
+                  subtitle:
+                    'Final-state PNG plus per-second frames for visual regression.',
+                },
+                {
+                  icon: WaveformIcon,
+                  title: 'Performance metrics',
+                  subtitle:
+                    'FCP, LCP, CLS, TTI, TTFB, and all Navigation Timing entries.',
+                },
+                {
+                  icon: NetworkIcon,
+                  title: 'HAR & resource timing',
+                  subtitle:
+                    'Complete network waterfall plus Resource Timing API data per asset.',
+                },
+                {
+                  icon: LightningIcon,
+                  title: 'Resource breakdown',
+                  subtitle:
+                    'Transfer size, decoded size, type, and protocol per request.',
+                },
+                {
+                  icon: BugIcon,
+                  title: 'Console output',
+                  subtitle:
+                    'Every log, warning, and JS error captured during page load.',
+                },
+              ]}
+            />
           </div>
 
           <div class="steps-code">
-            <div class="code-window">
-              <div class="code-titlebar">
-                <div class="code-dots">
-                  <span></span><span></span><span></span>
-                </div>
-                <span class="code-filename">results/</span>
-                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-              </div>
+            <CodeWindow filename="results/">
               <pre><code>results/
 <span class="token-op">└──</span> 2025-10-26_unique-id-123<span class="token-op">/</span>
     <span class="token-op">├──</span> <span class="token-key">console.json</span>     <span class="token-comment"># logs &amp; errors</span>
@@ -1367,7 +377,7 @@ import {
         <span class="token-op">├──</span> <span class="token-val">frame-0001.png</span>
         <span class="token-op">├──</span> <span class="token-val">frame-0002.png</span>
         <span class="token-op">└──</span> <span class="token-val">…</span></code></pre>
-            </div>
+            </CodeWindow>
           </div>
         </div>
       </div>
@@ -1376,8 +386,11 @@ import {
     <!-- ══════════════════════════════════════════
          CTA
     ═══════════════════════════════════════════ -->
-    <div class="cta-band" id="contribute">
-      <div class="wrap">
+    <section id="contribute">
+      <div
+        class="container"
+        style="padding-block:4rem;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;"
+      >
         <div class="cta-heading">
           Open source.<br />Built with the community.
         </div>
@@ -1404,33 +417,12 @@ import {
           </a>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- ══════════════════════════════════════════
          FOOTER
     ═══════════════════════════════════════════ -->
-    <footer>
-      <div class="wrap">
-        <div class="footer-row">
-          <span class="footer-copy">
-            &copy; 2025&ndash;{year}
-            <a href="https://www.cloudflare.com/" target="_blank">Cloudflare</a>
-            &mdash; Telescope is open source under the Apache&nbsp;2.0&nbsp;License.
-          </span>
-          <div class="footer-links">
-            <a href="https://github.com/cloudflare/telescope" target="_blank"
-              >GitHub</a
-            >
-            <a
-              href="https://github.com/cloudflare/telescope?tab=License-1-ov-file"
-              target="_blank">License</a
-            >
-            <a href="/results">Results</a>
-            <a href="/upload">Upload</a>
-          </div>
-        </div>
-      </div>
-    </footer>
+    <HomeFooter />
 
     <script is:inline>
       function copyCode(btn) {
@@ -1450,3 +442,333 @@ import {
     </script>
   </body>
 </html>
+
+<style>
+  /* ── Dot grid ── */
+  .bg-dots {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image: radial-gradient(
+      circle,
+      /* var(--code-bg) 1px, */ var(--page-dot) 1px,
+      transparent 1px
+    );
+    background-size: 23px 23px;
+  }
+
+  /* ── Layout ── */
+  .wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ── Section dividers ── */
+  .rule {
+    border: none;
+    border-top: 1px solid var(--page-border);
+  }
+
+  /* ═══════════════════════════════════════════
+         HERO
+      ═══════════════════════════════════════════ */
+
+  /* Vertical orange rule left of hero text — agents.cloudflare.com style */
+  .hero-kicker {
+    border-left: 2px solid var(--orange);
+    padding-left: 12px;
+    color: var(--orange);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .hero-heading {
+    font-size: clamp(3rem, 7.5vw, 6rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    color: var(--page-heading);
+    max-width: 820px;
+    margin-bottom: 1.5rem;
+  }
+  .hero-heading em {
+    font-style: normal;
+    color: var(--orange);
+  }
+
+  .hero-sub {
+    font-size: clamp(1rem, 2vw, 1.1875rem);
+    color: var(--page-mid);
+    max-width: 520px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: calc(infinity * 1px);
+    border: 1px solid transparent;
+    transition:
+      background 0.14s,
+      border-color 0.14s,
+      transform 0.14s,
+      box-shadow 0.14s;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-fill {
+    background: var(--orange);
+    color: #fff;
+    border-color: var(--orange);
+  }
+  .btn-fill:hover {
+    background: var(--orange-hi);
+    border-color: var(--orange-hi);
+    box-shadow: 0 0 20px var(--orange-glow);
+    transform: translateY(-1px);
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--page-mid);
+    border-color: var(--page-border-hi);
+  }
+  .btn-outline:hover {
+    color: var(--page-text);
+    border-color: var(--page-border-hi);
+    background: var(--page-card);
+    transform: translateY(-1px);
+  }
+
+  /* ═══════════════════════════════════════════
+         FEATURES — 4-up card grid
+      ═══════════════════════════════════════════ */
+  .section {
+    padding: 96px 0;
+  }
+
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: clamp(1.75rem, 3.5vw, 2.625rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--page-heading);
+    margin-bottom: 14px;
+  }
+  .section-title em {
+    font-style: italic;
+    color: var(--page-mid);
+  }
+  .section-body {
+    font-size: 1.0625rem;
+    color: var(--page-muted);
+    line-height: 1.7;
+    max-width: 560px;
+  }
+  .section-hdr {
+    margin-bottom: 56px;
+  }
+
+  /* ═══════════════════════════════════════════
+         STEPS — agents.cloudflare.com style
+      ═══════════════════════════════════════════ */
+  .steps-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+
+  /* sticky code pane */
+  .steps-code {
+    position: sticky;
+    top: 4rem;
+  }
+
+  /* ═══════════════════════════════════════════
+         CODE BLOCK — token colours & pre
+      ═══════════════════════════════════════════ */
+  pre {
+    margin: 0;
+    padding: 22px 20px;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.8;
+    color: var(--code-text);
+    overflow-x: auto;
+    tab-size: 2;
+  }
+  .token-comment {
+    color: var(--code-comment);
+  }
+  .token-key {
+    color: #79b8ff;
+  }
+  .token-val {
+    color: #9ecbff;
+  }
+  .token-flag {
+    color: var(--orange);
+  }
+  .token-url {
+    color: #b8d4a8;
+  }
+  .token-op {
+    color: var(--page-muted);
+  }
+
+  /* ═══════════════════════════════════════════
+         OUTPUT SECTION — split with code
+      ═══════════════════════════════════════════ */
+  .output-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+
+  /* ═══════════════════════════════════════════
+         DARK CTA BAND
+      ═══════════════════════════════════════════ */
+  .cta-band {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--page-border);
+    padding: 96px 0;
+    text-align: center;
+    overflow: hidden;
+  }
+  .cta-band::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 60% 70% at 50% 50%,
+      rgba(246, 130, 31, 0.07) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+  .cta-band .wrap {
+    position: relative;
+    z-index: 1;
+  }
+  .cta-heading {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--page-heading);
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .cta-sub {
+    font-size: 1.0625rem;
+    color: var(--page-muted);
+    max-width: 480px;
+    margin: 0 auto 40px;
+    line-height: 1.65;
+  }
+  .cta-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  /* ═══════════════════════════════════════════
+         RESPONSIVE
+      ═══════════════════════════════════════════ */
+  @media (max-width: 1024px) {
+    .steps-layout {
+      grid-template-columns: 1fr;
+      gap: 48px;
+    }
+    .steps-code {
+      position: static;
+    }
+    .output-layout {
+      grid-template-columns: 1fr;
+      gap: 48px;
+    }
+  }
+  @media (max-width: 768px) {
+    .section {
+      padding: 64px 0;
+    }
+    .wrap {
+      padding: 0 20px;
+    }
+    .hero {
+      padding: calc(var(--nav-height) + 72px) 20px 72px;
+    }
+  }
+  @media (max-width: 480px) {
+    .hero-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .btn {
+      justify-content: center;
+    }
+    .cta-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  section {
+    padding-inline: 0.5rem;
+    border-bottom: 1px dashed var(--color-border-100);
+  }
+  .container {
+    max-width: 92rem;
+    margin-inline: auto;
+    padding-inline: 2rem;
+
+    position: relative;
+
+    border-inline: 1px dashed var(--color-border-100);
+  }
+
+  .surface {
+    background: var(--color-background-100);
+  }
+</style>

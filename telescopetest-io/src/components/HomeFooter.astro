@@ -1,0 +1,68 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer>
+  <div class="container" style="padding-block:1rem;">
+    <div class="footer-row">
+      <span class="footer-copy">
+        &copy; 2025&ndash;{year}
+        <a href="https://www.cloudflare.com/" target="_blank">Cloudflare</a>
+        &mdash; Telescope is open source under the Apache&nbsp;2.0&nbsp;License.
+      </span>
+      <div class="footer-links">
+        <a href="https://github.com/cloudflare/telescope" target="_blank"
+          >GitHub</a
+        >
+        <a
+          href="https://github.com/cloudflare/telescope?tab=License-1-ov-file"
+          target="_blank">License</a
+        >
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .footer-copy {
+    font-size: 0.875rem;
+    color: var(--page-muted);
+  }
+  .footer-copy a {
+    color: var(--page-muted);
+    text-decoration: none;
+  }
+  .footer-copy a:hover {
+    color: var(--page-text);
+  }
+  .footer-links {
+    display: flex;
+    gap: 24px;
+  }
+  .footer-links a {
+    font-size: 0.875rem;
+    color: var(--page-muted);
+    text-decoration: none;
+    transition: color 0.12s;
+  }
+  .footer-links a:hover {
+    color: var(--page-text);
+  }
+
+  @media (max-width: 768px) {
+    .footer-row {
+      flex-direction: column;
+      text-align: center;
+    }
+    .footer-links {
+      justify-content: center;
+    }
+  }
+</style>

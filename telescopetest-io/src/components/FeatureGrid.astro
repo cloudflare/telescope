@@ -1,0 +1,80 @@
+---
+import { type Icon } from '@phosphor-icons/react';
+
+export interface FeatureItem {
+  icon: Icon;
+  title: string;
+  body: string;
+}
+
+export interface Props {
+  items: FeatureItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="feature-grid">
+  {
+    items.map(item => (
+      <div class="feature-cell">
+        <item.icon weight="regular" size={24} className="fc-icon" />
+        <div class="fc-title">{item.title}</div>
+        <p class="fc-body" set:html={item.body} />
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--page-border);
+    border: 1px solid var(--page-border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .feature-cell {
+    background: var(--page-bg);
+    padding: 32px 28px;
+    transition: background 0.15s;
+  }
+  .feature-cell:hover {
+    background: var(--page-elevated);
+  }
+  :global(.fc-icon) {
+    color: var(--orange);
+    margin-bottom: 18px;
+    display: block;
+  }
+  .fc-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--page-heading);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .fc-body {
+    font-size: 0.875rem;
+    color: var(--page-muted);
+    line-height: 1.65;
+  }
+  .fc-body a {
+    color: var(--orange);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  @media (max-width: 1024px) {
+    .feature-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (max-width: 768px) {
+    .feature-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

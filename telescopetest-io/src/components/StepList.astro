@@ -1,0 +1,97 @@
+---
+export interface Step {
+  title: string;
+  description: string;
+  note?: string;
+}
+
+export interface Props {
+  steps: Step[];
+}
+
+const { steps } = Astro.props;
+---
+
+<div class="steps-list">
+  {
+    steps.map((step, i) => (
+      <div class="step-item">
+        <div class="step-header">
+          <div class="step-num">{i + 1}</div>
+          <div class="step-title">{step.title}</div>
+        </div>
+        <p class="step-desc" set:html={step.description} />
+        {step.note && <p class="step-note" set:html={step.note} />}
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .steps-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .step-item {
+    padding: 28px 0;
+    border-bottom: 1px solid var(--page-border);
+    cursor: default;
+  }
+  .step-item:first-child {
+    border-top: 1px solid var(--page-border);
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+  .step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--page-border-hi);
+    background: var(--page-card);
+    color: var(--orange);
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--page-heading);
+    letter-spacing: -0.01em;
+  }
+  .step-desc {
+    font-size: 0.875rem;
+    color: var(--page-muted);
+    line-height: 1.65;
+    padding-left: 44px;
+  }
+  .step-note {
+    font-size: 0.8125rem;
+    color: var(--page-muted);
+    margin-top: 8px;
+    padding-left: 44px;
+  }
+  .step-desc :global(code),
+  .step-note :global(code) {
+    font-family: monospace;
+    font-size: 0.8125rem;
+    color: var(--orange);
+  }
+  .step-note :global(a) {
+    color: var(--orange);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .step-desc :global(a) {
+    color: var(--orange);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+</style>

@@ -1,0 +1,64 @@
+---
+export interface ParamItem {
+  flag: string;
+  description: string;
+}
+
+export interface Props {
+  items: ParamItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="params-table">
+  {
+    items.map(item => (
+      <div class="param-row">
+        <span class="param-flag">{item.flag}</span>
+        <p class="param-desc" set:html={item.description} />
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .params-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--page-border);
+    border: 1px solid var(--page-border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .param-row {
+    background: var(--page-bg);
+    padding: 18px 22px;
+    transition: background 0.12s;
+  }
+  .param-row:hover {
+    background: var(--page-elevated);
+  }
+  .param-flag {
+    font-family: 'Menlo', 'Monaco', monospace;
+    font-size: 0.8125rem;
+    color: var(--orange);
+    margin-bottom: 5px;
+    display: block;
+  }
+  .param-desc {
+    font-size: 0.8125rem;
+    color: var(--page-muted);
+    line-height: 1.55;
+  }
+  .param-desc :global(code) {
+    font-family: monospace;
+  }
+
+  @media (max-width: 768px) {
+    .params-table {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,69 @@
+---
+import { type Icon } from '@phosphor-icons/react';
+
+export interface Props {
+  items: { icon: Icon; title: string; subtitle: string }[];
+}
+
+const { items } = Astro.props;
+---
+
+<ul>
+  {
+    items.map(item => (
+      <li>
+        <div class="icon">
+          <item.icon weight="regular" size={16} />
+        </div>
+        <div>
+          <div class="title">{item.title}</div>
+          <p class="subtitle">{item.subtitle}</p>
+        </div>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    --icon-size: 2rem;
+  }
+  li {
+    display: flex;
+    gap: 1rem;
+    padding-block: 1.25rem;
+    border-bottom: 1px solid var(--page-border);
+  }
+  li:first-child {
+    border-top: 1px solid var(--page-border);
+  }
+  .icon {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    flex-shrink: 0;
+
+    border-radius: 7px;
+    background: var(--orange-dim);
+    border: 1px solid var(--orange-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--orange);
+    margin-top: 2px;
+  }
+  .title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--page-text);
+    margin-bottom: 3px;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    font-size: 0.875rem;
+    color: var(--page-muted);
+    line-height: 1.55;
+  }
+</style>

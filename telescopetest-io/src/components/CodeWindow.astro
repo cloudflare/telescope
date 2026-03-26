@@ -1,0 +1,75 @@
+---
+export interface Props {
+  filename: string;
+  style?: string;
+}
+
+const { filename, style } = Astro.props;
+---
+
+<div class="code-window" style={style}>
+  <div class="code-titlebar">
+    <div class="code-dots">
+      <span></span><span></span><span></span>
+    </div>
+    <span class="code-filename">{filename}</span>
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  </div>
+  <slot />
+</div>
+
+<style>
+  .code-window {
+    background: var(--code-bg);
+    border: 1px solid var(--page-border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .code-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--page-border);
+    background: var(--code-titlebar);
+  }
+  .code-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .code-dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--code-dot);
+  }
+  .code-filename {
+    font-size: 0.75rem;
+    color: var(--page-muted);
+    font-family: 'Menlo', 'Monaco', monospace;
+  }
+  .copy-btn {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--page-muted);
+    background: none;
+    border: 1px solid var(--page-border);
+    border-radius: 5px;
+    padding: 3px 9px;
+    cursor: pointer;
+    transition:
+      color 0.12s,
+      border-color 0.12s;
+    font-family: inherit;
+  }
+  .copy-btn:hover {
+    color: var(--code-text);
+    border-color: var(--page-border-hi);
+  }
+  .copy-btn.copied {
+    color: #4ade80;
+    border-color: rgba(74, 222, 128, 0.35);
+  }
+</style>
