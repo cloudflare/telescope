@@ -164,7 +164,12 @@ export const POST: APIRoute = async (context: APIContext) => {
       date: z.string(),
       options: z
         .object({
-          browser: z.string(),
+          url: z.string(),
+        })
+        .passthrough(),
+      browserConfig: z
+        .object({
+          engine: z.string(),
         })
         .passthrough(),
     });
@@ -194,6 +199,8 @@ export const POST: APIRoute = async (context: APIContext) => {
     }
     // Build test configuration object
     const testId = generateTestId(config.date);
+    const browser =
+      config.options.browser || config.browserConfig.engine || 'unknown';
     const testConfig: TestConfig = {
       testId,
       zipKey,
@@ -202,7 +209,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       source,
       url: config.url,
       testDate: Math.floor(new Date(config.date).getTime() / 1000),
-      browser: config.options.browser,
+      browser,
     };
     // Store test metadata in database
     try {

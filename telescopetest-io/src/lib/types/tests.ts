@@ -19,52 +19,55 @@ export enum ContentRating {
 }
 
 // Config.json structure from Telescope test archives
+// Matches SavedConfig from telescope/src/types.ts
 export interface ConfigJson {
   url: string;
   date: string;
   options: {
-    browser: string;
+    url: string;
+    browser?: string;
+    headers?: Record<string, string>;
+    cookies?: unknown;
+    args?: string[];
+    blockDomains?: string[];
+    block?: string[];
+    firefoxPrefs?: Record<string, string | number | boolean>;
+    cpuThrottle?: number;
+    connectionType?: string | false;
     width?: number;
     height?: number;
     frameRate?: number;
-    timeout?: number;
-    blockDomains?: string[];
-    block?: string[];
     disableJS?: boolean;
     debug?: boolean;
+    auth?: unknown;
+    timeout?: number;
     html?: boolean;
     openHtml?: boolean;
     list?: boolean;
     overrideHost?: Record<string, string>;
-    connectionType?: string | false;
-    cpuThrottle?: number;
-    auth?: boolean | string;
     zip?: boolean;
+    uploadUrl?: string | null;
     dry?: boolean;
-    device?: boolean | string;
-    deviceName?: string | false;
-    url?: string;
+    userAgent?: string;
+    agentExtra?: string;
     command?: string[];
+    delay?: Record<string, number>;
+    delayUsing?: string;
   };
-  browserConfig?: {
-    engine?: string;
-    headless?: boolean;
-    firefoxUserPrefs?: Record<string, unknown>;
-    mozLog?: boolean;
-    viewport?: {
-      width: number;
-      height: number;
-    };
-    recordHar?: {
-      path: string;
-    };
-    recordVideo?: {
-      dir: string;
-      size?: {
-        width: number;
-        height: number;
-      };
-    };
+  browserConfig: {
+    engine: string;
+    channel?: string;
+    headless: boolean;
+    viewport: { width: number; height: number };
+    recordHar: { path: string };
+    recordVideo: { dir: string; size: { width: number; height: number } };
+    args?: string[];
+    ignoreDefaultArgs?: string[];
+    firefoxUserPrefs?: Record<string, string | number | boolean>;
+    env?: Record<string, string>;
+    javaScriptEnabled?: boolean;
+    httpCredentials?: unknown;
+    userAgent?: string;
   };
 }
 

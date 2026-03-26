@@ -14,27 +14,27 @@ const testOptions: Array<{ label: string; value: string | null }> = [];
 
 if (config) {
   const opts = config.options;
+  const bc = config.browserConfig;
 
-  // Browser
-  testOptions.push({ label: 'Browser', value: opts.browser || null });
+  // Browser engine and channel
+  const browserValue = opts.browser || bc.engine || null;
+  const channelSuffix = bc.channel ? ` (${bc.channel})` : '';
+  testOptions.push({ label: 'Browser', value: browserValue ? `${browserValue}${channelSuffix}` : null });
 
-  // Device
-  const deviceValue =
-    typeof opts.device === 'string'
-      ? opts.device
-      : typeof opts.deviceName === 'string'
-        ? opts.deviceName
-        : null;
-  testOptions.push({ label: 'Device', value: deviceValue });
+  // Headless mode
+  testOptions.push({ label: 'Headless', value: bc.headless ? 'Yes' : 'No' });
 
   // Viewport dimensions
   const viewportValue =
-    opts.width && opts.height ? `${opts.width} × ${opts.height}` : null;
+    bc.viewport?.width && bc.viewport?.height ? `${bc.viewport.width} × ${bc.viewport.height}` : null;
   testOptions.push({ label: 'Viewport', value: viewportValue });
+
+  // User Agent
+  testOptions.push({ label: 'User Agent', value: opts.userAgent || bc.userAgent || null });
 
   // Network throttling
   const networkValue =
-    typeof opts.connectionType === 'string' ? opts.connectionType : null;
+    typeof opts.connectionType === 'string' ? opts.connectionType : opts.connectionType === false ? 'None' : null;
   testOptions.push({ label: 'Network Throttling', value: networkValue });
 
   // CPU throttling
@@ -45,7 +45,7 @@ if (config) {
   testOptions.push({ label: 'CPU Throttling', value: cpuValue });
 
   // JavaScript
-  const jsValue = opts.disableJS === true ? 'Disabled' : null;
+  const jsValue = opts.disableJS === true ? 'Disabled' : bc.javaScriptEnabled === false ? 'Disabled' : null;
   testOptions.push({ label: 'JavaScript', value: jsValue });
 
   // Timeout
@@ -56,11 +56,26 @@ if (config) {
   const frameRateValue = opts.frameRate ? `${opts.frameRate} fps` : null;
   testOptions.push({ label: 'Frame Rate', value: frameRateValue });
 
+  // Delay method
+  testOptions.push({ label: 'Delay Method', value: opts.delayUsing || null });
+
+  // Delay values
+  const delayValue = opts.delay && Object.keys(opts.delay).length > 0
+    ? Object.entries(opts.delay).map(([k, v]) => `${k}: ${v}ms`).join(', ')
+    : null;
+  testOptions.push({ label: 'Delays', value: delayValue });
+
   // Blocked domains
   const blockedValue = opts.blockDomains?.length
     ? opts.blockDomains.join(', ')
     : null;
   testOptions.push({ label: 'Blocked Domains', value: blockedValue });
+
+  // Block patterns
+  const blockValue = opts.block?.length
+    ? opts.block.join(', ')
+    : null;
+  testOptions.push({ label: 'Block Patterns', value: blockValue });
 
   // Override hosts
   const overrideValue =
@@ -70,6 +85,52 @@ if (config) {
           .join(', ')
       : null;
   testOptions.push({ label: 'Host Overrides', value: overrideValue });
+
+  // Headers
+  const headersValue = opts.headers && Object.keys(opts.headers).length > 0
+    ? Object.keys(opts.headers).join(', ')
+    : null;
+  testOptions.push({ label: 'Custom Headers', value: headersValue });
+
+  // Firefox prefs
+  const firefoxPrefsValue = opts.firefoxPrefs && Object.keys(opts.firefoxPrefs).length > 0
+    ? `${Object.keys(opts.firefoxPrefs).length} preference(s)`
+    : bc.firefoxUserPrefs && Object.keys(bc.firefoxUserPrefs).length > 0
+      ? `${Object.keys(bc.firefoxUserPrefs).length} preference(s)`
+      : null;
+  testOptions.push({ label: 'Firefox Prefs', value: firefoxPrefsValue });
+
+  // Browser args
+  const argsValue = opts.args?.length
+    ? `${opts.args.length} arg(s)`
+    : bc.args?.length
+      ? `${bc.args.length} arg(s)`
+      : null;
+  testOptions.push({ label: 'Browser Args', value: argsValue });
+
+  // Ignored default args
+  const ignoredArgsValue = bc.ignoreDefaultArgs?.length
+    ? `${bc.ignoreDefaultArgs.length} ignored`
+    : null;
+  testOptions.push({ label: 'Ignored Default Args', value: ignoredArgsValue });
+
+  // Debug mode
+  testOptions.push({ label: 'Debug', value: opts.debug ? 'Yes' : null });
+
+  // HTML output
+  testOptions.push({ label: 'HTML Output', value: opts.html ? 'Yes' : null });
+
+  // Open HTML
+  testOptions.push({ label: 'Open HTML', value: opts.openHtml ? 'Yes' : null });
+
+  // List mode
+  testOptions.push({ label: 'List Mode', value: opts.list ? 'Yes' : null });
+
+  // Dry run
+  testOptions.push({ label: 'Dry Run', value: opts.dry ? 'Yes' : null });
+
+  // Agent Extra
+  testOptions.push({ label: 'Agent Extra', value: opts.agentExtra || null });
 }
 
 // Generate CLI command if available
@@ -91,15 +152,16 @@ const sanitizedConfig = config ? {
     } = config.options;
     return safeOptions;
   })(),
-  browserConfig: config.browserConfig ? (() => {
+  browserConfig: (() => {
     const {
       httpCredentials,  // Credentials
       env,              // May contain secrets
       args,             // May contain sensitive flags
+      ignoreDefaultArgs,// May contain sensitive flags
       ...safeBrowserConfig
     } = config.browserConfig;
     return safeBrowserConfig;
-  })() : undefined
+  })()
 } : null;
 ---
 
@@ -319,7 +381,7 @@ const sanitizedConfig = config ? {
 
   .cli-command-wrapper {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.75rem;
   }
 
@@ -419,7 +481,7 @@ const sanitizedConfig = config ? {
 
   .config-value--empty {
     color: var(--muted);
-    opacity: 0.5;
+    opacity: 0.3;
   }
 
   .config-details summary {
