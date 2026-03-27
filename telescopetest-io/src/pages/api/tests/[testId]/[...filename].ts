@@ -1,9 +1,12 @@
 import { env } from 'cloudflare:workers';
 
 import type { APIContext, APIRoute } from 'astro';
-import path from 'node:path';
 import { ContentRating } from '@/lib/types/tests';
-import { isValidTestId, isExpectedTelescopeFile } from '@/lib/utils/security';
+import {
+  isValidTestId,
+  isExpectedTelescopeFile,
+  toPosixPath,
+} from '@/lib/utils/security';
 import { checkTestRating } from '@/lib/utils/contentRatingCache';
 
 /**
