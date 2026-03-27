@@ -1,6 +1,6 @@
 ---
 description: Assistant for the telescopetest-io project. Use for general development, feature work, debugging, and questions about this codebase.
-model: anthropic/claude-sonnet-4-5-20250929
+model: anthropic/claude-sonnet-4-6
 mode: primary
 permission:
   edit: ask
@@ -78,17 +78,44 @@ USER PREFERENCES:
 - No rounded corners on screenshots
 - Clean, simple, proper spacing
 
+STACK:
+
+- Astro v6 with @astrojs/cloudflare adapter
+- Cloudflare Workers (D1, R2, AI bindings)
+- Prisma v7 with @prisma/adapter-d1
+- React v19 for interactive components
+- Node.js 24+ required (lts/krypton)
+
 PROJECT:
 
-- telescopetest.io: users upload Telescope ZIP test results and view them;
-  hosted on Cloudflare Workers
-- Core flow: upload ZIP → store in R2 → metadata in D1 → serve results pages
+- telescopetest.io: users upload Telescope ZIP test results and view them
+- Hosted on Cloudflare Workers
+- Core flow: upload ZIP → store in R2 → metadata in D1 → optional AI content rating → serve results pages
+- Environments: development (local), staging (remote), production (remote)
+
+DEV WORKFLOW:
+
+- `npm run dev` → astro dev with Cloudflare adapter (hot reload, local D1/R2 simulation)
+- `npm run dev:setup` → one-time setup (creates DB, runs migrations, generates Prisma client + types)
+- `npm run migrate:development` → apply migrations locally via wrangler
+- `npm run generate` → regenerate Prisma client after schema changes
+- `npm run cf-typegen` → regenerate worker-configuration.d.ts after wrangler.jsonc changes
+
+BUILD & DEPLOY:
+
+- `npm run build:{env}` → astro build (creates dist/ for Workers)
+- `npm run deploy:{env}` → build + wrangler deploy to Cloudflare
+- Wrangler uploads dist/ built by Astro (NOT standalone wrangler dev)
+- Entry point: @astrojs/cloudflare/entrypoints/server
 
 GOTCHAS:
 
-- wrangler.jsonc root config has fake placeholder values for D1/R2 — always pass --env development|staging|production
-- `npm run dev` hardcodes environment: 'development' in astro.config.mjs — no way to run locally against staging/production
-- `npm run preview` = full Workers runtime, no hot reload; closest to production behavior locally
-- No migrate:production script — production migrations run via GitHub Actions in parent monorepo (@cloudflare/telescope)
-- Fresh clone order: npm install → create local D1 → set DATABASE_URL in .env → npm run generate → npm run cf-typegen
-- worker-configuration.d.ts and generated/prisma/ are both gitignored — must regenerate both on fresh clone
+- Astro v6 requires excluding @prisma/client/runtime/wasm-compiler-edge from Vite bundling (uses ?module import)
+- wrangler.jsonc needs --env flag (development|staging|production) — root config is just structure
+- `npm run dev` uses astro dev (NOT wrangler dev) — Astro is the dev server, wrangler is deploy tool
+- No migrate:production script — production migrations run via GitHub Actions in parent monorepo
+- Fresh clone: npm install → npm run dev:setup (automates DB + migrations + Prisma + typegen)
+- worker-configuration.d.ts and generated/prisma/ are gitignored — regenerate on fresh clone
+- Prisma migrations: manual workflow (wrangler d1 migrations create → prisma migrate diff → wrangler apply)
+- AI content rating: optionally disabled in development, enabled in staging/production (ENABLE_AI_RATING env var)
+- Date fields (test_date, created_at): Int (Unix seconds), not DateTime — manual conversion required

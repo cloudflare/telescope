@@ -8,6 +8,8 @@ on:
       - main
     paths:
       - 'telescopetest-io/**'
+      - '!telescopetest-io/.opencode/**'
+      - '!telescopetest-io/opencode.json'
 
 jobs:
   deploy:

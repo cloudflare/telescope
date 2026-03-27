@@ -1,6 +1,6 @@
 ---
 description: Specialist for Astro components, pages, and CSS in telescopetest-io. Use when building or modifying UI — pages, components, layouts, or styles.
-model: anthropic/claude-sonnet-4-5-20250929
+model: anthropic/claude-sonnet-4-6
 mode: subagent
 temperature: 0.2
 tools:
@@ -45,11 +45,38 @@ CSS RULES:
 
 STACK:
 
-- Astro v5 server-rendered
-- Icons: @phosphor-icons/react/ssr
-- Layouts: Layout.astro → Page.astro → content
+- Astro v6 (upgraded Mar 2026) with @astrojs/cloudflare adapter
+- React v19 for interactive components (@astrojs/react integration)
+- Icons: @phosphor-icons/react (v2.1.10)
+- Layouts: Layout.astro (global styles, theme) → Page.astro (nav wrapper) → content
+- File-based routing in src/pages/
+
+KEY COMPONENTS:
+
+- AllMetrics.astro - Core Web Vitals display
+- Bottlenecks.astro - Performance bottleneck detection
+- Console.astro - Browser console logs viewer
+- FilmstripVideo.astro - Filmstrip/video player
+- MetricCard.astro - Individual metric display
+- Resources.astro - Resource loading table
+- ScreenshotDisplay.astro - Screenshot viewer (no rounded corners)
+- TestCard.astro - Test result card for grid/list
+- TestInfoPanel.astro - Test metadata sidebar
+- Waterfall.astro - Network waterfall chart
+- TopNav.astro - Global navigation
+
+PAGES:
+
+- index.astro - Landing page (standalone, does NOT use Layout.astro)
+- upload.astro - Upload interface
+- results.astro - Test results list/grid
+- results/[testId].astro - Individual test detail page
 
 GOTCHAS:
 
+- Astro v6 requires new SSR adapter API — breaking change from v4
 - Astro scoped CSS doesn't apply to dynamic classes in template strings - use `class:list={[...]}` or `is:global`
-- index.astro is a standalone marketing page — does NOT use Layout.astro, Page.astro, CSS vars, or TopNav; changes to Layout.astro have no effect on it
+- index.astro is standalone marketing page — does NOT use Layout.astro, Page.astro, CSS vars, or TopNav
+- All pages use `export const prerender = false` (SSR with D1/R2 access at runtime)
+- Client-side utilities must live in src/lib/<feature>/ — import via ESM in <script> blocks (Vite bundles them)
+- Node.js 24+ required — older versions won't work
