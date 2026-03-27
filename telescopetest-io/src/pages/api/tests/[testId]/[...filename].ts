@@ -1,60 +1,13 @@
 import { env } from 'cloudflare:workers';
 
 import type { APIContext, APIRoute } from 'astro';
-import path from 'node:path';
-import { getPrismaClient } from '@/lib/prisma/client';
-import { getTestRating } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
 import {
   isValidTestId,
   isExpectedTelescopeFile,
   toPosixPath,
 } from '@/lib/utils/security';
-
-/**
- * Check test rating with cache
- * Cache key format: https://rating/{testId}
- * TTL: immutable (ratings never change once final)
- * Only caches final ratings (SAFE or UNSAFE), not UNKNOWN or IN_PROGRESS
- */
-async function checkTestRating(
-  context: APIContext,
-  testId: string,
-): Promise<string> {
-  const cacheKey = `https://rating/${testId}`;
-  // try cache read
-  const cache = await caches.open('rating-cache');
-  try {
-    const cached = await cache.match(cacheKey);
-    if (cached) {
-      return await cached.text();
-    }
-  } catch (error) {
-    console.warn(`[Cache] Cache read error (ignoring):`, error);
-  }
-  // otherwise read from DB
-  const prisma = getPrismaClient(context);
-  const test = await getTestRating(prisma, testId);
-  if (!test) {
-    return ContentRating.UNKNOWN;
-  }
-  // if not UNKNOWN or IN_PROGRESS (temp states), write cache
-  const isFinalRating =
-    test.rating === ContentRating.SAFE || test.rating === ContentRating.UNSAFE;
-  if (isFinalRating) {
-    try {
-      await cache.put(
-        cacheKey,
-        new Response(test.rating, {
-          headers: { 'Cache-Control': 'public, max-age=31536000, immutable' },
-        }),
-      );
-    } catch (error) {
-      console.warn(`[Cache] Cache write error (ignoring):`, error);
-    }
-  }
-  return test.rating;
-}
+import { checkTestRating } from '@/lib/utils/contentRatingCache';
 
 /**
  * Serve files from R2 bucket
@@ -114,7 +67,10 @@ export const GET: APIRoute = async (context: APIContext) => {
     };
     // For non-media files, force download to prevent inline rendering
     // Allow images and videos to render inline
-    if (!['png', 'jpg', 'webm'].includes(ext || '')) {
+    // HAR files use testId.har as filename for better identification
+    if (ext === 'har') {
+      headers['Content-Disposition'] = `attachment; filename="${testId}.har"`;
+    } else if (!['png', 'jpg', 'webm'].includes(ext || '')) {
       headers['Content-Disposition'] =
         `attachment; filename="${normalizedFilename}"`;
     }
