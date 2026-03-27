@@ -4,11 +4,16 @@ import { zipSync } from 'fflate';
 import type { APIContext, APIRoute } from 'astro';
 import { ContentRating } from '@/lib/types/tests';
 import { checkTestRating } from '@/lib/utils/contentRatingCache';
+import { isValidTestId } from '@/lib/utils/security';
 
 export const GET: APIRoute = async (context: APIContext) => {
   const { testId } = context.params;
   if (!testId) {
     return new Response('Missing testId', { status: 400 });
+  }
+  // Validate testId format: YYYY_MM_DD_HH_MM_SS_UUID
+  if (!isValidTestId(testId)) {
+    return new Response('Invalid testId format', { status: 400 });
   }
   const aiEnabled = env.ENABLE_AI_RATING === 'true';
   if (aiEnabled) {
