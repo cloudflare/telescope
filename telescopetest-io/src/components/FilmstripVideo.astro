@@ -5,12 +5,10 @@ import type { MetricsJson } from '@/lib/types/metrics';
 interface Props {
   testId: string;
   metrics: MetricsJson | null;
+  assetsBaseUrl: string;
 }
-const { testId, metrics } = Astro.props;
-const assetBase =
-  env.ENABLE_AI_RATING === 'true' && env.PUBLIC_ASSETS_URL
-    ? `${env.PUBLIC_ASSETS_URL}/${testId}`
-    : `/api/tests/${testId}`;
+const { testId, metrics, assetsBaseUrl } = Astro.props;
+const assetBase = assetsBaseUrl ? `${assetsBaseUrl}/${testId}` : `/api/tests/${testId}`;
 let frameRate = 1;
 try {
   const configObj = await env.RESULTS_BUCKET.get(`${testId}/config.json`);

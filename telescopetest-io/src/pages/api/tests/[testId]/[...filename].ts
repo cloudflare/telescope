@@ -30,13 +30,24 @@ export const GET: APIRoute = async (context: APIContext) => {
     return new Response('Invalid file', { status: 400 });
   }
   const aiEnabled = env.ENABLE_AI_RATING === 'true';
+  const key = `${testId}/${normalizedFilename}`;
+
+  // If AI enabled and public bucket is configured, check public bucket first.
+  // Only SAFE files are ever copied there, so no D1 query needed.
+  // Falls back to the private bucket + rating check for non-migrated tests.
+  if (aiEnabled && env.PUBLIC_ASSETS_URL && env.PUBLIC_RESULTS_BUCKET) {
+    const publicObj = await env.PUBLIC_RESULTS_BUCKET.head(key);
+    if (publicObj) {
+      return Response.redirect(`${env.PUBLIC_ASSETS_URL}/${key}`, 302);
+    }
+  }
+
   if (aiEnabled) {
     const rating = await checkTestRating(context, testId);
     if (rating !== ContentRating.SAFE) {
       return new Response('Test file not available', { status: 404 });
     }
   }
-  const key = `${testId}/${normalizedFilename}`;
   try {
     const r2Start = Date.now();
     const object = await env.RESULTS_BUCKET.get(key);
