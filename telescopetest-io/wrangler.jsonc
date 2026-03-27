@@ -1,106 +1,139 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "telescopetest-io",
-	"account_id": "4b1c95badf17540db82cd8b431ae3eb0",
-	"main": "@astrojs/cloudflare/entrypoints/server",
-	"compatibility_date": "2026-03-17",
-	"compatibility_flags": [
-		"nodejs_compat",
-		"global_fetch_strictly_public"
-	],
-	"observability": {
-		"enabled": true,
-	},
-	"env": {
-		"development": {
-			"vars": {
-				"ENABLE_AI_RATING": "false",
-			},
-			"assets": {
-				"binding": "ASSETS",
-				"directory": "./dist",
-			},
-			"d1_databases": [
-				{
-					"binding": "TELESCOPE_DB",
-					"database_name": "telescope-db-development",
-					"database_id": "9cb42d60-b1d5-4447-a04b-86ea48225f87",
-					"migrations_dir": "migrations",
-				},
-			],
-			"r2_buckets": [
-				{
-					"binding": "RESULTS_BUCKET",
-					"bucket_name": "results-bucket-development",
-				},
-			],
-			"ai": {
-				"binding": "AI",
-			},
-		},
-		"staging": {
-			"vars": {
-				"ENABLE_AI_RATING": "true",
-			},
-			"routes": [
-				{
-					"pattern": "staging.telescopetest.io",
-					"custom_domain": true,
-				},
-			],
-			"assets": {
-				"binding": "ASSETS",
-				"directory": "./dist",
-			},
-			"d1_databases": [
-				{
-					"binding": "TELESCOPE_DB",
-					"database_name": "telescope-db-staging",
-					"database_id": "88626165-c6c0-42bf-9e7d-c9317aa98968",
-					"migrations_dir": "migrations",
-				},
-			],
-			"r2_buckets": [
-				{
-					"binding": "RESULTS_BUCKET",
-					"bucket_name": "results-bucket-staging",
-				},
-			],
-			"ai": {
-				"binding": "AI",
-			},
-		},
-		"production": {
-			"vars": {
-				"ENABLE_AI_RATING": "true",
-			},
-			"routes": [
-				{
-					"pattern": "telescopetest.io",
-					"custom_domain": true,
-				},
-			],
-			"assets": {
-				"binding": "ASSETS",
-				"directory": "./dist",
-			},
-			"d1_databases": [
-				{
-					"binding": "TELESCOPE_DB",
-					"database_name": "telescope-db",
-					"database_id": "db0baebd-6b49-434b-bc31-fc9224ef4585",
-					"migrations_dir": "migrations",
-				},
-			],
-			"r2_buckets": [
-				{
-					"binding": "RESULTS_BUCKET",
-					"bucket_name": "results-bucket",
-				},
-			],
-			"ai": {
-				"binding": "AI",
-			},
-		},
-	},
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "telescopetest-io",
+  "account_id": "4b1c95badf17540db82cd8b431ae3eb0",
+  "main": "./src/worker.ts",
+  "compatibility_date": "2026-03-17",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "observability": {
+    "enabled": true,
+  },
+  "env": {
+    "development": {
+      "vars": {
+        "ENABLE_AI_RATING": "false",
+        "PUBLIC_ASSETS_URL": "https://assets-dev.telescopetest.io",
+      },
+      "assets": {
+        "binding": "ASSETS",
+        "directory": "./dist",
+      },
+      "d1_databases": [
+        {
+          "binding": "TELESCOPE_DB",
+          "database_name": "telescope-db-development",
+          "database_id": "9cb42d60-b1d5-4447-a04b-86ea48225f87",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "RESULTS_BUCKET",
+          "bucket_name": "results-bucket-development",
+        },
+        {
+          "binding": "PUBLIC_RESULTS_BUCKET",
+          "bucket_name": "results-bucket-public-development",
+        },
+      ],
+      "ai": {
+        "binding": "AI",
+      },
+      "workflows": [
+        {
+          "name": "ai-content-rating-development",
+          "binding": "AI_RATING_WORKFLOW",
+          "class_name": "AiContentRatingWorkflow",
+        },
+      ],
+    },
+    "staging": {
+      "vars": {
+        "ENABLE_AI_RATING": "true",
+        "PUBLIC_ASSETS_URL": "https://assets-staging.telescopetest.io",
+      },
+      "routes": [
+        {
+          "pattern": "staging.telescopetest.io",
+          "custom_domain": true,
+        },
+      ],
+      "assets": {
+        "binding": "ASSETS",
+        "directory": "./dist",
+      },
+      "d1_databases": [
+        {
+          "binding": "TELESCOPE_DB",
+          "database_name": "telescope-db-staging",
+          "database_id": "88626165-c6c0-42bf-9e7d-c9317aa98968",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "RESULTS_BUCKET",
+          "bucket_name": "results-bucket-staging",
+        },
+        {
+          "binding": "PUBLIC_RESULTS_BUCKET",
+          "bucket_name": "results-bucket-public-staging",
+        },
+      ],
+      "ai": {
+        "binding": "AI",
+      },
+      "workflows": [
+        {
+          "name": "ai-content-rating-staging",
+          "binding": "AI_RATING_WORKFLOW",
+          "class_name": "AiContentRatingWorkflow",
+        },
+      ],
+    },
+    "production": {
+      "vars": {
+        "ENABLE_AI_RATING": "true",
+        "PUBLIC_ASSETS_URL": "https://assets.telescopetest.io",
+      },
+      "routes": [
+        {
+          "pattern": "telescopetest.io",
+          "custom_domain": true,
+        },
+      ],
+      "assets": {
+        "binding": "ASSETS",
+        "directory": "./dist",
+      },
+      "d1_databases": [
+        {
+          "binding": "TELESCOPE_DB",
+          "database_name": "telescope-db",
+          "database_id": "db0baebd-6b49-434b-bc31-fc9224ef4585",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "RESULTS_BUCKET",
+          "bucket_name": "results-bucket",
+        },
+        {
+          "binding": "PUBLIC_RESULTS_BUCKET",
+          "bucket_name": "results-bucket-public",
+        },
+      ],
+      "ai": {
+        "binding": "AI",
+      },
+      "workflows": [
+        {
+          "name": "ai-content-rating",
+          "binding": "AI_RATING_WORKFLOW",
+          "class_name": "AiContentRatingWorkflow",
+        },
+      ],
+    },
+  },
 }

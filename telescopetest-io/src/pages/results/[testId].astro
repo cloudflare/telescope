@@ -69,11 +69,18 @@ let ttfb = getTtfb(null);
 let transferBytes = extractTransferSize(null);
 let durationMs = extractDuration(null);
 
+// Base URL for served assets: public CDN when AI enabled, worker endpoint when disabled
+const assetsBaseUrl = aiEnabled && env.PUBLIC_ASSETS_URL ? env.PUBLIC_ASSETS_URL : '';
+
 if (!isUnsafe && !isUnknown) {
   // --- Screenshot ---
   const screenshotKey = `${testId}/screenshot.png`;
   const screenshotObj = await env.RESULTS_BUCKET.head(screenshotKey);
-  screenshotUrl = screenshotObj ? `/api/tests/${testId}/screenshot.png` : null;
+  if (screenshotObj) {
+    screenshotUrl = assetsBaseUrl
+      ? `${assetsBaseUrl}/${testId}/screenshot.png`
+      : `/api/tests/${testId}/screenshot.png`;
+  }
 
   // --- HAR (browser version + existence check for Waterfall) ---
   try {
@@ -295,7 +302,7 @@ if (!isUnsafe) {
             </div>
 
             <div slot="waterfall">
-              <Waterfall testId={testId} hasHar={hasHar} />
+              <Waterfall testId={testId} hasHar={hasHar} assetsBaseUrl={assetsBaseUrl} />
             </div>
 
             <div slot="filmstrip-video">
