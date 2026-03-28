@@ -16,6 +16,7 @@ import {
   createTest,
   findTestIdByZipKey,
 } from '@/lib/repositories/testRepository';
+import { canTriggerWorkflow } from '@/lib/utils/assetAccess';
 
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
@@ -242,8 +243,8 @@ export const POST: APIRoute = async (context: APIContext) => {
     );
 
     // Trigger AI rating workflow — runs in background with no timeout limit
-    if (env.ENABLE_AI_RATING === 'true' && env.AI_RATING_WORKFLOW) {
-      await env.AI_RATING_WORKFLOW.create({
+    if (canTriggerWorkflow()) {
+      await env.AI_RATING_WORKFLOW!.create({
         params: { testId, url: config.url },
       });
     }

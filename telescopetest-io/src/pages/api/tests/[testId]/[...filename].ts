@@ -7,7 +7,8 @@ import {
   isExpectedTelescopeFile,
   toPosixPath,
 } from '@/lib/utils/security';
-import { checkTestRating } from '@/lib/utils/contentRatingCache';
+import { checkTestRating, resolvePublicUrl } from '@/lib/utils/assetAccess';
+import { isAiEnabled } from '@/lib/utils/assetAccess';
 
 /**
  * Serve files from R2 bucket
@@ -29,20 +30,14 @@ export const GET: APIRoute = async (context: APIContext) => {
   if (!isExpectedTelescopeFile(normalizedFilename)) {
     return new Response('Invalid file', { status: 400 });
   }
-  const aiEnabled = env.ENABLE_AI_RATING === 'true';
   const key = `${testId}/${normalizedFilename}`;
 
-  // If AI enabled and public bucket is configured, check public bucket first.
-  // Only SAFE files are ever copied there, so no D1 query needed.
-  // Falls back to the private bucket + rating check for non-migrated tests.
-  if (aiEnabled && env.PUBLIC_ASSETS_URL && env.PUBLIC_RESULTS_BUCKET) {
-    const publicObj = await env.PUBLIC_RESULTS_BUCKET.head(key);
-    if (publicObj) {
-      return Response.redirect(`${env.PUBLIC_ASSETS_URL}/${key}`, 302);
-    }
-  }
+  // Check public bucket first — only SAFE files are ever copied there, no D1 needed.
+  // Falls back to private bucket + rating check for non-migrated tests.
+  const publicUrl = await resolvePublicUrl(key);
+  if (publicUrl) return Response.redirect(publicUrl, 302);
 
-  if (aiEnabled) {
+  if (isAiEnabled()) {
     const rating = await checkTestRating(context, testId);
     if (rating !== ContentRating.SAFE) {
       return new Response('Test file not available', { status: 404 });

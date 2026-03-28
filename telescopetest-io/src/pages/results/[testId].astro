@@ -1,5 +1,7 @@
 ---
 import { env } from 'cloudflare:workers';
+import { isAiEnabled } from '@/lib/utils/assetAccess';
+import { resolveAssetBase } from '@/lib/utils/assetAccess';
 
 import Page from '@/layouts/Page.astro';
 import MetricCard from '@/components/MetricCard.astro';
@@ -39,7 +41,7 @@ if (!testId) {
   return Astro.redirect('/results');
 }
 
-const aiEnabled = env.ENABLE_AI_RATING === 'true';
+const aiEnabled = isAiEnabled();
 
 const prisma = getPrismaClient(Astro);
 const test = await getTestById(prisma, testId);
@@ -76,10 +78,7 @@ let resolvedAssetBase = '';
 if (!isUnsafe && !isUnknown) {
   // Check if files have been copied to the public bucket (tests uploaded before
   // workflow deployment won't be there yet — fall back to worker endpoint).
-  if (aiEnabled && env.PUBLIC_ASSETS_URL && env.PUBLIC_RESULTS_BUCKET) {
-    const inPublicBucket = await env.PUBLIC_RESULTS_BUCKET.head(`${testId}/screenshot.png`);
-    resolvedAssetBase = inPublicBucket ? env.PUBLIC_ASSETS_URL : '';
-  }
+  resolvedAssetBase = await resolveAssetBase(testId);
 
   // --- Screenshot ---
   if (resolvedAssetBase) {

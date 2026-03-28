@@ -1,5 +1,6 @@
 ---
 import { env } from 'cloudflare:workers';
+import { isAiEnabled } from '@/lib/utils/assetAccess';
 
 import type { Tests } from '@/lib/types/tests';
 
@@ -17,7 +18,7 @@ const viewLayout =
   savedView === 'grid' || savedView === 'vertical' ? savedView : 'vertical';
 
 // Fetch all tests from D1
-const aiEnabled = env.ENABLE_AI_RATING === 'true';
+const aiEnabled = isAiEnabled();
 const prisma = getPrismaClient(Astro);
 const tests = await getAllTests(prisma, aiEnabled);
 
