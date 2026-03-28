@@ -5,8 +5,10 @@ import type { MetricsJson } from '@/lib/types/metrics';
 interface Props {
   testId: string;
   metrics: MetricsJson | null;
+  assetsBaseUrl: string;
 }
-const { testId, metrics } = Astro.props;
+const { testId, metrics, assetsBaseUrl } = Astro.props;
+const assetBase = assetsBaseUrl ? `${assetsBaseUrl}/${testId}` : `/api/tests/${testId}`;
 let frameRate = 1;
 try {
   const configObj = await env.RESULTS_BUCKET.get(`${testId}/config.json`);
@@ -55,7 +57,7 @@ try {
       return {
         filename,
         frameNum,
-        url: `/api/tests/${testId}/filmstrip/${filename}`,
+        url: `${assetBase}/filmstrip/${filename}`,
       };
     })
     .sort((a, b) => a.frameNum - b.frameNum);
@@ -82,7 +84,7 @@ try {
       obj.key.endsWith('.webm'),
   );
   if (videoFile) {
-    videoUrl = `/api/tests/${testId}/${videoFile.key.replace(`${testId}/`, '')}`;
+    videoUrl = `${assetBase}/${videoFile.key.replace(`${testId}/`, '')}`;
   }
 } catch (error) {
   console.error('Error loading filmstrip/video:', error);

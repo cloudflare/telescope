@@ -1,9 +1,10 @@
 import { env } from 'cloudflare:workers';
+import { isAiEnabled } from '@/lib/utils/assetAccess';
 import { zipSync } from 'fflate';
 
 import type { APIContext, APIRoute } from 'astro';
 import { ContentRating } from '@/lib/types/tests';
-import { checkTestRating } from '@/lib/utils/contentRatingCache';
+import { checkTestRating } from '@/lib/utils/assetAccess';
 import { isValidTestId } from '@/lib/utils/security';
 
 export const GET: APIRoute = async (context: APIContext) => {
@@ -15,8 +16,7 @@ export const GET: APIRoute = async (context: APIContext) => {
   if (!isValidTestId(testId)) {
     return new Response('Invalid testId format', { status: 400 });
   }
-  const aiEnabled = env.ENABLE_AI_RATING === 'true';
-  if (aiEnabled) {
+  if (isAiEnabled()) {
     const rating = await checkTestRating(context, testId);
     if (rating !== ContentRating.SAFE) {
       return new Response('Test file not available', { status: 404 });

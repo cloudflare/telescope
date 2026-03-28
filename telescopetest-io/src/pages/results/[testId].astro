@@ -1,5 +1,7 @@
 ---
 import { env } from 'cloudflare:workers';
+import { isAiEnabled } from '@/lib/utils/assetAccess';
+import { resolveAssetBase } from '@/lib/utils/assetAccess';
 
 import Page from '@/layouts/Page.astro';
 import MetricCard from '@/components/MetricCard.astro';
@@ -39,7 +41,7 @@ if (!testId) {
   return Astro.redirect('/results');
 }
 
-const aiEnabled = env.ENABLE_AI_RATING === 'true';
+const aiEnabled = isAiEnabled();
 
 const prisma = getPrismaClient(Astro);
 const test = await getTestById(prisma, testId);
@@ -69,11 +71,22 @@ let ttfb = getTtfb(null);
 let transferBytes = extractTransferSize(null);
 let durationMs = extractDuration(null);
 
+// Resolved CDN base — set inside the safe block below if files exist in public bucket.
+// Falls back to empty string so worker endpoint is used for non-migrated tests.
+let resolvedAssetBase = '';
+
 if (!isUnsafe && !isUnknown) {
+  // Check if files have been copied to the public bucket (tests uploaded before
+  // workflow deployment won't be there yet — fall back to worker endpoint).
+  resolvedAssetBase = await resolveAssetBase(testId);
+
   // --- Screenshot ---
-  const screenshotKey = `${testId}/screenshot.png`;
-  const screenshotObj = await env.RESULTS_BUCKET.head(screenshotKey);
-  screenshotUrl = screenshotObj ? `/api/tests/${testId}/screenshot.png` : null;
+  if (resolvedAssetBase) {
+    screenshotUrl = `${resolvedAssetBase}/${testId}/screenshot.png`;
+  } else {
+    const screenshotObj = await env.RESULTS_BUCKET.head(`${testId}/screenshot.png`);
+    screenshotUrl = screenshotObj ? `/api/tests/${testId}/screenshot.png` : null;
+  }
 
   // --- HAR (browser version + existence check for Waterfall) ---
   try {
@@ -295,11 +308,11 @@ if (!isUnsafe) {
             </div>
 
             <div slot="waterfall">
-              <Waterfall testId={testId} hasHar={hasHar} />
+              <Waterfall testId={testId} hasHar={hasHar} assetsBaseUrl={resolvedAssetBase} />
             </div>
 
             <div slot="filmstrip-video">
-              <FilmstripVideo testId={testId} metrics={metrics} />
+              <FilmstripVideo testId={testId} metrics={metrics} assetsBaseUrl={resolvedAssetBase} />
             </div>
 
             <div slot="resources">

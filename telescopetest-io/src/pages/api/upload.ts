@@ -10,14 +10,13 @@ import { z } from 'zod';
 import { normalizeAndFilterZipFiles, toPosixPath } from '@/lib/utils/security';
 import { generateTestId } from '@/lib/utils/testId';
 
-import { TestSource, ContentRating } from '@/lib/types/tests';
+import { TestSource } from '@/lib/types/tests';
 import { getPrismaClient } from '@/lib/prisma/client';
 import {
   createTest,
   findTestIdByZipKey,
-  updateContentRating,
 } from '@/lib/repositories/testRepository';
-import { rateUrlContent } from '@/lib/ai/ai-content-rater';
+import { canTriggerWorkflow } from '@/lib/utils/assetAccess';
 
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
@@ -243,20 +242,11 @@ export const POST: APIRoute = async (context: APIContext) => {
       },
     );
 
-    // Rate the URL content via Workers AI — fire-and-forget after response is built
-    if (env.ENABLE_AI_RATING === 'true' && env.AI) {
-      context.locals.cfContext.waitUntil(
-        (async () => {
-          await updateContentRating(prisma, testId, ContentRating.IN_PROGRESS);
-          const rating = await rateUrlContent(
-            env.AI!,
-            testConfig.url,
-            normalizedUnzipped['metrics.json'],
-            normalizedUnzipped['screenshot.png'],
-          );
-          await updateContentRating(prisma, testId, rating);
-        })(),
-      );
+    // Trigger AI rating workflow — runs in background with no timeout limit
+    if (canTriggerWorkflow()) {
+      await env.AI_RATING_WORKFLOW!.create({
+        params: { testId, url: config.url },
+      });
     }
 
     return response;

@@ -1,7 +1,26 @@
+import { env } from 'cloudflare:workers';
 import type { APIContext } from 'astro';
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestRating } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
+
+export function isAiEnabled(): boolean {
+  return env.ENABLE_AI_RATING === 'true';
+}
+
+export function canTriggerWorkflow(): boolean {
+  return isAiEnabled() && !!env.AI_RATING_WORKFLOW;
+}
+
+function hasPublicBucket(): boolean {
+  return (
+    isAiEnabled() && !!env.PUBLIC_ASSETS_URL && !!env.PUBLIC_RESULTS_BUCKET
+  );
+}
+
+function publicCdnUrl(key: string): string {
+  return `${env.PUBLIC_ASSETS_URL}/${key}`;
+}
 
 /**
  * Check test rating with cache
@@ -43,4 +62,28 @@ export async function checkTestRating(
     }
   }
   return test.rating;
+}
+
+/**
+ * Returns the public CDN URL for a given R2 key if the file has been copied
+ * to the public bucket, or null if not (e.g. test predates workflow deployment).
+ *
+ * Use in API endpoints to redirect to CDN instead of serving through the Worker.
+ */
+export async function resolvePublicUrl(key: string): Promise<string | null> {
+  if (!hasPublicBucket()) return null;
+  const obj = await env.PUBLIC_RESULTS_BUCKET!.head(key);
+  return obj ? publicCdnUrl(key) : null;
+}
+
+/**
+ * Returns the public CDN base URL if a test's files are in the public bucket,
+ * or empty string if not. Uses the screenshot as a proxy for migration status.
+ *
+ * Use in page frontmatter to build all asset URLs for a results page.
+ */
+export async function resolveAssetBase(testId: string): Promise<string> {
+  if (!hasPublicBucket()) return '';
+  const obj = await env.PUBLIC_RESULTS_BUCKET!.head(`${testId}/screenshot.png`);
+  return obj ? env.PUBLIC_ASSETS_URL! : '';
 }
