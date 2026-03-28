@@ -47,6 +47,7 @@
     "vitest": "^4.0.6"
   },
   "dependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@sitespeed.io/throttle": "^5.0.0",
     "adm-zip": "^0.5.16",
     "commander": "^10.0.0",
