@@ -2,16 +2,15 @@
 interface Props {
   testId: string;
   hasHar: boolean;
-  assetsBaseUrl: string;
 }
 
-const { testId, hasHar, assetsBaseUrl } = Astro.props;
+const { testId, hasHar } = Astro.props;
 ---
 
 {!hasHar ? (
   <p class="wf-unavailable">No HAR file available for this test.</p>
 ) : (
-    <div class="wf-root" id="wf-root" data-test-id={testId} data-assets-base-url={assetsBaseUrl}>
+    <div class="wf-root" id="wf-root" data-test-id={testId}>
 
     <!-- Legend — fully static HTML, no JS needed -->
     <div class="wf-legend" aria-label="Waterfall chart legend">
@@ -822,7 +821,6 @@ const { testId, hasHar, assetsBaseUrl } = Astro.props;
     const root = document.getElementById('wf-root');
     if (!root) return;
     const testId = root.dataset.testId!;
-    const assetsBaseUrl = root.dataset.assetsBaseUrl || '';
     const loadingEl = document.getElementById('wf-loading') as HTMLElement;
     const errorEl = document.getElementById('wf-error') as HTMLElement;
     try {

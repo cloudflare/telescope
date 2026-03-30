@@ -12,7 +12,8 @@
     "development": {
       "vars": {
         "ENABLE_AI_RATING": "false",
-        "PUBLIC_ASSETS_URL": "https://assets-dev.telescopetest.io",
+        // PUBLIC_ASSETS_URL intentionally absent — the CDN domain is remote-only and
+        // would break local asset serving. Assets always go through /api/tests/* in dev.
       },
       "assets": {
         "binding": "ASSETS",
@@ -50,7 +51,7 @@
     "staging": {
       "vars": {
         "ENABLE_AI_RATING": "true",
-        "PUBLIC_ASSETS_URL": "https://assets-staging.telescopetest.io",
+        "PUBLIC_ASSETS_URL": "https://assets-staging.telescopetest.io", // no trailing slash
       },
       "routes": [
         {
@@ -94,7 +95,7 @@
     "production": {
       "vars": {
         "ENABLE_AI_RATING": "true",
-        "PUBLIC_ASSETS_URL": "https://assets.telescopetest.io",
+        "PUBLIC_ASSETS_URL": "https://assets.telescopetest.io", // no trailing slash
       },
       "routes": [
         {

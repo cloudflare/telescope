@@ -12,22 +12,20 @@ export function canTriggerWorkflow(): boolean {
   return isAiEnabled() && !!env.AI_RATING_WORKFLOW;
 }
 
-function hasPublicBucket(): boolean {
-  return (
-    isAiEnabled() && !!env.PUBLIC_ASSETS_URL && !!env.PUBLIC_RESULTS_BUCKET
-  );
+// true only when both the public bucket binding and CDN URL are configured
+export function hasPublicBucket(): boolean {
+  return !!env.PUBLIC_ASSETS_URL && !!env.PUBLIC_RESULTS_BUCKET;
 }
 
-function publicCdnUrl(key: string): string {
-  return `${env.PUBLIC_ASSETS_URL}/${key}`;
+// returns the CDN base URL if this test's files exist in the public bucket, empty string otherwise
+// uses config.json as check — it's always present
+export async function resolveAssetBase(testId: string): Promise<string> {
+  if (!hasPublicBucket()) return '';
+  const obj = await env.PUBLIC_RESULTS_BUCKET!.head(`${testId}/config.json`);
+  return obj ? env.PUBLIC_ASSETS_URL! : '';
 }
 
-/**
- * Check test rating with cache
- * Cache key format: https://rating/{testId}
- * TTL: immutable (ratings never change once final)
- * Only caches final ratings (SAFE or UNSAFE), not UNKNOWN or IN_PROGRESS
- */
+// checks content rating for a test, with immutable cache for final ratings (SAFE/UNSAFE)
 export async function checkTestRating(
   context: APIContext,
   testId: string,
@@ -62,28 +60,4 @@ export async function checkTestRating(
     }
   }
   return test.rating;
-}
-
-/**
- * Returns the public CDN URL for a given R2 key if the file has been copied
- * to the public bucket, or null if not (e.g. test predates workflow deployment).
- *
- * Use in API endpoints to redirect to CDN instead of serving through the Worker.
- */
-export async function resolvePublicUrl(key: string): Promise<string | null> {
-  if (!hasPublicBucket()) return null;
-  const obj = await env.PUBLIC_RESULTS_BUCKET!.head(key);
-  return obj ? publicCdnUrl(key) : null;
-}
-
-/**
- * Returns the public CDN base URL if a test's files are in the public bucket,
- * or empty string if not. Uses the screenshot as a proxy for migration status.
- *
- * Use in page frontmatter to build all asset URLs for a results page.
- */
-export async function resolveAssetBase(testId: string): Promise<string> {
-  if (!hasPublicBucket()) return '';
-  const obj = await env.PUBLIC_RESULTS_BUCKET!.head(`${testId}/screenshot.png`);
-  return obj ? env.PUBLIC_ASSETS_URL! : '';
 }

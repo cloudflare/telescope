@@ -8,7 +8,9 @@ interface Props {
   assetsBaseUrl: string;
 }
 const { testId, metrics, assetsBaseUrl } = Astro.props;
-const assetBase = assetsBaseUrl ? `${assetsBaseUrl}/${testId}` : `/api/tests/${testId}`;
+const assetBase = assetsBaseUrl
+  ? `${assetsBaseUrl}/${testId}`
+  : `/api/tests/${testId}`;
 let frameRate = 1;
 try {
   const configObj = await env.RESULTS_BUCKET.get(`${testId}/config.json`);

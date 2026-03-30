@@ -25,12 +25,18 @@ export const GET: APIRoute = async (context: APIContext) => {
   const bucket = env.RESULTS_BUCKET;
   const prefix = `${testId}/`;
   try {
-    // Use R2 list() function that matches the prefix: https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#r2listoptions
-    const listed = await bucket.list({ prefix });
-    if (!listed.objects || listed.objects.length === 0) {
+    // Paginate R2 list() — returns at most 1000 objects per call
+    // https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#r2listoptions
+    let listed = await bucket.list({ prefix });
+    const allObjects = [...listed.objects];
+    while (listed.truncated) {
+      listed = await bucket.list({ prefix, cursor: listed.cursor });
+      allObjects.push(...listed.objects);
+    }
+    if (allObjects.length === 0) {
       return new Response('No files found for this test', { status: 404 });
     }
-    const keys = listed.objects
+    const keys = allObjects
       .map(obj => obj.key)
       .filter(key => key.slice(prefix.length)); // filter out empty paths upfront
     const files: Record<string, Uint8Array> = {};

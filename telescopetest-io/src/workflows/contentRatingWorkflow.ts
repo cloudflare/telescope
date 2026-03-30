@@ -1,9 +1,9 @@
-import { WorkflowEntrypoint, WorkflowStep } from 'cloudflare:workers';
-import type { WorkflowEvent } from 'cloudflare:workers';
+import { WorkflowEntrypoint } from 'cloudflare:workers';
+import type { WorkflowEvent, WorkflowStep } from 'cloudflare:workers';
 import { PrismaD1 } from '@prisma/adapter-d1';
 import { PrismaClient } from '@/generated/prisma/client';
 
-import { rateUrlContent } from '@/lib/ai/ai-content-rater';
+import { rateUrlContent } from '@/lib/ai/aiContentRater';
 import { updateContentRating } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
 
@@ -12,12 +12,16 @@ export type RatingParams = {
   url: string;
 };
 
+const VALID_RATINGS = new Set<string>(Object.values(ContentRating));
+
 export class AiContentRatingWorkflow extends WorkflowEntrypoint<
   Env,
   RatingParams
 > {
   async run(event: WorkflowEvent<RatingParams>, step: WorkflowStep) {
     const { testId, url } = event.payload;
+    // WorkflowEntrypoint has no Astro context.locals, so Prisma is instantiated
+    // directly here rather than via the shared getPrismaClient() helper.
     const adapter = new PrismaD1(this.env.TELESCOPE_DB!);
     const prisma = new PrismaClient({ adapter });
 
@@ -27,8 +31,8 @@ export class AiContentRatingWorkflow extends WorkflowEntrypoint<
       });
 
       // Fetch R2 files and run AI rating in one step to avoid
-      // serializing binary data across step boundaries
-      const rating = (await step.do('run-ai-rating', async () => {
+      // serializing binary data across step boundaries.
+      const rawRating = await step.do('run-ai-rating', async () => {
         const [metricsObj, screenshotObj] = await Promise.all([
           this.env.RESULTS_BUCKET!.get(`${testId}/metrics.json`),
           this.env.RESULTS_BUCKET!.get(`${testId}/screenshot.png`),
@@ -40,15 +44,32 @@ export class AiContentRatingWorkflow extends WorkflowEntrypoint<
           ? new Uint8Array(await screenshotObj.arrayBuffer())
           : undefined;
         return rateUrlContent(this.env.AI!, url, metricsBytes, screenshotBytes);
-      })) as ContentRating;
+      });
 
-      // Copy SAFE files to public bucket, delete UNSAFE files from private bucket
+      // step.do returns unknown — validate before use so an unexpected value
+      // doesn't silently fall through to the else branch and delete files.
+      if (typeof rawRating !== 'string' || !VALID_RATINGS.has(rawRating)) {
+        throw new Error(`Unexpected rating value from AI: ${rawRating}`);
+      }
+      const rating = rawRating as ContentRating;
+
+      // Copy SAFE files to public bucket, delete UNSAFE files from private bucket.
+      // Paginate R2 list() — returns at most 1000 objects per call.
       await step.do('handle-result', async () => {
-        const listed = await this.env.RESULTS_BUCKET!.list({
+        let listed = await this.env.RESULTS_BUCKET!.list({
           prefix: `${testId}/`,
         });
+        const objects = [...listed.objects];
+        while (listed.truncated) {
+          listed = await this.env.RESULTS_BUCKET!.list({
+            prefix: `${testId}/`,
+            cursor: listed.cursor,
+          });
+          objects.push(...listed.objects);
+        }
+
         if (rating === ContentRating.SAFE) {
-          for (const obj of listed.objects) {
+          for (const obj of objects) {
             const file = await this.env.RESULTS_BUCKET!.get(obj.key);
             if (file) {
               await this.env.PUBLIC_RESULTS_BUCKET!.put(obj.key, file.body, {
@@ -57,10 +78,15 @@ export class AiContentRatingWorkflow extends WorkflowEntrypoint<
             }
           }
         } else {
-          for (const obj of listed.objects) {
+          for (const obj of objects) {
             await this.env.RESULTS_BUCKET!.delete(obj.key);
           }
         }
+      });
+
+      // Persist the rating in its own step so file I/O and DB write are
+      // independently retryable — if either step fails, only that step retries.
+      await step.do('persist-rating', async () => {
         await updateContentRating(prisma, testId, rating);
       });
     } catch (error) {

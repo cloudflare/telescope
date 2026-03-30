@@ -242,11 +242,11 @@ export const POST: APIRoute = async (context: APIContext) => {
       },
     );
 
-    // Trigger AI rating workflow — runs in background with no timeout limit
+    // Trigger AI rating workflow — fire and forget, does not block the response
     if (canTriggerWorkflow()) {
-      await env.AI_RATING_WORKFLOW!.create({
-        params: { testId, url: config.url },
-      });
+      context.locals.cfContext.waitUntil(
+        env.AI_RATING_WORKFLOW!.create({ params: { testId, url: config.url } }),
+      );
     }
 
     return response;
