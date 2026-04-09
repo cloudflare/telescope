@@ -5,6 +5,7 @@ import type {
   BrowserConfigEntry,
   LaunchOptions,
 } from './types.js';
+import { DEFAULT_BROWSER_HEIGHT, DEFAULT_BROWSER_WIDTH } from './defaultOptions.js';
 
 const TRUTHY_VALUES = new Set(['true', '1', 'yes', 'on']);
 const FALSY_VALUES = new Set(['false', '0', 'no', 'off']);
@@ -265,6 +266,19 @@ class BrowserConfig {
       };
     }
 
+    // collect device info and insert device emulation settings into browser config
+    if (options.device) {
+      browserConfig.userAgent = options.device.userAgent;
+      browserConfig.deviceScaleFactor = options.device.deviceScaleFactor;
+      browserConfig.isMobile = options.device.isMobile;
+      browserConfig.hasTouch = options.device.hasTouch;
+      browserConfig.viewport.width = options.device.viewport.width;
+      browserConfig.recordVideo.size.width = options.device.viewport.width;
+      browserConfig.viewport.height = options.device.viewport.height;
+      browserConfig.recordVideo.size.height = options.device.viewport.height;
+    }
+
+    // allow client CLI args to override device width + height settings
     if (options.width) {
       browserConfig.viewport.width = options.width;
       browserConfig.recordVideo.size.width = options.width;
@@ -276,6 +290,17 @@ class BrowserConfig {
 
     if (options.userAgent) {
       browserConfig.userAgent = options.userAgent;
+    }
+    // if width and height are not set by the user
+    // and device is not set by the user
+    // use provided default values for viewport and video recording sizes
+    if (!options.width && ! options.device) {
+      browserConfig.viewport.width = DEFAULT_BROWSER_WIDTH;
+      browserConfig.recordVideo.size.width = DEFAULT_BROWSER_WIDTH;
+    }
+    if (!options.height && ! options.device) {
+      browserConfig.viewport.height = DEFAULT_BROWSER_HEIGHT;
+      browserConfig.recordVideo.size.height = DEFAULT_BROWSER_HEIGHT;
     }
 
     return browserConfig;
