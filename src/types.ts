@@ -176,8 +176,8 @@ export interface LaunchOptions {
   firefoxPrefs?: Record<string, string | number | boolean>;
   cpuThrottle?: number;
   connectionType?: ConnectionType;
-  width?: number | false;
-  height?: number | false;
+  width?: number;
+  height?: number;
   frameRate?: number;
   disableJS?: boolean;
   debug?: boolean;
@@ -195,7 +195,7 @@ export interface LaunchOptions {
   command?: string[];
   delay?: Record<string, number>;
   delayUsing?: DelayMethod;
-  device?: CustomDeviceDescriptor | false;
+  device?: CustomDeviceDescriptor;
 }
 
 /**
@@ -203,8 +203,8 @@ export interface LaunchOptions {
  */
 export interface DefaultOptions {
   browser: BrowserName;
-  width: number | false;
-  height: number | false;
+  width?: number;
+  height?: number;
   frameRate: number;
   timeout: number;
   blockDomains: string[];
@@ -222,7 +222,7 @@ export interface DefaultOptions {
   dry: boolean;
   delay: Record<string, number>;
   delayUsing: DelayMethod;
-  device: CustomDeviceDescriptor | false;
+  device?: CustomDeviceDescriptor;
 }
 
 // ============================================================================
@@ -661,7 +661,7 @@ export interface CLIOptions {
   delayUsing?: DelayMethod;
   userAgent?: string;
   agentExtra?: string;
-  device?: string | false;
+  device?: string;
 }
 
 // ============================================================================

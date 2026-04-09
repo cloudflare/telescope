@@ -3,6 +3,7 @@ import type { SuccessfulTestResult } from '../src/index.js';
 import { launchTest } from '../src/index.js';
 import { BrowserConfig } from '../src/browsers.js';
 import { normalizeCLIConfig } from '../src/config.js';
+import type { LaunchOptions, BrowserConfigOptions } from '../src/types.js';
 import { describe, it, expect, beforeAll } from 'vitest';
 
 const browsers = BrowserConfig.getBrowsers();
@@ -22,23 +23,28 @@ describe.each(browsers)(
     describe.each(target_devices)(
       'Setting device emulation updates the config for device: %s',
       device => {
-        let options = {
-          browser,
-          device: device,
-          url: '../tests/sandbox/index.html',
-        };
-        var config_options = normalizeCLIConfig(options);
+        let config_options: LaunchOptions;
+        let config: BrowserConfigOptions;
+
+        beforeAll(() => {
+          config_options = normalizeCLIConfig({
+            browser,
+            device: device,
+            url: '../tests/sandbox/index.html',
+          });
+          config = new BrowserConfig().getBrowserConfig(
+            browser,
+            config_options,
+          );
+        });
+
         it(`Test device emulation does not set default width and height values for browser: ${browser}`, () => {
           expect(config_options && typeof config_options === 'object').toBe(
             true,
           );
-          expect(config_options.width).toBe(false);
-          expect(config_options.height).toBe(false);
+          expect(config_options.width).toBeUndefined();
+          expect(config_options.height).toBeUndefined();
         });
-        let config = new BrowserConfig().getBrowserConfig(
-          browser,
-          config_options,
-        );
         it(`Setting device emulation creates a valid config object for browser: ${browser}`, () => {
           expect(config && typeof config === 'object').toBe(true);
         });
@@ -74,14 +80,23 @@ describe.each(browsers)(
     describe.each(target_devices)(
       'Setting device emulation updates the config for device: %s',
       device => {
-        let options = {
-          browser,
-          device: device,
-          url: '../tests/sandbox/index.html',
-          width: 1122,
-          height: 3344,
-        };
-        var config_options = normalizeCLIConfig(options);
+        let config_options: LaunchOptions;
+        let config: BrowserConfigOptions;
+
+        beforeAll(() => {
+          config_options = normalizeCLIConfig({
+            browser,
+            device: device,
+            url: '../tests/sandbox/index.html',
+            width: 1122,
+            height: 3344,
+          });
+          config = new BrowserConfig().getBrowserConfig(
+            browser,
+            config_options,
+          );
+        });
+
         it(`Test device emulation allows width and height values to override device settings for browser: ${browser}`, () => {
           expect(config_options && typeof config_options === 'object').toBe(
             true,
@@ -89,10 +104,6 @@ describe.each(browsers)(
           expect(config_options.width).toBe(1122);
           expect(config_options.height).toBe(3344);
         });
-        let config = new BrowserConfig().getBrowserConfig(
-          browser,
-          config_options,
-        );
         // test collecting device data for desktop devices
         if (device.toLowerCase().includes('desktop')) {
           it(`Setting device emulation sets isMobile to false for desktop devices for browser: ${browser}`, () => {

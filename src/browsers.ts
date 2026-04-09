@@ -266,41 +266,31 @@ class BrowserConfig {
       };
     }
 
+    // resolve viewport dimensions: explicit user value > device value > fallback default
+    const resolvedWidth =
+      options.width ??
+      options.device?.viewport.width
+      ?? DEFAULT_BROWSER_WIDTH;
+    const resolvedHeight =
+      options.height ??
+      options.device?.viewport.height ??
+      DEFAULT_BROWSER_HEIGHT;
+
+    browserConfig.viewport.width = resolvedWidth;
+    browserConfig.viewport.height = resolvedHeight;
+    browserConfig.recordVideo.size.width = resolvedWidth;
+    browserConfig.recordVideo.size.height = resolvedHeight;
+
     // collect device info and insert device emulation settings into browser config
     if (options.device) {
       browserConfig.userAgent = options.device.userAgent;
       browserConfig.deviceScaleFactor = options.device.deviceScaleFactor;
       browserConfig.isMobile = options.device.isMobile;
       browserConfig.hasTouch = options.device.hasTouch;
-      browserConfig.viewport.width = options.device.viewport.width;
-      browserConfig.recordVideo.size.width = options.device.viewport.width;
-      browserConfig.viewport.height = options.device.viewport.height;
-      browserConfig.recordVideo.size.height = options.device.viewport.height;
-    }
-
-    // allow client CLI args to override device width + height settings
-    if (options.width) {
-      browserConfig.viewport.width = options.width;
-      browserConfig.recordVideo.size.width = options.width;
-    }
-    if (options.height) {
-      browserConfig.viewport.height = options.height;
-      browserConfig.recordVideo.size.height = options.height;
     }
 
     if (options.userAgent) {
       browserConfig.userAgent = options.userAgent;
-    }
-    // if width and height are not set by the user
-    // and device is not set by the user
-    // use provided default values for viewport and video recording sizes
-    if (!options.width && ! options.device) {
-      browserConfig.viewport.width = DEFAULT_BROWSER_WIDTH;
-      browserConfig.recordVideo.size.width = DEFAULT_BROWSER_WIDTH;
-    }
-    if (!options.height && ! options.device) {
-      browserConfig.viewport.height = DEFAULT_BROWSER_HEIGHT;
-      browserConfig.recordVideo.size.height = DEFAULT_BROWSER_HEIGHT;
     }
 
     return browserConfig;

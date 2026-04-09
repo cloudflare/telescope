@@ -459,14 +459,14 @@ describe('backward compat', () => {
     expect(result.width).toBe(1920);
   });
 
-  test('falls back to default (false) when width is undefined', () => {
+  test('falls back to default when width is undefined', () => {
     const result = normalizeCLIConfig({ url: 'https://example.com' });
-    expect(result.width).toBe(false);
+    expect(result.width).toBeUndefined();
   });
 
-  test('falls back to default (false) when height is undefined', () => {
+  test('falls back to default when height is undefined', () => {
     const result = normalizeCLIConfig({ url: 'https://example.com' });
-    expect(result.height).toBe(false);
+    expect(result.height).toBeUndefined();
   });
 
   test('uses cpuThrottle as a number directly', () => {

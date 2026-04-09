@@ -27,8 +27,8 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
   const config: LaunchOptions = {
     url: options.url,
     browser: (options.browser as BrowserName) || DEFAULT_OPTIONS.browser,
-    width: options.width ?? DEFAULT_OPTIONS.width,
-    height: options.height ?? DEFAULT_OPTIONS.height,
+    width: options.width,
+    height: options.height,
     frameRate: options.frameRate ?? DEFAULT_OPTIONS.frameRate,
     timeout: options.timeout ?? DEFAULT_OPTIONS.timeout,
     blockDomains: options.blockDomains || DEFAULT_OPTIONS.blockDomains,
@@ -47,7 +47,6 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     delayUsing: DEFAULT_OPTIONS.delayUsing,
     userAgent: options.userAgent,
     agentExtra: options.agentExtra,
-    device: DEFAULT_OPTIONS.device,
   };
 
   // Already-parsed JSON options: pass through directly
