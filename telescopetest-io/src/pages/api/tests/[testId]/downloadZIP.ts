@@ -1,9 +1,10 @@
 import { env } from 'cloudflare:workers';
+import { isAiEnabled } from '@/lib/utils/assetAccess';
 import { zipSync } from 'fflate';
 
 import type { APIContext, APIRoute } from 'astro';
 import { ContentRating } from '@/lib/types/tests';
-import { checkTestRating } from '@/lib/utils/contentRatingCache';
+import { checkTestRating } from '@/lib/utils/assetAccess';
 import { isValidTestId } from '@/lib/utils/security';
 
 export const GET: APIRoute = async (context: APIContext) => {
@@ -15,8 +16,7 @@ export const GET: APIRoute = async (context: APIContext) => {
   if (!isValidTestId(testId)) {
     return new Response('Invalid testId format', { status: 400 });
   }
-  const aiEnabled = env.ENABLE_AI_RATING === 'true';
-  if (aiEnabled) {
+  if (isAiEnabled()) {
     const rating = await checkTestRating(context, testId);
     if (rating !== ContentRating.SAFE) {
       return new Response('Test file not available', { status: 404 });
@@ -25,12 +25,18 @@ export const GET: APIRoute = async (context: APIContext) => {
   const bucket = env.RESULTS_BUCKET;
   const prefix = `${testId}/`;
   try {
-    // Use R2 list() function that matches the prefix: https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#r2listoptions
-    const listed = await bucket.list({ prefix });
-    if (!listed.objects || listed.objects.length === 0) {
+    // Paginate R2 list() — returns at most 1000 objects per call
+    // https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#r2listoptions
+    let listed = await bucket.list({ prefix });
+    const allObjects = [...listed.objects];
+    while (listed.truncated) {
+      listed = await bucket.list({ prefix, cursor: listed.cursor });
+      allObjects.push(...listed.objects);
+    }
+    if (allObjects.length === 0) {
       return new Response('No files found for this test', { status: 404 });
     }
-    const keys = listed.objects
+    const keys = allObjects
       .map(obj => obj.key)
       .filter(key => key.slice(prefix.length)); // filter out empty paths upfront
     const files: Record<string, Uint8Array> = {};

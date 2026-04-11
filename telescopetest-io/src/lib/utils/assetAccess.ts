@@ -1,14 +1,31 @@
+import { env } from 'cloudflare:workers';
 import type { APIContext } from 'astro';
 import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestRating } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
 
-/**
- * Check test rating with cache
- * Cache key format: https://rating/{testId}
- * TTL: immutable (ratings never change once final)
- * Only caches final ratings (SAFE or UNSAFE), not UNKNOWN or IN_PROGRESS
- */
+export function isAiEnabled(): boolean {
+  return env.ENABLE_AI_RATING === 'true';
+}
+
+export function canTriggerWorkflow(): boolean {
+  return isAiEnabled() && !!env.AI_RATING_WORKFLOW;
+}
+
+// true only when both the public bucket binding and CDN URL are configured
+export function hasPublicBucket(): boolean {
+  return !!env.PUBLIC_ASSETS_URL && !!env.PUBLIC_RESULTS_BUCKET;
+}
+
+// returns the CDN base URL if this test's files exist in the public bucket, empty string otherwise
+// uses config.json as check — it's always present
+export async function resolveAssetBase(testId: string): Promise<string> {
+  if (!hasPublicBucket()) return '';
+  const obj = await env.PUBLIC_RESULTS_BUCKET!.head(`${testId}/config.json`);
+  return obj ? env.PUBLIC_ASSETS_URL! : '';
+}
+
+// checks content rating for a test, with immutable cache for final ratings (SAFE/UNSAFE)
 export async function checkTestRating(
   context: APIContext,
   testId: string,
