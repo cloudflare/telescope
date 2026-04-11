@@ -55,9 +55,11 @@ import type {
 } from './types.js';
 import type { BrowserContext, Page, Route, Request } from 'playwright';
 import { delayUsingFulfill, delayUsingContinue } from './delay.js';
+import { AxeBuilder } from '@axe-core/playwright';
 
 class TestRunner {
   args: string[] = [];
+  axeResults?: {};
   consoleMessages: ConsoleMessage[] = [];
   browserConfig: BrowserConfigOptions;
   metrics?: Metrics;
@@ -380,9 +382,36 @@ class TestRunner {
     }
     //collect metrics
     await this.collectMetrics();
+
+    await this.collectAccessibilityMetrics();
+
     //close our browser instance
     if (this.browserInstance) {
       await this.browserInstance.close();
+    }
+  }
+
+  /**
+   * Collect Accessibility information using Axe
+   */
+  async collectAccessibilityMetrics(): Promise<void> {
+    if (this.options.a11y?.tags && this.page) {
+      const axe = new AxeBuilder({ page: this.page });
+
+      axe.withTags(this.options.a11y.tags);
+
+      if (this.options.a11y.exclude) {
+        this.options.a11y.exclude.forEach((idOrClass) => {
+          axe.exclude(idOrClass);
+        });
+      }
+
+      if (this.options.a11y.disable) {
+        axe.disableRules(this.options.a11y.disable);
+      }
+
+      const accessibilityScanResults = await axe.analyze();
+      this.axeResults = accessibilityScanResults;
     }
   }
 
@@ -791,6 +820,18 @@ class TestRunner {
         writeFileSync('./results/index.html', listHTML, 'utf8');
       } catch (err) {
         console.error('Error writing html file ' + err);
+      }
+    }
+
+    if (this.axeResults) {
+      try {
+        writeFileSync(
+          this.paths['results'] + '/a11y.json',
+          JSON.stringify(this.axeResults),
+          'utf8',
+        );
+      } catch (err) {
+        console.error('Error writing accessibility file ' + err);
       }
     }
 

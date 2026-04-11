@@ -36,3 +36,9 @@ export const StringArraySchema = z.array(z.string());
 
 export const PositiveIntSchema = z.coerce.number().int().positive();
 export const PositiveFloatSchema = z.coerce.number().positive();
+
+export const A11ySchema = z.object({
+  disable: z.union([z.array(z.string()), z.string()]).optional(),
+  exclude: z.union([z.array(z.string()), z.string()]).optional(),
+  tags: z.union([z.array(z.string()), z.string()]),
+});

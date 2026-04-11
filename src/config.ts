@@ -120,6 +120,10 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     config.uploadUrl = options.uploadUrl;
   }
 
+  if (options.a11y) {
+    config.a11y = options.a11y;
+  }
+
   return config;
 }
 
