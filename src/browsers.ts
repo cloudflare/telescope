@@ -6,10 +6,36 @@ import type {
   LaunchOptions,
 } from './types.js';
 
+const TRUTHY_VALUES = new Set(['true', '1', 'yes', 'on']);
+const FALSY_VALUES = new Set(['false', '0', 'no', 'off']);
+
+/**
+ * Parse an environment variable string as a boolean.
+ * Truthy values: 'true', '1', 'yes', 'on' (case-insensitive).
+ * Falsy values: 'false', '0', 'no', 'off' (case-insensitive).
+ * Unrecognised values fall back to `defaultValue`.
+ */
+function parseEnvBool(
+  value: string | undefined,
+  defaultValue: boolean,
+): boolean {
+  if (value === undefined) return defaultValue;
+  const lower = value.toLowerCase();
+  if (TRUTHY_VALUES.has(lower)) return true;
+  if (FALSY_VALUES.has(lower)) return false;
+  return defaultValue;
+}
+
 // should browsers be headless? defaults to false unless running in CI
-const headless = !!process.env.CI;
+// but can be overridden by explicitly setting HEADLESS to any truthy/falsy value
+const CI = parseEnvBool(process.env.CI, false);
+
+const headless: boolean = parseEnvBool(process.env.HEADLESS, CI);
 
 type BrowserConfigs = Record<BrowserName, BrowserConfigEntry>;
+
+// Check if running as root (uid 0) - requires --no-sandbox for Chrome
+const isRoot = process.getuid?.() === 0;
 
 class BrowserConfig {
   defaultChromiumArgs: string[] = [
@@ -38,13 +64,17 @@ class BrowserConfig {
     '--window-position="0,0"',
     '--window-size="1366,768"',
     '--remote-debugging-port=0',
+    // Required when running as root (Chrome won't start with sandbox enabled as root)
+    ...(isRoot ? ['--no-sandbox', '--disable-setuid-sandbox'] : []),
   ];
 
   defaultIgnoreArgs: string[] = [
     //this one is causing padding on the video oddly...
     //since the reported issue is the opposite: https://bugs.chromium.org/p/chromium/issues/detail?id=1277272
     // '--enable-automation',
-    '--no-sandbox',
+    // Ignore Playwright's default --no-sandbox when not root (force sandboxing for security)
+    // When running as root, we explicitly add --no-sandbox via defaultChromiumArgs
+    ...(isRoot ? [] : ['--no-sandbox']),
   ];
 
   defaultBrowserOptions: Pick<
@@ -111,10 +141,46 @@ class BrowserConfig {
   }
 
   static getBrowsers(): BrowserName[] {
+    const configuredBrowsers = Object.keys(
+      BrowserConfig.browserConfigs,
+    ) as BrowserName[];
+
     // only run firefox in CI (for now)
-    return process.env.CI
-      ? ['firefox']
-      : (Object.keys(BrowserConfig.browserConfigs) as BrowserName[]);
+    if (CI) {
+      return ['firefox'];
+    }
+
+    if (process.env.BROWSERS) {
+      const requestedBrowsers = process.env.BROWSERS.split(/[,\s]+/)
+        .map(browser => browser.trim().toLowerCase())
+        .filter(browser => browser.length > 0);
+
+      const envBrowsers = requestedBrowsers.filter(browser =>
+        configuredBrowsers.includes(browser as BrowserName),
+      ) as BrowserName[];
+
+      const invalidBrowsers = requestedBrowsers.filter(
+        browser => !configuredBrowsers.includes(browser as BrowserName),
+      );
+
+      if (invalidBrowsers.length > 0) {
+        console.warn(
+          `Ignoring unsupported browser name(s) from BROWSERS environment variable: ${invalidBrowsers.join(
+            ', ',
+          )}`,
+        );
+      }
+
+      if (envBrowsers.length === 0) {
+        console.warn(
+          'No valid browsers specified in BROWSERS environment variable; returning an empty browser list.',
+        );
+      }
+
+      return envBrowsers;
+    }
+
+    return configuredBrowsers;
   }
 
   addFirefoxPrefs(prefs: Record<string, string | number | boolean>): void {
@@ -206,6 +272,10 @@ class BrowserConfig {
     if (options.height) {
       browserConfig.viewport.height = options.height;
       browserConfig.recordVideo.size.height = options.height;
+    }
+
+    if (options.userAgent) {
+      browserConfig.userAgent = options.userAgent;
     }
 
     return browserConfig;

@@ -1,0 +1,155 @@
+---
+export interface Props {
+  testId: string;
+  url: string;
+  browser: string;
+  browserVersion?: string | null;
+  formattedDate: string;
+}
+
+const { testId, url, browser, browserVersion, formattedDate } = Astro.props;
+
+// Validate URL is http:// or https:// to prevent javascript: XSS
+let safeUrl = url;
+try {
+  const parsed = new URL(url);
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    safeUrl = 'about:blank'; // Fallback for non-HTTP(S) URLs
+  }
+} catch {
+  safeUrl = 'about:blank'; // Fallback for invalid URLs
+}
+
+// Map Playwright browser names to icon filenames
+const browserIconMap: Record<string, string> = {
+  chromium: 'chrome.png',
+  chrome: 'chrome.png',
+  firefox: 'firefox.png',
+  webkit: 'webkit.png',
+  msedge: 'msedge.png',
+};
+const browserIcon = browserIconMap[browser.toLowerCase()];
+---
+
+<div class="info-panel panel">
+  <dl class="info-list">
+    <div class="info-row">
+      <dt>Test Date</dt>
+      <dd>{formattedDate}</dd>
+    </div>
+    <div class="info-row">
+      <dt>Browser</dt>
+      <dd class="browser-display">
+        {browserIcon && (
+          <img
+            src={`/img/browsers/${browserIcon}`}
+            alt={browser}
+            class="browser-icon"
+          />
+        )}
+        <span class="capitalize">{browser}</span>
+        {browserVersion && <span class="browser-version">{browserVersion}</span>}
+      </dd>
+    </div>
+    <div class="info-row">
+      <dt>Test ID</dt>
+      <dd class="mono">{testId}</dd>
+    </div>
+    <div class="info-row">
+      <dt>URL</dt>
+      <dd class="url-wrap">
+        <!-- rel="noopener noreferrer" for security/privacy -->
+        <a href={safeUrl} target="_blank" rel="noopener noreferrer" class="url-link"
+          >{url}</a
+        >
+      </dd>
+    </div>
+  </dl>
+</div>
+
+<style>
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem; /* 12px */
+    padding: 1rem 1.25rem; /* 16px 20px */
+  }
+
+  .info-panel {
+    display: flex;
+    flex-direction: column;
+    width: 25rem; /* 400px - fixed width to match screenshot */
+  }
+
+  .info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* 12px */
+    margin: 0;
+  }
+
+  .info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem; /* 4px */
+  }
+
+  dt {
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  dd {
+    font-size: 0.9375rem; /* 15px */
+    font-weight: 400;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .url-wrap {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .url-link {
+    color: var(--brand);
+    text-decoration: none;
+  }
+
+  .url-link:hover {
+    text-decoration: underline;
+  }
+
+  .capitalize {
+    text-transform: capitalize;
+  }
+
+  .browser-display {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem; /* 6px */
+  }
+
+  .browser-icon {
+    width: 1rem; /* 16px */
+    height: 1rem;
+    flex-shrink: 0;
+  }
+
+  .browser-version {
+    color: var(--muted);
+    font-size: 0.8125rem; /* 13px */
+  }
+
+  .mono {
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
+    font-size: 0.8125rem; /* 13px */
+  }
+</style>

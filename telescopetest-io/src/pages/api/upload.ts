@@ -1,25 +1,27 @@
+import { env } from 'cloudflare:workers';
+
 import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
-import type { ConfigJson, TestConfig } from '@/lib/classes/TestConfig';
+import type { TestConfig } from '@/lib/types/tests';
 
+import path from 'node:path';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
+import { normalizeAndFilterZipFiles, toPosixPath } from '@/lib/utils/security';
+import { generateTestId } from '@/lib/utils/testId';
 
-import { generateTestId, TestSource } from '@/lib/classes/TestConfig';
+import { TestSource, ContentRating } from '@/lib/types/tests';
 import { getPrismaClient } from '@/lib/prisma/client';
 import {
   createTest,
   findTestIdByZipKey,
-} from '@/lib/repositories/test-repository';
+  updateContentRating,
+} from '@/lib/repositories/testRepository';
+import { rateUrlContent } from '@/lib/ai/ai-content-rater';
 
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
-/**
- * Extract file list from ZIP archive
- * Works in both Node.js (adm-zip) and Cloudflare Workers (fflate) environments
- * @param buffer - ArrayBuffer containing ZIP file data
- * @returns Promise<Unzipped> - Unzipped type return
- */
+// Extract file list from ZIP archive
 async function getUnzipped(buffer: ArrayBuffer): Promise<Unzipped> {
   const uint8Array = new Uint8Array(buffer);
   const unzipped = unzipSync(uint8Array, {
@@ -31,11 +33,7 @@ async function getUnzipped(buffer: ArrayBuffer): Promise<Unzipped> {
   return unzipped;
 }
 
-/**
- * Generate a SHA-256 hash of the buffer contents to use as unique identifier
- * @param buffer - ArrayBuffer containing the file data
- * @returns Promise<string> - Hex string of the hash
- */
+// Generate a SHA-256 hash of the buffer contents to use as unique identifier
 async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -50,7 +48,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       file: z.instanceof(File),
       name: z.string().optional(),
       description: z.string().optional(),
-      source: z.nativeEnum(TestSource),
+      source: z.enum(TestSource),
     });
     const formData = await context.request.formData();
     const result = uploadSchema.safeParse({
@@ -72,19 +70,17 @@ export const POST: APIRoute = async (context: APIContext) => {
     const unzipped = await getUnzipped(buffer);
     const files = Object.keys(unzipped);
     // Generate hash for unique R2 storage key
-    // TODO: make hash content-based, not ZIP based
     const zipKey = await generateContentHash(buffer);
-    // get env, wrapped from astro: https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-runtime
-    const env = context.locals.runtime.env;
     // Check if this exact content already exists in D1
     const prisma = getPrismaClient(context);
-    const existingTestId = await findTestIdByZipKey(prisma, zipKey);
-    if (existingTestId) {
+    const existing = await findTestIdByZipKey(prisma, zipKey);
+    if (existing) {
       return new Response(
         JSON.stringify({
           success: false,
           error: `Duplicate uploads are not allowed.`,
-          testId: existingTestId,
+          testId: existing.testId,
+          contentRating: existing.contentRating,
         }),
         {
           status: 409,
@@ -92,9 +88,11 @@ export const POST: APIRoute = async (context: APIContext) => {
         },
       );
     }
-    // Confirm the config file exists
-    const configFile = `config.json`;
-    if (!files.includes(configFile)) {
+    // Find if some ' .../config.json' exists
+    const configPath = files.find(
+      file => path.posix.basename(toPosixPath(file)) === 'config.json',
+    );
+    if (!configPath) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -103,8 +101,29 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
+    // Strip the directory prefix from all files and filter to only valid, secure files
+    const normalizedConfigPath = toPosixPath(configPath);
+    const dirName = path.posix.dirname(normalizedConfigPath);
+    const prefixToStrip = dirName === '.' ? '' : dirName + '/';
+    // Parse filepaths and filter files in one function
+    // IMPORTANT: silently drops all files not in expected list (such as index.html)
+    const normalizedUnzipped = normalizeAndFilterZipFiles(
+      unzipped,
+      prefixToStrip,
+    );
+    const validFiles = Object.keys(normalizedUnzipped);
+    // Ensure at least one valid file remains
+    if (validFiles.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'No valid Telescope output files found in ZIP after filtering',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
     // Extract config.json
-    const configBytes = unzipped[configFile];
+    const configBytes = normalizedUnzipped['config.json'];
     if (!configBytes) {
       return new Response(
         JSON.stringify({
@@ -128,9 +147,47 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
+    const configSchema = z.object({
+      url: z.string().refine(
+        url => {
+          try {
+            const parsed = new URL(url);
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+          } catch {
+            return false;
+          }
+        },
+        {
+          message: 'URL must be a valid HTTP or HTTPS URL',
+        },
+      ),
+      date: z.string(),
+      options: z
+        .object({
+          url: z.string(),
+        })
+        .passthrough(),
+      browserConfig: z
+        .object({
+          engine: z.string(),
+        })
+        .passthrough(),
+    });
+    type ConfigJson = z.infer<typeof configSchema>;
     let config: ConfigJson;
     try {
-      config = JSON.parse(configText);
+      const parsed = JSON.parse(configText);
+      const configResult = configSchema.safeParse(parsed);
+      if (!configResult.success) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Invalid config.json: ${configResult.error.issues.map(i => i.message).join(', ')}`,
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      config = configResult.data;
     } catch (error) {
       return new Response(
         JSON.stringify({
@@ -141,7 +198,9 @@ export const POST: APIRoute = async (context: APIContext) => {
       );
     }
     // Build test configuration object
-    const testId = generateTestId();
+    const testId = generateTestId(config.date);
+    const browser =
+      config.options.browser || config.browserConfig.engine || 'unknown';
     const testConfig: TestConfig = {
       testId,
       zipKey,
@@ -150,7 +209,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       source,
       url: config.url,
       testDate: Math.floor(new Date(config.date).getTime() / 1000),
-      browser: config.options.browser,
+      browser,
     };
     // Store test metadata in database
     try {
@@ -164,15 +223,15 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // store all unzipped files in R2 with {testId}/{filename} format
-    for (const filename of files) {
-      await env.RESULTS_BUCKET.put(`${testId}/${filename}`, unzipped[filename]);
+    // store all valid files in R2 with {testId}/{filename} format
+    for (const filename of validFiles) {
+      await env.RESULTS_BUCKET!.put(
+        `${testId}/${filename}`,
+        normalizedUnzipped[filename],
+      );
     }
-
-    // no need to disconnect manually b/c using Workers
-
-    // return success
-    return new Response(
+    // Build success response first
+    const response = new Response(
       JSON.stringify({
         success: true,
         testId: testId,
@@ -183,11 +242,26 @@ export const POST: APIRoute = async (context: APIContext) => {
         headers: { 'Content-Type': 'application/json' },
       },
     );
+
+    // Rate the URL content via Workers AI — fire-and-forget after response is built
+    if (env.ENABLE_AI_RATING === 'true' && env.AI) {
+      context.locals.cfContext.waitUntil(
+        (async () => {
+          await updateContentRating(prisma, testId, ContentRating.IN_PROGRESS);
+          const rating = await rateUrlContent(
+            env.AI!,
+            testConfig.url,
+            normalizedUnzipped['metrics.json'],
+            normalizedUnzipped['screenshot.png'],
+          );
+          await updateContentRating(prisma, testId, rating);
+        })(),
+      );
+    }
+
+    return response;
   } catch (error) {
     console.error('Upload error:', error);
-
-    // no need to disconnect manually b/c using Workers
-
     return new Response(
       JSON.stringify({
         success: false,

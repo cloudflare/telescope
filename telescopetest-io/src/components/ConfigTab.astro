@@ -1,0 +1,559 @@
+---
+import type { ConfigJson } from '@/lib/types/tests';
+
+interface Props {
+  testId: string;
+  config: ConfigJson | null;
+  hasHar: boolean;
+}
+
+const { testId, config, hasHar } = Astro.props;
+
+// Extract test-shaping options to display
+const testOptions: Array<{ label: string; value: string | null }> = [];
+
+if (config) {
+  const opts = config.options;
+  const bc = config.browserConfig;
+
+  // Browser engine and channel
+  const browserValue = opts.browser || bc.engine || null;
+  const channelSuffix = bc.channel ? ` (${bc.channel})` : '';
+  testOptions.push({ label: 'Browser', value: browserValue ? `${browserValue}${channelSuffix}` : null });
+
+  // Headless mode
+  testOptions.push({ label: 'Headless', value: bc.headless ? 'Yes' : 'No' });
+
+  // Viewport dimensions
+  const viewportValue =
+    bc.viewport?.width && bc.viewport?.height ? `${bc.viewport.width} × ${bc.viewport.height}` : null;
+  testOptions.push({ label: 'Viewport', value: viewportValue });
+
+  // User Agent
+  testOptions.push({ label: 'User Agent', value: opts.userAgent || bc.userAgent || null });
+
+  // Network throttling
+  const networkValue =
+    typeof opts.connectionType === 'string' ? opts.connectionType : opts.connectionType === false ? 'None' : null;
+  testOptions.push({ label: 'Network Throttling', value: networkValue });
+
+  // CPU throttling
+  const cpuValue =
+    typeof opts.cpuThrottle === 'number' && opts.cpuThrottle > 1
+      ? `${opts.cpuThrottle}x slowdown`
+      : null;
+  testOptions.push({ label: 'CPU Throttling', value: cpuValue });
+
+  // JavaScript
+  const jsValue = opts.disableJS === true ? 'Disabled' : bc.javaScriptEnabled === false ? 'Disabled' : null;
+  testOptions.push({ label: 'JavaScript', value: jsValue });
+
+  // Timeout
+  const timeoutValue = opts.timeout ? `${opts.timeout / 1000}s` : null;
+  testOptions.push({ label: 'Timeout', value: timeoutValue });
+
+  // Frame rate
+  const frameRateValue = opts.frameRate ? `${opts.frameRate} fps` : null;
+  testOptions.push({ label: 'Frame Rate', value: frameRateValue });
+
+  // Delay method
+  testOptions.push({ label: 'Delay Method', value: opts.delayUsing || null });
+
+  // Delay values
+  const delayValue = opts.delay && Object.keys(opts.delay).length > 0
+    ? Object.entries(opts.delay).map(([k, v]) => `${k}: ${v}ms`).join(', ')
+    : null;
+  testOptions.push({ label: 'Delays', value: delayValue });
+
+  // Blocked domains
+  const blockedValue = opts.blockDomains?.length
+    ? opts.blockDomains.join(', ')
+    : null;
+  testOptions.push({ label: 'Blocked Domains', value: blockedValue });
+
+  // Block patterns
+  const blockValue = opts.block?.length
+    ? opts.block.join(', ')
+    : null;
+  testOptions.push({ label: 'Block Patterns', value: blockValue });
+
+  // Override hosts
+  const overrideValue =
+    opts.overrideHost && Object.keys(opts.overrideHost).length > 0
+      ? Object.entries(opts.overrideHost)
+          .map(([k, v]) => `${k}→${v}`)
+          .join(', ')
+      : null;
+  testOptions.push({ label: 'Host Overrides', value: overrideValue });
+
+  // Headers (show count only, not names, for security)
+  const headersValue = opts.headers && Object.keys(opts.headers).length > 0
+    ? `${Object.keys(opts.headers).length} header(s)`
+    : null;
+  testOptions.push({ label: 'Custom Headers', value: headersValue });
+
+  // Firefox prefs
+  const firefoxPrefsValue = opts.firefoxPrefs && Object.keys(opts.firefoxPrefs).length > 0
+    ? `${Object.keys(opts.firefoxPrefs).length} preference(s)`
+    : bc.firefoxUserPrefs && Object.keys(bc.firefoxUserPrefs).length > 0
+      ? `${Object.keys(bc.firefoxUserPrefs).length} preference(s)`
+      : null;
+  testOptions.push({ label: 'Firefox Prefs', value: firefoxPrefsValue });
+
+  // Browser args
+  const argsValue = opts.args?.length
+    ? `${opts.args.length} arg(s)`
+    : bc.args?.length
+      ? `${bc.args.length} arg(s)`
+      : null;
+  testOptions.push({ label: 'Browser Args', value: argsValue });
+
+  // Ignored default args
+  const ignoredArgsValue = bc.ignoreDefaultArgs?.length
+    ? `${bc.ignoreDefaultArgs.length} ignored`
+    : null;
+  testOptions.push({ label: 'Ignored Default Args', value: ignoredArgsValue });
+
+  // Debug mode
+  testOptions.push({ label: 'Debug', value: opts.debug ? 'Yes' : null });
+
+  // HTML output
+  testOptions.push({ label: 'HTML Output', value: opts.html ? 'Yes' : null });
+
+  // Open HTML
+  testOptions.push({ label: 'Open HTML', value: opts.openHtml ? 'Yes' : null });
+
+  // List mode
+  testOptions.push({ label: 'List Mode', value: opts.list ? 'Yes' : null });
+
+  // Dry run
+  testOptions.push({ label: 'Dry Run', value: opts.dry ? 'Yes' : null });
+
+  // Agent Extra
+  testOptions.push({ label: 'Agent Extra', value: opts.agentExtra || null });
+}
+
+// Generate CLI command if available
+const cliCommand = config?.options.command
+  ? config.options.command.join(' ')
+  : null;
+
+// Filter out sensitive fields from config for display in full JSON viewer
+// Security: Remove credentials, tokens, and potentially sensitive browser flags
+// Note: The grid view above already shows counts for headers/args without exposing values
+const sanitizedConfig = config ? {
+  ...config,
+  options: (() => {
+    const { 
+      auth,           // Remove: HTTP credentials (username/password)
+      cookies,        // Remove: Session tokens and auth cookies
+      headers,        // Remove: May contain Authorization headers, API keys
+      uploadUrl,      // Remove: May contain auth tokens in URL params
+      zip,            // Remove: Internal flag, not useful for display
+      ...safeOptions 
+    } = config.options;
+    return safeOptions;
+  })(),
+  browserConfig: (() => {
+    const {
+      httpCredentials,  // Remove: HTTP auth credentials
+      env,              // Remove: Environment variables may contain secrets
+      args,             // Remove: Browser args may contain auth flags, file paths
+      ignoreDefaultArgs,// Remove: May expose sensitive browser configuration
+      ...safeBrowserConfig
+    } = config.browserConfig;
+    return safeBrowserConfig;
+  })()
+} : null;
+---
+
+<div class="config-container">
+  {
+    config ? (
+      <>
+        <div class="section-wrapper">
+          <h3>Downloads</h3>
+          <div class="section">
+            <div class="actions-grid">
+              <a
+                href={`/api/tests/${testId}/downloadZIP`}
+                class="action-btn"
+                download={`${testId}.zip`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Download ZIP
+              </a>
+              {hasHar && (
+                <a
+                  href={`/api/tests/${testId}/pageload.har`}
+                  class="action-btn"
+                  download={`${testId}.har`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
+                  </svg>
+                  Download HAR
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {cliCommand && (
+          <div class="section-wrapper">
+            <h3>Command Line</h3>
+            <div class="section">
+              <div class="cli-command-wrapper">
+                <div class="cli-command">
+                  <code id="cli-command-text">npx . {cliCommand}</code>
+                </div>
+                <button
+                  class="copy-btn"
+                  id="copy-cli-btn"
+                  type="button"
+                  title="Copy command"
+                  data-command={`npx . ${cliCommand}`}
+                >
+                  <svg
+                    class="copy-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  <svg
+                    class="check-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    style="display: none;"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div class="section-wrapper">
+          <h3>Test Configuration</h3>
+          <div class="section">
+            <div class="config-grid">
+              {testOptions.map(opt => (
+                <div class="config-item">
+                  <div class="config-label">{opt.label}</div>
+                  <div
+                    class={
+                      opt.value
+                        ? 'config-value'
+                        : 'config-value config-value--empty'
+                    }
+                  >
+                    {opt.value || 'N/A'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div class="section-wrapper">
+          <h3>Full Configuration</h3>
+          <div class="section">
+            <details class="config-details">
+              <summary>View config.json</summary>
+              <pre class="config-json">{JSON.stringify(sanitizedConfig, null, 2)}</pre>
+            </details>
+          </div>
+        </div>
+      </>
+    ) : (
+      <div class="config-unavailable">
+        <p>Configuration data unavailable for this test.</p>
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .config-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .section-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .section-wrapper h3 {
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .section {
+    padding: 0.75rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+      border-color 0.2s,
+      color 0.2s;
+  }
+
+  .action-btn:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+  }
+
+  .action-btn svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+  }
+
+  .cli-command-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .cli-command {
+    flex: 1;
+    overflow-x: auto;
+  }
+
+  .cli-command code {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8125rem;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    transition:
+      border-color 0.2s,
+      color 0.2s,
+      background 0.2s;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .copy-btn:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+  }
+
+  .copy-btn.copied {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgb(34, 197, 94);
+    color: rgb(34, 197, 94);
+  }
+
+  .copy-btn svg {
+    flex-shrink: 0;
+  }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .config-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .config-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .config-value {
+    font-size: 0.8125rem;
+    color: var(--text);
+    word-break: break-word;
+  }
+
+  .config-value--empty {
+    color: var(--muted);
+    opacity: 0.3;
+  }
+
+  .config-details summary {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.125rem 0;
+  }
+
+  .config-details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .config-details summary::before {
+    content: '▶';
+    font-size: 0.45rem;
+    transition: transform 0.15s;
+  }
+
+  .config-details[open] > summary::before {
+    transform: rotate(90deg);
+  }
+
+  .config-json {
+    margin: 0.375rem 0 0 0;
+    padding: 0.5rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--text);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .config-unavailable {
+    padding: 2.5rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .config-unavailable p {
+    margin: 0;
+  }
+
+  @media (max-width: 48rem) {
+    .actions-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .config-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  const copyBtn = document.getElementById('copy-cli-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const command = copyBtn.dataset.command;
+      if (!command) return;
+      try {
+        await navigator.clipboard.writeText(command);
+        const copyIcon = copyBtn.querySelector<SVGElement>('.copy-icon');
+        const checkIcon = copyBtn.querySelector<SVGElement>('.check-icon');
+        if (copyIcon && checkIcon) {
+          copyIcon.style.display = 'none';
+          checkIcon.style.display = 'block';
+        }
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+          if (copyIcon && checkIcon) {
+            copyIcon.style.display = 'block';
+            checkIcon.style.display = 'none';
+          }
+          copyBtn.classList.remove('copied');
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy command:', err);
+      }
+    });
+  }
+</script>
