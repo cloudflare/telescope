@@ -7,7 +7,7 @@
 Key subdirectories:
 
 - `src/` — TypeScript source compiled to `dist/`
-- `__tests__/` — Jest integration tests (excluded from tsconfig, compiled by ts-jest)
+- `__tests__/` — Vitest integration tests (excluded from tsconfig)
 - `processors/` — Standalone post-processing report generator (included in main tsconfig)
 - `telescopetest-io/` — Separate Astro + Cloudflare Workers web app (fully excluded from root tooling)
 
@@ -35,23 +35,24 @@ npm run prettier       # npx prettier --write .
 ### Test
 
 ```bash
-npm test               # build + jest --verbose --maxWorkers=1
+npm test               # build + vitest run
 npm run test:ci        # CI=true npm test
+npm run coverage       # vitest run --coverage
 ```
 
 **Run a single test file** (build first):
 
 ```bash
-npm run build && NODE_OPTIONS="--experimental-vm-modules --no-warnings" jest __tests__/cli.test.ts --verbose
+npm run build && npx vitest run __tests__/cli.test.ts
 ```
 
 **Run a single test by name:**
 
 ```bash
-npm run build && NODE_OPTIONS="--experimental-vm-modules --no-warnings" jest __tests__/cli.test.ts -t "generates a Har file" --verbose
+npm run build && npx vitest run __tests__/cli.test.ts -t "generates a Har file"
 ```
 
-**Important:** `--maxWorkers=1` is required — tests launch real browsers and cannot run in parallel. Tests that call `launchTest()` or spawn the CLI directly need explicit timeouts (60000–120000ms).
+**Important:** `maxWorkers: 1` is required — tests launch real browsers and cannot run in parallel. Tests that call `launchTest()` or spawn the CLI directly need explicit timeouts (60000–120000ms). See `vitest.config.ts` for configuration.
 
 ---
 
@@ -194,7 +195,7 @@ export async function launchTest(options: LaunchOptions): Promise<TestResult> { 
 
 ## Testing Guidelines
 
-- **Framework**: Jest v29 + ts-jest (ESM mode)
+- **Framework**: Vitest v4 + @vitest/coverage-v8 (ESM mode)
 - **Test files**: `__tests__/*.test.ts` only — helper utilities go in `__tests__/helpers.ts`
 - **Test style**: Integration tests that launch real browsers. Unit tests are rare.
 - Tests use `describe.each(browsers)` to run across the browser matrix
@@ -225,9 +226,40 @@ describe.each(browsers)('Feature: %s', browser => {
 
 ---
 
+## Validation
+
+CLI options and programmatic inputs are validated using **Zod** schemas:
+
+- **Schemas** are defined in `src/schemas.ts` — includes `CookieSchema`, `HeadersSchema`, `AuthSchema`, `FirefoxPrefsSchema`, `DelaySchema`, `PositiveIntSchema`, `PositiveFloatSchema`, etc.
+- **Validation utilities** are in `src/validation.ts`:
+  - `parseCLIOption(flagName, jsonString, schema)` — parses JSON strings from CLI args and validates against schema
+  - `parseUnknown(flagName, data, schema)` — validates already-parsed data
+  - `parseWithSchema(schema, value, flag)` — coerces and validates raw CLI strings
+  - `formatZodError(error)` — formats Zod validation errors for CLI output
+
+Validation is integrated into the CLI via Commander.js `argParser` functions that throw `InvalidArgumentError` on failure.
+
+---
+
+## Docker
+
+The project includes Docker support for containerized testing:
+
+- **Dockerfile** — Multi-stage build with Playwright dependencies
+- **docker-compose.yml** — Service orchestration
+
+Build and run:
+
+```bash
+docker build -t telescope .
+docker run --rm -v $(pwd)/results:/app/results telescope --url https://example.com
+```
+
+---
+
 ## Architecture Notes
 
-- **`telescopetest-io/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from root `tsconfig.json`, ESLint, Jest, and Prettier configs.
+- **`telescopetest-io/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from root `tsconfig.json`, ESLint, Vitest, and Prettier configs.
 - **Processors** (`processors/generate.ts`) are compiled with the main build but run as a standalone script: `node dist/processors/generate.js <results-dir>`. Guarded with `if (process.argv[1] === __filename)`.
 - **Runtime path resolution**: `testRunner.ts` detects whether it is running from compiled `dist/` or source via `currentDir.includes('/dist/')` — preserve this logic when modifying path-dependent code.
 - **Template files** are copied post-`tsc` in the `build` script — if you add new `.ejs` templates under `src/templates/`, update the `build` script accordingly.
