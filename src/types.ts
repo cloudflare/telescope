@@ -147,13 +147,15 @@ export interface BrowserConfigOptions {
 /**
  * Simplified browser configuration
  */
-export type SimplifiedBrowserConfigOptions = Omit<BrowserConfigOptions,
-  'httpCredentials' |
-  'javaScriptEnabled' |
-  'logger' |
-  'recordHar' |
-  'recordVideo' |
-  'userAgent'>;
+export type SimplifiedBrowserConfigOptions = Omit<
+  BrowserConfigOptions,
+  | 'httpCredentials'
+  | 'javaScriptEnabled'
+  | 'logger'
+  | 'recordHar'
+  | 'recordVideo'
+  | 'userAgent'
+>;
 
 // ============================================================================
 // Launch Options

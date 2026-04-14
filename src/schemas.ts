@@ -1,16 +1,18 @@
 import { z } from 'zod';
 
-export const CookieSchema = z.object({
-  name: z.string(),
-  value: z.string(),
-  domain: z.string().optional(),
-  path: z.string().optional(),
-  expires: z.number().optional(),
-  httpOnly: z.boolean().optional(),
-  secure: z.boolean().optional(),
-  sameSite: z.enum(['Strict', 'Lax', 'None']).optional(),
-  url: z.string().optional(),
-}).passthrough();
+export const CookieSchema = z
+  .object({
+    name: z.string(),
+    value: z.string(),
+    domain: z.string().optional(),
+    path: z.string().optional(),
+    expires: z.number().optional(),
+    httpOnly: z.boolean().optional(),
+    secure: z.boolean().optional(),
+    sameSite: z.enum(['Strict', 'Lax', 'None']).optional(),
+    url: z.string().optional(),
+  })
+  .passthrough();
 
 export const CookiesSchema = z.union([z.array(CookieSchema), CookieSchema]);
 
