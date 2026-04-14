@@ -88,7 +88,10 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
 
   if (options.block) {
     try {
-      config.block = parseJSONArrayOrCommaSeparatedStrings('--block', options.block);
+      config.block = parseJSONArrayOrCommaSeparatedStrings(
+        '--block',
+        options.block,
+      );
     } catch (err) {
       throw new Error(
         `Problem parsing "--block" options - ${(err as Error).message}`,
@@ -113,7 +116,7 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
   if (options.uploadUrl) {
     try {
       new URL(options.uploadUrl);
-    } catch (err) {
+    } catch (_err) {
       throw new Error(`--uploadUrl must be a valid URL`);
     }
 
@@ -131,7 +134,10 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
  * @param choices - List of options to a command line parameter
  * @returns The parsed list of options
  */
-function parseJSONArrayOrCommaSeparatedStrings(flagName: string, choices: string[]): string[] {
+function parseJSONArrayOrCommaSeparatedStrings(
+  flagName: string,
+  choices: string[],
+): string[] {
   const chosen: string[] = [];
 
   choices.forEach(opt_group => {
