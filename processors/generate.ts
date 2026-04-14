@@ -729,8 +729,8 @@ function generateHtml(
 
 function main() {
   if (process.argv.length < 3) {
-    console.log('Usage: node generate_visual_report.js <directory>');
-    console.log('Example: node generate_visual_report.js one');
+    console.log('Usage: node generate.js <directory>');
+    console.log('Example: node generate.js one');
     process.exit(1);
   }
 

@@ -2,12 +2,14 @@
 
 ## Repository Overview
 
-`@cloudflare/telescope` is a TypeScript browser performance testing library and CLI built on Playwright. It launches real browsers (Chrome, Firefox, Safari, Edge), collects HAR files, Web Vitals, and performance metrics, and produces HTML reports.
+`@cloudflare/telescope` is a TypeScript browser performance testing library and CLI built on Playwright. It launches real browsers (Chrome, Chrome Beta, Canary, Firefox, Safari, Edge), collects HAR files, Web Vitals, and performance metrics, and produces HTML reports.
 
 Key subdirectories:
 
 - `src/` — TypeScript source compiled to `dist/`
 - `__tests__/` — Vitest integration tests (excluded from tsconfig)
+- `tests/` — Static test fixtures (HTML, CSS, images) used by integration tests
+- `support/` — Browser support files (e.g., Firefox default `user.js` preferences)
 - `processors/` — Standalone post-processing report generator (included in main tsconfig)
 - `telescopetest-io/` — Separate Astro + Cloudflare Workers web app (fully excluded from root tooling)
 
@@ -36,7 +38,7 @@ npm run prettier       # npx prettier --write .
 
 ```bash
 npm test               # build + vitest run
-npm run test:ci        # CI=true npm test
+npm run test:ci        # export CI=true; npm test
 npm run coverage       # vitest run --coverage
 ```
 
@@ -141,6 +143,16 @@ export async function launchTest(options: LaunchOptions): Promise<TestResult> {
 
 Callers narrow with `if (result.success) { ... }`.
 
+The `Telescope` class in `src/index.ts` wraps `launchTest` for OOP-style usage:
+
+```typescript
+const telescope = new Telescope({
+  url: 'https://example.com',
+  browser: 'chrome',
+});
+const result = await telescope.run();
+```
+
 **2. Cleanup-even-on-error (resource management):**
 
 ```typescript
@@ -172,9 +184,9 @@ Validation errors throw directly: `throw new Error('Invalid browser name')`.
 ### Class and Module Organization
 
 - **One class per file**; file name matches the class name in `camelCase`
-- **Named exports** for everything (no `export default` for classes)
+- **Named exports** for everything — do not use `export default` in new code. (The one legacy exception is `export default function browserAgent()` in `src/index.ts`, used by `src/cli.ts`.)
 - Use **inheritance sparingly**: `ChromeRunner extends TestRunner` is the only hierarchy — subclass only to add browser-specific protocol logic (CDP), not general behavior
-- Factory functions select the right class: `getRunner(browserConfig)` returns `TestRunner | ChromeRunner`
+- Factory functions select the right class: `getRunner(options, browserConfig)` returns `TestRunner` (which may be a `ChromeRunner` subtype)
 - Use **`DEFAULT_OPTIONS`** in `src/defaultOptions.ts` as the canonical source for defaults — do not hardcode defaults in Commander.js options and the programmatic API separately
 
 ### JSDoc
@@ -199,13 +211,22 @@ export async function launchTest(options: LaunchOptions): Promise<TestResult> { 
 - **Test files**: `__tests__/*.test.ts` only — helper utilities go in `__tests__/helpers.ts`
 - **Test style**: Integration tests that launch real browsers. Unit tests are rare.
 - Tests use `describe.each(browsers)` to run across the browser matrix
-- In CI (`process.env.CI === 'true'`), only Firefox runs; locally, all 6 browsers run
+- In CI (`process.env.CI === 'true'`), only Firefox runs; locally, all 6 browsers run. Set the `BROWSERS` env var to override (e.g. `BROWSERS=chrome,firefox`)
 - Shared test helpers (`retrieveHAR`, `retrieveConfig`, `retrieveMetrics`) live in `__tests__/helpers.ts`
 - Use `msw/node` (`setupServer`, `http`, `HttpResponse`) to mock HTTP endpoints (e.g., upload APIs)
 - Tests that invoke the CLI use `spawnSync('node', ['dist/src/cli.js', ...])` — always build first
 
 ```typescript
 // Typical parameterized test
+import { launchTest } from '../src/index.js';
+import { describe, it, expect, beforeAll } from 'vitest';
+
+import { BrowserConfig } from '../src/browsers.js';
+import type { SuccessfulTestResult } from '../src/types.js';
+import { retrieveHAR } from './helpers.js';
+
+const browsers = BrowserConfig.getBrowsers();
+
 describe.each(browsers)('Feature: %s', browser => {
   let result: SuccessfulTestResult;
 
@@ -245,7 +266,7 @@ Validation is integrated into the CLI via Commander.js `argParser` functions tha
 
 The project includes Docker support for containerized testing:
 
-- **Dockerfile** — Multi-stage build with Playwright dependencies
+- **Dockerfile** — Single-stage build with Playwright dependencies
 - **docker-compose.yml** — Service orchestration
 
 Build and run:
@@ -261,5 +282,5 @@ docker run --rm -v $(pwd)/results:/app/results telescope --url https://example.c
 
 - **`telescopetest-io/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from root `tsconfig.json`, ESLint, Vitest, and Prettier configs.
 - **Processors** (`processors/generate.ts`) are compiled with the main build but run as a standalone script: `node dist/processors/generate.js <results-dir>`. Guarded with `if (process.argv[1] === __filename)`.
-- **Runtime path resolution**: `testRunner.ts` detects whether it is running from compiled `dist/` or source via `currentDir.includes('/dist/')` — preserve this logic when modifying path-dependent code.
+- **Runtime path resolution**: `testRunner.ts` detects whether it is running from compiled `dist/` or source via `isCompiledDist = currentDir.includes('/dist/')` — preserve this logic when modifying path-dependent code.
 - **Template files** are copied post-`tsc` in the `build` script — if you add new `.ejs` templates under `src/templates/`, update the `build` script accordingly.
