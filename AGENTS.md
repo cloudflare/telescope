@@ -278,6 +278,17 @@ docker run --rm -v $(pwd)/results:/app/results telescope --url https://example.c
 
 ---
 
+## Playwright version
+
+Package versions for Playwright packages must match or it will not install the right browsers or fail in other documented or unpredictable ways.
+
+- `playwright` package
+- `playwright-webkit` package
+- `@playwright/test` package
+- `mcr.microsoft.com/playwright:v<X.Y.Z>-noble` ci test container in [.github/workflows/test.yml](https://github.com/cloudflare/telescope/blob/690199fdb2aa4ce7af3065760ea28560b68f1775/.github/workflows/test.yml#L22)
+
+---
+
 ## Architecture Notes
 
 - **`telescopetest-io/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from root `tsconfig.json`, ESLint, Vitest, and Prettier configs.
