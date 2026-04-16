@@ -874,14 +874,19 @@ class TestRunner {
   }
 
   mergeEntries(harEntries: HarEntry[], lcpURL: string | null): HarEntry[] {
+    const harIndexByTelescopeId = new Map<string, number>();
+    for (let i = 0; i < harEntries.length; i++) {
+      const id = harEntries[i].request.headers.find(
+        h => h.name.toLowerCase() === TELESCOPE_ID_HEADER,
+      )?.value;
+      if (id) {
+        harIndexByTelescopeId.set(id, i);
+      }
+    }
+
     for (const request of this.requests) {
-      const indexToUpdate = harEntries.findIndex(entry =>
-        entry.request.headers.some(
-          h =>
-            h.name.toLowerCase() === TELESCOPE_ID_HEADER &&
-            h.value === request.telescopeId,
-        ),
-      );
+      const indexToUpdate =
+        harIndexByTelescopeId.get(request.telescopeId) ?? -1;
       if (indexToUpdate !== -1) {
         //we'll do our calculations now
         const connectEnd =
