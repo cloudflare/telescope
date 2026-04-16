@@ -334,7 +334,6 @@ class TestRunner {
         return;
       }
       const reqData: RequestData = {
-        url: data.url(),
         timing: data.timing(),
         telescopeId,
       };
@@ -919,7 +918,7 @@ class TestRunner {
           _response_start: request.timing.responseStart,
           _response_end: request.timing.responseEnd,
         };
-        if (request.url == lcpURL) {
+        if (harEntries[indexToUpdate].request.url === lcpURL) {
           updatedObject._is_lcp = true;
         }
         // replace the object at the specified index with the updated object
