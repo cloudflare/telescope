@@ -37,7 +37,7 @@ beforeAll(async () => {
     }
 
     if (req.url === '/' || req.url === '/index.html') {
-      // Dynamically generate HTML that references style.css on "localhost",
+      // Dynamically generate HTML that references style.css on "cloudflare.com",
       // which the overrideHost option will remap to 127.0.0.1.
       const addr = server.address() as AddressInfo;
       const html = `<!doctype html>
@@ -45,7 +45,7 @@ beforeAll(async () => {
   <head>
     <meta charset="UTF-8" />
     <title>Host Override Test</title>
-    <link rel="stylesheet" href="http://localhost:${addr.port}/style.css" />
+    <link rel="stylesheet" href="http://cloudflare.com:${addr.port}/style.css" />
   </head>
   <body>
     <h1>Host override test page</h1>
@@ -76,7 +76,7 @@ describe.each(browsers)(
         url: `http://127.0.0.1:${serverPort}/index.html`,
         browser,
         overrideHost: {
-          [`localhost:${serverPort}`]: `127.0.0.1:${serverPort}`,
+          [`cloudflare.com:${serverPort}`]: `127.0.0.1:${serverPort}`,
         },
       });
 
@@ -93,14 +93,24 @@ describe.each(browsers)(
 
         expect(styleCssEntries.length).toBeGreaterThanOrEqual(1);
 
-        // The style.css entry should have timing data populated by mergeEntries,
-        // verifying the x-telescope-id header survived through the host override
-        // route handler chain.
-        const entriesWithTimingData = styleCssEntries.filter(
-          (entry: HarEntry) => entry._dns_start !== undefined,
-        );
-
-        expect(entriesWithTimingData.length).toBe(styleCssEntries.length);
+        for (const cssEntry of styleCssEntries) {
+          expect(cssEntry).toMatchObject({
+            request: {
+              url: `http://127.0.0.1:${serverPort}/style.css`,
+            },
+            response: {
+              status: 200,
+            },
+            timings: {
+              dns: expect.any(Number),
+              connect: expect.any(Number),
+              ssl: expect.any(Number),
+              send: expect.any(Number),
+              wait: expect.any(Number),
+              receive: expect.any(Number),
+            },
+          });
+        }
       } finally {
         cleanupTestDirectory(testId);
       }
