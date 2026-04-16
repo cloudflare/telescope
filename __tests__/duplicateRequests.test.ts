@@ -12,7 +12,7 @@ import type {
   SuccessfulTestResult,
 } from '../src/types.js';
 
-import { retrieveHAR } from './helpers.js';
+import { cleanupTestDirectory, retrieveHAR } from './helpers.js';
 
 import { launchTest } from '../src/index.js';
 import { BrowserConfig } from '../src/browsers.js';
@@ -74,25 +74,30 @@ describe.each(browsers)(
       });
 
       expect(result.success).toBe(true);
+      const testId = (result as SuccessfulTestResult).testId;
 
-      const har = retrieveHAR((result as SuccessfulTestResult).testId);
-      expect(har).not.toBeNull();
+      try {
+        const har = retrieveHAR(testId);
+        expect(har).not.toBeNull();
 
-      const styleCssEntries = har!.log.entries.filter((entry: HarEntry) =>
-        entry.request.url.endsWith('/style.css'),
-      );
+        const styleCssEntries = har!.log.entries.filter((entry: HarEntry) =>
+          entry.request.url.endsWith('/style.css'),
+        );
 
-      // The page loads style.css via <link> and fetches it twice via JS,
-      // so we expect at least 2 HAR entries (browser may serve the 2nd from cache,
-      // but we should see at least 2 entries with the same URL in the HAR)
-      expect(styleCssEntries.length).toBeGreaterThanOrEqual(2);
+        // The page loads style.css via <link> and fetches it twice via JS,
+        // so we expect at least 2 HAR entries (browser may serve the 2nd from cache,
+        // but we should see at least 2 entries with the same URL in the HAR)
+        expect(styleCssEntries.length).toBeGreaterThanOrEqual(2);
 
-      // Each entry for the same URL should have its own timing data populated
-      const entriesWithTimingData = styleCssEntries.filter(
-        (entry: HarEntry) => entry._dns_start !== undefined,
-      );
+        // Each entry for the same URL should have its own timing data populated
+        const entriesWithTimingData = styleCssEntries.filter(
+          (entry: HarEntry) => entry._dns_start !== undefined,
+        );
 
-      expect(entriesWithTimingData.length).toBe(styleCssEntries.length);
+        expect(entriesWithTimingData.length).toBe(styleCssEntries.length);
+      } finally {
+        cleanupTestDirectory(testId);
+      }
     }, 120000);
   },
 );
