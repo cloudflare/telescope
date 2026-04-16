@@ -6,8 +6,11 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, afterAll, describe, expect, test } from 'vitest';
 
-import type { BrowserName, HarEntry } from '../src/types.js';
-import type { SuccessfulTestResult } from '../src/index.js';
+import type {
+  BrowserName,
+  HarEntry,
+  SuccessfulTestResult,
+} from '../src/types.js';
 
 import { retrieveHAR } from './helpers.js';
 
