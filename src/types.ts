@@ -430,7 +430,7 @@ export interface RequestTiming {
 export interface RequestData {
   url: string;
   timing: RequestTiming;
-  rawTimings?: boolean;
+  telescopeId: string;
 }
 
 /**

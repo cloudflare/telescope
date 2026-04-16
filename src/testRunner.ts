@@ -56,6 +56,8 @@ import type {
 import type { BrowserContext, Page, Route, Request } from 'playwright';
 import { delayUsingFulfill, delayUsingContinue } from './delay.js';
 
+const TELESCOPE_ID_HEADER = 'x-telescope-id';
+
 class TestRunner {
   args: string[] = [];
   consoleMessages: ConsoleMessage[] = [];
@@ -306,10 +308,30 @@ class TestRunner {
     await this.setupResponseDelays(page);
     await this.setupBlocking(page);
 
+    // Registered last so it runs first — injects a unique ID header into every
+    // request, which Playwright records in the HAR. This lets mergeEntries
+    // correlate requestfinished timing data with the correct HAR entry, even
+    // when multiple requests share the same URL.
+    // headersArray() preserves original header casing (e.g. "User-Agent") which
+    // is lost by the lowercase-keyed object from headers().
+    await page.route('**/*', async (route: Route, request: Request) => {
+      const id = crypto.randomUUID();
+      const original = await request.headersArray();
+      const headers: Record<string, string> = {};
+      for (const { name, value } of original) {
+        headers[name] = value;
+      }
+      headers[TELESCOPE_ID_HEADER] = id;
+      await route.fallback({ headers });
+    });
+
     page.on('requestfinished', data => {
+      const telescopeId = data.headers()[TELESCOPE_ID_HEADER];
+      if (!telescopeId) return;
       const reqData: RequestData = {
         url: data.url(),
         timing: data.timing(),
+        telescopeId,
       };
       this.requests.push(reqData);
     });
@@ -853,9 +875,13 @@ class TestRunner {
 
   mergeEntries(harEntries: HarEntry[], lcpURL: string | null): HarEntry[] {
     for (const request of this.requests) {
-      const indexToUpdate = harEntries.findIndex(object => {
-        return object.request.url === request.url && !request.rawTimings;
-      });
+      const indexToUpdate = harEntries.findIndex(entry =>
+        entry.request.headers.some(
+          h =>
+            h.name.toLowerCase() === TELESCOPE_ID_HEADER &&
+            h.value === request.telescopeId,
+        ),
+      );
       if (indexToUpdate !== -1) {
         //we'll do our calculations now
         const connectEnd =
