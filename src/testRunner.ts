@@ -317,13 +317,16 @@ class TestRunner {
     await page.route('**/*', async (route: Route, request: Request) => {
       const id = crypto.randomUUID();
       const original = await request.headersArray();
-      // Flattening to Record<string, string> can silently drop duplicate
-      // header names (e.g. multiple Set-Cookie entries). This is acceptable
-      // here because route.fallback() requires this shape, and duplicate
-      // request headers are rare in practice.
       const headers: Record<string, string> = {};
       for (const { name, value } of original) {
-        headers[name] = value;
+        if (headers[name]) {
+          // Note: We need to flatten an array of headers to a Record<string, string>
+          // If there are duplicates, we can join them with a comma
+          // This is valid per RFC 9110, section 5.2 + 5.3
+          headers[name] = `${headers[name]}, ${value}`;
+        } else {
+          headers[name] = value;
+        }
       }
       headers[TELESCOPE_ID_HEADER] = id;
       await route.fallback({ headers });
