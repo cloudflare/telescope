@@ -6,6 +6,8 @@ A diagnostic, cross-browser performance testing agent.
 
 When you run the agent, it will load the page in the browser you chose and apply any special parameters you have provided. By default, it will store results for the test in a `/results` directory. Each test gets its own folder with the date prefixed, followed by a unique ID.
 
+> **Note:** Telescope injects an `x-telescope-id` header into every outgoing request during testing. This header carries a unique ID used to correlate timing data with HAR entries. It is sent to the target server and will be visible in the saved HAR file.
+
 Inside the test folder, the following files are added:
 
 - `console.json` - Console output from the page to look for warnings, JS errors, etc
