@@ -327,7 +327,12 @@ class TestRunner {
 
     page.on('requestfinished', data => {
       const telescopeId = data.headers()[TELESCOPE_ID_HEADER];
-      if (!telescopeId) return;
+      if (!telescopeId) {
+        console.warn(
+          `[testRunner] requestfinished: missing ${TELESCOPE_ID_HEADER} header for ${data.url()}`,
+        );
+        return;
+      }
       const reqData: RequestData = {
         url: data.url(),
         timing: data.timing(),
