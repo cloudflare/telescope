@@ -38,7 +38,7 @@
     "@types/react-dom": "^19.2.3",
     "cross-env": "^10.1.0",
     "dotenv": "^17.2.4",
-    "prisma": "^7.5.0",
+    "prisma": "^7.7.0",
     "wrangler": "^4.61.0"
   },
   "engines": {

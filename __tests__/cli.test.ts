@@ -1,7 +1,11 @@
 import { spawnSync } from 'child_process';
 import { describe, it, expect, beforeAll } from 'vitest';
 
-import { retrieveHAR, retrieveMetrics, cleanupTestDirectory } from './helpers.js';
+import {
+  retrieveHAR,
+  retrieveMetrics,
+  cleanupTestDirectory,
+} from './helpers.js';
 
 import { BrowserConfig } from '../src/browsers.js';
 import type { HarData, Metrics, HTTPHeader } from '../src/types.js';
@@ -79,7 +83,8 @@ describe.each(browsers)('Basic Test: %s', browser => {
 });
 
 describe.each(browsers)('Changed User Agent: %s', browser => {
-  const agentIE6 = 'Mozilla/5.0 (Windows; U; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727)';
+  const agentIE6 =
+    'Mozilla/5.0 (Windows; U; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727)';
   let harJSON: HarData | null;
   let testId: string | undefined;
 
@@ -118,12 +123,9 @@ describe.each(browsers)('Changed User Agent: %s', browser => {
 
   it('User Agent Changed', async () => {
     if (harJSON) {
-      const htmlUserAgent = harJSON
-        .log
-        .entries[0]
-        .request
-        .headers
-        .find((hdr: HTTPHeader) => hdr.name === 'User-Agent');
+      const htmlUserAgent = harJSON.log.entries[0].request.headers.find(
+        (hdr: HTTPHeader) => hdr.name === 'User-Agent',
+      );
 
       if (htmlUserAgent) {
         expect(htmlUserAgent.value).toBe(agentIE6);
@@ -176,12 +178,9 @@ describe.each(browsers)('Add to User Agent: %s', browser => {
 
   it('Appended to User Agent', async () => {
     if (harJSON) {
-      const htmlUserAgent = harJSON
-        .log
-        .entries[0]
-        .request
-        .headers
-        .find((hdr: HTTPHeader) => hdr.name === 'User-Agent');
+      const htmlUserAgent = harJSON.log.entries[0].request.headers.find(
+        (hdr: HTTPHeader) => hdr.name === 'User-Agent',
+      );
 
       if (htmlUserAgent) {
         expect(htmlUserAgent.value.endsWith(agentExtraText)).toBe(true);

@@ -1,8 +1,8 @@
-import { ZodError, type ZodSchema, type ZodType } from 'zod';
+import { type ZodError, type ZodSchema, type ZodType } from 'zod';
 
 export function formatZodError(error: ZodError): string {
   return error.issues
-    .map((issue) => {
+    .map(issue => {
       const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
       return `  - ${path}: ${issue.message}`;
     })
@@ -52,7 +52,11 @@ export function parseUnknown<T>(
 
 // Coerce+validate a raw CLI string via a Zod schema.
 // Throws with a flag-contextual message on failure.
-export function parseWithSchema<T>(schema: ZodType<T>, value: string, flag: string): T {
+export function parseWithSchema<T>(
+  schema: ZodType<T>,
+  value: string,
+  flag: string,
+): T {
   const result = schema.safeParse(value);
   if (!result.success) {
     throw new Error(`'${value}' is not a valid ${flag} value.`);

@@ -6,7 +6,7 @@ export default [
   eslint.configs.recommended,
   // TypeScript files in the main project (covered by tsconfig.json)
   {
-    files: ['lib/**/*.ts', 'index.ts', 'cli.ts'],
+    files: ['src/**/*.ts'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
