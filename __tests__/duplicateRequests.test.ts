@@ -84,10 +84,7 @@ describe.each(browsers)(
           entry.request.url.endsWith('/style.css'),
         );
 
-        // The page loads style.css via <link> and fetches it twice via JS,
-        // so we expect at least 2 HAR entries (browser may serve the 2nd from cache,
-        // but we should see at least 2 entries with the same URL in the HAR)
-        expect(styleCssEntries.length).toBeGreaterThanOrEqual(2);
+        expect(styleCssEntries.length).toBe(3);
 
         // Each entry for the same URL should have its own timing data populated
         const entriesWithTimingData = styleCssEntries.filter(
