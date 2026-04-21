@@ -5,6 +5,7 @@ import type {
   BrowserConfigEntry,
   LaunchOptions,
 } from './types.js';
+import { DEFAULT_BROWSER_HEIGHT, DEFAULT_BROWSER_WIDTH } from './defaultOptions.js';
 
 const TRUTHY_VALUES = new Set(['true', '1', 'yes', 'on']);
 const FALSY_VALUES = new Set(['false', '0', 'no', 'off']);
@@ -265,13 +266,27 @@ class BrowserConfig {
       };
     }
 
-    if (options.width) {
-      browserConfig.viewport.width = options.width;
-      browserConfig.recordVideo.size.width = options.width;
-    }
-    if (options.height) {
-      browserConfig.viewport.height = options.height;
-      browserConfig.recordVideo.size.height = options.height;
+    // resolve viewport dimensions: explicit user value > device value > fallback default
+    const resolvedWidth =
+      options.width ??
+      options.device?.viewport.width
+      ?? DEFAULT_BROWSER_WIDTH;
+    const resolvedHeight =
+      options.height ??
+      options.device?.viewport.height ??
+      DEFAULT_BROWSER_HEIGHT;
+
+    browserConfig.viewport.width = resolvedWidth;
+    browserConfig.viewport.height = resolvedHeight;
+    browserConfig.recordVideo.size.width = resolvedWidth;
+    browserConfig.recordVideo.size.height = resolvedHeight;
+
+    // collect device info and insert device emulation settings into browser config
+    if (options.device) {
+      browserConfig.userAgent = options.device.userAgent;
+      browserConfig.deviceScaleFactor = options.device.deviceScaleFactor;
+      browserConfig.isMobile = options.device.isMobile;
+      browserConfig.hasTouch = options.device.hasTouch;
     }
 
     if (options.userAgent) {

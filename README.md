@@ -28,6 +28,7 @@ Options:
   -c, --cookies <object>        Any custom cookies to apply
   -f, --flags <string>          A comma separated list of Chromium flags to launch Chrome with. See: https://peter.sh/experiments/chromium-command-line-switches/
   --agentExtra <string>         A string to append to the end of the default User-Agent. Takes precedence over --userAgent option.
+  --device '<string>'           Device to use device emulation (viewport size, DPR, touch events); devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)
   --blockDomains <domains...>   A comma separated list of domains to block
   --block <substrings...>       A comma-delimited list of urls to block (based on a substring match)
   --delay <object>              An object mapping request regexes to response delays. Example: '{".css$": 2000, ".js$": 5000}'
