@@ -159,7 +159,7 @@ describe('Host override with HAR timing correlation', () => {
   <head>
     <meta charset="UTF-8" />
     <title>Host Override Test</title>
-    <link rel="stylesheet" href="http://cloudflare.com:${addr.port}/style.css" />
+    <link rel="stylesheet" href="http://example.com:${addr.port}/style.css" />
   </head>
   <body>
     <h1>Host override test page</h1>
@@ -188,7 +188,7 @@ describe('Host override with HAR timing correlation', () => {
           url: `http://127.0.0.1:${serverPort}/index.html`,
           browser,
           overrideHost: {
-            [`cloudflare.com:${serverPort}`]: `127.0.0.1:${serverPort}`,
+            [`example.com:${serverPort}`]: `127.0.0.1:${serverPort}`,
           },
         },
         har => {
