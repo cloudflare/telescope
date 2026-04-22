@@ -309,11 +309,7 @@ class TestRunner {
     await this.setupBlocking(page);
 
     // Registered last so it runs first — injects a unique ID header into every
-    // request, which Playwright records in the HAR. This lets mergeEntries
-    // correlate requestfinished timing data with the correct HAR entry, even
-    // when multiple requests share the same URL.
-    // headersArray() preserves original header casing (e.g. "User-Agent") which
-    // is lost by the lowercase-keyed object from headers().
+    // request, which Playwright records in the HAR.
     await page.route('**/*', async (route: Route, request: Request) => {
       const id = crypto.randomUUID();
       const original = await request.headersArray();
