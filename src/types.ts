@@ -436,6 +436,7 @@ export interface RequestData {
   url: string;
   timing: RequestTiming;
   rawTimings?: boolean;
+  resourceType: string;
 }
 
 /**
@@ -459,6 +460,16 @@ export interface ResourceTiming {
   transferSize: number;
   encodedBodySize: number;
   decodedBodySize: number;
+}
+
+/**
+ * Request priority information
+ */
+export type PriorityObject = {
+  initialPriority: string,
+};
+export interface PriorityInfo {
+  [key: string]: PriorityObject;
 }
 
 // ============================================================================
@@ -568,6 +579,9 @@ export interface HarEntry {
   _dns_end?: number;
   _connect_start?: number;
   _connect_end?: number;
+  _initialPriority?: string;
+  _priority?: string;
+  _resourceType?: string;
   _secure_start?: number;
   _secure_end?: number;
   _request_start?: number;
