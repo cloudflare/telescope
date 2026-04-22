@@ -25,7 +25,7 @@
     "@prisma/adapter-d1": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "@vitest/coverage-v8": "^4.0.6",
-    "astro": "^6.0.8",
+    "astro": "^6.1.8",
     "fflate": "^0.8.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
