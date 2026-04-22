@@ -279,14 +279,16 @@ export default function browserAgent(): void {
         ]),
     )
     .addOption(
-      new Option('--width <int>', 'Viewport width, in pixels')
-        .default(DEFAULT_OPTIONS.width)
-        .argParser(v => parseNumeric(PositiveIntSchema, v, '--width')),
+      new Option(
+        '--width <int>',
+        'Viewport width, in pixels. If both width and device are provided, the width value will override device emulation viewport width.',
+      ).argParser((v) => parseNumeric(PositiveIntSchema, v, '--width')),
     )
     .addOption(
-      new Option('--height <int>', 'Viewport height, in pixels')
-        .default(DEFAULT_OPTIONS.height)
-        .argParser(v => parseNumeric(PositiveIntSchema, v, '--height')),
+      new Option(
+        '--height <int>',
+        'Viewport height, in pixels. If both height and device are provided, the height value will override device emulation viewport height.',
+      ).argParser((v) => parseNumeric(PositiveIntSchema, v, '--height')),
     )
     .addOption(
       new Option(
@@ -367,6 +369,12 @@ export default function browserAgent(): void {
       new Option(
         '--agentExtra <string>',
         'Append to the browser User Agent. Takes precedence over --userAgent',
+      ),
+    )
+    .addOption(
+      new Option(
+        '--device <string>',
+        'Device to use device emulation (viewport size, DPR, touch events); devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
       ),
     )
     .parse(process.argv);

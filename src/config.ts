@@ -3,11 +3,13 @@ import type {
   CLIOptions,
   ConnectionType,
   BrowserName,
+  CustomDeviceDescriptor,
 } from './types.js';
 import { parseUnknown } from './validation.js';
 import { StringArraySchema } from './schemas.js';
 
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
+import { devices } from 'playwright';
 
 /**
  * Normalize CLI options into a typed LaunchOptions config.
@@ -25,8 +27,8 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
   const config: LaunchOptions = {
     url: options.url,
     browser: (options.browser as BrowserName) || DEFAULT_OPTIONS.browser,
-    width: options.width ?? DEFAULT_OPTIONS.width,
-    height: options.height ?? DEFAULT_OPTIONS.height,
+    width: options.width,
+    height: options.height,
     frameRate: options.frameRate ?? DEFAULT_OPTIONS.frameRate,
     timeout: options.timeout ?? DEFAULT_OPTIONS.timeout,
     blockDomains: options.blockDomains || DEFAULT_OPTIONS.blockDomains,
@@ -119,8 +121,20 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     } catch (_err) {
       throw new Error(`--uploadUrl must be a valid URL`);
     }
-
     config.uploadUrl = options.uploadUrl;
+  }
+  // Handle device emulation
+  // the 'device' in options is the name of the device to emulate provided by the user
+  if (options.device) {
+    const playwrightDevice =
+      devices[options.device as keyof typeof devices];
+    if (!playwrightDevice) {
+      throw new Error(
+        `Device "${options.device}" not found in Playwright device list`,
+      );
+    }
+    // the 'device' in config is the playwright object with device metadata
+    config.device = playwrightDevice as CustomDeviceDescriptor;
   }
 
   return config;
