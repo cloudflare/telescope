@@ -131,6 +131,23 @@ export const prerender = false;
     color: rgba(239, 68, 68, 0.9);
     border-color: rgba(239, 68, 68, 0.4);
   }
+  @media (max-width: 40rem) { /* 640px */
+    .toggle-button[data-view='vertical'] {
+      display: none;
+    }
+    .toggle-button[data-view='grid'] {
+      background: var(--brand);
+      color: white;
+      pointer-events: none;
+    }
+    .results-container,
+    .results-container[data-layout='vertical'],
+    .results-container[data-layout='grid'] {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
   .toggle-button {
     display: flex;
     align-items: center;
@@ -182,8 +199,20 @@ export const prerender = false;
   const buttons = document.querySelectorAll('.toggle-button');
   const container = document.querySelector('.results-container');
   if (buttons.length && container) {
+    const mobileQuery = window.matchMedia('(max-width: 40rem)');
+    const gridButton = document.querySelector('.toggle-button[data-view="grid"]');
+
+    function syncMobileState() {
+      if (gridButton) {
+        gridButton.setAttribute('aria-disabled', String(mobileQuery.matches));
+      }
+    }
+    syncMobileState();
+    mobileQuery.addEventListener('change', syncMobileState);
+
     buttons.forEach(button => {
       button.addEventListener('click', () => {
+        if (mobileQuery.matches) return;
         const view = button.getAttribute('data-view');
         if (!view) return;
         // Update active state
