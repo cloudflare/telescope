@@ -433,9 +433,8 @@ export interface RequestTiming {
  * Request data collected during test
  */
 export interface RequestData {
-  url: string;
   timing: RequestTiming;
-  rawTimings?: boolean;
+  telescopeId: string;
 }
 
 /**

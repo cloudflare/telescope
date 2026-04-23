@@ -162,6 +162,10 @@ async function executeTest(
  * Public programmatic API that wraps executeTest with error handling.
  * Always returns a result object (never throws).
  *
+ * Note: Every outgoing request is tagged with an `x-telescope-id` header so
+ * that timing data can be correlated with the correct HAR entry. This header
+ * is sent to the target server and is present in the saved HAR file.
+ *
  * @param options - Test configuration (see CLI --help for available options)
  * @returns Result object: {success, testId, resultsPath} or {success, error}
  *

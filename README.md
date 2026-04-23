@@ -6,6 +6,8 @@ A diagnostic, cross-browser performance testing agent.
 
 When you run the agent, it will load the page in the browser you chose and apply any special parameters you have provided. By default, it will store results for the test in a `/results` directory. Each test gets its own folder with the date prefixed, followed by a unique ID.
 
+> **Note:** Telescope injects an `x-telescope-id` header into every outgoing request during testing. This header carries a unique ID used to correlate timing data with HAR entries. It is sent to the target server and will be visible in the saved HAR file.
+
 Inside the test folder, the following files are added:
 
 - `console.json` - Console output from the page to look for warnings, JS errors, etc
@@ -158,6 +160,31 @@ To test sites [protected with HTTP authentication](https://developer.mozilla.org
 
 ```
 npx . -u https://newsletter.www.example.com/admin -b safari --auth '{"username": "username", "password": "password"}'
+```
+
+### Host overrides
+
+**Browser Support**
+✅ Edge
+✅ Chrome
+✅ Safari
+✅ Firefox (see note below)
+
+To override hostnames during a test run, use the `--overrideHost` option with an object mapping between the host and how it should resolve to.
+
+For example, you can cause requests to `cdn.example.com` to route to local web server running on port 8080 via:
+
+```
+npx . -u https://www.example.com -b firefox \
+  --overrideHost '{"cdn.example.com": "127.0.0.1:8080"}'
+```
+
+Note: Firefox uses an HSTS preload list, which automatically upgrades requests prior to Playwright can intercept it. To work around this, you can disable the HSTS preload list with `--firefoxPrefs`:
+
+```
+npx . -u https://www.example.com -b firefox \
+  --overrideHost '{"cdn.example.com": "127.0.0.1:8080"}' \
+  --firefoxPrefs '{"network.stricttransportsecurity.preloadlist": false}'
 ```
 
 ## Docker

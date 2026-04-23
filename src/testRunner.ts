@@ -56,6 +56,8 @@ import type {
 import type { BrowserContext, Page, Route, Request } from 'playwright';
 import { delayUsingFulfill, delayUsingContinue } from './delay.js';
 
+const TELESCOPE_ID_HEADER = 'x-telescope-id';
+
 class TestRunner {
   args: string[] = [];
   consoleMessages: ConsoleMessage[] = [];
@@ -306,10 +308,37 @@ class TestRunner {
     await this.setupResponseDelays(page);
     await this.setupBlocking(page);
 
+    // Registered last so it runs first — injects a unique ID header into every
+    // request, which Playwright records in the HAR.
+    await page.route('**/*', async (route: Route, request: Request) => {
+      const id = crypto.randomUUID();
+      const original = await request.headersArray();
+      const headers: Record<string, string> = {};
+      for (const { name, value } of original) {
+        if (headers[name]) {
+          // Note: We need to flatten an array of headers to a Record<string, string>
+          // If there are duplicates, we can join them with a comma
+          // This is valid per RFC 9110, section 5.2 + 5.3
+          headers[name] = `${headers[name]}, ${value}`;
+        } else {
+          headers[name] = value;
+        }
+      }
+      headers[TELESCOPE_ID_HEADER] = id;
+      await route.fallback({ headers });
+    });
+
     page.on('requestfinished', data => {
+      const telescopeId = data.headers()[TELESCOPE_ID_HEADER];
+      if (!telescopeId) {
+        console.warn(
+          `[testRunner] requestfinished: missing ${TELESCOPE_ID_HEADER} header for ${data.url()}`,
+        );
+        return;
+      }
       const reqData: RequestData = {
-        url: data.url(),
         timing: data.timing(),
+        telescopeId,
       };
       this.requests.push(reqData);
     });
@@ -852,10 +881,19 @@ class TestRunner {
   }
 
   mergeEntries(harEntries: HarEntry[], lcpURL: string | null): HarEntry[] {
+    const harIndexByTelescopeId = new Map<string, number>();
+    for (let i = 0; i < harEntries.length; i++) {
+      const id = harEntries[i].request.headers.find(
+        h => h.name.toLowerCase() === TELESCOPE_ID_HEADER,
+      )?.value;
+      if (id) {
+        harIndexByTelescopeId.set(id, i);
+      }
+    }
+
     for (const request of this.requests) {
-      const indexToUpdate = harEntries.findIndex(object => {
-        return object.request.url === request.url && !request.rawTimings;
-      });
+      const indexToUpdate =
+        harIndexByTelescopeId.get(request.telescopeId) ?? -1;
       if (indexToUpdate !== -1) {
         //we'll do our calculations now
         const connectEnd =
@@ -883,7 +921,7 @@ class TestRunner {
           _response_start: request.timing.responseStart,
           _response_end: request.timing.responseEnd,
         };
-        if (request.url == lcpURL) {
+        if (harEntries[indexToUpdate].request.url === lcpURL) {
           updatedObject._is_lcp = true;
         }
         // replace the object at the specified index with the updated object
