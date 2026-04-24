@@ -1,0 +1,431 @@
+/* ── Demo page shared styles ──────────────────────────────────────────────────
+   Used by all three demo pages: static.html, progressive.html, index.html.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ── Page ────────────────────────────────────────────────────────────────── */
+
+body {
+  margin: 0;
+  padding: 1.5rem;
+  font-family: system-ui, sans-serif;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 0.25rem;
+}
+
+.demo-desc {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 0 0 1.25rem;
+}
+
+waterfall-chart {
+  font-family: system-ui, sans-serif;
+}
+
+/* ── Header (nav + theme switcher) ───────────────────────────────────────── */
+
+.demo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+}
+
+/* ── Navigation bar ──────────────────────────────────────────────────────── */
+
+.demo-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  font-size: 0.8125rem;
+}
+
+.demo-nav li + li {
+  border-left: 1px solid #d1d5db;
+}
+
+.demo-nav a {
+  display: block;
+  padding: 0.4rem 0.9rem;
+  text-decoration: none;
+  color: #374151;
+  background: #fff;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.demo-nav a:hover {
+  background: #f9fafb;
+  color: #111827;
+}
+
+.demo-nav a[aria-current='page'] {
+  background: #111827;
+  color: #fff;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* ── Shared button and input styles (interactive pages) ──────────────────── */
+
+button {
+  padding: 0.35rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background: #fff;
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+input[type='url'] {
+  flex: 1;
+  min-width: 14rem;
+  padding: 0.35rem 0.625rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+}
+
+/* ── Controls bar (full interactive page) ────────────────────────────────── */
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.controls-label {
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.har-title {
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--wf-text, #111827);
+}
+
+.controls-separator {
+  width: 1px;
+  height: 1.5rem;
+  background: #d1d5db;
+  flex-shrink: 0;
+}
+
+.file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.35rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background: #fff;
+  font-size: 0.875rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.file-label:hover {
+  background: #f9fafb;
+}
+
+.file-label input[type='file'] {
+  display: none;
+}
+
+/* ── Enhance bar (progressive enhancement page) ──────────────────────────── */
+
+.enhance-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.enhance-status {
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+/* ── Dark mode ───────────────────────────────────────────────────────────── */
+/*
+ * Three-state theme:
+ *   no data-theme          → system (media query applies)
+ *   data-theme="light"     → always light (media query blocked)
+ *   data-theme="dark"      → always dark (attribute selector fires regardless)
+ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    body {
+      background: #111827;
+      color: #f9fafb;
+    }
+
+    .demo-desc {
+      color: #9ca3af;
+    }
+
+    .demo-nav {
+      border-color: #374151;
+    }
+
+    .demo-nav li + li {
+      border-color: #374151;
+    }
+
+    .demo-nav a {
+      background: #1f2937;
+      color: #d1d5db;
+    }
+
+    .demo-nav a:hover {
+      background: #374151;
+      color: #f9fafb;
+    }
+
+    .demo-nav a[aria-current='page'] {
+      background: #f9fafb;
+      color: #111827;
+    }
+
+    button {
+      background: #1f2937;
+      border-color: #374151;
+      color: #d1d5db;
+    }
+
+    button:hover:not(:disabled) {
+      background: #374151;
+    }
+
+    input[type='url'] {
+      background: #1f2937;
+      border-color: #374151;
+      color: #f9fafb;
+    }
+
+    .controls-separator {
+      background: #374151;
+    }
+
+    .file-label {
+      background: #1f2937;
+      border-color: #374151;
+      color: #d1d5db;
+    }
+
+    .file-label:hover {
+      background: #374151;
+    }
+
+    .enhance-status {
+      color: #9ca3af;
+    }
+  }
+}
+
+[data-theme='dark'] body {
+  background: #111827;
+  color: #f9fafb;
+}
+
+[data-theme='dark'] .demo-desc {
+  color: #9ca3af;
+}
+
+[data-theme='dark'] .demo-nav {
+  border-color: #374151;
+}
+
+[data-theme='dark'] .demo-nav li + li {
+  border-color: #374151;
+}
+
+[data-theme='dark'] .demo-nav a {
+  background: #1f2937;
+  color: #d1d5db;
+}
+
+[data-theme='dark'] .demo-nav a:hover {
+  background: #374151;
+  color: #f9fafb;
+}
+
+[data-theme='dark'] .demo-nav a[aria-current='page'] {
+  background: #f9fafb;
+  color: #111827;
+}
+
+[data-theme='dark'] button {
+  background: #1f2937;
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+[data-theme='dark'] button:hover:not(:disabled) {
+  background: #374151;
+}
+
+[data-theme='dark'] input[type='url'] {
+  background: #1f2937;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+[data-theme='dark'] .controls-separator {
+  background: #374151;
+}
+
+[data-theme='dark'] .file-label {
+  background: #1f2937;
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+[data-theme='dark'] .file-label:hover {
+  background: #374151;
+}
+
+[data-theme='dark'] .enhance-status {
+  color: #9ca3af;
+}
+
+/* ── Theme toggle (in header, right side) ────────────────────────────────── */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  /* Hidden until theme.js has read localStorage and set the knob position.
+     theme.js adds .theme-toggle--ready synchronously, before first paint. */
+  visibility: hidden;
+}
+
+.theme-toggle--ready {
+  visibility: visible;
+}
+
+.theme-toggle input[type='checkbox'] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.theme-toggle__icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* Track */
+.theme-toggle__track {
+  position: relative;
+  width: 2.5rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #e5e7eb;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+  flex-shrink: 0;
+}
+
+/* Knob */
+.theme-toggle__knob {
+  position: absolute;
+  top: 50%;
+  left: 0.1875rem;
+  transform: translateY(-50%);
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+  transition: left 0.2s;
+}
+
+/* Checked = dark side — slide knob right */
+.theme-toggle input:checked ~ .theme-toggle__track .theme-toggle__knob {
+  left: calc(100% - 0.1875rem - 0.875rem);
+}
+
+/* Overridden highlight — accent colour on the track */
+.theme-toggle--overridden .theme-toggle__track {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgb(99 102 241 / 0.25);
+}
+
+/* ── Dark mode ───────────────────────────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .theme-toggle__track {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  :root:not([data-theme='light']) .theme-toggle__knob {
+    background: #d1d5db;
+  }
+
+  :root:not([data-theme='light'])
+    .theme-toggle--overridden
+    .theme-toggle__track {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 2px rgb(129 140 248 / 0.3);
+  }
+}
+
+[data-theme='dark'] .theme-toggle__track {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+[data-theme='dark'] .theme-toggle__knob {
+  background: #d1d5db;
+}
+
+[data-theme='dark'] .theme-toggle--overridden .theme-toggle__track {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 2px rgb(129 140 248 / 0.3);
+}

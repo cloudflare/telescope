@@ -1,0 +1,47 @@
+{
+  "name": "@cloudflare/waterfall",
+  "version": "0.1.0",
+  "description": "HAR waterfall chart as a framework-free web component",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:demo": "npm run gen-demo && vite build",
+    "start": "vite",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "gen-demo": "node scripts/gen-demo.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "clean": "rm -rf dist node_modules"
+  },
+  "devDependencies": {
+    "@vitest/browser": "^4.0.18",
+    "playwright": "^1.58.2",
+    "prettier": "^3.8.1",
+    "typescript": "^5.4.0",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
+  },
+  "keywords": [
+    "waterfall",
+    "har",
+    "web-component",
+    "custom-element",
+    "performance"
+  ],
+  "license": "Apache-2.0"
+}
