@@ -1,0 +1,90 @@
+<html>
+  <head>
+    <title>list of test results | Telescope</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        padding: 0;
+        margin: 0;
+        background-color: white;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+          Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+          'Segoe UI Symbol';
+      }
+      nav {
+        padding: 0.5em;
+        text-align: end;
+      }
+      nav a {
+        color: grey;
+      }
+      main {
+        padding: 0 3em;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 0.5em;
+      }
+      header {
+        display: flex;
+        padding: 1em;
+        flex-direction: row;
+        justify-content: space-between;
+      }
+      table {
+        border-collapse: collapse;
+      }
+      th {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 15px;
+        text-align: left;
+        font-weight: bold;
+      }
+      td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #ddd;
+      }
+
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+
+      tr:hover {
+        background-color: #e9ecef;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>List of test results</h1>
+      <nav>
+        Generated using
+        <a href="https://github.com/cloudflare/telescope">Telescope v1.0.0</a>
+      </nav>
+    </header>
+    <main>
+      <table>
+        <th>Test Run Date</th>
+        <th>URL</th>
+        <th>Browser Engine</th>
+        <% for (let test of tests) { %>
+        <tr>
+          <td><%= test.config.date %></td>
+          <td>
+            <a href="<%= test.folder %>/"><%= test.config.url %></a>
+          </td>
+          <td>
+            <%= test.config.browserConfig.channel ||
+            test.config.browserConfig.engine %>
+          </td>
+        </tr>
+        <% } %>
+      </table>
+    </main>
+  </body>
+</html>

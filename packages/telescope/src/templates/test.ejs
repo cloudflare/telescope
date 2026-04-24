@@ -1,0 +1,147 @@
+<html>
+  <head>
+    <title>
+      <%= metrics.navigationTiming.name %> | test result | Telescope
+    </title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        padding: 0;
+        margin: 0;
+        background-color: white;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+          Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+          'Segoe UI Symbol';
+      }
+      nav {
+        padding: 0.5em;
+        text-align: end;
+      }
+      nav a {
+        color: grey;
+      }
+      main {
+        padding: 0 3em;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 0.5em;
+      }
+      aside {
+        width: 50%;
+        max-width: 800px;
+      }
+      video {
+        border: 1px solid black;
+        width: 100%;
+        height: auto;
+        max-height: 800px;
+      }
+      .engine-icon {
+        width: 1.3em;
+        height: auto;
+        vertical-align: middle;
+      }
+      .engine-name {
+        font-weight: bold;
+      }
+      .filmstrip {
+        display: grid;
+        grid-template-columns: 1;
+        grid-template-rows: 1;
+        margin-bottom: 1em;
+      }
+      .filmstrip .container {
+        display: flex;
+        flex-direction: row;
+        overflow-x: scroll;
+        gap: 0.5em;
+        background-color: black;
+        padding: 1em 2em 1em 1em;
+        grid-area: 1/1;
+        width: 100%;
+        color: silver;
+      }
+      .filmstrip .frame {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .filmstrip .sec {
+        font-size: smaller;
+      }
+      .filmstrip img {
+        height: 8em;
+        border: 1px solid grey;
+      }
+      .filmstrip .shadow {
+        width: 2em;
+        height: 100%;
+        background-image: linear-gradient(
+          to right,
+          rgba(1, 0, 0, 0),
+          rgba(1, 0, 0, 1)
+        );
+        grid-area: 1/1;
+        justify-self: end;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <nav>
+        UX Speed test report generated using
+        <a href="https://github.com/cloudflare/telescope">Telescope v1.0.0</a>
+      </nav>
+      <section class="filmstrip">
+        <div class="container">
+          <% for (let frame of resultAssets.filmstrip) { %>
+          <div class="frame">
+            <span class="sec"><%= frame.ms / 1000 %>s</span>
+            <img src="<%= frame.filename %>" />
+          </div>
+          <% } %>
+        </div>
+        <div class="shadow"></div>
+      </section>
+    </header>
+    <main>
+      <section>
+        <p>
+          URL:
+          <a href="<%= metrics.navigationTiming.name %>"
+            ><%= metrics.navigationTiming.name %></a
+          >
+        </p>
+        <p>
+          Tested using
+          <img class="engine-icon" src="engine.png" />
+          <span class="engine-name"
+            ><%= selectedBrowser.channel || selectedBrowser.engine %></span
+          >
+          (<a href="config.json">config.json</a>)
+        </p>
+        Test results:
+        <ul>
+          <li>Metrics: <a href="metrics.json">metrics.json</a></li>
+          <li>HAR file: <a href="pageload.har">pageload.har</a></li>
+          <li>Resource Timings: <a href="resources.json">resources.json</a></li>
+          <li>Console log: <a href="console.json">console.json</a></li>
+        </ul>
+      </section>
+      <aside>
+        <video controls width="250" poster="screenshot.png">
+          <source src="<%=resultAssets.videoFile %>" type="video/webm" />
+
+          Download the
+          <a href="/shared-assets/videos/flower.webm">WEBM</a>
+          video.
+        </video>
+      </aside>
+    </main>
+  </body>
+</html>
