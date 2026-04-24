@@ -4,22 +4,36 @@
 
 `@cloudflare/telescope` is a TypeScript browser performance testing library and CLI built on Playwright. It launches real browsers (Chrome, Chrome Beta, Canary, Firefox, Safari, Edge), collects HAR files, Web Vitals, and performance metrics, and produces HTML reports.
 
-Key subdirectories:
+This is an npm workspace monorepo with two packages:
+
+- `packages/telescope/` - The browser performance testing agent
+- `packages/telescope-web/` - The web UI for viewing test results
+
+Key subdirectories in `packages/telescope/`:
 
 - `src/` — TypeScript source compiled to `dist/`
 - `__tests__/` — Vitest integration tests (excluded from tsconfig)
 - `tests/` — Static test fixtures (HTML, CSS, images) used by integration tests
 - `support/` — Browser support files (e.g., Firefox default `user.js` preferences)
 - `processors/` — Standalone post-processing report generator (included in main tsconfig)
-- `telescopetest-io/` — Separate Astro + Cloudflare Workers web app (fully excluded from root tooling)
 
 ---
 
 ## Build, Lint, and Test Commands
 
+All commands should be run from within `packages/telescope/`:
+
+**Important**: This monorepo uses separate lockfiles per package. When installing dependencies in individual packages, use:
+
+```bash
+npm install --workspaces=false
+```
+
 ### Build
 
 ```bash
+cd packages/telescope
+npm install --workspaces=false  # if needed
 npm run build          # tsc + copy templates to dist/
 npm run dev            # tsc --watch
 ```
@@ -29,6 +43,7 @@ npm run dev            # tsc --watch
 ### Lint
 
 ```bash
+cd packages/telescope
 npm run lint           # eslint .
 npm run lint:fix       # eslint . --fix
 npm run prettier       # npx prettier --write .
@@ -37,6 +52,7 @@ npm run prettier       # npx prettier --write .
 ### Test
 
 ```bash
+cd packages/telescope
 npm test               # build + vitest run
 npm run test:ci        # export CI=true; npm test
 npm run coverage       # vitest run --coverage
@@ -45,12 +61,14 @@ npm run coverage       # vitest run --coverage
 **Run a single test file** (build first):
 
 ```bash
+cd packages/telescope
 npm run build && npx vitest run __tests__/cli.test.ts
 ```
 
 **Run a single test by name:**
 
 ```bash
+cd packages/telescope
 npm run build && npx vitest run __tests__/cli.test.ts -t "generates a Har file"
 ```
 
@@ -272,6 +290,7 @@ The project includes Docker support for containerized testing:
 Build and run:
 
 ```bash
+cd packages/telescope
 docker build -t telescope .
 docker run --rm -v $(pwd)/results:/app/results telescope --url https://example.com
 ```
@@ -285,13 +304,15 @@ Package versions for Playwright packages must match, or Playwright may install t
 - `playwright` package
 - `playwright-webkit` package
 - `@playwright/test` package
-- `mcr.microsoft.com/playwright:v<X.Y.Z>-noble` CI test container in [.github/workflows/test.yml](https://github.com/cloudflare/telescope/blob/690199fdb2aa4ce7af3065760ea28560b68f1775/.github/workflows/test.yml#L22)
+- `mcr.microsoft.com/playwright:v<X.Y.Z>-noble` CI test container in [.github/workflows/test.yml](https://github.com/cloudflare/telescope/blob/main/.github/workflows/test.yml)
 
 ---
 
 ## Architecture Notes
 
-- **`telescopetest-io/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from root `tsconfig.json`, ESLint, Vitest, and Prettier configs.
+- **Workspace structure**: Root `package.json` defines npm workspaces with `workspaces: ["packages/*"]`. Each package maintains its own `package-lock.json`.
+- **`.npmrc`**: Root `.npmrc` forces public npm registry (`registry=https://registry.npmjs.org/`) to avoid internal registry authentication issues.
+- **`packages/telescope-web/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from the telescope package's `tsconfig.json`, ESLint, Vitest, and Prettier configs.
 - **Processors** (`processors/generate.ts`) are compiled with the main build but run as a standalone script: `node dist/processors/generate.js <results-dir>`. Guarded with `if (process.argv[1] === __filename)`.
 - **Runtime path resolution**: `testRunner.ts` detects whether it is running from compiled `dist/` or source via `isCompiledDist = currentDir.includes('/dist/')` — preserve this logic when modifying path-dependent code.
 - **Template files** are copied post-`tsc` in the `build` script — if you add new `.ejs` templates under `src/templates/`, update the `build` script accordingly.

@@ -1,9 +1,18 @@
-results/
-!telescopetest-io/src/pages/results/
+# Package artifacts
+packages/*/node_modules/
+packages/*/dist/
+packages/*/results/
+packages/*/coverage/
+packages/*/.wrangler/
+packages/*/*.tsbuildinfo
+
+# Root artifacts (kept for safety during migration)
 node_modules/
+dist/
+results/
+coverage/
+*.tsbuildinfo
+
 tmp/
 .DS_Store
-dist/
-*.tsbuildinfo
 *.org
-coverage/

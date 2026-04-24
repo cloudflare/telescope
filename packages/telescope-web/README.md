@@ -1,12 +1,12 @@
-# telescopetest.io
+# @cloudflare/telescope-web
 
-This is the website for users to upload and view Telescope ZIP results. This is built with Astro web framework and hosted on Cloudflare Workers.
+This is the website for users to upload and view Telescope ZIP results. This is built with Astro web framework and hosted on Cloudflare Workers. The production site is hosted at [telescopetest.io](https://telescopetest.io).
 
 ## Project Setup
 
 To set up for local development, you need to install project dependencies:
 
-```
+```bash
 npm install
 ```
 
@@ -19,7 +19,7 @@ And initialize a few things:
 
 To accomplish all that, you can simply run:
 
-```
+```bash
 npm run dev:setup
 ```
 
@@ -54,11 +54,11 @@ This should fill your created file with the raw SQLite for your changes.
 
 ### Note about Workers AI (AI content review)
 
-One thing to note is that telescopetest-io uses Workers AI for AI content review on uploads. Wokers AI _always_ uses tokens that can incur costs, even in local/remote testing. AI content review is disabled locally by default. You can optionally enable AI content review (which may start costing money) by running the command `cp .dev.vars.example .dev.vars` and setting `ENABLE_AI_RATING=true`.
+One thing to note is that telescope-web uses Workers AI for AI content review on uploads. Workers AI _always_ uses tokens that can incur costs, even in local/remote testing. AI content review is disabled locally by default. You can optionally enable AI content review (which may start costing money) by running the command `cp .dev.vars.example .dev.vars` and setting `ENABLE_AI_RATING=true`.
 
 ## Testing in Staging
 
-Staging allows you to test changes in a remote environment that isn't production. To deploy to staging, run `npm run deploy:staging`. This command will only work if you have permission to deploy to telesceoptest-io's remote Worker.
+Staging allows you to test changes in a remote environment that isn't production. To deploy to staging, run `npm run deploy:staging`. This command will only work if you have permission to deploy to telescope-web's remote Worker.
 
 ## Deployment to Production
 
@@ -72,4 +72,8 @@ Changes to the production website should only be deployed on Cloudflare workers 
 6. Builds project (generates `dist/`)
 7. Deploys project (uploads `dist/` to Cloudflare)
 
-Once successful, the deployed site can be found on [telescopetest.io](telescopetest.io).
+Once successful, the deployed site can be found on [telescopetest.io](https://telescopetest.io).
+
+## Monorepo Structure
+
+This package is part of the `@cloudflare/telescope` monorepo. It is located at `packages/telescope-web/` and is fully independent from the main telescope agent package (`packages/telescope/`).

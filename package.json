@@ -1,63 +1,29 @@
 {
-  "name": "@cloudflare/telescope",
+  "name": "@cloudflare/telescope-monorepo",
   "version": "1.0.0",
-  "description": "",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
-  "keywords": [],
+  "private": true,
+  "description": "Telescope monorepo - browser performance testing agent and web UI",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces",
+    "prettier": "npm run prettier --workspaces",
+    "clean": "npm run clean --workspaces"
+  },
+  "keywords": [
+    "performance",
+    "testing",
+    "browser",
+    "playwright",
+    "web-vitals"
+  ],
   "author": "Cloudflare",
   "license": "Apache-2.0",
-  "type": "module",
-  "files": [
-    "dist",
-    "img",
-    "support"
-  ],
-  "bin": {
-    "telescope": "dist/src/cli.js"
-  },
-  "scripts": {
-    "build": "tsc && chmod +x dist/src/cli.js && cp -r src/templates dist/src/ && mkdir -p dist/processors/templates && cp -r processors/templates/* dist/processors/templates/",
-    "dev": "tsc --watch",
-    "start": "node dist/src/cli.js",
-    "test": "npm run build && vitest run",
-    "test:ci": "export CI=true; npm test",
-    "coverage": "vitest run --coverage",
-    "clean": "rm -rf node_modules results dist",
-    "clean:results": "rm -rf results",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "prettier": "npx prettier --write .",
-    "prepublishOnly": "npm run build",
-    "postinstall": "npx playwright install"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.59.1",
-    "@types/adm-zip": "^0.5.7",
-    "@types/ejs": "^3.1.5",
-    "@types/node": "^25.2.1",
-    "@typescript-eslint/eslint-plugin": "^8.54.0",
-    "@typescript-eslint/parser": "^8.54.0",
-    "@vitest/coverage-v8": "^4.0.6",
-    "eslint": "^9.39.2",
-    "prettier": "^3.6.2",
-    "prettier-plugin-ejs": "^1.0.3",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.6",
-    "msw": "^2.12.10"
-  },
-  "dependencies": {
-    "@sitespeed.io/throttle": "^5.0.0",
-    "adm-zip": "^0.5.16",
-    "commander": "^10.0.0",
-    "ejs": "^3.1.10",
-    "ffmpeg": "^0.0.4",
-    "msw": "^2.12.10",
-    "playwright": "^1.59.1",
-    "playwright-webkit": "^1.59.1",
-    "zod": "^3.25.76"
-  },
   "engines": {
     "node": ">=24"
   }

@@ -1,6 +1,13 @@
-# Browser Agent
+# Telescope
 
 A diagnostic, cross-browser performance testing agent.
+
+## Monorepo Structure
+
+This repository is organized as an npm workspace with two packages:
+
+- `packages/telescope` - The browser performance testing agent (CLI and programmatic API)
+- `packages/telescope-web` - The web UI for viewing test results (hosted at [telescopetest.io](https://telescopetest.io))
 
 ## What it collects
 
@@ -15,6 +22,24 @@ Inside the test folder, the following files are added:
 - `resources.json` - The resource timing API data for the page
 - `screenshot.png` - A screenshot of the final page load
 - `/filmstrip` - A collection of screenshots during the page load that could be used for a filmstrip
+
+## Quick Start
+
+### Running the CLI
+
+```bash
+# Navigate to the telescope package
+cd packages/telescope
+
+# Install dependencies (use --workspaces=false for separate lockfiles)
+npm install --workspaces=false
+
+# Build the project
+npm run build
+
+# Run a test
+npx . -u https://www.example.com -b firefox
+```
 
 ## Parameters
 
@@ -58,7 +83,8 @@ Options:
 
 Telescope uses Playwright to control and manage individual browser engines:
 
-```
+```bash
+cd packages/telescope
 npx . -u https://www.example.com -b firefox
 ```
 
@@ -76,7 +102,8 @@ And supports the following browsers:
 
 You can set a custom timeout by passing the desired timeout in milliseconds using the `--timeout` parameter. Defaults to 30000, or 30 seconds.
 
-```
+```bash
+cd packages/telescope
 npx . -u https://www.example.com -b chrome --timeout 50000
 ```
 
@@ -92,13 +119,15 @@ You can generate an HTML report of your test results by passing the `--html` par
 
 #### Generate HTML report
 
-```
+```bash
+cd packages/telescope
 npx . -u https://example.com -b chrome --html
 ```
 
 #### Generate and automatically open HTML report
 
-```
+```bash
+cd packages/telescope
 npx . -u https://example.com -b chrome --html --openHtml
 ```
 
@@ -116,19 +145,22 @@ Cookies must have a name and value passed. Optionally, you can also pass in eith
 
 #### Set a custom cookie for all requests
 
-```
+```bash
+cd packages/telescope
 npx . -u https://www.example.com -b chrome -c '{"name": "foo", "value": "bar"}'
 ```
 
 #### Set multiple cookies for all requests
 
-```
+```bash
+cd packages/telescope
 npx . -u https://www.example.com -b chrome -c '[{"name": "foo", "value": "bar"}, {"name": "foo2", "value": "bar2"}]'
 ```
 
 #### Set a custom cookie for only a particular path
 
-```
+```bash
+cd packages/telescope
 npx . -u https://www.example.com -b chrome -c '{"name": "foo", "value": "bar", "domain":"www.example.com", "path":"/optim"}'
 ```
 
@@ -142,7 +174,8 @@ npx . -u https://www.example.com -b chrome -c '{"name": "foo", "value": "bar", "
 
 You can run tests with JavaScript disabled to see the impact on performance by passing the `--disableJS` parameter like so:
 
-```
+```bash
+cd packages/telescope
 npx . -u https://playwright.dev/ -b firefox --disableJS
 ```
 
@@ -156,7 +189,8 @@ npx . -u https://playwright.dev/ -b firefox --disableJS
 
 To test sites [protected with HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication), you can pass the `--auth` parameter. It expects an object with a `username` and `password` like so:
 
-```
+```bash
+cd packages/telescope
 npx . -u https://newsletter.www.example.com/admin -b safari --auth '{"username": "username", "password": "password"}'
 ```
 
@@ -165,6 +199,8 @@ npx . -u https://newsletter.www.example.com/admin -b safari --auth '{"username":
 Build and run telescope in a container:
 
 ```bash
+cd packages/telescope
+
 # Build
 docker compose build
 
@@ -187,11 +223,39 @@ Network throttling (`--connectionType`) requires OS-level traffic shaping via th
 
 ### NPM dependencies
 
-After checking out the code, you need to install all the dependencies and build the project:
+This monorepo uses **separate lockfiles per package** (not a single root lockfile). The root `.npmrc` configures the public npm registry.
 
-```
-npm install
+After checking out the code, you can either work with individual packages or use the workspace commands from the root:
+
+#### Option 1: Work with individual packages (recommended)
+
+When working in individual packages, use `--workspaces=false` to maintain separate lockfiles:
+
+```bash
+# For the telescope agent
+cd packages/telescope
+npm install --workspaces=false
 npm run build
+
+# For the web UI
+cd packages/telescope-web
+npm install --workspaces=false
+npm run dev:setup
+```
+
+#### Option 2: Use workspace commands from root
+
+This updates only the root lockfile (packages maintain their own):
+
+```bash
+# Install dependencies across workspaces (root only)
+npm install
+
+# Build all packages
+npm run build
+
+# Test all packages
+npm run test
 ```
 
 ### Browsers
@@ -214,7 +278,7 @@ Telescope uses `ffmpeg` to process the video and generate filmstrip images. You 
 
 For MacOS you can use `homebrew` to install it:
 
-```
+```bash
 brew install ffmpeg
 ```
 
@@ -247,9 +311,16 @@ All CLI options are supported as object properties. See Parameters section for a
 
 ### Running Automated Tests
 
-To run automated code tests in this project, you can use the following command:
+To run automated code tests in this project, you can use the following command from the package directory:
 
+```bash
+cd packages/telescope
+npm run test
 ```
+
+Or from the root to run all workspace tests:
+
+```bash
 npm run test
 ```
 
@@ -257,7 +328,8 @@ npm run test
 
 You can run tests with [specific browsers](#browser-support) by setting the `BROWSERS` environment variable. For example, to run tests with Chrome and Firefox, you can run:
 
-```
+```bash
+cd packages/telescope
 BROWSERS=chrome,firefox npm run test
 ```
 
@@ -269,7 +341,8 @@ Note: `BROWSERS` environment variable is ignored when [running in CI](#our-ci-pi
 
 You can run tests in headless mode by setting the `HEADLESS` environment variable to `true`. For example:
 
-```
+```bash
+cd packages/telescope
 HEADLESS=true npm run test
 ```
 
@@ -280,3 +353,17 @@ Our CI pipeline is set up to run tests on every push to the repository so you ca
 At this point, to limit the length of the tests and (to simplify compatibility with GitHub Actions) it runs tests in headless mode on `firefox` only.
 
 If you want to run the same configuration locally, you can run `CI=true npm test`. You can override the default headless CI mode by setting the `HEADLESS` environment variable to `false`. However, you can't override the set of browsers that the CI configuration runs (it will always run `firefox` only).
+
+## Packages
+
+### @cloudflare/telescope
+
+The main browser performance testing agent. Located in `packages/telescope/`.
+
+See [packages/telescope/README.md](packages/telescope/README.md) for detailed documentation.
+
+### @cloudflare/telescope-web
+
+The web UI for uploading and viewing test results. Located in `packages/telescope-web/`.
+
+See [packages/telescope-web/README.md](packages/telescope-web/README.md) for detailed documentation.

@@ -1,105 +1,7 @@
 import eslint from '@eslint/js';
-import tseslint from '@typescript-eslint/eslint-plugin';
-import tsparser from '@typescript-eslint/parser';
 
 export default [
   eslint.configs.recommended,
-  // TypeScript files in the main project (covered by tsconfig.json)
-  {
-    files: ['src/**/*.ts'],
-    languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ecmaVersion: 2022,
-        sourceType: 'module',
-        project: './tsconfig.json',
-      },
-      globals: {
-        console: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-      },
-    },
-    plugins: {
-      '@typescript-eslint': tseslint,
-    },
-    rules: {
-      // TypeScript-specific rules
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
-      ],
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_',
-        },
-      ],
-
-      // Disable base rules that conflict with TypeScript
-      'no-unused-vars': 'off',
-      'no-undef': 'off', // TypeScript handles this
-    },
-  },
-  // TypeScript files outside tsconfig (tests, processors)
-  {
-    files: ['__tests__/**/*.ts', 'processors/**/*.ts'],
-    languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ecmaVersion: 2022,
-        sourceType: 'module',
-        // No project - these files aren't in tsconfig.json
-      },
-      globals: {
-        console: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-      },
-    },
-    plugins: {
-      '@typescript-eslint': tseslint,
-    },
-    rules: {
-      // TypeScript-specific rules
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
-      ],
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_',
-        },
-      ],
-
-      // Disable base rules that conflict with TypeScript
-      'no-unused-vars': 'off',
-      'no-undef': 'off', // TypeScript handles this
-    },
-  },
   {
     files: ['**/*.js'],
     languageOptions: {
@@ -125,12 +27,12 @@ export default [
   },
   {
     ignores: [
-      'dist/**',
+      'packages/*/dist/**',
+      'packages/*/node_modules/**',
+      'packages/*/results/**',
       'node_modules/**',
+      'dist/**',
       'results/**',
-      'tmp/**',
-      'telescopetest-io/**',
-      '*.config.js',
     ],
   },
 ];
