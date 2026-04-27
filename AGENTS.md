@@ -16,46 +16,36 @@ Key subdirectories:
 
 ---
 
+## Monorepo Structure
+
+This is an npm workspaces monorepo. `node_modules` is installed at the repo root and shared across all packages. Install dependencies from the root:
+
+```bash
+npm install
+```
+
+Commands can be run from the repo root (targeting a specific workspace) or from within each package directory.
+
 ## Build, Lint, and Test Commands
 
-### Build
+### Run from repo root
 
 ```bash
-npm run build          # tsc + copy templates to dist/
-npm run dev            # tsc --watch
+# All packages
+npm run build --workspaces
+npm run test --workspaces
+npm run lint --workspaces
+
+# Specific package
+npm run build -w packages/telescope
+npm run test -w packages/telescope
+npm run lint -w packages/telescope
+
+npm run build -w packages/telescope-web
+npm run test -w packages/telescope-web
 ```
 
-**Tests require a build first.** Some tests invoke `node dist/src/cli.js` via `spawnSync`, so they test compiled output.
-
-### Lint
-
-```bash
-npm run lint           # eslint .
-npm run lint:fix       # eslint . --fix
-npm run prettier       # npx prettier --write .
-```
-
-### Test
-
-```bash
-npm test               # build + vitest run
-npm run test:ci        # export CI=true; npm test
-npm run coverage       # vitest run --coverage
-```
-
-**Run a single test file** (build first):
-
-```bash
-npm run build && npx vitest run __tests__/cli.test.ts
-```
-
-**Run a single test by name:**
-
-```bash
-npm run build && npx vitest run __tests__/cli.test.ts -t "generates a Har file"
-```
-
-**Important:** `maxWorkers: 1` is required — tests launch real browsers and cannot run in parallel. Tests that call `launchTest()` or spawn the CLI directly need explicit timeouts (60000–120000ms). See `vitest.config.ts` for configuration.
+See `packages/telescope/AGENTS.md` and `packages/telescope-web/AGENTS.md` for the full list of per-package commands.
 
 ---
 
@@ -293,7 +283,7 @@ Package versions for Playwright packages must match, or Playwright may install t
 ## Architecture Notes
 
 - **`packages/telescope-web/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from `packages/telescope/` tooling configs.
-- All core library commands (`npm run build`, `npm test`, `npm run lint`) must be run from `packages/telescope/`.
+- Core library commands can be run from the repo root (`npm run build -w packages/telescope`) or from within `packages/telescope/` directly.
 - **Processors** (`processors/generate.ts`) are compiled with the main build but run as a standalone script: `node dist/processors/generate.js <results-dir>`. Guarded with `if (process.argv[1] === __filename)`.
 - **Runtime path resolution**: `testRunner.ts` detects whether it is running from compiled `dist/` or source via `isCompiledDist = currentDir.includes('/dist/')` — preserve this logic when modifying path-dependent code.
 - **Template files** are copied post-`tsc` in the `build` script — if you add new `.ejs` templates under `src/templates/`, update the `build` script accordingly.
