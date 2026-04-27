@@ -16,7 +16,7 @@ More information about the project can be found in the [README](../../README.md)
 - `__tests__/` — Unit tests
 - `results/` — Test results output directory
 - `dist/` — Compiled output
-- `telescopetest-io/` — Subproject for web UI on https://telescopetest.io
+- `packages/telescope-web/` — Subproject for web UI on https://telescopetest.io
 
 ## Supported Browsers
 

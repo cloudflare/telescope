@@ -1,5 +1,5 @@
 ---
-description: Specialist for D1 database work in telescopetest-io. Use when adding columns, writing migrations, adding Prisma queries, or changing the schema.
+description: Specialist for D1 database work in telescope-web. Use when adding columns, writing migrations, adding Prisma queries, or changing the schema.
 model: anthropic/claude-sonnet-4-6
 mode: subagent
 temperature: 0.1
