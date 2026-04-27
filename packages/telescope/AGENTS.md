@@ -4,15 +4,18 @@
 
 `@cloudflare/telescope` is a TypeScript browser performance testing library and CLI built on Playwright. It launches real browsers (Chrome, Chrome Beta, Canary, Firefox, Safari, Edge), collects HAR files, Web Vitals, and performance metrics, and produces HTML reports.
 
-Key subdirectories:
+Key subdirectories (relative to `packages/telescope/`):
 
-- `packages/telescope/` — Core library and CLI (TypeScript, Playwright, Vitest)
-  - `src/` — TypeScript source compiled to `dist/`
-  - `__tests__/` — Vitest integration tests (excluded from tsconfig)
-  - `tests/` — Static test fixtures (HTML, CSS, images) used by integration tests
-  - `support/` — Browser support files (e.g., Firefox default `user.js` preferences)
-  - `processors/` — Standalone post-processing report generator (included in main tsconfig)
-- `packages/telescope-web/` — Separate Astro + Cloudflare Workers web app (fully excluded from root tooling)
+- `src/` — TypeScript source compiled to `dist/`
+  - `templates/` — EJS report templates (`list.ejs`, `test.ejs`)
+- `__tests__/` — Vitest integration tests (excluded from tsconfig); `helpers.ts` contains shared test utilities
+- `tests/` — Static HTML/CSS test fixtures served during integration tests (`delay/`, `duplicate-requests/`, `host-override/`, `sandbox/`)
+- `support/` — Browser support files
+  - `firefox/user.js` — Firefox default preferences
+  - `versioncheck.js` — Browser version check helper
+- `processors/` — Standalone post-processing report generator (included in main tsconfig)
+  - `generate.ts` — Entry point; run as `node dist/processors/generate.js <results-dir>`
+  - `templates/` — EJS templates for processor HTML output
 
 ---
 
@@ -294,8 +297,8 @@ Package versions for Playwright packages must match, or Playwright may install t
 
 ## Architecture Notes
 
-- **`packages/telescope-web/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from `packages/telescope/` tooling configs.
-- Core library commands can be run from this directory directly or from the repo root with `npm run <script> -w packages/telescope`.
+- **`../telescope-web/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from this package's tooling configs.
+- Commands can be run from this directory directly or from the repo root with `npm run <script> -w packages/telescope`.
 - **Processors** (`processors/generate.ts`) are compiled with the main build but run as a standalone script: `node dist/processors/generate.js <results-dir>`. Guarded with `if (process.argv[1] === __filename)`.
 - **Runtime path resolution**: `testRunner.ts` detects whether it is running from compiled `dist/` or source via `isCompiledDist = currentDir.includes('/dist/')` — preserve this logic when modifying path-dependent code.
 - **Template files** are copied post-`tsc` in the `build` script — if you add new `.ejs` templates under `src/templates/`, update the `build` script accordingly.
