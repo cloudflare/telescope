@@ -1,0 +1,29 @@
+{
+"name": "@cloudflare/telescope-all",
+"version": "1.0.0",
+"private": true,
+"description": "Telescope - browser performance testing agent and web UI",
+"type": "module",
+"workspaces": [
+"packages/*"
+],
+"scripts": {
+"build": "npm run build --workspaces",
+"test": "npm run test --workspaces",
+"lint": "npm run lint --workspaces",
+"lint:fix": "npm run lint:fix --workspaces",
+"prettier": "npm run prettier --workspaces",
+},
+"keywords": [
+"performance",
+"testing",
+"browser",
+"playwright",
+"web-vitals"
+],
+"author": "Cloudflare",
+"license": "Apache-2.0",
+"engines": {
+"node": ">=24"
+}
+}

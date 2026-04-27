@@ -1,6 +1,6 @@
-# Browser Agent
+# Telescope
 
-A diagnostic, cross-browser performance testing agent.
+`@cloudflare/telescope` — A cross-browser performance testing CLI and Node.js library built on Playwright.
 
 ## What it collects
 
@@ -212,11 +212,18 @@ Network throttling (`--connectionType`) requires OS-level traffic shaping via th
 
 ## Installation
 
-### NPM dependencies
+### From npm
 
-After checking out the code, you need to install all the dependencies and build the project:
-
+```bash
+npm install -g @cloudflare/telescope
 ```
+
+### From source
+
+After cloning the repository, install dependencies and build from `packages/telescope/`:
+
+```bash
+cd packages/telescope
 npm install
 npm run build
 ```
@@ -271,6 +278,8 @@ if (result.success) {
 All CLI options are supported as object properties. See Parameters section for available options.
 
 ## Contributing To This Project
+
+All commands below must be run from `packages/telescope/`.
 
 ### Running Automated Tests
 
