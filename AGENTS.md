@@ -11,7 +11,7 @@ Key subdirectories:
 - `tests/` — Static test fixtures (HTML, CSS, images) used by integration tests
 - `support/` — Browser support files (e.g., Firefox default `user.js` preferences)
 - `processors/` — Standalone post-processing report generator (included in main tsconfig)
-- `telescopetest-io/` — Separate Astro + Cloudflare Workers web app (fully excluded from root tooling)
+- `packages/telescope-web/` — Separate Astro + Cloudflare Workers web app (fully excluded from root tooling)
 
 ---
 
@@ -291,7 +291,7 @@ Package versions for Playwright packages must match, or Playwright may install t
 
 ## Architecture Notes
 
-- **`telescopetest-io/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from root `tsconfig.json`, ESLint, Vitest, and Prettier configs.
+- **`packages/telescope-web/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from root `tsconfig.json`, ESLint, Vitest, and Prettier configs.
 - **Processors** (`processors/generate.ts`) are compiled with the main build but run as a standalone script: `node dist/processors/generate.js <results-dir>`. Guarded with `if (process.argv[1] === __filename)`.
 - **Runtime path resolution**: `testRunner.ts` detects whether it is running from compiled `dist/` or source via `isCompiledDist = currentDir.includes('/dist/')` — preserve this logic when modifying path-dependent code.
 - **Template files** are copied post-`tsc` in the `build` script — if you add new `.ejs` templates under `src/templates/`, update the `build` script accordingly.

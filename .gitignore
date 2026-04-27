@@ -1,5 +1,5 @@
 results/
-!telescopetest-io/src/pages/results/
+!packages/telescope-web/src/pages/results/
 node_modules/
 tmp/
 .DS_Store

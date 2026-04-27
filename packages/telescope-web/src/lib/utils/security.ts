@@ -20,7 +20,7 @@ export function isValidTestId(testId: string): boolean {
 }
 
 // ZIP files can be created on Windows (with backslashes) or Unix (with forward slashes)
-// Inside telescopetest-io, normalize ALL zip filepaths to POSIX format (forward slashes) for cross-platform ZIP handling
+// Inside telescope-web, normalize ALL zip filepaths to POSIX format (forward slashes) for cross-platform ZIP handling
 export function toPosixPath(filepath: string): string {
   return filepath.split('\\').join('/');
 }

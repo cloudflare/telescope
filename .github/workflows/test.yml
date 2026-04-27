@@ -6,11 +6,11 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'telescopetest-io/**'
+      - 'packages/telescope-web/**'
   pull_request:
     branches: [main]
     paths-ignore:
-      - 'telescopetest-io/**'
+      - 'packages/telescope-web/**'
 
 jobs:
   test:

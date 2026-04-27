@@ -1,5 +1,5 @@
 ---
-description: Specialist for Astro components, pages, and CSS in telescopetest-io. Use when building or modifying UI — pages, components, layouts, or styles.
+description: Specialist for Astro components, pages, and CSS in telescope-web. Use when building or modifying UI — pages, components, layouts, or styles.
 model: anthropic/claude-sonnet-4-6
 mode: subagent
 temperature: 0.2

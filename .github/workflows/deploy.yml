@@ -7,9 +7,9 @@ on:
     branches:
       - main
     paths:
-      - 'telescopetest-io/**'
-      - '!telescopetest-io/.opencode/**'
-      - '!telescopetest-io/opencode.json'
+      - 'packages/telescope-web/**'
+      - '!packages/telescope-web/.opencode/**'
+      - '!packages/telescope-web/opencode.json'
 
 jobs:
   deploy:
@@ -24,30 +24,30 @@ jobs:
         with:
           node-version: 'lts/krypton'
           cache: 'npm'
-          cache-dependency-path: './telescopetest-io/package-lock.json'
+          cache-dependency-path: './packages/telescope-web/package-lock.json'
 
       - name: install dependencies
-        working-directory: ./telescopetest-io
+        working-directory: ./packages/telescope-web
         run: npm ci
 
       - name: run any new migrations
-        working-directory: ./telescopetest-io
+        working-directory: ./packages/telescope-web
         run: npx wrangler d1 migrations apply telescope-db --remote --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: generate prisma client
-        working-directory: ./telescopetest-io
+        working-directory: ./packages/telescope-web
         run: npx prisma generate
 
       - name: build astro site
-        working-directory: ./telescopetest-io
+        working-directory: ./packages/telescope-web
         run: CLOUDFLARE_ENV=production npx astro build
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: deploy to cloudflare workers
-        working-directory: ./telescopetest-io
+        working-directory: ./packages/telescope-web
         run: npx wrangler deploy --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

@@ -1,5 +1,5 @@
 ---
-description: Read-only code reviewer for telescopetest-io. Use when you want analysis, feedback, or a second opinion on code without making any changes.
+description: Read-only code reviewer for telescope-web. Use when you want analysis, feedback, or a second opinion on code without making any changes.
 model: anthropic/claude-sonnet-4-6
 mode: subagent
 temperature: 0.1
