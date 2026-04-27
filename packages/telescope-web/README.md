@@ -1,16 +1,27 @@
-# telescopetest.io
+# telescope-web
 
-This is the website for users to upload and view Telescope ZIP results. This is built with Astro web framework and hosted on Cloudflare Workers.
+The web application for [telescopetest.io](https://telescopetest.io) — upload and view [`@cloudflare/telescope`](../telescope) test results in an interactive UI. Built with Astro and hosted on Cloudflare Workers.
+
+Part of the [`cloudflare/telescope`](https://github.com/cloudflare/telescope) monorepo. Lives at `packages/telescope-web/`.
+
+## Stack
+
+- **Astro v6** with `@astrojs/cloudflare` adapter
+- **Cloudflare Workers** (D1, R2, AI bindings)
+- **Prisma v7** with `@prisma/adapter-d1` for D1 (SQLite)
+- **React v19** for interactive components
+- Node.js 24+ required
 
 ## Project Setup
 
-To set up for local development, you need to install project dependencies:
+To set up for local development, install dependencies and run the one-time setup script from `packages/telescope-web/`:
 
-```
+```bash
+cd packages/telescope-web
 npm install
 ```
 
-And initialize a few things:
+Then initialize a few things:
 
 - create local database (will prompt you to confirm that you want to perform the DB migrations)
 - generate Prisma client (in `generated/prisma` folder)
@@ -54,7 +65,7 @@ This should fill your created file with the raw SQLite for your changes.
 
 ### Note about Workers AI (AI content review)
 
-One thing to note is that telescope-web uses Workers AI for AI content review on uploads. Wokers AI _always_ uses tokens that can incur costs, even in local/remote testing. AI content review is disabled locally by default. You can optionally enable AI content review (which may start costing money) by running the command `cp .dev.vars.example .dev.vars` and setting `ENABLE_AI_RATING=true`.
+One thing to note is that telescope-web uses Workers AI for AI content review on uploads. Workers AI _always_ uses tokens that can incur costs, even in local/remote testing. AI content review is disabled locally by default. You can optionally enable AI content review (which may start costing money) by running the command `cp .dev.vars.example .dev.vars` and setting `ENABLE_AI_RATING=true`.
 
 ## Testing in Staging
 
