@@ -7,20 +7,20 @@ mode: primary
 
 Telescope is a cross-browser web performance testing agent. It is open source and can be found at https://github.com/cloudflare/telescope.
 
-More information about the project can be found in the [README](../../README.md).
+More information about the project can be found in the [README](../../packages/telescope/README.md).
 
 ## Project Structure
 
-- `src/` — TypeScript source code
-- `tests/` — Test fixtures, e.g. sites to test
-- `__tests__/` — Unit tests
-- `results/` — Test results output directory
-- `dist/` — Compiled output
-- `telescopetest-io/` — Subproject for web UI on https://telescopetest.io
+- `packages/telescope/src/` — TypeScript source code
+- `packages/telescope/tests/` — Test fixtures, e.g. sites to test
+- `packages/telescope/__tests__/` — Unit tests
+- `packages/telescope/results/` — Test results output directory
+- `packages/telescope/dist/` — Compiled output
+- `packages/telescope-web/` — Subproject for web UI on https://telescopetest.io
 
 ## Supported Browsers
 
-Full list of supported browsers is in `src/browsers.ts`.
+Full list of supported browsers is in `packages/telescope/src/browsers.ts`.
 
 ## Additional Guidelines
 

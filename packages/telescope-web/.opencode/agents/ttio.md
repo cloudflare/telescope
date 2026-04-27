@@ -1,5 +1,5 @@
 ---
-description: Assistant for the telescopetest-io project. Use for general development, feature work, debugging, and questions about this codebase.
+description: Assistant for the telescope-web project. Use for general development, feature work, debugging, and questions about this codebase.
 model: anthropic/claude-sonnet-4-6
 mode: primary
 permission:

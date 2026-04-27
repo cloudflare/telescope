@@ -129,7 +129,7 @@ export default [
       'node_modules/**',
       'results/**',
       'tmp/**',
-      'telescopetest-io/**',
+      'packages/**',
       '*.config.js',
     ],
   },
