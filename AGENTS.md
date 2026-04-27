@@ -36,7 +36,12 @@ npm run build --workspaces
 npm run test --workspaces
 npm run lint --workspaces
 
-# Specific package
+# Telescope package (shortcuts)
+npm run test:telescope           # build + vitest run
+npm run test:telescope:ci        # CI mode (Firefox only)
+npm run coverage:telescope       # vitest run --coverage
+
+# Specific package (explicit workspace flag)
 npm run build -w packages/telescope
 npm run test -w packages/telescope
 npm run lint -w packages/telescope
@@ -44,6 +49,15 @@ npm run lint -w packages/telescope
 npm run build -w packages/telescope-web
 npm run test -w packages/telescope-web
 ```
+
+### Run the CLI from repo root
+
+```bash
+npm run build -w packages/telescope
+npx . -u https://example.com
+```
+
+The root `package.json` `bin` field points to `packages/telescope/dist/src/cli.js`. Build the telescope package first — `npx .` requires compiled output.
 
 See `packages/telescope/AGENTS.md` and `packages/telescope-web/AGENTS.md` for the full list of per-package commands.
 

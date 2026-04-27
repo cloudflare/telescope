@@ -26,15 +26,20 @@ A TypeScript CLI and Node.js library that launches real browsers, collects perfo
 
 ### Quick start
 
+From the repo root:
+
+```bash
+npm install
+npm run build -w packages/telescope
+npx . -u https://example.com -b chrome
+```
+
+Or from `packages/telescope/` directly:
+
 ```bash
 cd packages/telescope
 npm install
 npm run build
-```
-
-Run a test:
-
-```bash
 npx . -u https://example.com -b chrome
 ```
 

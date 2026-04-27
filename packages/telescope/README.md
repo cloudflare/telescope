@@ -220,7 +220,14 @@ npm install -g @cloudflare/telescope
 
 ### From source
 
-After cloning the repository, install dependencies and build from `packages/telescope/`:
+From the repo root:
+
+```bash
+npm install
+npm run build -w packages/telescope
+```
+
+Or from `packages/telescope/` directly:
 
 ```bash
 cd packages/telescope
@@ -279,7 +286,7 @@ All CLI options are supported as object properties. See Parameters section for a
 
 ## Contributing To This Project
 
-All commands below must be run from `packages/telescope/`.
+Commands below can be run from `packages/telescope/` directly, or from the repo root using workspace shortcuts (see root `README.md`).
 
 ### Running Automated Tests
 
