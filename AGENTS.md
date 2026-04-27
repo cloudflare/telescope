@@ -6,11 +6,12 @@
 
 Key subdirectories:
 
-- `src/` — TypeScript source compiled to `dist/`
-- `__tests__/` — Vitest integration tests (excluded from tsconfig)
-- `tests/` — Static test fixtures (HTML, CSS, images) used by integration tests
-- `support/` — Browser support files (e.g., Firefox default `user.js` preferences)
-- `processors/` — Standalone post-processing report generator (included in main tsconfig)
+- `packages/telescope/` — Core library and CLI (TypeScript, Playwright, Vitest)
+  - `src/` — TypeScript source compiled to `dist/`
+  - `__tests__/` — Vitest integration tests (excluded from tsconfig)
+  - `tests/` — Static test fixtures (HTML, CSS, images) used by integration tests
+  - `support/` — Browser support files (e.g., Firefox default `user.js` preferences)
+  - `processors/` — Standalone post-processing report generator (included in main tsconfig)
 - `packages/telescope-web/` — Separate Astro + Cloudflare Workers web app (fully excluded from root tooling)
 
 ---
@@ -67,11 +68,11 @@ npm run build && npx vitest run __tests__/cli.test.ts -t "generates a Har file"
 
 ```typescript
 // Correct
-import { log } from './helpers.js';
-import type { LaunchOptions } from './types.js';
+import { log } from "./helpers.js";
+import type { LaunchOptions } from "./types.js";
 
 // Wrong — will fail to resolve
-import { log } from './helpers';
+import { log } from "./helpers";
 ```
 
 ---
@@ -86,12 +87,12 @@ import { log } from './helpers';
 - Group: external packages first, then internal relative imports
 
 ```typescript
-import { Command, Option } from 'commander';
-import playwright from 'playwright';
+import { Command, Option } from "commander";
+import playwright from "playwright";
 
-import type { BrowserContext } from 'playwright';
-import type { LaunchOptions, TestResult } from './types.js';
-import { log, generateTestID } from './helpers.js';
+import type { BrowserContext } from "playwright";
+import type { LaunchOptions, TestResult } from "./types.js";
+import { log, generateTestID } from "./helpers.js";
 ```
 
 ### Formatting (Prettier)
@@ -147,8 +148,8 @@ The `Telescope` class in `src/index.ts` wraps `launchTest` for OOP-style usage:
 
 ```typescript
 const telescope = new Telescope({
-  url: 'https://example.com',
-  browser: 'chrome',
+  url: "https://example.com",
+  browser: "chrome",
 });
 const result = await telescope.run();
 ```
@@ -173,9 +174,9 @@ try {
 
 ```typescript
 try {
-  writeFileSync(path, JSON.stringify(data), 'utf8');
+  writeFileSync(path, JSON.stringify(data), "utf8");
 } catch (err) {
-  console.error('Error writing file: ' + err);
+  console.error("Error writing file: " + err);
 }
 ```
 
@@ -218,28 +219,28 @@ export async function launchTest(options: LaunchOptions): Promise<TestResult> { 
 
 ```typescript
 // Typical parameterized test
-import { launchTest } from '../src/index.js';
-import { describe, it, expect, beforeAll } from 'vitest';
+import { launchTest } from "../src/index.js";
+import { describe, it, expect, beforeAll } from "vitest";
 
-import { BrowserConfig } from '../src/browsers.js';
-import type { SuccessfulTestResult } from '../src/types.js';
-import { retrieveHAR } from './helpers.js';
+import { BrowserConfig } from "../src/browsers.js";
+import type { SuccessfulTestResult } from "../src/types.js";
+import { retrieveHAR } from "./helpers.js";
 
 const browsers = BrowserConfig.getBrowsers();
 
-describe.each(browsers)('Feature: %s', browser => {
+describe.each(browsers)("Feature: %s", (browser) => {
   let result: SuccessfulTestResult;
 
   beforeAll(async () => {
     const testResult = await launchTest({
-      url: 'https://example.com',
+      url: "https://example.com",
       browser,
     });
     if (!testResult.success) throw new Error(testResult.error);
     result = testResult;
   }, 120000); // always set explicit timeout for browser tests
 
-  it('produces a HAR file', () => {
+  it("produces a HAR file", () => {
     expect(retrieveHAR(result.testId)).toBeTruthy();
   });
 });
@@ -291,7 +292,8 @@ Package versions for Playwright packages must match, or Playwright may install t
 
 ## Architecture Notes
 
-- **`packages/telescope-web/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from root `tsconfig.json`, ESLint, Vitest, and Prettier configs.
+- **`packages/telescope-web/`** is a fully independent project — do not touch its files when working on the core library. It has its own `package.json` and is excluded from `packages/telescope/` tooling configs.
+- All core library commands (`npm run build`, `npm test`, `npm run lint`) must be run from `packages/telescope/`.
 - **Processors** (`processors/generate.ts`) are compiled with the main build but run as a standalone script: `node dist/processors/generate.js <results-dir>`. Guarded with `if (process.argv[1] === __filename)`.
 - **Runtime path resolution**: `testRunner.ts` detects whether it is running from compiled `dist/` or source via `isCompiledDist = currentDir.includes('/dist/')` — preserve this logic when modifying path-dependent code.
 - **Template files** are copied post-`tsc` in the `build` script — if you add new `.ejs` templates under `src/templates/`, update the `build` script accordingly.
