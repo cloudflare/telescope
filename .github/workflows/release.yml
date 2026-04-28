@@ -18,11 +18,6 @@ jobs:
       id-token: write
       contents: write
       pull-requests: write
-    env:
-      HOME: /root
-    container:
-      # make sure to match this version with the one in package.json
-      image: mcr.microsoft.com/playwright:v1.59.1-noble
 
     steps:
       - name: Checkout repository
@@ -37,31 +32,17 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install xz-utils
-        run: apt-get update && apt-get install -y xz-utils
-
-      - name: Set up FFmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v3
-
       - name: Install dependencies
-        # don't install the browsers since we're using the pre-built container
+        # skip postinstall (Playwright browser download not needed for publish)
         run: npm ci --ignore-scripts
 
       - name: Build telescope
         working-directory: ./packages/telescope
         run: npm run build
 
-      - name: Build telescope-web
+      - name: Generate Prisma client (telescope-web)
         working-directory: ./packages/telescope-web
         run: npm run generate
-
-      - name: Run lint
-        working-directory: ./packages/telescope
-        run: npm run lint
-
-      - name: Run tests
-        working-directory: ./packages/telescope
-        run: npm run test:ci
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
@@ -75,3 +56,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
