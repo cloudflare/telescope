@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Pre-release Checks
+    if: ${{ github.repository_owner == 'cloudflare' }}
+    runs-on: ubuntu-latest
+    env:
+      HOME: /root
+    container:
+      # make sure to match this version with the one in package.json
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install xz-utils
+        run: apt-get update && apt-get install -y xz-utils
+
+      - name: Set up FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+
+      - name: Install dependencies
+        # don't install the browsers since we're using the pre-built container
+        run: npm ci --ignore-scripts
+
+      - name: Build telescope
+        working-directory: ./packages/telescope
+        run: npm run build
+
+      - name: Build telescope-web
+        working-directory: ./packages/telescope-web
+        run: npm run generate
+
+      - name: Run lint
+        working-directory: ./packages/telescope
+        run: npm run lint
+
+      - name: Run tests
+        working-directory: ./packages/telescope
+        run: npm run test:ci
+
+  release:
+    name: Release
+    needs: check
+    if: ${{ github.repository_owner == 'cloudflare' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build telescope
+        working-directory: ./packages/telescope
+        run: npm run build
+
+      - name: Build telescope-web
+        working-directory: ./packages/telescope-web
+        run: npm run generate
+
+      - name: Publish @cloudflare/telescope
+        working-directory: ./packages/telescope
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @cloudflare/telescope-web
+        working-directory: ./packages/telescope-web
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
