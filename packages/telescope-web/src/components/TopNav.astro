@@ -34,8 +34,18 @@ const navItems = [
   </div>
   <div class="actions">
     {!hideThemeSwitcher && (
-      <button class="theme-toggle" type="button" aria-label="Toggle theme"
-      ></button>
+      <div class="theme-switch-wrapper">
+        <span class="theme-icon">☀️</span>
+        <label class="theme-toggle" title="Toggle theme">
+          <input
+            type="checkbox"
+            class="theme-toggle-input"
+            aria-label="Toggle theme"
+          />
+          <span class="slider"></span>
+        </label>
+        <span class="theme-icon">🌙</span>
+      </div>
     )}
     <a
       class="gh"
@@ -72,7 +82,18 @@ const navItems = [
   </nav>
   <div class="mobile-actions">
     {!hideThemeSwitcher && (
-      <button class="theme-toggle mobile-theme-toggle" type="button" aria-label="Toggle theme"></button>
+      <div class="theme-switch-wrapper">
+        <span class="theme-icon">☀️</span>
+        <label class="theme-toggle" title="Toggle theme">
+          <input
+            type="checkbox"
+            class="theme-toggle-input"
+            aria-label="Toggle theme"
+          />
+          <span class="slider"></span>
+        </label>
+        <span class="theme-icon">🌙</span>
+      </div>
     )}
     <a
       class="gh"
@@ -160,41 +181,57 @@ const navItems = [
     gap: 0.875rem; /* 14px */
   }
 
-  .theme-toggle {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    cursor: pointer;
-    padding: 0.375rem 0.625rem; /* 6px 10px */
-    border-radius: 0.75rem; /* 12px */
-    font-size: 1rem; /* 16px */
-    line-height: 1;
-    transition: all 0.2s ease;
+  .theme-switch-wrapper {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.25rem; /* 4px */
   }
 
-  .theme-toggle::after {
-    content: '🌙';
+  .theme-icon {
+    font-size: 0.875rem; /* 14px */
+    user-select: none;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .theme-toggle::after {
-      content: '☀️';
-    }
+  .theme-toggle {
+    position: relative;
+    display: inline-block;
+    width: 2.25rem; /* 36px */
+    height: 1.25rem; /* 20px */
   }
 
-  :global([data-theme-override='dark']) .theme-toggle::after {
-    content: '☀️';
+  .theme-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
   }
 
-  :global([data-theme-override='light']) .theme-toggle::after {
-    content: '🌙';
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--slider-bg);
+    transition: 0.3s;
+    border-radius: 1.25rem; /* 20px */
+    border: 1px solid var(--slider-border);
   }
 
-  .theme-toggle:hover {
-    background: var(--panel);
+  .slider:before {
+    position: absolute;
+    content: '';
+    height: 0.875rem; /* 14px */
+    width: 0.875rem; /* 14px */
+    left: 0.125rem; /* 2px */
+    bottom: 0.125rem; /* 2px */
+    background-color: var(--slider-color);
+    transition: 0.3s;
+    border-radius: 50%;
+    transform: translateX(var(--slider-pos));
+  }
+
+  .theme-toggle:hover .slider {
     border-color: var(--brand-hover);
   }
 
@@ -317,42 +354,32 @@ const navItems = [
 </style>
 
 <script>
-  function getCookie(name: string) {
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-      const [cookieName, cookieValue] = cookie.split('=', 2).map(c => c.trim());
-      if (cookieName === name) return cookieValue;
-    }
-  }
-
-  function setCookie(name: string, value: string, days: number) {
-    const d = new Date();
-    d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
-    const expires = d.toUTCString();
-    const secure = window.location.protocol === 'https:' ? ';Secure' : '';
-    document.cookie = `${name}=${value};expires=${expires};path=/;SameSite=Lax${secure}`;
-  }
-
-  const savedTheme = getCookie('theme-override');
-
-  if (savedTheme === 'light' || savedTheme === 'dark') {
-    document.documentElement.setAttribute('data-theme-override', savedTheme);
-  }
-
   function applyThemeToggles() {
-    const buttons = document.querySelectorAll('.theme-toggle') as NodeListOf<HTMLButtonElement>;
-    buttons.forEach(button => {
-      button.addEventListener('click', () => {
-        const isDark = document.documentElement.getAttribute(
-          'data-theme-override',
-        )
-          ? document.documentElement.getAttribute('data-theme-override') ===
-            'dark'
-          : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // The master state is in the Layout.astro's #theme-toggle-input
+    const masterToggle = document.getElementById('theme-toggle-input') as HTMLInputElement;
+    const toggles = document.querySelectorAll('.theme-toggle-input') as NodeListOf<HTMLInputElement>;
 
-        const newTheme = isDark ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme-override', newTheme);
-        setCookie('theme-override', newTheme, 365);
+    if (!masterToggle) return;
+
+    // Sync all visual toggles with the master state
+    toggles.forEach(t => {
+      t.checked = masterToggle.checked;
+      t.addEventListener('change', (e) => {
+        const checked = (e.target as HTMLInputElement).checked;
+        masterToggle.checked = checked;
+        // Trigger change on master to update cookie and state
+        masterToggle.dispatchEvent(new Event('change'));
+        // Sync other visual toggles
+        toggles.forEach(other => {
+          if (other !== t) other.checked = checked;
+        });
+      });
+    });
+
+    // Listen for changes to masterToggle to sync visual toggles (e.g. if updated elsewhere)
+    masterToggle.addEventListener('change', () => {
+      toggles.forEach(t => {
+        t.checked = masterToggle.checked;
       });
     });
   }
