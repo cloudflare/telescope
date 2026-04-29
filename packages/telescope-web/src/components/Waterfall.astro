@@ -10,7 +10,7 @@ const { testId, hasHar } = Astro.props;
 {!hasHar ? (
   <p class="wf-unavailable">No HAR file available for this test.</p>
 ) : (
-  <div class="wf-root" id="wf-root" data-test-id={testId}>
+    <div class="wf-root" id="wf-root" data-test-id={testId}>
 
     <!-- Legend — fully static HTML, no JS needed -->
     <div class="wf-legend" aria-label="Waterfall chart legend">
@@ -824,6 +824,8 @@ const { testId, hasHar } = Astro.props;
     const loadingEl = document.getElementById('wf-loading') as HTMLElement;
     const errorEl = document.getElementById('wf-error') as HTMLElement;
     try {
+      // Always fetch HAR through the Worker endpoint — fetch() requires CORS,
+      // and the CDN domain is cross-origin. Images/video use src= which is exempt.
       const res = await fetch(`/api/tests/${testId}/pageload.har`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const har: Har = await res.json();

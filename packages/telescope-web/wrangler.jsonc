@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "telescope-web",
   "account_id": "4b1c95badf17540db82cd8b431ae3eb0",
-  "main": "@astrojs/cloudflare/entrypoints/server",
+  "main": "./src/worker.ts",
   "compatibility_date": "2026-03-17",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "observability": {
@@ -12,6 +12,8 @@
     "development": {
       "vars": {
         "ENABLE_AI_RATING": "false",
+        // PUBLIC_ASSETS_URL intentionally absent — the CDN domain is remote-only and
+        // would break local asset serving. Assets always go through /api/tests/* in dev.
       },
       "assets": {
         "binding": "ASSETS",
@@ -30,14 +32,26 @@
           "binding": "RESULTS_BUCKET",
           "bucket_name": "results-bucket-development",
         },
+        {
+          "binding": "PUBLIC_RESULTS_BUCKET",
+          "bucket_name": "results-bucket-public-development",
+        },
       ],
       "ai": {
         "binding": "AI",
       },
+      "workflows": [
+        {
+          "name": "ai-content-rating-development",
+          "binding": "AI_RATING_WORKFLOW",
+          "class_name": "AiContentRatingWorkflow",
+        },
+      ],
     },
     "staging": {
       "vars": {
         "ENABLE_AI_RATING": "true",
+        "PUBLIC_ASSETS_URL": "https://assets-staging.telescopetest.io", // no trailing slash
       },
       "routes": [
         {
@@ -62,14 +76,26 @@
           "binding": "RESULTS_BUCKET",
           "bucket_name": "results-bucket-staging",
         },
+        {
+          "binding": "PUBLIC_RESULTS_BUCKET",
+          "bucket_name": "results-bucket-public-staging",
+        },
       ],
       "ai": {
         "binding": "AI",
       },
+      "workflows": [
+        {
+          "name": "ai-content-rating-staging",
+          "binding": "AI_RATING_WORKFLOW",
+          "class_name": "AiContentRatingWorkflow",
+        },
+      ],
     },
     "production": {
       "vars": {
         "ENABLE_AI_RATING": "true",
+        "PUBLIC_ASSETS_URL": "https://assets.telescopetest.io", // no trailing slash
       },
       "routes": [
         {
@@ -94,10 +120,21 @@
           "binding": "RESULTS_BUCKET",
           "bucket_name": "results-bucket",
         },
+        {
+          "binding": "PUBLIC_RESULTS_BUCKET",
+          "bucket_name": "results-bucket-public",
+        },
       ],
       "ai": {
         "binding": "AI",
       },
+      "workflows": [
+        {
+          "name": "ai-content-rating",
+          "binding": "AI_RATING_WORKFLOW",
+          "class_name": "AiContentRatingWorkflow",
+        },
+      ],
     },
   },
 }

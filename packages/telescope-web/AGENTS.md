@@ -67,4 +67,4 @@ npm test                     # vitest run
 - This package is **fully excluded** from `packages/telescope/` tooling configs and from root-level build/lint/test workspace scripts.
 - `node_modules` is hoisted to the repo root via npm workspaces — do not run `npm install` from within this directory expecting a local `node_modules`.
 - Environment-specific config is controlled via `CLOUDFLARE_ENV` (set by `cross-env` in npm scripts) and Wrangler environments.
-- D1 database bindings are configured in `wrangler.toml` per environment.
+- D1 database bindings are configured in `wrangler.jsonc` per environment.

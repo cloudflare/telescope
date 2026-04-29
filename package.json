@@ -14,6 +14,7 @@
         "lint:fix": "npm run lint:fix --workspaces",
         "prettier": "npm run prettier --workspaces"
     },
+    "main": "packages/telescope/dist/src/index.js",
     "bin": {
         "telescope": "packages/telescope/dist/src/cli.js"
     },

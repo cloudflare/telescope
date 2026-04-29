@@ -123,3 +123,24 @@ export async function updateContentRating(
     data: { content_rating: rating },
   });
 }
+
+export async function markInProgressIfUnknown(
+  prisma: PrismaClient,
+  testId: string,
+): Promise<boolean> {
+  const result = await prisma.tests.updateMany({
+    where: { test_id: testId, content_rating: ContentRating.UNKNOWN },
+    data: { content_rating: ContentRating.IN_PROGRESS },
+  });
+  return result.count > 0;
+}
+
+export async function resetInProgressToUnknown(
+  prisma: PrismaClient,
+  testId: string,
+): Promise<void> {
+  await prisma.tests.updateMany({
+    where: { test_id: testId, content_rating: ContentRating.IN_PROGRESS },
+    data: { content_rating: ContentRating.UNKNOWN },
+  });
+}

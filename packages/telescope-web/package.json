@@ -14,6 +14,7 @@
     "migrate:staging": "npx wrangler d1 migrations apply telescope-db-staging --remote --env staging",
     "deploy:development": "npm run build:development && wrangler deploy --env development",
     "deploy:staging": "npm run build:staging && wrangler deploy --env staging",
+    "logging:staging": "npx wrangler tail --env staging --format pretty",
     "generate": "prisma generate",
     "studio": "prisma studio",
     "test": "vitest run"
