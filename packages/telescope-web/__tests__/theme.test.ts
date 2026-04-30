@@ -17,7 +17,7 @@ test.describe('Theme Switcher Gatekeeper', () => {
     await expect(body).toHaveCSS('background-color', 'rgb(255, 255, 255)');
 
     // Verify toggle is NOT checked
-    const toggle = page.locator('#theme-toggle-input');
+    const toggle = page.locator('.theme-toggle-visual').first();
     await expect(toggle).not.toBeChecked();
   });
 
@@ -30,7 +30,7 @@ test.describe('Theme Switcher Gatekeeper', () => {
     await expect(body).toHaveCSS('background-color', 'rgb(15, 15, 15)');
 
     // Verify visual slider position is dark (1rem) even if checkbox is unchecked (due to no script)
-    const slider = page.locator('.slider');
+    const slider = page.locator('.slider').first();
     await expect(slider).toHaveCSS('--slider-pos', '1rem');
   });
 
@@ -39,14 +39,14 @@ test.describe('Theme Switcher Gatekeeper', () => {
     await page.goto(BASE_URL);
 
     // Click the toggle (via label)
-    await page.click('label.theme-toggle');
+    await page.locator('label.theme-toggle').first().click();
 
     // Verify background changed to dark
     const body = page.locator('body');
     await expect(body).toHaveCSS('background-color', 'rgb(15, 15, 15)');
 
     // Verify visual slider position (check CSS variable on the slider element)
-    const slider = page.locator('.slider');
+    const slider = page.locator('.slider').first();
     await expect(slider).toHaveCSS('--slider-pos', '1rem');
 
     // Verify cookie was set

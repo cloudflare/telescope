@@ -39,7 +39,7 @@ const navItems = [
         <label class="theme-toggle" title="Toggle theme">
           <input
             type="checkbox"
-            class="theme-toggle-input"
+            class="theme-toggle-visual"
             aria-label="Toggle theme"
           />
           <span class="slider"></span>
@@ -87,7 +87,7 @@ const navItems = [
         <label class="theme-toggle" title="Toggle theme">
           <input
             type="checkbox"
-            class="theme-toggle-input"
+            class="theme-toggle-visual"
             aria-label="Toggle theme"
           />
           <span class="slider"></span>
@@ -357,7 +357,7 @@ const navItems = [
   function applyThemeToggles() {
     // The master state is in the Layout.astro's #theme-toggle-input
     const masterToggle = document.getElementById('theme-toggle-input') as HTMLInputElement;
-    const toggles = document.querySelectorAll('.theme-toggle-input') as NodeListOf<HTMLInputElement>;
+    const toggles = document.querySelectorAll('.theme-toggle-visual') as NodeListOf<HTMLInputElement>;
 
     if (!masterToggle) return;
 
