@@ -19,7 +19,7 @@
     "generate": "prisma generate",
     "studio": "prisma studio",
     "test": "vitest run",
-    "test:ui": "playwright test -c playwright.config.ts theme"
+    "test:ui": "playwright test -c playwright.config.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.1.10",
