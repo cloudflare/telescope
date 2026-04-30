@@ -165,7 +165,11 @@ h3 {
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease,
+    filter 0.2s ease;
   text-decoration: none;
 }
 
