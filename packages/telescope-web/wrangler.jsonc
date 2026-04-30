@@ -1,7 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "telescope-web",
-  "account_id": "4b1c95badf17540db82cd8b431ae3eb0",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-03-17",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -36,6 +35,7 @@
       },
     },
     "staging": {
+      "account_id": "4b1c95badf17540db82cd8b431ae3eb0",
       "vars": {
         "ENABLE_AI_RATING": "true",
       },
@@ -68,6 +68,7 @@
       },
     },
     "production": {
+      "account_id": "4b1c95badf17540db82cd8b431ae3eb0",
       "vars": {
         "ENABLE_AI_RATING": "true",
       },
