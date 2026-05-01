@@ -6,19 +6,42 @@ on:
       - main
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
+  check:
+    name: Pre-release Checks
+    if: ${{ github.repository_owner == 'cloudflare' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies (skip postinstall)
+        run: npm ci --ignore-scripts
+
+      - name: Build telescope
+        run: npm run build -w packages/telescope
+
+      - name: Lint telescope
+        run: npm run lint -w packages/telescope
+
   release:
     name: Release
+    needs: check
     if: ${{ github.repository_owner == 'cloudflare' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: write
       pull-requests: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,28 +55,39 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install dependencies
-        # skip postinstall (Playwright browser download not needed for publish)
+      - name: Install dependencies (skip postinstall)
         run: npm ci --ignore-scripts
 
       - name: Build telescope
-        working-directory: ./packages/telescope
-        run: npm run build
+        run: npm run build -w packages/telescope
 
-      - name: Generate Prisma client (telescope-web)
-        working-directory: ./packages/telescope-web
-        run: npm run generate
+      # Compute the next version that `changeset version` would produce. Used
+      # to inject the version into the PR title and commit message below.
+      # Falls back to "next" when no pending changesets exist.
+      - name: Compute next version
+        id: next_version
+        run: |
+          npx changeset status --output=release-status.json || true
+          if [ -f release-status.json ]; then
+            VERSION=$(node -e "const r=require('./release-status.json').releases||[]; const t=r.find(x=>x.name==='@cloudflare/telescope'); console.log(t?t.newVersion:'')")
+          else
+            VERSION=""
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION="next"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Next telescope version: $VERSION"
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v1.7.0
         with:
           version: npm run version-packages
           publish: npx changeset publish
-          commit: 'chore: version packages'
-          title: 'chore: version packages'
+          title: 'Publish ${{ steps.next_version.outputs.version }}'
+          commit: 'Publish ${{ steps.next_version.outputs.version }}'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'

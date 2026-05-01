@@ -1,7 +1,9 @@
 {
   "name": "@cloudflare/telescope-web",
+  "private": true,
   "type": "module",
   "version": "0.0.1",
+  "description": "Telescope web UI — Astro + Cloudflare Workers app for viewing test results. Not published to npm.",
   "scripts": {
     "dev": "cross-env CLOUDFLARE_ENV=development astro dev",
     "dev:setup": "./scripts/dev-setup.sh",
