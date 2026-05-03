@@ -216,9 +216,10 @@ Network throttling (`--connectionType`) requires OS-level traffic shaping via th
 
 ```bash
 npm install -g @cloudflare/telescope
-npx playwright install            # one-time browser binary download (~700MB)
 telescope -u https://example.com
 ```
+
+The `postinstall` script automatically runs `npx playwright install` to download Chrome, Firefox, and Safari (~700MB, may take 2–5 minutes).
 
 After `npm install -g`, the `telescope` command is on your PATH and can be invoked directly without `npx`. Verify with `which telescope` (Unix) or `where telescope` (Windows).
 
@@ -251,15 +252,13 @@ npm link
 
 ### Chrome, Firefox, and Safari
 
-After installing the package (e.g. `npm install -g @cloudflare/telescope` or `npx @cloudflare/telescope`), you must install Playwright's browser binaries before running tests:
+Telescope's `postinstall` script automatically runs `npx playwright install` to install `chrome`, `firefox`, and `safari`. The download is ~700MB and may take 2–5 minutes.
+
+If you skipped the postinstall (e.g. `npm install --ignore-scripts`), run it manually:
 
 ```bash
 npx playwright install
 ```
-
-This installs `chrome`, `firefox`, and `safari`. The download is ~700MB and may take 2–5 minutes.
-
-When working from a clone of this repository, the same command is run automatically by the `dev:setup` script.
 
 ### Microsoft Edge and Chrome-beta
 

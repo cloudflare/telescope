@@ -34,7 +34,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prettier": "npx prettier --write .",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "postinstall": "npx playwright install"
   },
   "keywords": [
     "performance",

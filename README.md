@@ -30,9 +30,10 @@ Install from npm:
 
 ```bash
 npm install -g @cloudflare/telescope
-npx playwright install            # one-time browser binary download
 telescope -u https://example.com -b chrome
 ```
+
+The `postinstall` script automatically downloads Playwright's browser binaries (~700MB).
 
 Or from a clone of this repo:
 
