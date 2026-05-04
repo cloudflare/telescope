@@ -1,0 +1,25 @@
+{
+  "changesets": [
+    {
+      "releases": [
+        {
+          "name": "@cloudflare/telescope",
+          "type": "minor"
+        }
+      ],
+      "summary": "Initial public release of @cloudflare/telescope.\n\n- Cross-browser performance testing CLI built on Playwright\n- Programmatic API via `Telescope` class and `launchTest()`\n- HAR, Web Vitals, screenshots, filmstrip, and video collection\n- HTML report generation via the `processors/` entry point",
+      "id": "initial-release"
+    }
+  ],
+  "releases": [
+    {
+      "name": "@cloudflare/telescope",
+      "type": "minor",
+      "oldVersion": "1.0.0",
+      "changesets": [
+        "initial-release"
+      ],
+      "newVersion": "1.1.0"
+    }
+  ]
+}
