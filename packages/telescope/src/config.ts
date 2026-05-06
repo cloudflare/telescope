@@ -47,6 +47,8 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     delayUsing: DEFAULT_OPTIONS.delayUsing,
     userAgent: options.userAgent,
     agentExtra: options.agentExtra,
+    name: options.name,
+    description: options.description,
   };
 
   // Already-parsed JSON options: pass through directly

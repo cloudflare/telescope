@@ -198,6 +198,8 @@ export interface LaunchOptions {
   delay?: Record<string, number>;
   delayUsing?: DelayMethod;
   device?: CustomDeviceDescriptor;
+  name?: string;
+  description?: string;
 }
 
 /**
@@ -529,6 +531,8 @@ export interface SavedConfig {
   date: string;
   options: LaunchOptions;
   browserConfig: BrowserConfigOptions;
+  name?: string;
+  description?: string;
 }
 
 // ============================================================================
@@ -663,6 +667,8 @@ export interface CLIOptions {
   userAgent?: string;
   agentExtra?: string;
   device?: string;
+  name?: string;
+  description?: string;
 }
 
 // ============================================================================

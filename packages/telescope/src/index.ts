@@ -371,6 +371,10 @@ export default function browserAgent(): void {
         'Append to the browser User Agent. Takes precedence over --userAgent',
       ),
     )
+    .addOption(new Option('--name <string>', 'Test name'))
+    .addOption(
+      new Option('--description <string>', 'Test description'),
+    )
     .addOption(
       new Option(
         '--device <string>',
