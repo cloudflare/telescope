@@ -1,13 +1,8 @@
 ---
-import { env } from 'cloudflare:workers';
-
 import type { Tests } from '@/lib/types/tests';
 
 import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
-
-import { getPrismaClient } from '@/lib/prisma/client';
-import { getAllTests } from '@/lib/repositories/testRepository';
 
 import { ListIcon, SquaresFourIcon } from '@phosphor-icons/react/ssr';
 
@@ -16,12 +11,15 @@ const savedView = Astro.cookies.get('resultsView')?.value;
 const viewLayout =
   savedView === 'grid' || savedView === 'vertical' ? savedView : 'vertical';
 
-// Fetch all tests from D1
-const aiEnabled = env.ENABLE_AI_RATING === 'true';
-const prisma = getPrismaClient(Astro);
-const tests = await getAllTests(prisma, aiEnabled);
+// AI content rating only applies in cloudflare mode.
+let aiEnabled = false;
+if (Astro.locals.mode === 'cloudflare') {
+  const { env } = await import('cloudflare:workers');
+  aiEnabled = env.ENABLE_AI_RATING === 'true';
+}
 
-// get proper interface with screenshot
+const tests = await Astro.locals.testStore.getAll(aiEnabled);
+
 type TestWithScreenshot = Tests & {
   screenshot_url: string | null;
 };
@@ -29,15 +27,15 @@ type TestWithScreenshot = Tests & {
 const filename = 'screenshot.png';
 const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
   tests.map(async (test: Tests): Promise<TestWithScreenshot> => {
-    let screenshotUrl: string | null = null;
-    const key = `${test.test_id}/${filename}`;
-    const obj = await env.RESULTS_BUCKET!.head(key);
-    if (obj) {
-      screenshotUrl = `/api/tests/${test.test_id}/${filename}`;
-    }
+    const hasScreenshot = await Astro.locals.storage.exists(
+      test.test_id,
+      filename,
+    );
     return {
-      ...test, // now with content_rating field
-      screenshot_url: screenshotUrl,
+      ...test,
+      screenshot_url: hasScreenshot
+        ? `/api/tests/${test.test_id}/${filename}`
+        : null,
     };
   }),
 );
@@ -75,9 +73,11 @@ export const prerender = false;
               Grid
             </button>
           </div>
-          <span class={`ai-flag ${aiEnabled ? 'ai-on' : 'ai-off'}`}>
-            AI content filtering {aiEnabled ? 'on' : 'off'}
-          </span>
+          {Astro.locals.mode === 'cloudflare' && (
+            <span class={`ai-flag ${aiEnabled ? 'ai-on' : 'ai-off'}`}>
+              AI content filtering {aiEnabled ? 'on' : 'off'}
+            </span>
+          )}
         </div>
         <div class="results-container" data-layout={viewLayout}>
           {testsWithScreenshots.map(test => (

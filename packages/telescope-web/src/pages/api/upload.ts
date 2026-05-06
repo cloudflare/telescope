@@ -1,5 +1,3 @@
-import { env } from 'cloudflare:workers';
-
 import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
 import type { TestConfig } from '@/lib/types/tests';
@@ -11,13 +9,6 @@ import { normalizeAndFilterZipFiles, toPosixPath } from '@/lib/utils/security';
 import { generateTestId } from '@/lib/utils/testId';
 
 import { TestSource, ContentRating } from '@/lib/types/tests';
-import { getPrismaClient } from '@/lib/prisma/client';
-import {
-  createTest,
-  findTestIdByZipKey,
-  updateContentRating,
-} from '@/lib/repositories/testRepository';
-import { rateUrlContent } from '@/lib/ai/ai-content-rater';
 
 // route is server-rendered by default b/c `astro.config.mjs` has `output: server`
 
@@ -33,7 +24,7 @@ async function getUnzipped(buffer: ArrayBuffer): Promise<Unzipped> {
   return unzipped;
 }
 
-// Generate a SHA-256 hash of the buffer contents to use as unique identifier
+// Generate a SHA-256 hash of the buffer contents to use as unique identifier (cloudflare mode only)
 async function generateContentHash(buffer: ArrayBuffer): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -52,43 +43,50 @@ export const POST: APIRoute = async (context: APIContext) => {
     });
     const formData = await context.request.formData();
     const result = uploadSchema.safeParse({
-      // safeParse() is explicit runtime type check: https://zod.dev/basics?id=handling-errors
       file: formData.get('file'),
-      name: formData.get('name'),
-      description: formData.get('description'),
+      name: formData.get('name') || undefined,
+      description: formData.get('description') || undefined,
       source: formData.get('source'),
     });
     if (!result.success) {
-      return new Response(JSON.stringify({ error: result.error.errors }), {
-        // TODO: add custom error messaging
+      return new Response(JSON.stringify({ error: result.error.issues }), {
         status: 400,
+        headers: { 'Content-Type': 'application/json' },
       });
     }
     const { file, name, description, source } = result.data;
+    const mode = context.locals.mode;
+    const storage = context.locals.storage;
+    const testStore = context.locals.testStore;
+
     // Read file buffer
     const buffer = await file.arrayBuffer();
     const unzipped = await getUnzipped(buffer);
     const files = Object.keys(unzipped);
-    // Generate hash for unique R2 storage key
-    const zipKey = await generateContentHash(buffer);
-    // Check if this exact content already exists in D1
-    const prisma = getPrismaClient(context);
-    const existing = await findTestIdByZipKey(prisma, zipKey);
-    if (existing) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Duplicate uploads are not allowed.`,
-          testId: existing.testId,
-          contentRating: existing.contentRating,
-        }),
-        {
-          status: 409,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      );
+
+    // Cloudflare mode: dedup by SHA-256 of full ZIP contents.
+    // Local mode: defer dedup until we know the testId (folder name).
+    let zipKey = '';
+    if (mode === 'cloudflare') {
+      zipKey = await generateContentHash(buffer);
+      const existing = await testStore.findByZipKey(zipKey);
+      if (existing) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Duplicate uploads are not allowed.`,
+            testId: existing.testId,
+            contentRating: existing.contentRating,
+          }),
+          {
+            status: 409,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
     }
-    // Find if some ' .../config.json' exists
+
+    // Locate config.json inside the archive
     const configPath = files.find(
       file => path.posix.basename(toPosixPath(file)) === 'config.json',
     );
@@ -138,7 +136,7 @@ export const POST: APIRoute = async (context: APIContext) => {
     let configText;
     try {
       configText = configDecoder.decode(configBytes);
-    } catch (error) {
+    } catch (_error) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -173,8 +171,8 @@ export const POST: APIRoute = async (context: APIContext) => {
         })
         .passthrough(),
     });
-    type ConfigJson = z.infer<typeof configSchema>;
-    let config: ConfigJson;
+    type UploadConfigJson = z.infer<typeof configSchema>;
+    let config: UploadConfigJson;
     try {
       const parsed = JSON.parse(configText);
       const configResult = configSchema.safeParse(parsed);
@@ -188,7 +186,7 @@ export const POST: APIRoute = async (context: APIContext) => {
         );
       }
       config = configResult.data;
-    } catch (error) {
+    } catch (_error) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -200,7 +198,9 @@ export const POST: APIRoute = async (context: APIContext) => {
     // Build test configuration object
     const testId = generateTestId(config.date);
     const browser =
-      config.options.browser || config.browserConfig.engine || 'unknown';
+      (config.options.browser as string | undefined) ||
+      config.browserConfig.engine ||
+      'unknown';
     const testConfig: TestConfig = {
       testId,
       zipKey,
@@ -211,9 +211,41 @@ export const POST: APIRoute = async (context: APIContext) => {
       testDate: Math.floor(new Date(config.date).getTime() / 1000),
       browser,
     };
-    // Store test metadata in database
+
+    // Local mode: dedup by folder name
+    if (mode === 'local') {
+      const existing = await testStore.findByTestId(testId);
+      if (existing) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Duplicate uploads are not allowed.`,
+            testId: existing.testId,
+            contentRating: existing.contentRating,
+          }),
+          {
+            status: 409,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
+    }
+
+    // Inject name/description into config.json before persisting it.
+    if (name || description) {
+      const enriched = {
+        ...(config as unknown as Record<string, unknown>),
+        ...(name ? { name } : {}),
+        ...(description ? { description } : {}),
+      };
+      normalizedUnzipped['config.json'] = new TextEncoder().encode(
+        JSON.stringify(enriched),
+      );
+    }
+
+    // Persist test metadata (cloudflare: D1 row; local: no-op)
     try {
-      await createTest(prisma, testConfig);
+      await testStore.create(testConfig);
     } catch (error) {
       return new Response(
         JSON.stringify({
@@ -223,18 +255,15 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // store all valid files in R2 with {testId}/{filename} format
-    for (const filename of validFiles) {
-      await env.RESULTS_BUCKET!.put(
-        `${testId}/${filename}`,
-        normalizedUnzipped[filename],
-      );
+    // Persist all valid files via the storage layer
+    for (const filename of Object.keys(normalizedUnzipped)) {
+      await storage.put(testId, filename, normalizedUnzipped[filename]);
     }
     // Build success response first
     const response = new Response(
       JSON.stringify({
         success: true,
-        testId: testId,
+        testId,
         message: 'Upload processed successfully',
       }),
       {
@@ -243,20 +272,37 @@ export const POST: APIRoute = async (context: APIContext) => {
       },
     );
 
-    // Rate the URL content via Workers AI — fire-and-forget after response is built
-    if (env.ENABLE_AI_RATING === 'true' && env.AI) {
-      context.locals.cfContext.waitUntil(
-        (async () => {
-          await updateContentRating(prisma, testId, ContentRating.IN_PROGRESS);
+    // AI rating: cloudflare mode only.
+    if (mode === 'cloudflare') {
+      const { env } = await import('cloudflare:workers');
+      if (env.ENABLE_AI_RATING === 'true' && env.AI) {
+        const cfRuntime = (
+          context.locals as unknown as {
+            runtime?: { ctx?: { waitUntil?: (p: Promise<unknown>) => void } };
+          }
+        ).runtime;
+        const waitUntil = cfRuntime?.ctx?.waitUntil?.bind(cfRuntime.ctx);
+        const job = (async () => {
+          const { rateUrlContent } = await import('@/lib/ai/ai-content-rater');
+          await testStore.updateContentRating(
+            testId,
+            ContentRating.IN_PROGRESS,
+          );
           const rating = await rateUrlContent(
             env.AI!,
             testConfig.url,
             normalizedUnzipped['metrics.json'],
             normalizedUnzipped['screenshot.png'],
           );
-          await updateContentRating(prisma, testId, rating);
-        })(),
-      );
+          await testStore.updateContentRating(testId, rating);
+        })();
+        if (waitUntil) {
+          waitUntil(job);
+        } else {
+          // Fallback: fire and forget without backgrounding.
+          job.catch(err => console.error('[upload] rating job failed:', err));
+        }
+      }
     }
 
     return response;

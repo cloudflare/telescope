@@ -1,22 +1,21 @@
 ---
-import { env } from 'cloudflare:workers';
-
 import type { MetricsJson } from '@/lib/types/metrics';
 interface Props {
   testId: string;
   metrics: MetricsJson | null;
 }
 const { testId, metrics } = Astro.props;
+const storage = Astro.locals.storage;
+
 let frameRate = 1;
-try {
-  const configObj = await env.RESULTS_BUCKET.get(`${testId}/config.json`);
-  if (configObj) {
-    const config = await configObj.json<{ options?: { frameRate?: number } }>();
-    frameRate = config?.options?.frameRate || 1;
-  }
-} catch (error) {
-  console.error('Error reading config.json:', error);
+const config = await storage.getJSON<{ options?: { frameRate?: number } }>(
+  testId,
+  'config.json',
+);
+if (config) {
+  frameRate = config?.options?.frameRate || 1;
 }
+
 const fcpMs = metrics?.paintTiming?.find(
   p => p.name === 'first-contentful-paint',
 )?.startTime;
@@ -28,6 +27,7 @@ const lcpMs =
     : lcpEntry?.startTime;
 const layoutShifts =
   metrics?.layoutShifts?.filter(s => !s.hadRecentInput) || [];
+
 interface FilmstripFrame {
   filename: string;
   frameNum: number;
@@ -38,18 +38,19 @@ interface FilmstripFrame {
   isLcp: boolean;
   hasShift: boolean;
 }
+
 let filmstripFrames: FilmstripFrame[] = [];
 let videoUrl: string | null = null;
 try {
-  const listed = await env.RESULTS_BUCKET.list({ prefix: `${testId}/` });
-  const frames = listed.objects
+  const allFiles = await storage.list(testId);
+  const frames = allFiles
     .filter(
-      obj =>
-        obj.key.includes('/filmstrip/') &&
-        (obj.key.endsWith('.jpg') || obj.key.endsWith('.png')),
+      key =>
+        key.includes('filmstrip/') &&
+        (key.endsWith('.jpg') || key.endsWith('.png')),
     )
-    .map(obj => {
-      const filename = obj.key.split('/').pop() || '';
+    .map(key => {
+      const filename = key.split('/').pop() || '';
       const match = filename.match(/frame_\d+x\d+_(\d+)\.(jpg|png)/);
       const frameNum = match ? parseInt(match[1], 10) : 0;
       return {
@@ -75,14 +76,11 @@ try {
     );
     return { ...frame, ms, timeLabel, isFcp, isLcp, hasShift };
   });
-  const videoFile = listed.objects.find(
-    obj =>
-      obj.key.startsWith(`${testId}/`) &&
-      !obj.key.includes('/filmstrip/') &&
-      obj.key.endsWith('.webm'),
+  const videoFile = allFiles.find(
+    key => !key.includes('filmstrip/') && key.endsWith('.webm'),
   );
   if (videoFile) {
-    videoUrl = `/api/tests/${testId}/${videoFile.key.replace(`${testId}/`, '')}`;
+    videoUrl = `/api/tests/${testId}/${videoFile}`;
   }
 } catch (error) {
   console.error('Error loading filmstrip/video:', error);

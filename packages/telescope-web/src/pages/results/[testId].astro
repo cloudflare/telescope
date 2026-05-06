@@ -1,6 +1,4 @@
 ---
-import { env } from 'cloudflare:workers';
-
 import Page from '@/layouts/Page.astro';
 import MetricCard from '@/components/MetricCard.astro';
 import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
@@ -14,8 +12,6 @@ import Console from '@/components/Console.astro';
 import Bottlenecks from '@/components/Bottlenecks.astro';
 import ConfigTab from '@/components/ConfigTab.astro';
 
-import { getPrismaClient } from '@/lib/prisma/client';
-import { getTestById } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
 
 import type { MetricsJson } from '@/lib/types/metrics';
@@ -39,10 +35,14 @@ if (!testId) {
   return Astro.redirect('/results');
 }
 
-const aiEnabled = env.ENABLE_AI_RATING === 'true';
+// AI gating only applies in cloudflare mode.
+let aiEnabled = false;
+if (Astro.locals.mode === 'cloudflare') {
+  const { env } = await import('cloudflare:workers');
+  aiEnabled = env.ENABLE_AI_RATING === 'true';
+}
 
-const prisma = getPrismaClient(Astro);
-const test = await getTestById(prisma, testId);
+const test = await Astro.locals.testStore.getById(testId);
 if (!test) {
   return Astro.redirect('/results');
 }
@@ -53,7 +53,7 @@ const isUnknown =
   (test.content_rating === ContentRating.UNKNOWN ||
     test.content_rating === ContentRating.IN_PROGRESS);
 
-// Only read R2 files if content is safe to display
+// Only read result files if content is safe to display
 let screenshotUrl: string | null = null;
 let harBrowser: { name: string; version: string } | null = null;
 let hasHar = false;
@@ -70,69 +70,32 @@ let transferBytes = extractTransferSize(null);
 let durationMs = extractDuration(null);
 
 if (!isUnsafe && !isUnknown) {
+  const storage = Astro.locals.storage;
+
   // --- Screenshot ---
-  const screenshotKey = `${testId}/screenshot.png`;
-  const screenshotObj = await env.RESULTS_BUCKET.head(screenshotKey);
-  screenshotUrl = screenshotObj ? `/api/tests/${testId}/screenshot.png` : null;
+  const hasScreenshot = await storage.exists(testId, 'screenshot.png');
+  screenshotUrl = hasScreenshot ? `/api/tests/${testId}/screenshot.png` : null;
 
   // --- HAR (browser version + existence check for Waterfall) ---
-  try {
-    const harObj = await env.RESULTS_BUCKET.get(`${testId}/pageload.har`);
-    if (harObj) {
-      hasHar = true;
-      har = await harObj.json<Har>();
-      harBrowser = har?.log?.browser ?? null;
-    }
-  } catch (err) {
-    console.error('Error reading HAR browser info:', err);
-    // HAR unavailable — render without browser version
+  har = await storage.getJSON<Har>(testId, 'pageload.har');
+  if (har) {
+    hasHar = true;
+    harBrowser = har?.log?.browser ?? null;
   }
 
   // --- Metrics ---
-  try {
-    const metricsObj = await env.RESULTS_BUCKET.get(`${testId}/metrics.json`);
-    if (metricsObj) {
-      metrics = await metricsObj.json<MetricsJson>();
-    }
-  } catch (err) {
-    console.error('Error reading metrics.json:', err);
-    // metrics unavailable — render without them
-  }
+  metrics = await storage.getJSON<MetricsJson>(testId, 'metrics.json');
 
   // --- Resources ---
-  try {
-    const resourcesObj = await env.RESULTS_BUCKET.get(
-      `${testId}/resources.json`,
-    );
-    if (resourcesObj) {
-      resources = await resourcesObj.json<ResourceTiming[]>();
-    }
-  } catch (err) {
-    console.error('Error reading resources.json:', err);
-    // resources unavailable — render without them
-  }
+  resources =
+    (await storage.getJSON<ResourceTiming[]>(testId, 'resources.json')) ?? [];
 
   // --- Console Messages ---
-  try {
-    const consoleObj = await env.RESULTS_BUCKET.get(`${testId}/console.json`);
-    if (consoleObj) {
-      consoleMessages = await consoleObj.json<ConsoleMessage[]>();
-    }
-  } catch (err) {
-    console.error('Error reading console.json:', err);
-    // console messages unavailable — render without them
-  }
+  consoleMessages =
+    (await storage.getJSON<ConsoleMessage[]>(testId, 'console.json')) ?? [];
 
   // --- Config ---
-  try {
-    const configObj = await env.RESULTS_BUCKET.get(`${testId}/config.json`);
-    if (configObj) {
-      config = await configObj.json<ConfigJson>();
-    }
-  } catch (err) {
-    console.error('Error reading config.json:', err);
-    // config unavailable — render without it
-  }
+  config = await storage.getJSON<ConfigJson>(testId, 'config.json');
 
   // Extract metric values
   lcp = getLcp(metrics);

@@ -1,4 +1,3 @@
-import { env } from 'cloudflare:workers';
 import { zipSync } from 'fflate';
 
 import type { APIContext, APIRoute } from 'astro';
@@ -15,36 +14,36 @@ export const GET: APIRoute = async (context: APIContext) => {
   if (!isValidTestId(testId)) {
     return new Response('Invalid testId format', { status: 400 });
   }
-  const aiEnabled = env.ENABLE_AI_RATING === 'true';
-  if (aiEnabled) {
-    const rating = await checkTestRating(context, testId);
-    if (rating !== ContentRating.SAFE) {
-      return new Response('Test file not available', { status: 404 });
+
+  // AI rating gating only applies in cloudflare mode.
+  if (context.locals.mode === 'cloudflare') {
+    const { env } = await import('cloudflare:workers');
+    const aiEnabled = env.ENABLE_AI_RATING === 'true';
+    if (aiEnabled) {
+      const rating = await checkTestRating(context, testId);
+      if (rating !== ContentRating.SAFE) {
+        return new Response('Test file not available', { status: 404 });
+      }
     }
   }
-  const bucket = env.RESULTS_BUCKET;
-  const prefix = `${testId}/`;
+
+  const storage = context.locals.storage;
+
   try {
-    // Use R2 list() function that matches the prefix: https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#r2listoptions
-    const listed = await bucket.list({ prefix });
-    if (!listed.objects || listed.objects.length === 0) {
+    const keys = await storage.list(testId);
+    if (keys.length === 0) {
       return new Response('No files found for this test', { status: 404 });
     }
-    const keys = listed.objects
-      .map(obj => obj.key)
-      .filter(key => key.slice(prefix.length)); // filter out empty paths upfront
     const files: Record<string, Uint8Array> = {};
-    // need for-loop for sequential downloads, doing parallel downloads could overwhelm Worker
+    // Sequential reads to avoid overwhelming the runtime (esp. Workers).
     for (const key of keys) {
-      const relativePath = key.slice(prefix.length);
-      const r2obj = await bucket.get(key);
-      if (r2obj) {
-        const arrayBuffer = await r2obj.arrayBuffer();
-        files[relativePath] = new Uint8Array(arrayBuffer);
+      const bytes = await storage.get(testId, key);
+      if (bytes) {
+        files[key] = bytes;
       }
     }
     const zipped = zipSync(files, {
-      level: 6, // default compression size/quality tradeoff: https://github.com/101arrowz/fflate#usage
+      level: 6, // default compression size/quality tradeoff
     });
     const zipBuffer = zipped.buffer.slice(
       zipped.byteOffset,
