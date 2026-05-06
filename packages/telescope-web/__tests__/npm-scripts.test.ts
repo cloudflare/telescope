@@ -52,11 +52,11 @@ async function hasFiles(dirPath: string): Promise<boolean> {
 }
 
 describe('npm scripts functionality', () => {
-  describe('build script', () => {
+  describe('build:local script', () => {
     const distPath = path.join(PROJECT_ROOT, 'dist');
     let buildResult: { stdout: string; stderr: string; exitCode: number };
     beforeAll(async () => {
-      buildResult = await runScript('build:development', 120000);
+      buildResult = await runScript('build:local', 120000);
     }, 120000);
     afterAll(() => {
       if (existsSync(distPath)) {
@@ -68,6 +68,10 @@ describe('npm scripts functionality', () => {
       expect(existsSync(distPath)).toBe(true);
       const hasContent = await hasFiles(distPath);
       expect(hasContent).toBe(true);
+    });
+    it('should produce a Node server entrypoint', () => {
+      const entrypoint = path.join(distPath, 'server', 'entry.mjs');
+      expect(existsSync(entrypoint)).toBe(true);
     });
   });
 
