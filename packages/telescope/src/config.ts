@@ -4,12 +4,23 @@ import type {
   ConnectionType,
   BrowserName,
   CustomDeviceDescriptor,
+  PlaywrightEngine,
 } from './types.js';
 import { parseUnknown } from './validation.js';
 import { StringArraySchema } from './schemas.js';
 
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
 import { devices } from 'playwright';
+
+/**
+ * Maps a Playwright engine name to the corresponding Telescope BrowserName.
+ * Used to derive a default browser from a device's defaultBrowserType.
+ */
+const ENGINE_TO_BROWSER_NAME: Record<PlaywrightEngine, BrowserName> = {
+  chromium: 'chrome',
+  firefox: 'firefox',
+  webkit: 'safari',
+};
 
 /**
  * Normalize CLI options into a typed LaunchOptions config.
@@ -26,7 +37,7 @@ import { devices } from 'playwright';
 export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
   const config: LaunchOptions = {
     url: options.url,
-    browser: (options.browser as BrowserName) || DEFAULT_OPTIONS.browser,
+    browser: options.browser as BrowserName | undefined,
     width: options.width,
     height: options.height,
     frameRate: options.frameRate ?? DEFAULT_OPTIONS.frameRate,
@@ -136,6 +147,17 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     // the 'device' in config is the playwright object with device metadata
     config.device = playwrightDevice as CustomDeviceDescriptor;
   }
+
+  // resolve browser: device default first, explicit -b overrides, then fallback
+  if (config.device) {
+    config.browser = ENGINE_TO_BROWSER_NAME[config.device.defaultBrowserType];
+  }
+
+  if (options.browser) {
+    config.browser = options.browser as BrowserName;
+  }
+
+  config.browser = config.browser ?? DEFAULT_OPTIONS.browser;
 
   return config;
 }
