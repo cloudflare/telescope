@@ -1,9 +1,14 @@
 import fs from 'fs';
+import { devices } from 'playwright';
 import type { SuccessfulTestResult } from '../src/index.js';
 import { launchTest } from '../src/index.js';
 import { BrowserConfig } from '../src/browsers.js';
 import { normalizeCLIConfig } from '../src/config.js';
-import type { LaunchOptions, BrowserConfigOptions } from '../src/types.js';
+import type {
+  LaunchOptions,
+  BrowserConfigOptions,
+  CustomDeviceDescriptor,
+} from '../src/types.js';
 import { describe, it, expect, beforeAll } from 'vitest';
 
 const browsers = BrowserConfig.getBrowsers();
@@ -177,4 +182,117 @@ describe.each(browsers)('Device Emulation Tests', browser => {
       });
     },
   );
+});
+
+// Expected engine for each device's defaultBrowserType
+const deviceBrowserExpectations: {
+  device: string;
+  expectedBrowser: string;
+  expectedEngine: string;
+}[] = [
+  { device: 'iPhone 15', expectedBrowser: 'safari', expectedEngine: 'webkit' },
+  { device: 'Pixel 7', expectedBrowser: 'chrome', expectedEngine: 'chromium' },
+  {
+    device: 'Desktop Safari',
+    expectedBrowser: 'safari',
+    expectedEngine: 'webkit',
+  },
+  {
+    device: 'Desktop Chrome',
+    expectedBrowser: 'chrome',
+    expectedEngine: 'chromium',
+  },
+  {
+    device: 'Desktop Firefox',
+    expectedBrowser: 'firefox',
+    expectedEngine: 'firefox',
+  },
+];
+
+describe('Device default browser resolution', () => {
+  describe.each(deviceBrowserExpectations)(
+    'Device only (no -b): $device',
+    ({ device, expectedBrowser, expectedEngine }) => {
+      let config_options: LaunchOptions;
+      let config: BrowserConfigOptions;
+
+      beforeAll(() => {
+        config_options = normalizeCLIConfig({
+          device,
+          url: '../tests/sandbox/index.html',
+        });
+        config = new BrowserConfig().getBrowserConfig(
+          config_options.browser!,
+          config_options,
+        );
+      });
+
+      it(`resolves browser to "${expectedBrowser}"`, () => {
+        expect(config_options.browser).toBe(expectedBrowser);
+      });
+
+      it(`resolves engine to "${expectedEngine}"`, () => {
+        expect(config.engine).toBe(expectedEngine);
+      });
+    },
+  );
+
+  describe.each(deviceBrowserExpectations)(
+    'Device + explicit -b override: $device',
+    ({ device }) => {
+      let config_options: LaunchOptions;
+      let config: BrowserConfigOptions;
+
+      beforeAll(() => {
+        config_options = normalizeCLIConfig({
+          device,
+          browser: 'firefox',
+          url: '../tests/sandbox/index.html',
+        });
+        config = new BrowserConfig().getBrowserConfig(
+          config_options.browser!,
+          config_options,
+        );
+      });
+
+      it('explicit -b overrides device default browser', () => {
+        expect(config_options.browser).toBe('firefox');
+      });
+
+      it('engine matches the explicit browser, not the device', () => {
+        expect(config.engine).toBe('firefox');
+      });
+    },
+  );
+
+  describe('Browser only (no device)', () => {
+    it('uses the provided browser', () => {
+      const config_options = normalizeCLIConfig({
+        browser: 'safari',
+        url: '../tests/sandbox/index.html',
+      });
+      expect(config_options.browser).toBe('safari');
+
+      const config = new BrowserConfig().getBrowserConfig(
+        config_options.browser!,
+        config_options,
+      );
+      expect(config.engine).toBe('webkit');
+    });
+  });
+
+  describe('Neither device nor browser', () => {
+    it('defaults to chrome/chromium', () => {
+      const config_options = normalizeCLIConfig({
+        url: '../tests/sandbox/index.html',
+      });
+      expect(config_options.browser).toBe('chrome');
+
+      const config = new BrowserConfig().getBrowserConfig(
+        config_options.browser!,
+        config_options,
+      );
+      expect(config.engine).toBe('chromium');
+    });
+  });
 });
