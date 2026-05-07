@@ -1,5 +1,4 @@
 import fs from 'fs';
-import { devices } from 'playwright';
 import type { SuccessfulTestResult } from '../src/index.js';
 import { launchTest } from '../src/index.js';
 import { BrowserConfig } from '../src/browsers.js';
