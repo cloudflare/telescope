@@ -192,7 +192,6 @@ export default function browserAgent(): void {
     .requiredOption('-u, --url <url>', 'URL to run tests against')
     .addOption(
       new Option('-b, --browser <browser_name>', 'Browser to run tests with')
-        .default(DEFAULT_OPTIONS.browser)
         .choices([
           'chrome',
           'chrome-beta',
