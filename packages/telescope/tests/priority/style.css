@@ -1,6 +1,10 @@
 /*****************************************************************************
- * This style file ideally should be more than one packet size just to be
+ * This style file ideally should be more than one packet in size just to be
  * a little bit realistic.
+ * At the moment, none of the styles actually matter for the priority test.
+ * The main thing is the second.png image is pushed quite far below-the-fold
+ * so it's initial priority will be Low. I tried to make the page look OK
+ * and interesting incase somebody wants to screenshot it.
  ****************************************************************************/
 
 /*
@@ -61,7 +65,7 @@ em, span.em {
 }
 
 /*
- * Do not want hypenated words to wrap in pieces.
+ * We do not want hypenated words to wrap in pieces.
  **/
 span.em {
   font-style: italic;
@@ -94,4 +98,24 @@ u {
  **/
 img {
     background-color: rgba(7, 7, 7, 7%);
+}
+
+@media (max-width: 1024px) {
+  h1 {
+    font-size: 2.8em;
+  }
+
+  p {
+    font-size: 62px;
+  }
+}
+
+@media (max-width: 414px) {
+  h1 {
+    font-size: 2.6em;
+  }
+
+  p {
+    font-size: 60px;
+  }
 }

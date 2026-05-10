@@ -1,9 +1,10 @@
 import type { AddressInfo } from 'node:net';
 import { createServer, type Server } from 'node:http';
+import { gzipSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { setTimeout as sleep } from 'timers/promises';
 
 import { expect } from 'vitest';
 
@@ -11,6 +12,15 @@ import { cleanupTestDirectory, retrieveHAR } from './helpers.js';
 import { launchTest } from '../src/index.js';
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+
+/**
+ * Blocks the thread for ms milliseconds by timing out while waiting for a
+ * shared memory location to change (which will not happen)
+ **/
+
+function blockingSleep(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
 
 export function fixturesDir(name: string): string {
   return join(projectRoot, 'tests', name);
@@ -20,11 +30,16 @@ export function fixturesDir(name: string): string {
  * Launches a test, asserts success, retrieves the HAR, and cleans up the test
  * directory after the callback finishes (even on failure).
  */
+
 export async function withHAR(
   options: LaunchOptions,
   callback: (har: HarData) => void,
 ): Promise<void> {
   const result = await launchTest(options);
+  if (!result.success) {
+    console.error(result.error);
+  }
+
   expect(result.success).toBe(true);
 
   const testId = (result as SuccessfulTestResult).testId;
@@ -39,21 +54,41 @@ export async function withHAR(
 
 /**
  * Creates a static-file HTTP server that serves the given files from
- * the specified fixtures directory. Call `listen()` to start it.
+ * the specified fixtures directory. Call `listenServer()` to start it.
  */
 export function createStaticServer(
   fixturesDirPath: string,
-  delay?: number
+  delay?: number,
+  compress?: number
 ): Server {
   return createServer(async (req, res) => {
     if (req.url.startsWith('/')) {
+      let acceptEncoding = req.headers['accept-encoding'];
+
+      if (delay) {
+        // Pause for delay milliseconds to simulate processing
+        blockingSleep(delay);
+      }
+
       if (req.url === '/' || req.url === '/index.html') {
         try {
           const filePath = join(fixturesDirPath, 'index.html');
           const data = await readFile(filePath);
-          res.writeHead(200, { 'Content-Type': 'text/html' });
-          res.end(data);
-        } catch {
+
+          if (compress && acceptEncoding.includes('gzip')) {
+            res.writeHead(200, {
+              'Content-Type': 'text/html',
+              'Content-Encoding': 'gzip'
+            });
+
+            const compressed = gzipSync(data, { level: compress });
+            res.end(compressed);
+          } else {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(data);
+          }
+        } catch (err) {
+          console.error(err);
           res.writeHead(404);
           res.end('Not found');
         }
@@ -80,12 +115,19 @@ export function createStaticServer(
         const ext = filePath.split('.').pop() ?? '';
         const contentType = mimeTypes[ext] ?? 'application/octet-stream';
 
-        if (delay) {
-          await sleep(delay); // Pause for delay milliseconds
-        }
+        if (compress && acceptEncoding.includes('gzip') &&
+          (ext === 'css' || ext === 'js')) {
+          res.writeHead(200, {
+            'Content-Type': contentType,
+            'Content-Encoding': 'gzip'
+          });
 
-        res.writeHead(200, { 'Content-Type': contentType });
-        res.end(data);
+          const compressed = gzipSync(data, { level: compress });
+          res.end(compressed);
+        } else {
+          res.writeHead(200, { 'Content-Type': contentType });
+          res.end(data);
+        }
       } catch {
         res.writeHead(404);
         res.end('Not found');

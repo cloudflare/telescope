@@ -15,7 +15,7 @@ describe('Request HAR entries', () => {
 
   beforeAll(async () => {
     // Start web server with a little delay on responses to be more realistic
-    server = createStaticServer(fixturesDir('priority'), 250);
+    server = createStaticServer(fixturesDir('priority'), 250, 9);
     baseUrl = await listenServer(server);
   });
 
@@ -53,7 +53,7 @@ describe('Request HAR entries', () => {
                 'Large above-the-fold image starts at Medium')
                 .toEqual('Medium');
               expect(entry._priority,
-                'Large above-the-fold image boosted to High')
+                `Large above-the-fold image ${uri} boosted to High`)
                 .toEqual('High');
             } else {
               expect(entry._initialPriority,
