@@ -2,7 +2,6 @@ import type { AddressInfo } from 'node:net';
 import { createServer, type Server } from 'node:http';
 import { gzipSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
-import { createReadStream } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,7 +9,13 @@ import { expect } from 'vitest';
 
 import { cleanupTestDirectory, retrieveHAR, blockingSleep } from './helpers.js';
 import { launchTest } from '../src/index.js';
-import { HarData, LaunchOptions, mimeTypes, testServerConfig, SuccessfulTestResult } from '../src/types.js';
+import {
+  type HarData,
+  type LaunchOptions,
+  mimeTypes, // const Record
+  type testServerConfig,
+  type SuccessfulTestResult
+} from '../src/types.js';
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
