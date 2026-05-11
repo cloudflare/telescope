@@ -8,19 +8,15 @@ import { fileURLToPath } from 'node:url';
 
 import { expect } from 'vitest';
 
-import { cleanupTestDirectory, retrieveHAR } from './helpers.js';
+import { cleanupTestDirectory, retrieveHAR, blockingSleep } from './helpers.js';
 import { launchTest } from '../src/index.js';
+import { HarData, LaunchOptions, mimeTypes, testServerConfig, SuccessfulTestResult } from '../src/types.js';
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
 /**
- * Blocks the thread for ms milliseconds by timing out while waiting for a
- * shared memory location to change (which will not happen)
+ * Path to the files the test web server will serve
  **/
-
-function blockingSleep(ms: number) {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
-}
 
 export function fixturesDir(name: string): string {
   return join(projectRoot, 'tests', name);
@@ -57,31 +53,29 @@ export async function withHAR(
  * the specified fixtures directory. Call `listenServer()` to start it.
  */
 export function createStaticServer(
-  fixturesDirPath: string,
-  delay?: number,
-  compress?: number
+  config: testServerConfig
 ): Server {
   return createServer(async (req, res) => {
     if (req.url.startsWith('/')) {
       let acceptEncoding = req.headers['accept-encoding'];
 
-      if (delay) {
+      if (config.delay) {
         // Pause for delay milliseconds to simulate processing
-        blockingSleep(delay);
+        blockingSleep(config.delay);
       }
 
       if (req.url === '/' || req.url === '/index.html') {
         try {
-          const filePath = join(fixturesDirPath, 'index.html');
+          const filePath = join(config.fixturesDirPath, 'index.html');
           const data = await readFile(filePath);
 
-          if (compress && acceptEncoding.includes('gzip')) {
+          if (config.compress && acceptEncoding.includes('gzip')) {
             res.writeHead(200, {
               'Content-Type': 'text/html',
               'Content-Encoding': 'gzip'
             });
 
-            const compressed = gzipSync(data, { level: compress });
+            const compressed = gzipSync(data, { level: config.compress });
             res.end(compressed);
           } else {
             res.writeHead(200, { 'Content-Type': 'text/html' });
@@ -97,32 +91,21 @@ export function createStaticServer(
 
       // Parse the URL
       const urlObject = new URL(`http://localhost${req.url}`);
-      const filePath = join(fixturesDirPath, urlObject.pathname);
+      const filePath = join(config.fixturesDirPath, urlObject.pathname);
 
       try {
         const data = await readFile(filePath);
-        const mimeTypes: Record<string, string> = {
-          avif: 'image/avif',
-          css: 'text/css',
-          gif: 'image/gif',
-          html: 'text/html',
-          jpg: 'image/jpeg',
-          js: 'text/javascript',
-          jxl: 'image/jpeg-xl',
-          png: 'image/png',
-          webp: 'image/webp'
-        };
         const ext = filePath.split('.').pop() ?? '';
         const contentType = mimeTypes[ext] ?? 'application/octet-stream';
 
-        if (compress && acceptEncoding.includes('gzip') &&
+        if (config.compress && acceptEncoding.includes('gzip') &&
           (ext === 'css' || ext === 'js')) {
           res.writeHead(200, {
             'Content-Type': contentType,
             'Content-Encoding': 'gzip'
           });
 
-          const compressed = gzipSync(data, { level: compress });
+          const compressed = gzipSync(data, { level: config.compress });
           res.end(compressed);
         } else {
           res.writeHead(200, { 'Content-Type': contentType });

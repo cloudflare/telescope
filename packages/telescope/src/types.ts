@@ -731,3 +731,28 @@ export interface CustomDeviceDescriptor {
    */
   defaultBrowserType: 'chromium' | 'firefox' | 'webkit';
 }
+
+// ============================================================================
+// Testing types
+// ============================================================================
+
+export interface testServerConfig {
+  fixturesDirPath: string,
+  delay?: number,
+  compress?: number
+}
+
+export const mimeTypes: Record<string, string> = {
+  avif: 'image/avif',
+  css: 'text/css',
+  gif: 'image/gif',
+  html: 'text/html',
+  jpg: 'image/jpeg',
+  js: 'text/javascript',
+  json: 'application/json',
+  jxl: 'image/jpeg-xl',
+  png: 'image/png',
+  svg: 'image/svg_xml',
+  webp: 'image/webp',
+  woff2: 'font/woff2'
+};

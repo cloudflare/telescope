@@ -15,7 +15,11 @@ describe('Request HAR entries', () => {
 
   beforeAll(async () => {
     // Start web server with a little delay on responses to be more realistic
-    server = createStaticServer(fixturesDir('priority'), 250, 9);
+    server = createStaticServer({
+      fixturesDirPath: fixturesDir('priority'),
+      delay: 250,
+      compress: 9
+    });
     baseUrl = await listenServer(server);
   });
 
