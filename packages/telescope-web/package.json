@@ -5,12 +5,15 @@
   "version": "0.0.1",
   "description": "Telescope web UI — Astro + Cloudflare Workers app for viewing test results. Not published to npm.",
   "scripts": {
-    "dev": "cross-env CLOUDFLARE_ENV=development astro dev",
+    "dev": "cross-env CLOUDFLARE_ENV=development TELESCOPE_MODE=cloudflare astro dev",
+    "dev:local": "cross-env TELESCOPE_MODE=local astro dev",
     "dev:setup": "./scripts/dev-setup.sh",
     "dev:clean": "rm -rf .wrangler .env dist node_modules",
     "cf-typegen": "wrangler types",
-    "build:development": "cross-env CLOUDFLARE_ENV=development astro build",
-    "build:staging": "cross-env CLOUDFLARE_ENV=staging astro build",
+    "build:development": "cross-env CLOUDFLARE_ENV=development TELESCOPE_MODE=cloudflare astro build",
+    "build:staging": "cross-env CLOUDFLARE_ENV=staging TELESCOPE_MODE=cloudflare astro build",
+    "build:local": "cross-env TELESCOPE_MODE=local astro build",
+    "start:local": "cross-env TELESCOPE_MODE=local node ./dist/server/entry.mjs",
     "preview": "astro preview",
     "migrate:development": "npx wrangler d1 migrations apply telescope-db-development --local --env development",
     "migrate:staging": "npx wrangler d1 migrations apply telescope-db-staging --remote --env staging",
@@ -22,6 +25,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.1.10",
+    "@astrojs/node": "^10.0.6",
     "@astrojs/react": "^5.0.1",
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-d1": "^7.5.0",
@@ -31,8 +35,8 @@
     "fflate": "^0.8.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "zod": "^4.3.6",
-    "vitest": "^4.0.6"
+    "vitest": "^4.0.6",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",

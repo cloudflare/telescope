@@ -1,16 +1,25 @@
 import { spawnSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { describe, it, expect, beforeAll } from 'vitest';
 
 import {
   retrieveHAR,
   retrieveMetrics,
+  retrieveConfig,
   cleanupTestDirectory,
 } from './helpers.js';
 
 import { BrowserConfig } from '../src/browsers.js';
-import type { HarData, Metrics, HTTPHeader } from '../src/types.js';
+import type { HarData, Metrics, HTTPHeader, SavedConfig } from '../src/types.js';
 
 const browsers = BrowserConfig.getBrowsers();
+
+// Resolve project root + CLI path regardless of execution cwd
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PROJECT_ROOT = path.resolve(__dirname, '..');
+const CLI_PATH = path.resolve(PROJECT_ROOT, 'dist/src/cli.js');
 
 describe.each(browsers)('Basic Test: %s', browser => {
   let harJSON: HarData | null;
@@ -21,14 +30,14 @@ describe.each(browsers)('Basic Test: %s', browser => {
     try {
       const args = [
         'node',
-        'dist/src/cli.js',
+        CLI_PATH,
         '--url',
         'https://www.example.com',
         '-b',
         browser,
       ];
 
-      const output = spawnSync(args[0], args.slice(1));
+      const output = spawnSync(args[0], args.slice(1), { cwd: PROJECT_ROOT });
       const outputLogs = output.stdout.toString();
       const match = outputLogs.match(/Test ID:(.*)/);
       if (match && match.length > 1) {
@@ -92,7 +101,7 @@ describe.each(browsers)('Changed User Agent: %s', browser => {
     try {
       const args = [
         'node',
-        'dist/src/cli.js',
+        CLI_PATH,
         '--url',
         'https://www.example.com',
         '--userAgent',
@@ -101,7 +110,7 @@ describe.each(browsers)('Changed User Agent: %s', browser => {
         browser,
       ];
 
-      const output = spawnSync(args[0], args.slice(1));
+      const output = spawnSync(args[0], args.slice(1), { cwd: PROJECT_ROOT });
       const outputLogs = output.stdout.toString();
       const match = outputLogs.match(/Test ID:(.*)/);
       if (match && match.length > 1) {
@@ -147,7 +156,7 @@ describe.each(browsers)('Add to User Agent: %s', browser => {
     try {
       const args = [
         'node',
-        'dist/src/cli.js',
+        CLI_PATH,
         '--url',
         'https://www.example.com',
         '--agentExtra',
@@ -156,7 +165,7 @@ describe.each(browsers)('Add to User Agent: %s', browser => {
         browser,
       ];
 
-      const output = spawnSync(args[0], args.slice(1));
+      const output = spawnSync(args[0], args.slice(1), { cwd: PROJECT_ROOT });
       const outputLogs = output.stdout.toString();
       const match = outputLogs.match(/Test ID:(.*)/);
       if (match && match.length > 1) {
@@ -190,5 +199,51 @@ describe.each(browsers)('Add to User Agent: %s', browser => {
     } else {
       throw new Error('Missing HAR file');
     }
+  });
+});
+
+describe('Config with name and description', () => {
+  const testName = 'Homepage Performance Test';
+  const testDescription = 'Testing example.com homepage load performance';
+  let config: SavedConfig | null;
+  let testId: string | undefined;
+
+  beforeAll(() => {
+    try {
+      const args = [
+        'node',
+        'dist/src/cli.js',
+        '--url',
+        'https://www.example.com',
+        '-b',
+        'chrome',
+        '--name',
+        testName,
+        '--description',
+        testDescription,
+      ];
+
+      const output = spawnSync(args[0], args.slice(1));
+      const outputLogs = output.stdout.toString();
+      const match = outputLogs.match(/Test ID:(.*)/);
+      if (match && match.length > 1) {
+        testId = match[1].trim();
+      }
+      config = retrieveConfig(testId);
+    } finally {
+      cleanupTestDirectory(testId);
+    }
+  });
+
+  it('runs the test and creates a test ID', async () => {
+    expect(testId).toBeTruthy();
+  });
+
+  it('writes name to config.json', async () => {
+    expect(config?.name).toBe(testName);
+  });
+
+  it('writes description to config.json', async () => {
+    expect(config?.description).toBe(testDescription);
   });
 });

@@ -1,13 +1,15 @@
 import type { APIContext } from 'astro';
-import { getPrismaClient } from '@/lib/prisma/client';
-import { getTestRating } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
 
 /**
- * Check test rating with cache
+ * Check test rating with cache.
  * Cache key format: https://rating/{testId}
  * TTL: immutable (ratings never change once final)
- * Only caches final ratings (SAFE or UNSAFE), not UNKNOWN or IN_PROGRESS
+ * Only caches final ratings (SAFE or UNSAFE), not UNKNOWN or IN_PROGRESS.
+ *
+ * Cloudflare-mode only: backed by the Workers Cache API. In local mode
+ * this is unused — `[testId].ts`/`downloadZIP.ts` skip the rating gate
+ * entirely.
  */
 export async function checkTestRating(
   context: APIContext,
@@ -23,8 +25,7 @@ export async function checkTestRating(
   } catch (error) {
     console.warn(`[Cache] Cache read error (ignoring):`, error);
   }
-  const prisma = getPrismaClient(context);
-  const test = await getTestRating(prisma, testId);
+  const test = await context.locals.testStore.getRating(testId);
   if (!test) {
     return ContentRating.UNKNOWN;
   }

@@ -23,6 +23,9 @@ export enum ContentRating {
 export interface ConfigJson {
   url: string;
   date: string;
+  // Optional metadata written by the telescope CLI via --name / --description
+  name?: string;
+  description?: string;
   options: {
     url: string;
     browser?: string;

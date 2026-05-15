@@ -684,6 +684,8 @@ class TestRunner {
         date: new Date().toUTCString(),
         options: this.options,
         browserConfig: this.selectedBrowser,
+        ...(this.options.name && { name: this.options.name }),
+        ...(this.options.description && { description: this.options.description }),
       };
       writeFileSync(
         this.paths['results'] + '/config.json',

@@ -1,5 +1,3 @@
-import { env } from 'cloudflare:workers';
-
 import type { APIContext, APIRoute } from 'astro';
 import { ContentRating } from '@/lib/types/tests';
 import {
@@ -10,10 +8,9 @@ import {
 import { checkTestRating } from '@/lib/utils/contentRatingCache';
 
 /**
- * Serve files from R2 bucket
+ * Serve files from the active storage provider.
  * Route: /api/tests/{testId}/{filename}
- * Supports nested paths like filmstrip/frame_1.jpg or video files
- * Used for serving screenshots and other test artifacts
+ * Supports nested paths like filmstrip/frame_1.jpg or video files.
  */
 export const GET: APIRoute = async (context: APIContext) => {
   const { testId, filename } = context.params;
@@ -29,21 +26,30 @@ export const GET: APIRoute = async (context: APIContext) => {
   if (!isExpectedTelescopeFile(normalizedFilename)) {
     return new Response('Invalid file', { status: 400 });
   }
-  const aiEnabled = env.ENABLE_AI_RATING === 'true';
-  if (aiEnabled) {
-    const rating = await checkTestRating(context, testId);
-    if (rating !== ContentRating.SAFE) {
-      return new Response('Test file not available', { status: 404 });
+
+  // AI rating gating only applies in cloudflare mode.
+  if (context.locals.mode === 'cloudflare') {
+    const { env } = await import('cloudflare:workers');
+    const aiEnabled = env.ENABLE_AI_RATING === 'true';
+    if (aiEnabled) {
+      const rating = await checkTestRating(context, testId);
+      if (rating !== ContentRating.SAFE) {
+        return new Response('Test file not available', { status: 404 });
+      }
     }
   }
-  const key = `${testId}/${normalizedFilename}`;
+
   try {
-    const r2Start = Date.now();
-    const object = await env.RESULTS_BUCKET.get(key);
-    const r2Duration = Date.now() - r2Start;
-    console.log(`[R2] Fetch took ${r2Duration}ms - key: ${key}`);
-    if (!object) {
-      console.warn(`[R2] File not found in bucket - key: ${key}`);
+    const start = Date.now();
+    const bytes = await context.locals.storage.get(testId, normalizedFilename);
+    const duration = Date.now() - start;
+    console.log(
+      `[Storage] Fetch took ${duration}ms - testId: ${testId}, file: ${normalizedFilename}`,
+    );
+    if (!bytes) {
+      console.warn(
+        `[Storage] File not found - testId: ${testId}, file: ${normalizedFilename}`,
+      );
       return new Response('File not found', { status: 404 });
     }
     // Determine content type based on file extension
@@ -74,10 +80,10 @@ export const GET: APIRoute = async (context: APIContext) => {
       headers['Content-Disposition'] =
         `attachment; filename="${normalizedFilename}"`;
     }
-    return new Response(object.body, { headers });
+    return new Response(bytes as unknown as BodyInit, { headers });
   } catch (error) {
     console.error(
-      `[R2] Fetch error - key: ${key}, testId: ${testId}, file: ${normalizedFilename}`,
+      `[Storage] Fetch error - testId: ${testId}, file: ${normalizedFilename}`,
       error,
     );
     return new Response('Internal server error', { status: 500 });

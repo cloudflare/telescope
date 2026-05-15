@@ -1,10 +1,13 @@
 import type { APIContext, APIRoute } from 'astro';
-import { getPrismaClient } from '@/lib/prisma/client';
-import { getTestRating } from '@/lib/repositories/testRepository';
+import { ContentRating } from '@/lib/types/tests';
 
 /**
  * GET /api/tests/:testId/rating
+ *
  * Returns the current content_rating for a test.
+ *
+ * In local mode AI rating is disabled and all tests are reported safe.
+ * In cloudflare mode this proxies the testStore for the live rating.
  */
 export const GET: APIRoute = async (context: APIContext) => {
   const { testId } = context.params;
@@ -14,8 +17,23 @@ export const GET: APIRoute = async (context: APIContext) => {
       headers: { 'Content-Type': 'application/json' },
     });
   }
-  const prisma = getPrismaClient(context);
-  const test = await getTestRating(prisma, testId);
+
+  // Local mode: rating is always SAFE if the test exists.
+  if (context.locals.mode === 'local') {
+    const test = await context.locals.testStore.findByTestId(testId);
+    if (!test) {
+      return new Response(JSON.stringify({ error: 'Test not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify({ rating: ContentRating.SAFE }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  const test = await context.locals.testStore.getRating(testId);
   if (test === null) {
     return new Response(JSON.stringify({ error: 'Test not found' }), {
       status: 404,
