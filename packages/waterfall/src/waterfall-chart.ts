@@ -238,6 +238,7 @@ export class WaterfallChart extends HTMLElement {
       '.wf-col-header--url',
     ) as HTMLElement;
     this._toggleBtn = el('button', {
+      type: 'button',
       className: 'wf-toggle-cols',
       'aria-expanded': 'false',
       'aria-label': 'Show columns',
@@ -480,15 +481,6 @@ export class WaterfallChart extends HTMLElement {
         className: `wf-swatch wf-swatch--${thin ? 'thin' : 'thick'} wf-swatch--${key}`,
       });
 
-    const mkEventBtn = (key: string, label: string) => {
-      const btn = el('button', {
-        className: 'wf-filter-btn active',
-        'data-event': key,
-      });
-      btn.append(mkSwatch(true, key), document.createTextNode(label));
-      return btn;
-    };
-
     this._filtersEl = el('div', {
       className: 'wf-legend-group wf-filters',
       role: 'group',
@@ -506,7 +498,7 @@ export class WaterfallChart extends HTMLElement {
       ['connect', 'TCP Connect'],
       ['ssl', 'TLS Handshake'],
     ] as const) {
-      const btn = el('button', { className: 'wf-filter-btn' });
+      const btn = el('button', { type: 'button', className: 'wf-filter-btn' });
       btn.dataset.phase = phase;
       btn.append(mkSwatch(true, phase), document.createTextNode(label));
       this._phaseGroupEl.appendChild(btn);
@@ -520,6 +512,7 @@ export class WaterfallChart extends HTMLElement {
     // Buttons are populated later by _renderEventFilters() once pageTimings are known.
 
     this._toggleBtn = el('button', {
+      type: 'button',
       className: 'wf-toggle-cols',
       'aria-expanded': 'false',
       'aria-label': 'Show columns',
@@ -707,6 +700,7 @@ export class WaterfallChart extends HTMLElement {
             this._activePhaseFilters.size === 0
           : this._activeFilters.has(type);
       const btn = el('button', {
+        type: 'button',
         className: `wf-filter-btn${active ? ' active' : ''}`,
       });
       const key = TYPE_SWATCH[type];
@@ -773,6 +767,7 @@ export class WaterfallChart extends HTMLElement {
     ] as const) {
       const active = this._activePhaseFilters.has(phase);
       const btn = el('button', {
+        type: 'button',
         className: `wf-filter-btn${active ? ' active' : ''}`,
       });
       btn.dataset.phase = phase;
@@ -859,6 +854,7 @@ export class WaterfallChart extends HTMLElement {
 
     for (const { key, label } of present) {
       const btn = el('button', {
+        type: 'button',
         className: 'wf-filter-btn active',
         'data-event': key,
       });
@@ -996,7 +992,7 @@ export class WaterfallChart extends HTMLElement {
     titleEl.title = entry.request.url;
     const closeBtn = el(
       'button',
-      { className: 'wf-panel-close', title: 'Close' },
+      { type: 'button', className: 'wf-panel-close', title: 'Close' },
       '\u00d7',
     );
     closeBtn.addEventListener('click', () => this._togglePanel(index, entry));
