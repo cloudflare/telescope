@@ -37,7 +37,7 @@ panel, column toggle, timeline scrubber) without re-rendering.
 
 ```html
 <link rel="stylesheet" href="/waterfall/waterfall.css" />
-<script type="module" src="/waterfall/index.js"></script>
+<script type="module" src="/waterfall/waterfall.js"></script>
 
 <waterfall-chart>
   <!-- pre-rendered children -->
@@ -51,7 +51,7 @@ The element builds its own DOM from scratch.
 
 ```html
 <link rel="stylesheet" href="/waterfall/waterfall.css" />
-<script type="module" src="/waterfall/index.js"></script>
+<script type="module" src="/waterfall/waterfall.js"></script>
 
 <!-- fetch from a URL -->
 <waterfall-chart src="/api/tests/abc123/pageload.har"></waterfall-chart>
@@ -64,6 +64,17 @@ el.har = harObject;
 ```
 
 Changing the `src` attribute or reassigning `.har` triggers a full re-render.
+
+### For bundler consumers (Vite, webpack, esbuild, …)
+
+```js
+import '@cloudflare/waterfall/waterfall.css';
+import { WaterfallChart, renderToHTML } from '@cloudflare/waterfall';
+```
+
+Importing the package side-effect-registers the `<waterfall-chart>` custom
+element. `renderToHTML(har)` is the same pure function used by drop-in
+consumers — it runs in Node.js or the browser with no DOM dependency.
 
 ## Interactivity (JS mode)
 
@@ -121,17 +132,27 @@ After changing `src/render.ts`, `src/config.ts`, or the demo HAR data, run `npm 
 
 ```bash
 npm install           # install dependencies
-npm run build         # compile TypeScript → dist/
+npm run build         # tsc + Vite library build → dist/
 npm run typecheck     # type-check without emitting
 npm run format        # run Prettier
 npm test              # run Vitest + Playwright tests (64 tests)
 ```
 
+`npm run build` produces two sets of artifacts in `dist/`:
+
+| File(s)                                | Audience                                                                    |
+| -------------------------------------- | --------------------------------------------------------------------------- |
+| `index.js`, `*.js`, `*.d.ts`           | Bundler consumers (`import { … } from '@cloudflare/waterfall'`)             |
+| `waterfall.js`, `waterfall.js.map`     | Drop-in consumers (`<script type="module" src="…/waterfall.js">`)           |
+| `waterfall.css`                        | Both — link directly or `import '@cloudflare/waterfall/waterfall.css'`      |
+
 ### Demo pages
 
 ```bash
 npm install           # install dependencies
-npx start             # serve demo pages for local development
+npm run dev           # serve demo pages for local development
+                      # (a `predev` hook runs `npm run build` first so
+                      # /waterfall/waterfall.js is up to date)
 npm run build:demo    # generate demo HTML pages statically
 ```
 

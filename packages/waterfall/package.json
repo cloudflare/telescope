@@ -11,14 +11,18 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
-    }
+    },
+    "./waterfall.js": "./dist/waterfall.js",
+    "./waterfall.css": "./dist/waterfall.css"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && vite build --config vite.lib.config.ts",
     "build:demo": "npm run gen-demo && vite build",
+    "predev": "npm run build",
+    "prestart": "npm run build",
     "start": "vite",
     "dev": "vite",
     "typecheck": "tsc --noEmit",

@@ -4,19 +4,26 @@ import type { Plugin } from 'vite';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 const SRC = resolve(__dirname, 'src');
+const DIST = resolve(__dirname, 'dist');
 
 /**
- * Maps clean public URLs to their real source files in src/:
- *   /waterfall/waterfall.css  →  src/waterfall.css
- *   /waterfall/index.ts       →  src/index.ts
+ * Maps clean public URLs to real files on disk so demo pages reference the
+ * same URLs that drop-in consumers will use:
  *
- * This keeps the component files in src/ (part of the library) while
- * letting the demo pages reference them at predictable, stable URLs.
+ *   /waterfall/waterfall.css  →  src/waterfall.css   (fast iteration — direct
+ *                                                     from source, no rebuild)
+ *   /waterfall/waterfall.js   →  dist/waterfall.js   (bundled artifact — run
+ *                                                     `npm run build` first;
+ *                                                     `predev` hook does this)
+ *
+ * The dual mapping (CSS from src/, JS from dist/) lets CSS edits show up
+ * instantly without re-running the bundler, while keeping the JS path
+ * identical to what consumers see in their own deployments.
  */
 function srcAliasPlugin(): Plugin {
   const urlToFile: Record<string, string> = {
     '/waterfall/waterfall.css': resolve(SRC, 'waterfall.css'),
-    '/waterfall/index.ts': resolve(SRC, 'index.ts'),
+    '/waterfall/waterfall.js': resolve(DIST, 'waterfall.js'),
   };
 
   return {
@@ -49,7 +56,8 @@ export default defineConfig({
   // but we expose them through clean URLs via the plugin above.
   server: {
     fs: {
-      // Allow Vite to serve files from the workspace root (one level up)
+      // Allow Vite to serve files from the workspace root (one level up).
+      // dist/ is under __dirname, so it's reachable too.
       allow: [__dirname],
     },
   },

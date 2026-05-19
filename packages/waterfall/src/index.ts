@@ -3,7 +3,13 @@
  *
  * Exports the custom element class and all supporting types/helpers so
  * consumers can import them individually if needed.
+ *
+ * The CSS import below means bundler consumers (Vite, webpack, esbuild, …)
+ * automatically pull in the stylesheet, and library-mode builds emit it
+ * as dist/waterfall.css for drop-in consumers.
  */
+
+import './waterfall.css';
 
 export { WaterfallChart } from './waterfall-chart.js';
 export { renderToHTML } from './render.js';

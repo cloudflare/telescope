@@ -105,13 +105,22 @@ hides and the event-line pill switches to its full `data-label` value (name + va
 
 ### `waterfall.css` — chart styles
 
+The source lives at `src/waterfall.css` and is the canonical stylesheet. The
+build pipeline:
+
+- `src/index.ts` imports `./waterfall.css`, so bundler consumers automatically
+  receive the styles (and `import '@cloudflare/waterfall/waterfall.css'` is the
+  package-export equivalent).
+- The Vite library-mode build (`vite.lib.config.ts`) emits a copy at
+  `dist/waterfall.css` for drop-in consumers.
+
 All waterfall visual rules live here. Link it in `<head>` **before** the JS
 bundle (or with no JS at all):
 
 ```html
 <link rel="stylesheet" href="/waterfall/waterfall.css" />
 <!-- optional: -->
-<script type="module" src="/waterfall/dist/index.js"></script>
+<script type="module" src="/waterfall/waterfall.js"></script>
 ```
 
 The skeleton rule only fires when the element is both undefined **and** has no
@@ -236,15 +245,41 @@ dark-mode block is in `demo.css`. Consumers can override tokens on
 ```
 waterfall/
 ├── src/                    Source code
-│   ├── waterfall.css       Standalone stylesheet — link in <head>
-│   ├── index.ts            JS entrypoint
+│   ├── waterfall.css       Standalone stylesheet (canonical source)
+│   ├── index.ts            JS entrypoint (imports waterfall.css for bundlers)
 │   └── ...                 Other source files
-├── public/                 Demo pages
-├── dist/                   Compiled JS + type declarations (after build)
+├── public/                 Demo pages (root for `npm run dev`)
 │   ├── index.html          Demo: pre-rendered + lazy JS upgrade
 │   ├── interactive.html    Demo: fully dynamic + file picker
-│   └── src-attrs.html      Demo: load HAR from src attribute
+│   └── src-attr.html       Demo: load HAR from src attribute
+├── dist/                   Build output (after `npm run build`)
+│   ├── index.js, *.js      Per-module ESM for bundler consumers
+│   ├── *.d.ts              Type declarations
+│   ├── waterfall.js        Bundled ES module for drop-in consumers
+│   ├── waterfall.js.map    Source map for the bundle
+│   └── waterfall.css       Compiled stylesheet
+├── dist-demo/              Demo build output (after `npm run build:demo`)
 ├── __tests__/              Test files
+├── vite.config.ts          Dev-server config (demo pages)
+├── vite.lib.config.ts      Library-mode build config (dist/waterfall.js+css)
 └── scripts/
     └── gen-demo.js         Regenerates pre-rendered HTML in demo pages
 ```
+
+### Build pipeline
+
+`npm run build` runs two steps:
+
+1. `tsc` — emits per-module `.js` + `.d.ts` files under `dist/` for bundler
+   consumers (entry: `dist/index.js`).
+2. `vite build --config vite.lib.config.ts` — emits a self-contained
+   `dist/waterfall.js` (+ `.map`) and `dist/waterfall.css` for drop-in
+   consumers. `emptyOutDir: false` preserves the tsc output.
+
+`npm run dev` (and `npm start`) is preceded by `predev` / `prestart` hooks
+that automatically run `npm run build`, so `/waterfall/waterfall.js` is
+always available to the demo pages. The dev-server URL aliases in
+`vite.config.ts` map:
+
+- `/waterfall/waterfall.css` → `src/waterfall.css` (live updates, no rebuild)
+- `/waterfall/waterfall.js` → `dist/waterfall.js` (requires a build)
