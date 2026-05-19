@@ -195,16 +195,17 @@ export default function browserAgent(): void {
     .description('Cross-browser synthetic testing agent')
     .requiredOption('-u, --url <url>', 'URL to run tests against')
     .addOption(
-      new Option('-b, --browser <browser_name>', 'Browser to run tests with')
-        .default(DEFAULT_OPTIONS.browser)
-        .choices([
-          'chrome',
-          'chrome-beta',
-          'canary',
-          'edge',
-          'safari',
-          'firefox',
-        ]),
+      new Option(
+        '-b, --browser <browser_name>',
+        'Browser to run tests with. Defaults to chrome, or to the device default browser engine if --device is provided.',
+      ).choices([
+        'chrome',
+        'chrome-beta',
+        'canary',
+        'edge',
+        'safari',
+        'firefox',
+      ]),
     )
     .addOption(
       new Option(
@@ -392,7 +393,7 @@ export default function browserAgent(): void {
     .addOption(
       new Option(
         '--device <string>',
-        'Device to use device emulation (viewport size, DPR, touch events); devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
+        'Device to use for device emulation (viewport size, DPR, touch events). Also sets the default browser engine unless overridden with -b. Devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
       ),
     )
     .parse(process.argv);
