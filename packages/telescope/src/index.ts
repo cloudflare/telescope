@@ -4,7 +4,7 @@ import { BrowserConfig } from './browsers.js';
 import { TestRunner } from './testRunner.js';
 import { ChromeRunner } from './chromeRunner.js';
 import { log } from './helpers.js';
-import { normalizeCLIConfig } from './config.js';
+import { getBaseConfig, normalizeCLIConfig } from './config.js';
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
 import {
   PositiveIntSchema,
@@ -98,17 +98,32 @@ function getRunner(
  * Normalizes options, creates browser instance, runs test, and ensures cleanup.
  *
  * @param options - Test options (raw from CLI or programmatic use)
+ *        baseConfig - Test options from a config file
  * @returns Test result with ID and results path
  * @throws If the test fails
  * @private
  */
 async function executeTest(
   options: LaunchOptions,
+  baseConfig: LaunchOptions
 ): Promise<SuccessfulTestResult> {
+  const url = options.url || baseConfig.url;
+  if (!url) {
+    throw new Error("required 'url' option not specified");
+  }
+
+  // Do not let undefined values override earlier values
   const config: LaunchOptions = {
+    url: url, // Always required to have a value
     ...DEFAULT_OPTIONS,
-    ...options,
+    ...(Object.fromEntries(
+      Object.entries(baseConfig).filter(([_, val]) => val !== undefined)
+    )),
+    ...(Object.fromEntries(
+      Object.entries(options).filter(([_, val]) => val !== undefined)
+    )),
   };
+
   const browserConfig = new BrowserConfig().getBrowserConfig(
     config.browser || 'chrome',
     config,
@@ -176,7 +191,8 @@ async function executeTest(
  */
 export async function launchTest(options: LaunchOptions): Promise<TestResult> {
   try {
-    return await executeTest(options);
+    const baseConfig = options.config ? getBaseConfig(options.config) : { url: '' };
+    return await executeTest(options, baseConfig);
   } catch (error) {
     return {
       success: false,
@@ -189,7 +205,9 @@ export default function browserAgent(): void {
   program
     .name('telescope')
     .description('Cross-browser synthetic testing agent')
-    .requiredOption('-u, --url <url>', 'URL to run tests against')
+    .addOption( // Required, but might be in the configuration file
+      new Option('-u, --url <url>', 'URL to run tests against')
+    )
     .addOption(
       new Option(
         '-b, --browser <browser_name>',
@@ -248,7 +266,6 @@ export default function browserAgent(): void {
     )
     .addOption(
       new Option('--delayUsing <string>', 'Method to use to delay responses')
-        .default(DEFAULT_OPTIONS.delayUsing)
         .choices(['continue', 'fulfill']),
     )
     .addOption(
@@ -267,7 +284,6 @@ export default function browserAgent(): void {
         '--connectionType <string>',
         'Network connection type. By default, no throttling is applied.',
       )
-        .default(DEFAULT_OPTIONS.connectionType)
         .choices([
           'cable',
           'dsl',
@@ -295,51 +311,37 @@ export default function browserAgent(): void {
       new Option(
         '--frameRate <int>',
         'Filmstrip frame rate, in frames per second',
-      )
-        .default(DEFAULT_OPTIONS.frameRate)
-        .argParser(v => parseNumeric(PositiveIntSchema, v, '--frameRate')),
+      ).argParser(v => parseNumeric(PositiveIntSchema, v, '--frameRate')),
     )
     .addOption(
-      new Option('--disableJS', 'Disable JavaScript').default(
-        DEFAULT_OPTIONS.disableJS,
-      ),
+      new Option('--disableJS', 'Disable JavaScript')
     )
     .addOption(
-      new Option('--debug', 'Output debug lines').default(
-        DEFAULT_OPTIONS.debug,
-      ),
+      new Option('--debug', 'Output debug lines')
     )
     .addOption(
       new Option(
         '--auth <object>',
         'Basic HTTP authentication (Expects: {"username": "", "password": ""})',
-      )
-        .argParser(v => parseJSON('--auth', v, AuthSchema))
-        .default(DEFAULT_OPTIONS.auth),
+      ).argParser(v => parseJSON('--auth', v, AuthSchema))
     )
     .addOption(
       new Option(
         '--timeout <int>',
         'Maximum time (in milliseconds) to wait for test to complete',
-      )
-        .default(DEFAULT_OPTIONS.timeout)
-        .argParser(v => parseNumeric(PositiveIntSchema, v, '--timeout')),
+      ).argParser(v => parseNumeric(PositiveIntSchema, v, '--timeout')),
     )
     .addOption(
-      new Option('--html', 'Generate HTML report').default(
-        DEFAULT_OPTIONS.html,
-      ),
+      new Option('--html', 'Generate HTML report')
     )
     .addOption(
       new Option(
         '--openHtml',
         'Open HTML report in browser (requires --html)',
-      ).default(DEFAULT_OPTIONS.openHtml),
+      )
     )
     .addOption(
-      new Option('--list', 'Generate list of results in HTML').default(
-        DEFAULT_OPTIONS.list,
-      ),
+      new Option('--list', 'Generate list of results in HTML')
     )
     .addOption(
       new Option(
@@ -351,19 +353,19 @@ export default function browserAgent(): void {
       new Option(
         '--zip',
         'Zip the results of the test into the results directory.',
-      ).default(DEFAULT_OPTIONS.zip),
+      )
     )
     .addOption(
       new Option(
         '--uploadUrl <string>',
         'Upload zipped results to URL. Must be a valid URL if provided.',
-      ).default(DEFAULT_OPTIONS.uploadUrl),
+      )
     )
     .addOption(
       new Option(
         '--dry',
         'Dry run (do not run test, just save config and cleanup)',
-      ).default(DEFAULT_OPTIONS.dry),
+      )
     )
     .addOption(new Option('--userAgent <string>', 'Set the browser User Agent'))
     .addOption(
@@ -378,6 +380,17 @@ export default function browserAgent(): void {
         'Device to use for device emulation (viewport size, DPR, touch events). Also sets the default browser engine unless overridden with -b. Devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
       ),
     )
+    .addOption(
+      new Option(
+        '--config <string>',
+        'Use a configuration file for the options',
+      )
+    )
+    .action((opts) => {
+      if (!opts.url && !opts.config) {
+        program.error(`Error: - required option '-u, --url <url>' not specified`);
+      }
+    })
     .parse(process.argv);
 
   const cliOptions = program.opts() as CLIOptions;
