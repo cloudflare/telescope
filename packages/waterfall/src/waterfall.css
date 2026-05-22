@@ -35,6 +35,7 @@
 
   /* Row highlight tints */
   --wf-row-stripe: rgba(0, 0, 0, 0.04);
+  --wf-row-hover-bg: rgba(0, 0, 0, 0.08);
   --wf-row-open-bg: rgba(14, 165, 233, 0.07);
 
   /* Surface tokens */
@@ -64,6 +65,7 @@
     --wf-border: #e5e7eb;
     --wf-grid: #4b5563;
     --wf-row-stripe: rgba(255, 255, 255, 0.05);
+    --wf-row-hover-bg: rgba(255, 255, 255, 0.09);
   }
 }
 
@@ -78,6 +80,7 @@
   --wf-border: #e5e7eb;
   --wf-grid: #4b5563;
   --wf-row-stripe: rgba(255, 255, 255, 0.05);
+  --wf-row-hover-bg: rgba(255, 255, 255, 0.09);
   --wf-success: #34d058;
   --wf-warning: #fbbf24;
   --wf-danger: #fca5a5;
@@ -114,10 +117,14 @@ waterfall-chart:not(:defined):not(:has(.wf-list))::before {
 
 /* Before the custom element upgrades, filter chips have no event handlers so
    render them as plain legend labels (no button chrome) and hide the col-toggle
-   button entirely since it has no pre-rendered equivalent. */
+   button entirely since it has no pre-rendered equivalent.
+   Use --wf-text (primary text) rather than --wf-muted so the labels remain
+   readable when the host page background does not match the user's preferred
+   colour scheme (e.g. dark OS theme + white host body). */
 waterfall-chart:not(:defined) .wf-filter-btn {
   border-color: transparent;
   background: transparent;
+  color: var(--wf-text);
   cursor: default;
   pointer-events: none;
 }
@@ -260,13 +267,20 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
   );
 }
 
-/* ── Toolbar ─────────────────────────────────────────────────────────────────*/
+/* ── Toolbar ─────────────────────────────────────────────────────────────────
+   Themed surface matching .wf-list-wrap and .wf-panel so filter chips sit on
+   a known background regardless of the host page's body colour. Important
+   when the OS theme (light/dark) differs from the host page background. */
 .wf-toolbar {
   display: flex;
   align-items: center;
   gap: 0.375rem;
   flex-wrap: wrap;
   margin-bottom: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--wf-panel);
+  border: 1px solid var(--wf-border);
+  border-radius: 0.75rem;
 }
 .wf-toggle-cols {
   flex-shrink: 0;
@@ -339,6 +353,12 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
   overflow-y: hidden;
   border: 1px solid var(--wf-border);
   border-radius: 0.75rem;
+  /* Explicit themed surface — same as the detail panel (.wf-panel) — so
+     odd (un-striped) rows sit on a known background instead of bleeding
+     through to the host page background. Without this, embedding the
+     chart in a page that does not theme its body background reveals the
+     host page colour between the striped rows. */
+  background: var(--wf-panel);
 }
 
 /* ── Column header row ───────────────────────────────────────────────────────
@@ -429,7 +449,7 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
   background: var(--wf-row-stripe);
 }
 .wf-row:hover {
-  background: var(--wf-panel);
+  background: var(--wf-row-hover-bg);
 }
 
 .wf-row.row--blocking .wf-cell--idx {

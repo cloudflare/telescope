@@ -152,7 +152,7 @@ All tokens are CSS custom properties on `:root`:
 --wf-other-light  --wf-other-dark
 
 /* Row backgrounds */
---wf-row-blocking-bg   --wf-row-blocking-bg-hover   --wf-row-open-bg
+--wf-row-stripe   --wf-row-hover-bg   --wf-row-open-bg
 ```
 
 ### Class naming conventions

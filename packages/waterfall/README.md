@@ -76,6 +76,64 @@ Importing the package side-effect-registers the `<waterfall-chart>` custom
 element. `renderToHTML(har)` is the same pure function used by drop-in
 consumers — it runs in Node.js or the browser with no DOM dependency.
 
+## CLI
+
+The package ships a small CLI that turns a HAR file into a standalone HTML
+report. The simplest invocation derives the output filename from the input:
+
+```bash
+npx @cloudflare/waterfall pageload.har
+# → pageload.html (+ waterfall/waterfall.css, waterfall/waterfall.js)
+```
+
+You can also pass the output path explicitly:
+
+```bash
+npx @cloudflare/waterfall pageload.har report.html
+```
+
+The CLI writes three things alongside the output HTML:
+
+```
+report.html
+waterfall/waterfall.css   ← linked by the HTML
+waterfall/waterfall.js    ← loaded by the HTML (unless --no-js)
+```
+
+Open `report.html` directly from disk, or serve the whole folder statically —
+the chart is fully self-contained.
+
+### Options
+
+| Flag      | Description                                                                                                                                                                                                              |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--attr`  | Skip pre-rendering. Copies the HAR next to the output and emits `<waterfall-chart src="<harname>.har">`. The component fetches and renders it at runtime via the bundled JS. Useful for keeping the HAR a separate file. |
+| `--no-js` | Omit the `<script>` tag and do not copy `waterfall.js`. The output renders statically from pre-rendered children + `waterfall.css` alone — no interactivity. Cannot be combined with `--attr` (which needs JS to fetch). |
+| `--`      | Used in place of the output path: write only the `<waterfall-chart>…</waterfall-chart>` element (no document scaffolding, no asset copying) to stdout. Suitable for redirection or piping into other tools.              |
+
+### Examples
+
+```bash
+# Default: pre-rendered, interactive
+npx @cloudflare/waterfall pageload.har
+
+# Static-only (no JS, no interactivity, smallest footprint)
+npx @cloudflare/waterfall --no-js pageload.har
+
+# Fetch-at-runtime: HAR is a separate file
+npx @cloudflare/waterfall --attr pageload.har
+
+# Emit just the <waterfall-chart> snippet to stdout
+npx @cloudflare/waterfall pageload.har -- > snippet.html
+
+# Same, with --attr — emits `<waterfall-chart src="pageload.har">`
+npx @cloudflare/waterfall --attr pageload.har -- > snippet.html
+```
+
+When the output is `--` (stdout), the CLI does **not** copy `waterfall.css`,
+`waterfall.js`, or the HAR — it is your responsibility to make those assets
+available wherever you embed the snippet.
+
 ## Interactivity (JS mode)
 
 When the JS bundle is loaded the element gains:
@@ -140,11 +198,11 @@ npm test              # run Vitest + Playwright tests (64 tests)
 
 `npm run build` produces two sets of artifacts in `dist/`:
 
-| File(s)                                | Audience                                                                    |
-| -------------------------------------- | --------------------------------------------------------------------------- |
-| `index.js`, `*.js`, `*.d.ts`           | Bundler consumers (`import { … } from '@cloudflare/waterfall'`)             |
-| `waterfall.js`, `waterfall.js.map`     | Drop-in consumers (`<script type="module" src="…/waterfall.js">`)           |
-| `waterfall.css`                        | Both — link directly or `import '@cloudflare/waterfall/waterfall.css'`      |
+| File(s)                            | Audience                                                               |
+| ---------------------------------- | ---------------------------------------------------------------------- |
+| `index.js`, `*.js`, `*.d.ts`       | Bundler consumers (`import { … } from '@cloudflare/waterfall'`)        |
+| `waterfall.js`, `waterfall.js.map` | Drop-in consumers (`<script type="module" src="…/waterfall.js">`)      |
+| `waterfall.css`                    | Both — link directly or `import '@cloudflare/waterfall/waterfall.css'` |
 
 ### Demo pages
 

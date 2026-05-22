@@ -15,11 +15,14 @@
     "./waterfall.js": "./dist/waterfall.js",
     "./waterfall.css": "./dist/waterfall.css"
   },
+  "bin": {
+    "waterfall": "./dist/cli.js"
+  },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build --config vite.lib.config.ts",
+    "build": "tsc && vite build --config vite.lib.config.ts && chmod +x dist/cli.js",
     "build:demo": "npm run gen-demo && vite build",
     "predev": "npm run build",
     "prestart": "npm run build",
