@@ -24,12 +24,18 @@ const ALLOWED_PATHS: Record<string, string> = {
   '/index.html': 'public/index.html',
   '/interactive.html': 'public/interactive.html',
   '/src-attr.html': 'public/src-attr.html',
-  '/waterfall.css': 'waterfall.css',
+  // Demo helper assets (referenced by the demo HTML pages at /demo.css,
+  // /theme.js, etc. — they live in public/, not src/demo/ as a previous
+  // version of this file assumed).
+  '/demo.css': 'public/demo.css',
+  '/theme.js': 'public/theme.js',
+  '/progressive.js': 'public/progressive.js',
+  '/interactive.js': 'public/interactive.js',
   '/demo.har': 'public/demo.har',
-  '/src/demo/demo.css': 'src/demo/demo.css',
-  '/src/demo/theme.js': 'src/demo/theme.js',
-  '/src/demo/progressive.js': 'src/demo/progressive.js',
-  '/src/demo/interactive.js': 'src/demo/interactive.js',
+  // Drop-in build artifacts referenced by demo pages as /waterfall/…
+  // Map them to the actual built files under dist/.
+  '/waterfall/waterfall.css': 'dist/waterfall.css',
+  '/waterfall/waterfall.js': 'dist/waterfall.js',
   // dist/ ES module bundle — index.js and its sibling chunk files
   '/dist/index.js': 'dist/index.js',
   '/dist/waterfall-chart.js': 'dist/waterfall-chart.js',

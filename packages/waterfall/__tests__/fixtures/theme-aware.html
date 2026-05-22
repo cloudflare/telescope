@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Surface test fixture — theme-aware body background</title>
+    <style>
+      /* Theme-aware: body background follows the OS colour scheme so the
+         chart's themed surfaces match the host page. */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        color: #111827;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background: #111827;
+          color: #f9fafb;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="/waterfall.css" />
+  </head>
+  <body>
+    <waterfall-chart>
+      <!-- WATERFALL_CONTENT -->
+    </waterfall-chart>
+  </body>
+</html>
