@@ -103,6 +103,24 @@ waterfall/waterfall.js    ← loaded by the HTML (unless --no-js)
 Open `report.html` directly from disk, or serve the whole folder statically —
 the chart is fully self-contained.
 
+> **Heads-up: `file://` + ES modules won't work.** The generated HTML loads
+> `waterfall.js` via `<script type="module">`, and browsers treat every
+> `file:///…` URL as a distinct opaque origin. Module fetches are blocked by
+> CORS in that context, so double-clicking `report.html` will produce a CORS
+> error in the console and the chart will not become interactive.
+>
+> Serve the folder over HTTP instead — for example:
+>
+> ```bash
+> npx serve .
+> ```
+>
+> Then open the URL it prints (e.g. `http://localhost:3000/report.html`).
+>
+> If you really need a `file://`-openable report, generate it with `--no-js`
+> (see below) — the static render does not load any modules and works
+> directly from disk.
+
 ### Options
 
 | Flag      | Description                                                                                                                                                                                                              |
