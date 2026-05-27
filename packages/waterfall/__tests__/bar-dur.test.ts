@@ -4,44 +4,46 @@
  * Verifies that the gap between the right edge of the last bar segment and the
  * left edge of the duration label is consistent across all request rows.
  *
- * Uses interactive.html (JS-upgraded) so that bar positions are computed
- * accurately from the live layout rather than SSR percentage estimates.
+ * Uses the `/progressive` fixture (pre-rendered chart + JS upgrade) so that
+ * bar positions are computed accurately from the live post-upgrade layout
+ * rather than SSR percentage estimates.
  */
 
-import { type Browser, type Page } from 'playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
-import { createServer, launchBrowser } from './helpers.js';
+
+import {
+  createFixtureServer,
+  type FixtureServer,
+} from './fixture-server.js';
 
 let browser: Browser;
-let baseUrl: string;
-let closeServer: () => void;
+let server: FixtureServer;
 
 beforeAll(async () => {
-  browser = await launchBrowser();
-  const server = await createServer();
-  baseUrl = server.url;
-  closeServer = server.close;
+  browser = await chromium.launch();
+  server = await createFixtureServer();
 });
 
 afterAll(async () => {
   await browser.close();
-  closeServer();
+  await server.close();
 });
 
-async function openIndex(): Promise<Page> {
+async function openProgressive(): Promise<Page> {
   const ctx = await browser.newContext({ colorScheme: 'light' });
   const page = await ctx.newPage();
-  await page.goto(`${baseUrl}/interactive.html`);
+  await page.goto(`${server.url}/progressive`);
   // Wait until the JS upgrade has injected the scrubber (signals render complete)
   await page.waitForSelector('.wf-scrubber');
   return page;
 }
 
-describe('duration label gap (interactive.html)', () => {
+describe('duration label gap', () => {
   let page: Page;
 
   beforeAll(async () => {
-    page = await openIndex();
+    page = await openProgressive();
   });
 
   it('every row has a duration label', async () => {

@@ -202,8 +202,6 @@ document.documentElement.setAttribute('data-theme', 'dark');
 
 ## Building and testing
 
-After changing `src/render.ts`, `src/config.ts`, or the demo HAR data, run `npm run build && npm run gen-demo` to keep the pre-rendered demo pages in sync.
-
 ### Waterfall component
 
 ```bash
@@ -211,7 +209,7 @@ npm install           # install dependencies
 npm run build         # tsc + Vite library build → dist/
 npm run typecheck     # type-check without emitting
 npm run format        # run Prettier
-npm test              # run Vitest + Playwright tests (64 tests)
+npm test              # run Vitest + Playwright tests
 ```
 
 `npm run build` produces two sets of artifacts in `dist/`:
@@ -224,6 +222,11 @@ npm test              # run Vitest + Playwright tests (64 tests)
 
 ### Demo pages
 
+The `public/` directory contains a small set of demo pages that exercise each
+of the three usage modes against a sample HAR. They are intended for **manual
+exploration** of the component (theme toggle, file picker, URL input) — not
+for automated tests, which use their own fixtures (see below).
+
 ```bash
 npm install           # install dependencies
 npm run dev           # serve demo pages for local development
@@ -232,8 +235,43 @@ npm run dev           # serve demo pages for local development
 npm run build:demo    # generate demo HTML pages statically
 ```
 
-| Page                | What it demonstrates                                         |
-| ------------------- | ------------------------------------------------------------ |
-| `/`                 | Pre-rendered + button to lazily load JS and upgrade          |
-| `/interactive.html` | Fully dynamic + file picker                                  |
-| `/src-attr.html`    | Fully dynamic — URL input and file picker for arbitrary HARs |
+| Page                | What it demonstrates                                                                                     |
+| ------------------- | -------------------------------------------------------------------------------------------------------- |
+| `/`                 | Progressive enhancement: pre-rendered chart + button to lazily load JS and upgrade interactivity in place |
+| `/interactive.html` | Fully dynamic: empty `<waterfall-chart>` upgraded on load, with a file picker to inject arbitrary HARs   |
+| `/src-attr.html`    | Fully dynamic via `src` attribute: URL input and file picker for fetching HARs from a remote location    |
+
+Each demo page also wires up a shared theme toggle (`public/theme.js`) that
+persists a `light` / `dark` preference to `localStorage` and sets
+`data-theme` on `<html>` to override the OS colour scheme. This toggle is
+demo-only chrome — it is not part of the `@cloudflare/waterfall` public API.
+
+After changing `src/render.ts`, `src/config.ts`, or the demo HAR data, run
+`npm run build && npm run gen-demo` to keep the pre-rendered HTML in
+`/` and `/interactive.html` in sync.
+
+### Test fixtures
+
+Automated tests deliberately do **not** use the demo pages. They live under
+`__tests__/fixtures/` and are minimal HTML pages designed to isolate the
+chart from any host-page chrome (no navigation, no theme toggle, no
+demo-only scripts). Each fixture loads `dist/waterfall.css` (and `dist/waterfall.js`
+where needed) via plain `<link>` / `<script>` tags — exactly as a real
+downstream consumer would — so the tests exercise the same loading paths
+end users do.
+
+| Fixture                       | Used by                                              | Chart state                                                          |
+| ----------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------- |
+| `static.html`                 | `theme.test.ts`, `surface-themes.test.ts`            | Pre-rendered chart, **no** `<script>` tag — static / CSS-only render |
+| `progressive-fixture.html`    | `theme.test.ts`, `overlay.test.ts`, `bar-dur.test.ts` | Pre-rendered chart + JS bundle → upgrades in place                   |
+| `interactive-fixture.html`    | `overlay.test.ts`, `metric-filters.test.ts`           | Empty `<waterfall-chart>` + JS bundle → tests inject HAR via `.har`  |
+| `white-bg.html`, `black-bg.html` | `surface-themes.test.ts`                          | Fixed host body background (white / black) — used to verify chart surface tokens stay themed regardless of host page colour |
+
+The fixtures are served by a shared test helper
+(`__tests__/fixture-server.ts`) at paths like `/static`, `/progressive`,
+`/interactive`, `/white-bg`, `/black-bg`. Each test file spins up its own
+ephemeral server via `createFixtureServer()`.
+
+One test file — `toggle.test.ts` — *does* use the demo pages, because it
+specifically tests the demo's theme-toggle widget (`public/theme.js`). Every
+other browser test uses the fixtures.

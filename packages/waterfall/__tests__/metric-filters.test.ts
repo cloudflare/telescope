@@ -5,18 +5,22 @@
  * for metrics that are actually present in the HAR's pageTimings. Buttons for
  * missing metrics must not be rendered.
  *
- * Uses interactive.html (JS-upgraded) so HAR data can be injected programmatically.
+ * Uses the `/interactive` fixture (empty <waterfall-chart> + JS bundle) so
+ * custom HAR data can be injected programmatically via the `.har` property.
  */
 
-import { type Browser, type Page } from 'playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
-import { createServer, launchBrowser } from './helpers.js';
+
+import {
+  createFixtureServer,
+  type FixtureServer,
+} from './fixture-server.js';
 
 let browser: Browser;
-let baseUrl: string;
-let closeServer: () => void;
+let server: FixtureServer;
 
-// ── Minimal HAR factory ───────────────────────────────────────────────────────
+// ── Minimal HAR factory ──────────────────────────────────────────────────────
 
 function makeHar(pageTimings: Record<string, number>) {
   return {
@@ -72,12 +76,12 @@ function makeHar(pageTimings: Record<string, number>) {
   };
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-async function openIndex(): Promise<Page> {
+async function openInteractive(): Promise<Page> {
   const ctx = await browser.newContext({ colorScheme: 'light' });
   const page = await ctx.newPage();
-  await page.goto(`${baseUrl}/interactive.html`);
+  await page.goto(`${server.url}/interactive`);
   return page;
 }
 
@@ -88,7 +92,9 @@ async function loadHar(
 ): Promise<void> {
   const har = makeHar(pageTimings);
   await page.evaluate((h) => {
-    const el = document.querySelector('waterfall-chart') as any;
+    const el = document.querySelector('waterfall-chart') as unknown as {
+      har: unknown;
+    };
     el.har = h;
   }, har);
   await page.waitForSelector('.wf-scrubber');
@@ -103,27 +109,25 @@ async function eventButtonKeys(page: Page): Promise<string[]> {
   );
 }
 
-// ── Setup / teardown ──────────────────────────────────────────────────────────
+// ── Setup / teardown ─────────────────────────────────────────────────────────
 
 beforeAll(async () => {
-  browser = await launchBrowser();
-  const server = await createServer();
-  baseUrl = server.url;
-  closeServer = server.close;
+  browser = await chromium.launch();
+  server = await createFixtureServer();
 });
 
 afterAll(async () => {
   await browser.close();
-  closeServer();
+  await server.close();
 });
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+// ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('metric filter buttons — all three metrics present', () => {
   let page: Page;
 
   beforeAll(async () => {
-    page = await openIndex();
+    page = await openInteractive();
     await loadHar(page, { onContentLoad: 340, onLoad: 620, _lcp: 480 });
   });
 
@@ -152,7 +156,7 @@ describe('metric filter buttons — DCL and Load only (no LCP)', () => {
   let page: Page;
 
   beforeAll(async () => {
-    page = await openIndex();
+    page = await openInteractive();
     await loadHar(page, { onContentLoad: 340, onLoad: 620 });
   });
 
@@ -181,7 +185,7 @@ describe('metric filter buttons — no metrics collected', () => {
   let page: Page;
 
   beforeAll(async () => {
-    page = await openIndex();
+    page = await openInteractive();
     await loadHar(page, {});
   });
 

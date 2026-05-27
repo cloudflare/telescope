@@ -3,10 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Surface test fixture — theme-aware body background</title>
+    <title>Static fixture — pre-rendered chart, no JS</title>
     <style>
-      /* Theme-aware: body background follows the OS colour scheme so the
-         chart's themed surfaces match the host page. */
+      /* Theme-aware body background reacts to the OS colour scheme via
+         media query — but deliberately does NOT communicate with the
+         <waterfall-chart> component (no `data-theme` mapping, no JS).
+         Use this fixture to test the chart in its un-upgraded static
+         state across light/dark OS themes. */
       html,
       body {
         margin: 0;

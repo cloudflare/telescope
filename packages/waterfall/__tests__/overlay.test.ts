@@ -1,42 +1,67 @@
 /**
  * Overlay tests — event-line (metric) labels and the scrubber.
  *
- * Event-line label tests use index.html (pre-rendered, progressive enhancement)
- * for data-label / data-name and pill style properties; snap/visibility tests
- * use interactive.html (JS upgraded, HAR injectable) because the scrubber is
- * injected by the custom element and snapping requires the accurate pixel
- * positions that JS computes.
- *
- * index.html    = progressive enhancement (pre-rendered children, JS upgrades in place)
- * interactive.html = fully dynamic (builds DOM from scratch, .har injectable)
+ * Fixtures used:
+ *   /progressive  — pre-rendered chart + JS upgrade. Used for assertions
+ *                   about pre-rendered event-line data attributes that
+ *                   exist before and after upgrade.
+ *   /interactive  — empty <waterfall-chart> + JS bundle. Used for the
+ *                   scrubber tests because the scrubber is JS-injected
+ *                   and needs accurate post-layout pixel positions. The
+ *                   default demo HAR is injected via .har after load.
  */
 
-import { type Browser, type Page } from 'playwright';
+import { chromium, type Browser, type Page } from 'playwright';
+import * as fs from 'fs';
+import * as path from 'path';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
-import { createServer, launchBrowser } from './helpers.js';
+
+import {
+  createFixtureServer,
+  type FixtureServer,
+} from './fixture-server.js';
+import type { Har } from '../dist/har.js';
+
+const PKG_ROOT = path.resolve(import.meta.dirname, '..');
+const DEMO_HAR: Har = JSON.parse(
+  fs.readFileSync(path.resolve(PKG_ROOT, 'public', 'demo.har'), 'utf8'),
+);
 
 let browser: Browser;
-let baseUrl: string;
-let closeServer: () => void;
+let server: FixtureServer;
 
 beforeAll(async () => {
-  browser = await launchBrowser();
-  const server = await createServer();
-  baseUrl = server.url;
-  closeServer = server.close;
+  browser = await chromium.launch();
+  server = await createFixtureServer();
 });
 
 afterAll(async () => {
   await browser.close();
-  closeServer();
+  await server.close();
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-async function openUrl(url: string): Promise<Page> {
+async function openProgressive(): Promise<Page> {
   const ctx = await browser.newContext({ colorScheme: 'light' });
   const page = await ctx.newPage();
-  await page.goto(url);
+  await page.goto(`${server.url}/progressive`);
+  // Wait for JS upgrade (scrubber injected).
+  await page.waitForSelector('.wf-scrubber');
+  return page;
+}
+
+async function openInteractiveWithDemoHar(): Promise<Page> {
+  const ctx = await browser.newContext({ colorScheme: 'light' });
+  const page = await ctx.newPage();
+  await page.goto(`${server.url}/interactive`);
+  await page.evaluate((h) => {
+    const el = document.querySelector('waterfall-chart') as unknown as {
+      har: unknown;
+    };
+    el.har = h;
+  }, DEMO_HAR);
+  await page.waitForSelector('.wf-scrubber');
   return page;
 }
 
@@ -77,7 +102,6 @@ async function waitScrubberBg(
     const el = document.querySelector('.wf-scrubber') as HTMLElement | null;
     if (!el) return false;
     const bg = getComputedStyle(el).backgroundColor;
-    // "transparent" or "rgba(0,0,0,0)" means hidden; anything with alpha > 0 means visible.
     const hidden =
       bg === 'transparent' ||
       bg === '' ||
@@ -90,49 +114,79 @@ async function waitScrubberBg(
  * Move the mouse to a pixel position relative to the overlay's bounding rect.
  * Returns the overlay rect for further calculations.
  */
-async function moveToOverlayPct(page: Page, pct: number): Promise<DOMRect> {
-  const rect: DOMRect = await page.evaluate(() => {
+async function moveToOverlayPct(
+  page: Page,
+  pct: number,
+): Promise<{ x: number; y: number; width: number; height: number }> {
+  const rect = await page.evaluate(() => {
     const el = document.querySelector('.wf-events-overlay')!;
-    return el.getBoundingClientRect().toJSON() as DOMRect;
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, width: r.width, height: r.height };
   });
   await page.mouse.move(rect.x + rect.width * pct, rect.y + rect.height / 2);
   return rect;
 }
 
-// ── Event-line (metric) label — static properties ─────────────────────────────
+/**
+ * Find a percentage position along the overlay that is not within `gapPx`
+ * of any event line — used to test free-moving scrubber behaviour without
+ * accidentally triggering snap.
+ */
+async function findFreeSpotPct(page: Page, gapPx = 24): Promise<number> {
+  return page.evaluate((gap) => {
+    const overlay = document.querySelector('.wf-events-overlay')!;
+    const rect = overlay.getBoundingClientRect();
+    const lines = Array.from(
+      overlay.querySelectorAll<HTMLElement>('.wf-event-line'),
+    );
+    const linePcts = lines.map((l) => parseFloat(l.style.left) / 100);
 
-describe('event-line labels (index.html)', () => {
+    // Scan candidate positions; return the first that's >gap from every line.
+    for (let pct = 0.05; pct < 1; pct += 0.05) {
+      const x = pct * rect.width;
+      const ok = linePcts.every(
+        (lp) => Math.abs(lp * rect.width - x) > gap,
+      );
+      if (ok) return pct;
+    }
+    return 0.5; // fallback
+  }, gapPx);
+}
+
+// ── Event-line (metric) label — static properties ────────────────────────────
+
+describe('event-line labels (pre-rendered)', () => {
   let page: Page;
   beforeAll(async () => {
-    page = await openUrl(`${baseUrl}/index.html`);
+    page = await openProgressive();
   });
 
-  // data-label (full value with space before unit)
-  it('DCL event line has correct data-label', async () => {
+  // data-label format (name + numeric value + " ms")
+  it('DCL event line has well-formed data-label', async () => {
     const label = await page.$eval(
       '.wf-event--dcl',
       (el) => (el as HTMLElement).dataset.label ?? '',
     );
-    expect(label).toBe('DCL 340 ms');
+    expect(label).toMatch(/^DCL \d+(\.\d+)? ms$/);
   });
 
-  it('Load event line has correct data-label', async () => {
+  it('Load event line has well-formed data-label', async () => {
     const label = await page.$eval(
       '.wf-event--load',
       (el) => (el as HTMLElement).dataset.label ?? '',
     );
-    expect(label).toBe('Load 620 ms');
+    expect(label).toMatch(/^Load \d+(\.\d+)? ms$/);
   });
 
-  it('LCP event line has correct data-label', async () => {
+  it('LCP event line has well-formed data-label', async () => {
     const label = await page.$eval(
       '.wf-event--lcp',
       (el) => (el as HTMLElement).dataset.label ?? '',
     );
-    expect(label).toBe('LCP 480 ms');
+    expect(label).toMatch(/^LCP \d+(\.\d+)? ms$/);
   });
 
-  // data-name (short name only, no value)
+  // data-name (short name only)
   it('DCL event line has correct data-name', async () => {
     const name = await page.$eval(
       '.wf-event--dcl',
@@ -157,7 +211,7 @@ describe('event-line labels (index.html)', () => {
     expect(name).toBe('LCP');
   });
 
-  // Pill colours
+  // Pill colours (these are CSS-defined constants, not derived from HAR)
   it('DCL label pill background is DCL accent colour', async () => {
     const bg = await afterStyle(page, '.wf-event--dcl', 'backgroundColor');
     expect(bg).toBe('rgb(208, 96, 208)'); // #d060d0
@@ -231,14 +285,13 @@ describe('event-line labels (index.html)', () => {
   });
 });
 
-// ── Scrubber — free movement ──────────────────────────────────────────────────
+// ── Scrubber — free movement ─────────────────────────────────────────────────
 
-describe('scrubber free movement (interactive.html)', () => {
+describe('scrubber free movement', () => {
   let page: Page;
 
   beforeAll(async () => {
-    page = await openUrl(`${baseUrl}/interactive.html`);
-    await page.waitForSelector('.wf-scrubber');
+    page = await openInteractiveWithDemoHar();
   });
 
   it('scrubber element exists after JS upgrade', async () => {
@@ -247,7 +300,6 @@ describe('scrubber free movement (interactive.html)', () => {
 
   it('scrubber is hidden before any mousemove', async () => {
     const bg = await elemStyle(page, '.wf-scrubber', 'backgroundColor');
-    // transparent / rgba with 0 alpha = hidden
     const isHidden =
       bg === 'transparent' ||
       bg === '' ||
@@ -261,8 +313,11 @@ describe('scrubber free movement (interactive.html)', () => {
   });
 
   it('scrubber becomes visible after mousemove into the timeline', async () => {
-    // Move to 30% ��� away from the event lines (DCL ≈55%, Load ≈100%)
-    await moveToOverlayPct(page, 0.3);
+    // Pick a position that is at least 24px from any event line so we
+    // don't accidentally snap. Computed dynamically so the test does not
+    // depend on the specific timings in the demo HAR.
+    const pct = await findFreeSpotPct(page);
+    await moveToOverlayPct(page, pct);
     await waitScrubberBg(page, 'visible');
     const bg = await elemStyle(page, '.wf-scrubber', 'backgroundColor');
     const isHidden =
@@ -273,7 +328,7 @@ describe('scrubber free movement (interactive.html)', () => {
   });
 
   it('scrubber label is visible when scrubber is free-moving', async () => {
-    // Still at 30% from previous test.
+    // Still in the free-spot position from previous test.
     const display = await elemStyle(page, '.wf-scrubber__label', 'display');
     expect(display).not.toBe('none');
   });
@@ -307,9 +362,10 @@ describe('scrubber free movement (interactive.html)', () => {
   });
 
   it('scrubber hides after mouseleave', async () => {
-    const box = await page.$eval('.wf-list-wrap', (el) =>
-      el.getBoundingClientRect().toJSON(),
-    );
+    const box = await page.$eval('.wf-list-wrap', (el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y };
+    });
     await page.mouse.move(box.x - 20, box.y - 20);
     await waitScrubberBg(page, 'hidden');
     const bg = await elemStyle(page, '.wf-scrubber', 'backgroundColor');
@@ -327,14 +383,13 @@ describe('scrubber free movement (interactive.html)', () => {
   });
 });
 
-// ��─ Scrubber — snap to metric ─────────────────────────────────────────────────
+// ── Scrubber — snap to metric ────────────────────────────────────────────────
 
-describe('scrubber snap to metric (interactive.html)', () => {
+describe('scrubber snap to metric', () => {
   let page: Page;
 
   beforeAll(async () => {
-    page = await openUrl(`${baseUrl}/interactive.html`);
-    await page.waitForSelector('.wf-scrubber');
+    page = await openInteractiveWithDemoHar();
   });
 
   /**
@@ -349,7 +404,7 @@ describe('scrubber snap to metric (interactive.html)', () => {
       const linePct = parseFloat(dcl.style.left) / 100;
       return {
         lineX: rect.x + linePct * rect.width,
-        overlayRect: rect.toJSON(),
+        overlayRect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
       };
     });
     // 2px left of the DCL line — well within the 8px threshold.
@@ -367,7 +422,6 @@ describe('scrubber snap to metric (interactive.html)', () => {
   });
 
   it('scrubber line is hidden when snapped', async () => {
-    // Already snapped from previous test.
     const bg = await elemStyle(page, '.wf-scrubber', 'backgroundColor');
     const isHidden =
       bg === 'transparent' ||
@@ -377,27 +431,25 @@ describe('scrubber snap to metric (interactive.html)', () => {
   });
 
   it('scrubber label is hidden when snapped', async () => {
-    // Already snapped from previous test.
     const display = await elemStyle(page, '.wf-scrubber__label', 'display');
     expect(display).toBe('none');
   });
 
   it('DCL metric label pill becomes visible when snapped', async () => {
-    // Already snapped — opacity should already be 1 (no transition needed).
     const opacity = await afterStyle(page, '.wf-event--dcl', 'opacity');
     expect(parseFloat(opacity)).toBe(1);
   });
 
   it('DCL metric label shows full value (with ms and space) when snapped', async () => {
-    // Already snapped. The ::after content switches to attr(data-label).
     const content = await afterStyle(page, '.wf-event--dcl', 'content');
     expect(content).toContain('DCL');
     expect(content).toMatch(/\d+ ms/);
   });
 
   it('unsnapped DCL metric label reverts to name-only content', async () => {
-    // Move far away from DCL (to 10% of overlay width).
-    await moveToOverlayPct(page, 0.1);
+    // Move to a free spot — far from every event line.
+    const pct = await findFreeSpotPct(page);
+    await moveToOverlayPct(page, pct);
     await waitScrubberBg(page, 'visible');
 
     const snapped = await page.$$('.wf-event-line--snapped');
@@ -409,7 +461,7 @@ describe('scrubber snap to metric (interactive.html)', () => {
   });
 
   it('scrubber is visible and label shows ms value after unsnap', async () => {
-    // Still at 10% from previous test.
+    // Still in the free-spot position from previous test.
     const bg = await elemStyle(page, '.wf-scrubber', 'backgroundColor');
     const isHidden =
       bg === 'transparent' ||
@@ -428,12 +480,11 @@ describe('scrubber snap to metric (interactive.html)', () => {
   });
 
   it('unsnaps all metric labels after mouseleave', async () => {
-    // Snap to DCL first.
     await snapToDcl();
-    // Then leave.
-    const box = await page.$eval('.wf-list-wrap', (el) =>
-      el.getBoundingClientRect().toJSON(),
-    );
+    const box = await page.$eval('.wf-list-wrap', (el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y };
+    });
     await page.mouse.move(box.x - 20, box.y - 20);
     await waitScrubberBg(page, 'hidden');
     const snapped = await page.$$('.wf-event-line--snapped');
