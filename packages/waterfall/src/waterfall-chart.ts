@@ -352,9 +352,11 @@ export class WaterfallChart extends HTMLElement {
       })();
     this._renderEventFilters();
 
-    // Wire up row click → detail panel
+    // Wire up row click + keyboard → detail panel.
+    // Rows aren't focusable by default; the helper adds role/tabindex/keydown
+    // handlers so keyboard users can open the same detail panel that click does.
     rows.forEach((li, i) => {
-      li.addEventListener('click', () =>
+      this._makeRowInteractive(li, () =>
         this._togglePanel(i, this._allEntries[i]!),
       );
     });
@@ -1252,9 +1254,48 @@ export class WaterfallChart extends HTMLElement {
       );
       li.appendChild(this._makeTimelineCell(entry));
 
-      li.addEventListener('click', () => this._togglePanel(i, entry));
+      this._makeRowInteractive(li, () => this._togglePanel(i, entry));
 
       this._listEl.appendChild(li);
+    });
+  }
+
+  /**
+   * Make a row `<li>` keyboard-accessible.
+   *
+   * Adds the ARIA semantics of a toggle button (`role="button"`,
+   * `aria-expanded`, `tabindex="0"`) and binds both click and Enter/Space
+   * keydown to the same activation callback. The shared callback keeps the
+   * row's `aria-expanded` value in sync with the open/closed state of its
+   * detail panel.
+   *
+   * Only called after JS upgrade — the static SSR HTML keeps plain
+   * non-focusable `<li>` rows because there is no handler to drive them.
+   */
+  private _makeRowInteractive(li: HTMLElement, onActivate: () => void) {
+    li.setAttribute('role', 'button');
+    li.setAttribute('tabindex', '0');
+    if (!li.hasAttribute('aria-expanded')) {
+      li.setAttribute(
+        'aria-expanded',
+        li.classList.contains('row--open') ? 'true' : 'false',
+      );
+    }
+
+    const activate = () => {
+      onActivate();
+      li.setAttribute(
+        'aria-expanded',
+        li.classList.contains('row--open') ? 'true' : 'false',
+      );
+    };
+
+    li.addEventListener('click', activate);
+    li.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault(); // prevent space from scrolling the page
+        activate();
+      }
     });
   }
 }

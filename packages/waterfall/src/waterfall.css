@@ -458,6 +458,16 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 .wf-row.row--open {
   background: var(--wf-row-open-bg);
 }
+/* Keyboard focus ring on rows. Only fires for keyboard focus (:focus-visible)
+   so mouse users don't see an outline after click. JS upgrade sets role=button
+   and tabindex=0, which makes rows focusable. */
+.wf-row:focus {
+  outline: none;
+}
+.wf-row:focus-visible {
+  outline: 2px solid var(--wf-brand);
+  outline-offset: -2px;
+}
 
 /* ── Filter hover highlight ──────────────────────────────────────────────────
    When a filter chip is hovered, dim all rows then un-dim matching ones.     */
