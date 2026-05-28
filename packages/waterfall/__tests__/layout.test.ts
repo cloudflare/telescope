@@ -354,6 +354,32 @@ describe('computeTimelineLayout', () => {
     expect(layout.durLabel).toBe('100 ms');
   });
 
+  it('short-circuits to a sane empty layout when totalMs <= 0', () => {
+    const e = makeEntry({
+      time: 50,
+      timings: {
+        blocked: 10,
+        dns: 5,
+        connect: 5,
+        ssl: 0,
+        send: 10,
+        wait: 10,
+        receive: 10,
+      },
+    });
+    for (const totalMs of [0, -1, -1000]) {
+      const layout = computeTimelineLayout(
+        e,
+        totalMs,
+        +new Date(e.startedDateTime),
+      );
+      expect(layout.segments).toEqual([]);
+      expect(layout.barEndPct).toBe(0);
+      expect(Number.isFinite(layout.barEndPct)).toBe(true);
+      expect(layout.durLabel).toBe('50 ms');
+    }
+  });
+
   it('places phase segments left-to-right at correct percentages', () => {
     const e = makeEntry({
       time: 100,

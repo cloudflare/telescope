@@ -171,12 +171,20 @@ export interface TimelineLayout {
  *
  * The same math is used by `renderTimelineCell()` (SSR string output) and
  * `_makeTimelineCell()` (DOM nodes), guaranteeing they stay in lockstep.
+ *
+ * When `totalMs <= 0` the function short-circuits to an empty layout, avoiding
+ * the divide-by-zero `NaN`/`Infinity` percentages that would otherwise break
+ * rendering. The duration label is still computed from `entry.time`.
  */
 export function computeTimelineLayout(
   entry: HarEntry,
   totalMs: number,
   originMs: number,
 ): TimelineLayout {
+  if (totalMs <= 0) {
+    return { segments: [], barEndPct: 0, durLabel: fmtMs(entry.time) };
+  }
+
   const type = resourceType(entry);
   const { key } = typeConfig(type);
   const t = entry.timings;
@@ -188,9 +196,7 @@ export function computeTimelineLayout(
   const wait = Math.max(0, t.wait);
   const receive = Math.max(0, t.receive);
   const offsetPct =
-    totalMs > 0
-      ? ((+new Date(entry.startedDateTime) - originMs) / totalMs) * 100
-      : 0;
+    ((+new Date(entry.startedDateTime) - originMs) / totalMs) * 100;
 
   const segments: BarSegment[] = [];
 

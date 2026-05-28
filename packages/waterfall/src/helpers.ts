@@ -54,8 +54,10 @@ export function isBlocking(entry: HarEntry): boolean {
 /**
  * Total waterfall duration in ms — from the first request start to the last
  * request end, relative to the first entry's startedDateTime.
+ * Returns 0 for an empty input.
  */
 export function computeTotalMs(entries: HarEntry[]): number {
+  if (entries.length === 0) return 0;
   const origin = +new Date(entries[0]!.startedDateTime);
   return entries.reduce((max, e) => {
     const end = +new Date(e.startedDateTime) - origin + e.time;
