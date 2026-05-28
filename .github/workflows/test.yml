@@ -5,8 +5,12 @@ permissions:
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'packages/telescope-web/**'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'packages/telescope-web/**'
 
 jobs:
   # Detect which package directories changed so we can skip unaffected test jobs.
@@ -25,13 +29,19 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
-          # On `push` we don't have a base to compare against from the action's
-          # default behaviour; passing the previous commit explicitly avoids a
-          # full-tree match that would mark everything changed.
+          # A package is "changed" when files within it are touched OR when
+          # shared root-level files that affect every package change (workspace
+          # config, lockfiles, or this workflow itself).
           filters: |
             telescope:
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/test.yml'
               - 'packages/telescope/**'
             waterfall:
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/test.yml'
               - 'packages/waterfall/**'
 
   test-telescope:
