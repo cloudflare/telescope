@@ -79,7 +79,7 @@ export function uniqueTypes(entries: HarEntry[]): string[] {
 
 // ── Event-line label formatting ───────────────────────────────────────────────
 
-/** Format a page-timing value as a human-readable label, e.g. "DCL 1.23s". */
+/** Format a page-timing value as a human-readable label, e.g. "DCL 1234 ms". */
 export function fmtEventLabel(label: string, ms: number): string {
   return `${label} ${Math.round(ms)} ms`;
 }
