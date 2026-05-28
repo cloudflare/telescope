@@ -16,10 +16,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 
-import {
-  createFixtureServer,
-  type FixtureServer,
-} from './fixture-server.js';
+import { createFixtureServer, type FixtureServer } from './fixture-server.js';
 import type { Har } from '../dist/har.js';
 
 const PKG_ROOT = path.resolve(import.meta.dirname, '..');
@@ -144,9 +141,7 @@ async function findFreeSpotPct(page: Page, gapPx = 24): Promise<number> {
     // Scan candidate positions; return the first that's >gap from every line.
     for (let pct = 0.05; pct < 1; pct += 0.05) {
       const x = pct * rect.width;
-      const ok = linePcts.every(
-        (lp) => Math.abs(lp * rect.width - x) > gap,
-      );
+      const ok = linePcts.every((lp) => Math.abs(lp * rect.width - x) > gap);
       if (ok) return pct;
     }
     return 0.5; // fallback
@@ -404,7 +399,12 @@ describe('scrubber snap to metric', () => {
       const linePct = parseFloat(dcl.style.left) / 100;
       return {
         lineX: rect.x + linePct * rect.width,
-        overlayRect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+        overlayRect: {
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+        },
       };
     });
     // 2px left of the DCL line — well within the 8px threshold.

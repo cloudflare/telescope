@@ -235,11 +235,11 @@ npm run dev           # serve demo pages for local development
 npm run build:demo    # generate demo HTML pages statically
 ```
 
-| Page                | What it demonstrates                                                                                     |
-| ------------------- | -------------------------------------------------------------------------------------------------------- |
+| Page                | What it demonstrates                                                                                      |
+| ------------------- | --------------------------------------------------------------------------------------------------------- |
 | `/`                 | Progressive enhancement: pre-rendered chart + button to lazily load JS and upgrade interactivity in place |
-| `/interactive.html` | Fully dynamic: empty `<waterfall-chart>` upgraded on load, with a file picker to inject arbitrary HARs   |
-| `/src-attr.html`    | Fully dynamic via `src` attribute: URL input and file picker for fetching HARs from a remote location    |
+| `/interactive.html` | Fully dynamic: empty `<waterfall-chart>` upgraded on load, with a file picker to inject arbitrary HARs    |
+| `/src-attr.html`    | Fully dynamic via `src` attribute: URL input and file picker for fetching HARs from a remote location     |
 
 Each demo page also wires up a shared theme toggle (`public/theme.js`) that
 persists a `light` / `dark` preference to `localStorage` and sets
@@ -260,18 +260,18 @@ where needed) via plain `<link>` / `<script>` tags — exactly as a real
 downstream consumer would — so the tests exercise the same loading paths
 end users do.
 
-| Fixture                       | Used by                                              | Chart state                                                          |
-| ----------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------- |
-| `static.html`                 | `theme.test.ts`, `surface-themes.test.ts`            | Pre-rendered chart, **no** `<script>` tag — static / CSS-only render |
-| `progressive-fixture.html`    | `theme.test.ts`, `overlay.test.ts`, `bar-dur.test.ts` | Pre-rendered chart + JS bundle → upgrades in place                   |
-| `interactive-fixture.html`    | `overlay.test.ts`, `metric-filters.test.ts`           | Empty `<waterfall-chart>` + JS bundle → tests inject HAR via `.har`  |
-| `white-bg.html`, `black-bg.html` | `surface-themes.test.ts`                          | Fixed host body background (white / black) — used to verify chart surface tokens stay themed regardless of host page colour |
+| Fixture                          | Used by                                               | Chart state                                                                                                                 |
+| -------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `static.html`                    | `theme.test.ts`, `surface-themes.test.ts`             | Pre-rendered chart, **no** `<script>` tag — static / CSS-only render                                                        |
+| `progressive-fixture.html`       | `theme.test.ts`, `overlay.test.ts`, `bar-dur.test.ts` | Pre-rendered chart + JS bundle → upgrades in place                                                                          |
+| `interactive-fixture.html`       | `overlay.test.ts`, `metric-filters.test.ts`           | Empty `<waterfall-chart>` + JS bundle → tests inject HAR via `.har`                                                         |
+| `white-bg.html`, `black-bg.html` | `surface-themes.test.ts`                              | Fixed host body background (white / black) — used to verify chart surface tokens stay themed regardless of host page colour |
 
 The fixtures are served by a shared test helper
 (`__tests__/fixture-server.ts`) at paths like `/static`, `/progressive`,
 `/interactive`, `/white-bg`, `/black-bg`. Each test file spins up its own
 ephemeral server via `createFixtureServer()`.
 
-One test file — `toggle.test.ts` — *does* use the demo pages, because it
+One test file — `toggle.test.ts` — _does_ use the demo pages, because it
 specifically tests the demo's theme-toggle widget (`public/theme.js`). Every
 other browser test uses the fixtures.

@@ -206,7 +206,9 @@ function copyAssets(outputDir: string, includeJs: boolean): void {
     process.exit(1);
   }
 
-  const names = includeJs ? ['waterfall.css', 'waterfall.js'] : ['waterfall.css'];
+  const names = includeJs
+    ? ['waterfall.css', 'waterfall.js']
+    : ['waterfall.css'];
   for (const name of names) {
     const src = resolve(distDir, name);
     const dst = resolve(assetsDir, name);
@@ -323,9 +325,7 @@ function buildChartBody(
     }
 
     const name =
-      fileOutputDir !== null
-        ? copyHar(input, fileOutputDir)
-        : basename(input);
+      fileOutputDir !== null ? copyHar(input, fileOutputDir) : basename(input);
     return {
       body: { mode: 'attr', src: name },
       harCopied: fileOutputDir !== null ? name : null,

@@ -14,10 +14,7 @@
 import { chromium, type Browser, type Page } from 'playwright';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 
-import {
-  createFixtureServer,
-  type FixtureServer,
-} from './fixture-server.js';
+import { createFixtureServer, type FixtureServer } from './fixture-server.js';
 
 let browser: Browser;
 let server: FixtureServer;
@@ -79,8 +76,9 @@ describe('row keyboard accessibility', () => {
 
     // aria-expanded flipped to true on the activated row
     expect(await firstRow.getAttribute('aria-expanded')).toBe('true');
-    expect(await firstRow.evaluate((el) => el.classList.contains('row--open')))
-      .toBe(true);
+    expect(
+      await firstRow.evaluate((el) => el.classList.contains('row--open')),
+    ).toBe(true);
 
     // Pressing Enter again closes it
     await page.keyboard.press('Enter');

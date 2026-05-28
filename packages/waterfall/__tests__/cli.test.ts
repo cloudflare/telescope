@@ -228,7 +228,9 @@ describe('CLI: --attr mode', () => {
     expect(r.stdout).toMatch(/HAR copied as demo\.har/);
 
     const html = readFileSync(resolve(workDir, 'out.html'), 'utf8');
-    expect(html).toMatch(/<waterfall-chart src="demo\.har"><\/waterfall-chart>/);
+    expect(html).toMatch(
+      /<waterfall-chart src="demo\.har"><\/waterfall-chart>/,
+    );
     // No pre-rendered toolbar or rows in attr mode
     expect(html).not.toMatch(/class="wf-toolbar"/);
     expect(html).not.toMatch(/class="wf-row/);
@@ -388,7 +390,9 @@ describe('CLI: --no-js mode', () => {
 
     expect(r.status).toBe(0);
     const html = readFileSync(resolve(workDir, 'out.html'), 'utf8');
-    expect(html).toMatch(/<script type="module" src="waterfall\/waterfall\.js"/);
+    expect(html).toMatch(
+      /<script type="module" src="waterfall\/waterfall\.js"/,
+    );
     expect(existsSync(resolve(workDir, 'waterfall', 'waterfall.js'))).toBe(
       true,
     );
@@ -483,10 +487,14 @@ describe('CLI: `--` writes component snippet to stdout', () => {
     //   npx … abc.har -- > abc_component_only.html
     copyDemoHar();
     const outPath = resolve(workDir, 'component-only.html');
-    const r = spawnSync('sh', ['-c', `node "${CLI}" demo.har -- > "${outPath}"`], {
-      cwd: workDir,
-      encoding: 'utf8',
-    });
+    const r = spawnSync(
+      'sh',
+      ['-c', `node "${CLI}" demo.har -- > "${outPath}"`],
+      {
+        cwd: workDir,
+        encoding: 'utf8',
+      },
+    );
 
     expect(r.status).toBe(0);
     expect(existsSync(outPath)).toBe(true);

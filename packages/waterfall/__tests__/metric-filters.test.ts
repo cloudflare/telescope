@@ -12,10 +12,7 @@
 import { chromium, type Browser, type Page } from 'playwright';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 
-import {
-  createFixtureServer,
-  type FixtureServer,
-} from './fixture-server.js';
+import { createFixtureServer, type FixtureServer } from './fixture-server.js';
 
 let browser: Browser;
 let server: FixtureServer;

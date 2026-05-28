@@ -18,10 +18,7 @@
 import { chromium, type Browser, type Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import {
-  createFixtureServer,
-  type FixtureServer,
-} from './fixture-server.js';
+import { createFixtureServer, type FixtureServer } from './fixture-server.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
