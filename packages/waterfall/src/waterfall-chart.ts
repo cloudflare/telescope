@@ -384,9 +384,13 @@ export class WaterfallChart extends HTMLElement {
     const statusText = cells[2]?.textContent?.trim() ?? '200';
     const type = cells[3]?.textContent?.trim() ?? 'other';
 
-    // Timings are stored in data-* by the gen-demo script
+    // Timings are stored in data-* by the SSR renderer.
     const n = (k: string) => parseFloat(d[k] ?? '0') || 0;
     const blocked = n('blocked');
+    // _blocked_queueing is a Chrome-DevTools subset of blocked, surfaced via
+    // data-blocked-queueing when present. Reconstruct it on the entry so the
+    // adopted DOM faithfully matches a freshly-loaded HAR.
+    const blockedQueueing = n('blockedQueueing');
     const dns = n('dns');
     const connect = n('connect');
     const ssl = n('ssl');
@@ -425,7 +429,16 @@ export class WaterfallChart extends HTMLElement {
         bodySize,
         _transferSize: transferSize || undefined,
       },
-      timings: { blocked, dns, connect, ssl, send, wait, receive },
+      timings: {
+        blocked,
+        ...(blockedQueueing > 0 ? { _blocked_queueing: blockedQueueing } : {}),
+        dns,
+        connect,
+        ssl,
+        send,
+        wait,
+        receive,
+      },
     };
   }
 
@@ -943,21 +956,51 @@ export class WaterfallChart extends HTMLElement {
     }
     body.appendChild(section('General', generalWrap));
 
-    // Timings
-    const blocked = Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0));
-    const timingRows: Array<[string, string, number]> = [
-      ['wb--blocked', 'Blocked/Queued', blocked],
-      ['wb--dns', 'DNS Lookup', Math.max(0, t.dns)],
-      ['wb--connect', 'TCP Connect', Math.max(0, t.connect)],
-      ['wb--ssl', 'TLS Handshake', Math.max(0, t.ssl ?? 0)],
-      ['wb--send', 'Send', Math.max(0, t.send)],
-      ['wb--wait', 'Wait (TTFB)', Math.max(0, t.wait)],
-      ['wb--receive', 'Receive', Math.max(0, t.receive)],
+    // Timings — always emit a single "Blocked" parent row showing the total.
+    // When the Chrome `_blocked_queueing` extension is present, additionally
+    // emit "Queueing" and "Stalled" sub-rows indented beneath it.
+    const blocked = Math.max(0, t.blocked ?? 0);
+    const queueing = Math.min(blocked, Math.max(0, t._blocked_queueing ?? 0));
+    const stalled = blocked - queueing;
+
+    interface TimingRow {
+      cls: string;
+      label: string;
+      val: number;
+      sub?: boolean;
+    }
+    const blockedRows: TimingRow[] =
+      queueing > 0
+        ? [
+            { cls: 'wb--blocked', label: 'Blocked', val: blocked },
+            {
+              cls: 'wb--queueing',
+              label: 'Queueing',
+              val: queueing,
+              sub: true,
+            },
+            { cls: 'wb--stalled', label: 'Stalled', val: stalled, sub: true },
+          ]
+        : [{ cls: 'wb--blocked', label: 'Blocked', val: blocked }];
+    const timingRows: TimingRow[] = [
+      ...blockedRows,
+      { cls: 'wb--dns', label: 'DNS Lookup', val: Math.max(0, t.dns) },
+      { cls: 'wb--connect', label: 'TCP Connect', val: Math.max(0, t.connect) },
+      {
+        cls: 'wb--ssl',
+        label: 'TLS Handshake',
+        val: Math.max(0, t.ssl ?? 0),
+      },
+      { cls: 'wb--send', label: 'Send', val: Math.max(0, t.send) },
+      { cls: 'wb--wait', label: 'Wait', val: Math.max(0, t.wait) },
+      { cls: 'wb--receive', label: 'Receive', val: Math.max(0, t.receive) },
     ];
     const timingWrap = el('div');
-    for (const [cls, label, val] of timingRows) {
+    for (const { cls, label, val, sub } of timingRows) {
       if (val <= 0) continue;
-      const row = el('div', { className: 'wf-timing-row' });
+      const row = el('div', {
+        className: sub ? 'wf-timing-row wf-timing-sub' : 'wf-timing-row',
+      });
       const lbl = el('span', { className: 'wf-timing-label' });
       lbl.appendChild(el('span', { className: `wf-timing-swatch ${cls}` }));
       lbl.appendChild(document.createTextNode(label));
@@ -1154,8 +1197,11 @@ export class WaterfallChart extends HTMLElement {
       return false;
     if (this._activePhaseFilters.size > 0) {
       const t = entry.timings;
+      // `_blocked_queueing` is a subset of `blocked`, not additive — so the
+      // "blocked" phase matches whenever t.blocked > 0 (regardless of how the
+      // queueing/stalled split renders).
       const phaseVal: Record<string, number> = {
-        blocked: Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0)),
+        blocked: Math.max(0, t.blocked ?? 0),
         dns: Math.max(0, t.dns),
         connect: Math.max(0, t.connect),
         ssl: Math.max(0, t.ssl ?? 0),

@@ -18,7 +18,11 @@ export interface HarTimings {
   wait: number;
   /** Time to receive the response body */
   receive: number;
-  /** Total time (ms) — may be omitted, derived from sum of above */
+  /**
+   * Chrome-DevTools-only: queueing-time subset of `blocked` (i.e. queueing ≤ blocked).
+   * When present, `blocked - _blocked_queueing` is the "Stalled" portion (connection
+   * negotiation, proxy lookup, etc.). NOT additive to `blocked`.
+   */
   _blocked_queueing?: number;
 }
 

@@ -225,11 +225,29 @@ describe('activePhasesList', () => {
     expect(activePhasesList(e)).toEqual(['dns', 'ssl']);
   });
 
-  it('combines blocked + _blocked_queueing', () => {
+  it('does NOT add _blocked_queueing to blocked (queueing is a subset, not additive)', () => {
+    // blocked=0 with queueing=7 is a degenerate input: queueing must be ≤ blocked.
+    // Active phases is driven by t.blocked alone, so this row has no blocked phase.
     const e = makeEntry({
       timings: {
         blocked: 0,
         _blocked_queueing: 7,
+        dns: 0,
+        connect: 0,
+        ssl: 0,
+        send: 0,
+        wait: 0,
+        receive: 0,
+      },
+    });
+    expect(activePhasesList(e)).toEqual([]);
+  });
+
+  it('reports blocked phase when t.blocked > 0 regardless of queueing breakdown', () => {
+    const e = makeEntry({
+      timings: {
+        blocked: 50,
+        _blocked_queueing: 30,
         dns: 0,
         connect: 0,
         ssl: 0,
@@ -340,6 +358,47 @@ describe('rowDataAttrs', () => {
     expect(attrs.send).toBe('0');
     expect(attrs.wait).toBe('0');
     expect(attrs.receive).toBe('0');
+  });
+
+  it('omits blocked-queueing when _blocked_queueing is absent', () => {
+    const attrs = rowDataAttrs(makeEntry());
+    expect('blocked-queueing' in attrs).toBe(false);
+  });
+
+  it('includes blocked-queueing when _blocked_queueing > 0', () => {
+    const e = makeEntry({
+      timings: {
+        blocked: 30,
+        _blocked_queueing: 20,
+        dns: 0,
+        connect: 0,
+        ssl: 0,
+        send: 0,
+        wait: 0,
+        receive: 0,
+      },
+    });
+    const attrs = rowDataAttrs(e);
+    expect(attrs.blocked).toBe('30'); // total, unchanged
+    expect(attrs['blocked-queueing']).toBe('20');
+  });
+
+  it('clamps blocked-queueing to blocked when source is inconsistent', () => {
+    const e = makeEntry({
+      timings: {
+        blocked: 30,
+        _blocked_queueing: 999,
+        dns: 0,
+        connect: 0,
+        ssl: 0,
+        send: 0,
+        wait: 0,
+        receive: 0,
+      },
+    });
+    const attrs = rowDataAttrs(e);
+    expect(attrs.blocked).toBe('30');
+    expect(attrs['blocked-queueing']).toBe('30');
   });
 });
 
@@ -477,12 +536,38 @@ describe('computeTimelineLayout', () => {
     expect(layout.segments).toEqual([]);
   });
 
-  it('combines _blocked_queueing into the blocked phase', () => {
+  it('splits blocked into queueing + stalled sub-segments when _blocked_queueing > 0', () => {
+    const e = makeEntry({
+      time: 100,
+      timings: {
+        blocked: 30, // total — queueing is a subset, NOT additive
+        _blocked_queueing: 20,
+        dns: 0,
+        connect: 0,
+        ssl: 0,
+        send: 0,
+        wait: 0,
+        receive: 0,
+      },
+    });
+    const layout = computeTimelineLayout(e, 1000, +new Date(e.startedDateTime));
+    expect(layout.segments).toHaveLength(2);
+    // Queueing first (leftmost), then stalled.
+    expect(layout.segments[0]!.cls).toBe('wb--queueing wb--phase');
+    expect(layout.segments[0]!.leftPct).toBeCloseTo(0, 10);
+    expect(layout.segments[0]!.widthPct).toBeCloseTo(2, 10); // 20/1000
+    expect(layout.segments[0]!.tooltip).toBe('Queueing: 20 ms');
+    expect(layout.segments[1]!.cls).toBe('wb--stalled wb--phase');
+    expect(layout.segments[1]!.leftPct).toBeCloseTo(2, 10);
+    expect(layout.segments[1]!.widthPct).toBeCloseTo(1, 10); // (30-20)/1000
+    expect(layout.segments[1]!.tooltip).toBe('Stalled: 10 ms');
+  });
+
+  it('emits a single wb--blocked segment when _blocked_queueing is absent', () => {
     const e = makeEntry({
       time: 100,
       timings: {
         blocked: 30,
-        _blocked_queueing: 20,
         dns: 0,
         connect: 0,
         ssl: 0,
@@ -494,8 +579,52 @@ describe('computeTimelineLayout', () => {
     const layout = computeTimelineLayout(e, 1000, +new Date(e.startedDateTime));
     expect(layout.segments).toHaveLength(1);
     expect(layout.segments[0]!.cls).toBe('wb--blocked wb--phase');
-    expect(layout.segments[0]!.widthPct).toBeCloseTo(5, 10); // 50/1000
-    expect(layout.segments[0]!.tooltip).toBe('Blocked: 50 ms');
+    expect(layout.segments[0]!.widthPct).toBeCloseTo(3, 10);
+    expect(layout.segments[0]!.tooltip).toBe('Blocked: 30 ms');
+  });
+
+  it('emits only the queueing segment when _blocked_queueing equals blocked (stalled = 0)', () => {
+    const e = makeEntry({
+      time: 100,
+      timings: {
+        blocked: 30,
+        _blocked_queueing: 30,
+        dns: 0,
+        connect: 0,
+        ssl: 0,
+        send: 0,
+        wait: 0,
+        receive: 0,
+      },
+    });
+    const layout = computeTimelineLayout(e, 1000, +new Date(e.startedDateTime));
+    expect(layout.segments).toHaveLength(1);
+    expect(layout.segments[0]!.cls).toBe('wb--queueing wb--phase');
+    expect(layout.segments[0]!.widthPct).toBeCloseTo(3, 10);
+    expect(layout.segments[0]!.tooltip).toBe('Queueing: 30 ms');
+  });
+
+  it('clamps _blocked_queueing to blocked when the source data is inconsistent', () => {
+    // Defensive: real HARs shouldn't have queueing > blocked, but if they do,
+    // we treat the request as fully queued (stalled = 0).
+    const e = makeEntry({
+      time: 100,
+      timings: {
+        blocked: 30,
+        _blocked_queueing: 999,
+        dns: 0,
+        connect: 0,
+        ssl: 0,
+        send: 0,
+        wait: 0,
+        receive: 0,
+      },
+    });
+    const layout = computeTimelineLayout(e, 1000, +new Date(e.startedDateTime));
+    expect(layout.segments).toHaveLength(1);
+    expect(layout.segments[0]!.cls).toBe('wb--queueing wb--phase');
+    expect(layout.segments[0]!.widthPct).toBeCloseTo(3, 10); // 30/1000, not 999/1000
+    expect(layout.segments[0]!.tooltip).toBe('Queueing: 30 ms');
   });
 });
 

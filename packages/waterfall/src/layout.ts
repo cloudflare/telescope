@@ -99,12 +99,15 @@ export function rowClasses(
 
 /**
  * The connection phases that are present (positive value) for this entry.
- * `blocked` combines `timings.blocked` and `timings._blocked_queueing`.
+ *
+ * `_blocked_queueing` is a Chrome-DevTools subset of `blocked` (NOT additive),
+ * so the total blocked time is just `t.blocked`. The single "blocked" phase
+ * covers both queueing and stalled sub-segments.
  */
 export function activePhasesList(entry: HarEntry): string[] {
   const t = entry.timings;
   const pairs: Array<readonly [string, number]> = [
-    ['blocked', Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0))],
+    ['blocked', Math.max(0, t.blocked ?? 0)],
     ['dns', Math.max(0, t.dns)],
     ['connect', Math.max(0, t.connect)],
     ['ssl', Math.max(0, t.ssl ?? 0)],
@@ -124,10 +127,13 @@ export function phasesDataAttr(entry: HarEntry): string {
  */
 export function rowDataAttrs(entry: HarEntry): Record<string, string> {
   const t = entry.timings;
+  const blocked = Math.max(0, t.blocked ?? 0);
+  // Chrome's _blocked_queueing is a subset of blocked — clamp defensively.
+  const queueing = Math.min(blocked, Math.max(0, t._blocked_queueing ?? 0));
   const attrs: Record<string, string> = {
     started: entry.startedDateTime,
     time: String(entry.time),
-    blocked: String(Math.max(0, t.blocked ?? 0)),
+    blocked: String(blocked),
     dns: String(Math.max(0, t.dns)),
     connect: String(Math.max(0, t.connect)),
     ssl: String(Math.max(0, t.ssl ?? 0)),
@@ -136,6 +142,9 @@ export function rowDataAttrs(entry: HarEntry): Record<string, string> {
     receive: String(Math.max(0, t.receive)),
     'body-size': String(entry.response.bodySize),
   };
+  if (queueing > 0) {
+    attrs['blocked-queueing'] = String(queueing);
+  }
   if (entry.response._transferSize !== undefined) {
     attrs['transfer-size'] = String(entry.response._transferSize);
   }
@@ -188,7 +197,15 @@ export function computeTimelineLayout(
   const type = resourceType(entry);
   const { key } = typeConfig(type);
   const t = entry.timings;
-  const blocked = Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0));
+  // Blocked is the total pre-connection delay (HAR 1.2). Chrome's
+  // _blocked_queueing is a *subset* of blocked, NOT additive. Split into:
+  //   - Queueing (Chrome subset; rendered first / leftmost)
+  //   - Stalled  (= blocked − queueing; connection-negotiation remainder)
+  // When _blocked_queueing is absent, the whole blocked region is rendered
+  // as a single segment using the legacy `wb--blocked` class.
+  const blocked = Math.max(0, t.blocked ?? 0);
+  const queueing = Math.min(blocked, Math.max(0, t._blocked_queueing ?? 0));
+  const stalled = blocked - queueing;
   const dns = Math.max(0, t.dns);
   const connect = Math.max(0, t.connect);
   const ssl = Math.max(0, t.ssl ?? 0);
@@ -210,8 +227,19 @@ export function computeTimelineLayout(
     segments.push({ cls, leftPct, widthPct, tooltip });
   };
 
+  // When queueing data is present, split blocked into two sub-segments
+  // (queueing on the left, stalled on the right). Otherwise emit a single
+  // blocked segment so HARs without the Chrome extension look unchanged.
+  const blockedPhases: Array<readonly [string, number, string]> =
+    queueing > 0
+      ? [
+          ['wb--queueing wb--phase', queueing, 'Queueing'],
+          ['wb--stalled wb--phase', stalled, 'Stalled'],
+        ]
+      : [['wb--blocked wb--phase', blocked, 'Blocked']];
+
   const phases: Array<readonly [string, number, string]> = [
-    ['wb--blocked wb--phase', blocked, 'Blocked'],
+    ...blockedPhases,
     ['wb--dns wb--phase', dns, 'DNS Lookup'],
     ['wb--connect wb--phase', connect, 'TCP Connect'],
     ['wb--ssl wb--phase', ssl, 'TLS Handshake'],

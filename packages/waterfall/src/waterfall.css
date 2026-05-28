@@ -11,6 +11,7 @@
 :root {
   /* Connection-phase colors (thin bars) */
   --wf-blocked: #a0a0a0;
+  --wf-stalled: #c8c8c8;
   --wf-wait: #37be5f;
   --wf-receive: #4c8df6;
   --wf-dns: #1a6b52;
@@ -187,6 +188,12 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 
 .wf-swatch--blocked {
   background: var(--wf-blocked);
+}
+.wf-swatch--queueing {
+  background: var(--wf-blocked);
+}
+.wf-swatch--stalled {
+  background: var(--wf-stalled);
 }
 .wf-swatch--wait {
   background: var(--wf-wait);
@@ -647,6 +654,12 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 .wb--blocked {
   background-color: var(--wf-blocked);
 }
+.wb--queueing {
+  background-color: var(--wf-blocked);
+}
+.wb--stalled {
+  background-color: var(--wf-stalled);
+}
 .wb--dns {
   background-color: var(--wf-dns);
 }
@@ -1015,6 +1028,12 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
   margin-top: 0.25rem;
   padding-top: 0.25rem;
   font-weight: 600;
+}
+/* Visually nests a timing row under its parent (e.g. Queueing/Stalled
+   beneath the combined Blocked row when the Chrome `_blocked_queueing`
+   breakdown is available). */
+.wf-timing-row.wf-timing-sub .wf-timing-label {
+  padding-left: 1rem;
 }
 
 .wf-headers-table {

@@ -1,17 +1,19 @@
 /**
  * Detail-panel timing-row swatch tests.
  *
- * Each connection-phase row in the detail panel ("Blocked/Queued", "DNS
- * Lookup", "TCP Connect", "TLS Handshake", "Send", "Wait (TTFB)", "Receive")
- * must use a distinct CSS class so its swatch renders with a distinguishable
- * colour — otherwise users cannot tell at a glance which phase dominated a
- * request. Until this was fixed, both "Wait (TTFB)" and "Receive" used
- * `wb--wait` and rendered identically.
+ * Each connection-phase row in the detail panel ("Blocked", "DNS Lookup",
+ * "TCP Connect", "TLS Handshake", "Send", "Wait", "Receive") must use a
+ * distinct CSS class so its swatch renders with a distinguishable colour
+ * — otherwise users cannot tell at a glance which phase dominated a
+ * request. Until this was fixed, both "Wait" and "Receive" used `wb--wait`
+ * and rendered identically.
  *
  * Uses the `/interactive` fixture (empty <waterfall-chart> + JS bundle) so
  * the panel is rendered by the dynamic-render path, which is where the
  * timing swatches live. Targets an entry in demo.har that has all seven
- * timing phases > 0 so every swatch is present.
+ * timing phases > 0 so every swatch is present. demo.har has no
+ * `_blocked_queueing` data, so this test exercises the "single Blocked row"
+ * path — see blocked-breakdown.test.ts for the queueing/stalled split.
  */
 
 import { chromium, type Browser, type Page } from 'playwright';

@@ -202,6 +202,9 @@ function renderRow(
     `data-started="${esc(data.started!)}"`,
     `data-time="${data.time}"`,
     `data-blocked="${data.blocked}"`,
+    ...(data['blocked-queueing'] !== undefined
+      ? [`data-blocked-queueing="${data['blocked-queueing']}"`]
+      : []),
     `data-dns="${data.dns}"`,
     `data-connect="${data.connect}"`,
     `data-ssl="${data.ssl}"`,

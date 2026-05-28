@@ -43,12 +43,11 @@ export function resourceType(entry: HarEntry): string {
 
 // ── Blocking ──────────────────────────────────────────────────────────────────
 
-/** True when a request was queued/blocked for more than 100 ms. */
+/** True when a request was queued/blocked for more than 100 ms.
+ *  `t.blocked` already includes queueing per HAR 1.2 semantics, so we
+ *  don't add `_blocked_queueing` (that would double-count). */
 export function isBlocking(entry: HarEntry): boolean {
-  const t = entry.timings;
-  return (
-    Math.max(0, t.blocked ?? 0) + Math.max(0, t._blocked_queueing ?? 0) > 100
-  );
+  return Math.max(0, entry.timings.blocked ?? 0) > 100;
 }
 
 /**
