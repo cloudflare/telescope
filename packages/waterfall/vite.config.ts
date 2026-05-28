@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 import type { Plugin } from 'vite';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const SRC = resolve(__dirname, 'src');
 const DIST = resolve(__dirname, 'dist');
 
