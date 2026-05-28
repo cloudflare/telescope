@@ -140,7 +140,7 @@ All tokens are CSS custom properties on `:root`:
 --wf-brand   --wf-success  --wf-warning  --wf-danger
 
 /* Connection phase bars */
---wf-blocked  --wf-dns  --wf-connect  --wf-ssl  --wf-send  --wf-wait
+--wf-blocked  --wf-dns  --wf-connect  --wf-ssl  --wf-send  --wf-wait  --wf-receive
 
 /* Resource type bars (light = send+wait, dark = receive) */
 --wf-html-light   --wf-html-dark

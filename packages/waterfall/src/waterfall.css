@@ -11,11 +11,12 @@
 :root {
   /* Connection-phase colors (thin bars) */
   --wf-blocked: #a0a0a0;
-  --wf-wait: #c8b432;
+  --wf-wait: #37be5f;
+  --wf-receive: #4c8df6;
   --wf-dns: #1a6b52;
   --wf-connect: #e07820;
   --wf-ssl: #7b3fb0;
-  --wf-send: #4a90d9;
+  --wf-send: #009dc1;
 
   /* Resource type colors — light = send+wait, dark = receive */
   --wf-html-light: #cfe0f7;
@@ -55,7 +56,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --wf-wait: #d4c040;
+    --wf-wait: #37be5f;
+    --wf-receive: #4c8df6;
     --wf-ssl: #9060c8;
     --wf-other-dark: #909090;
     --wf-text: #f9fafb;
@@ -70,7 +72,8 @@
 }
 
 [data-theme='dark'] {
-  --wf-wait: #d4c040;
+  --wf-wait: #37be5f;
+  --wf-receive: #4c8df6;
   --wf-ssl: #9060c8;
   --wf-other-dark: #909090;
   --wf-text: #f9fafb;
@@ -187,6 +190,9 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 }
 .wf-swatch--wait {
   background: var(--wf-wait);
+}
+.wf-swatch--receive {
+  background: var(--wf-receive);
 }
 .wf-swatch--dns {
   background: var(--wf-dns);
@@ -655,6 +661,9 @@ waterfall-chart:not(:defined) .wf-filters .wf-filter-btn:first-child {
 }
 .wb--wait {
   background-color: var(--wf-wait);
+}
+.wb--receive {
+  background-color: var(--wf-receive);
 }
 
 /* All resource-type bars share the same height (barH 10). */

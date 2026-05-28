@@ -952,7 +952,7 @@ export class WaterfallChart extends HTMLElement {
       ['wb--ssl', 'TLS Handshake', Math.max(0, t.ssl ?? 0)],
       ['wb--send', 'Send', Math.max(0, t.send)],
       ['wb--wait', 'Wait (TTFB)', Math.max(0, t.wait)],
-      ['wb--wait', 'Receive', Math.max(0, t.receive)],
+      ['wb--receive', 'Receive', Math.max(0, t.receive)],
     ];
     const timingWrap = el('div');
     for (const [cls, label, val] of timingRows) {
