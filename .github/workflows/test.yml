@@ -5,15 +5,40 @@ permissions:
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "packages/telescope-web/**"
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "packages/telescope-web/**"
 
 jobs:
-  test:
+  # Detect which package directories changed so we can skip unaffected test jobs.
+  # On `push` to main we force all flags to true to ensure full coverage of merged
+  # changes regardless of which files the push touched.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      telescope: ${{ steps.filter.outputs.telescope }}
+      waterfall: ${{ steps.filter.outputs.waterfall }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Detect changed packages
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          # On `push` we don't have a base to compare against from the action's
+          # default behaviour; passing the previous commit explicitly avoids a
+          # full-tree match that would mark everything changed.
+          filters: |
+            telescope:
+              - 'packages/telescope/**'
+            waterfall:
+              - 'packages/waterfall/**'
+
+  test-telescope:
+    needs: changes
+    # Run when telescope changed, or unconditionally on push to main so the
+    # merged tip is always exercised.
+    if: ${{ needs.changes.outputs.telescope == 'true' || github.event_name == 'push' }}
     runs-on: ubuntu-latest
     env:
       HOME: /root
@@ -28,9 +53,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "24"
-          cache: "npm"
-          cache-dependency-path: "./packages/telescope/package-lock.json"
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: './packages/telescope/package-lock.json'
 
       - name: Install xz-utils
         run: apt-get update && apt-get install -y xz-utils
@@ -55,3 +80,38 @@ jobs:
         if: ${{ always() }}
         working-directory: ./packages/telescope
         run: find results
+
+  test-waterfall:
+    needs: changes
+    # Run when waterfall changed, or unconditionally on push to main.
+    if: ${{ needs.changes.outputs.waterfall == 'true' || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    env:
+      HOME: /root
+    container:
+      # Pre-installed chromium matches the waterfall package's playwright version.
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: './packages/waterfall/package-lock.json'
+
+      - name: Install dependencies
+        # Don't run lifecycle scripts (the pre-built container already has browsers).
+        working-directory: ./packages/waterfall
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        working-directory: ./packages/waterfall
+        run: npm run build
+
+      - name: Run tests
+        working-directory: ./packages/waterfall
+        run: npm test
