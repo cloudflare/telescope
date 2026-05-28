@@ -60,6 +60,7 @@ export type NetworkTypes = Record<
 export type BrowserName =
   | 'chrome'
   | 'chrome-beta'
+  | 'chromium'
   | 'canary'
   | 'firefox'
   | 'safari'
@@ -77,6 +78,7 @@ export type BrowserChannel =
   | 'chrome'
   | 'chrome-beta'
   | 'chrome-canary'
+  | 'chromium'
   | 'msedge';
 
 /**

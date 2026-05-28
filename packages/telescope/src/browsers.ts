@@ -101,6 +101,13 @@ class BrowserConfig {
       flags: true,
       args: [],
     },
+    chromium: { // AKA Google Chrome for Testing from Playwright CI image
+      engine: 'chromium',
+      channel: 'chromium',
+      headless,
+      flags: true,
+      args: [],
+    },
     'chrome-beta': {
       engine: 'chromium',
       channel: 'chrome-beta',

@@ -7,7 +7,7 @@ import type {
   HarEntry,
 } from '../src/types.js';
 
-const browsers: BrowserName[] = ['chrome'];
+const browsers: BrowserName[] = ['chromium'];
 
 describe('Request HAR entries', () => {
   let server: Server;
@@ -17,7 +17,7 @@ describe('Request HAR entries', () => {
     // Start web server with a little delay on responses to be more realistic
     server = createStaticServer({
       fixturesDirPath: fixturesDir('priority'),
-      delay: 250,
+      delay: 260,
       compress: 9
     });
     baseUrl = await listenServer(server);
