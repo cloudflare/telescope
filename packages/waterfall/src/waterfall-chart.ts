@@ -47,12 +47,21 @@ import { fmtSize, fmtMs } from './formatters.js';
 import {
   parseUrl,
   resourceType,
-  isBlocking,
   computeTotalMs,
   uniqueTypes,
   pageEvents,
   fmtEventLabel,
 } from './helpers.js';
+import {
+  PHASE_BUTTONS,
+  computeTimelineLayout,
+  entrySize,
+  phasesDataAttr,
+  presentEvents,
+  rowClasses,
+  statusClass,
+  tickPositions,
+} from './layout.js';
 import type { Har, HarEntry, HarPage } from './har.js';
 
 type HarPageTimings = HarPage['pageTimings'];
@@ -260,21 +269,7 @@ export class WaterfallChart extends HTMLElement {
     rows.forEach((li, i) => {
       const entry = this._allEntries[i]!;
       li.dataset.type = resourceType(entry);
-
-      const blocked =
-        parseFloat(li.dataset.blocked ?? '0') +
-        parseFloat(li.dataset.blockedQueueing ?? '0');
-      const phaseList = (
-        [
-          ['blocked', blocked],
-          ['dns', parseFloat(li.dataset.dns ?? '0')],
-          ['connect', parseFloat(li.dataset.connect ?? '0')],
-          ['ssl', parseFloat(li.dataset.ssl ?? '0')],
-        ] as [string, number][]
-      )
-        .filter(([, v]) => v > 0)
-        .map(([p]) => p)
-        .join(' ');
+      const phaseList = phasesDataAttr(entry);
       if (phaseList) li.dataset.phases = phaseList;
     });
 
@@ -492,12 +487,7 @@ export class WaterfallChart extends HTMLElement {
       role: 'group',
       'aria-label': 'Filter by connection phase',
     });
-    for (const [phase, label] of [
-      ['blocked', 'Blocked'],
-      ['dns', 'DNS Lookup'],
-      ['connect', 'TCP Connect'],
-      ['ssl', 'TLS Handshake'],
-    ] as const) {
+    for (const [phase, label] of PHASE_BUTTONS) {
       const btn = el('button', { type: 'button', className: 'wf-filter-btn' });
       btn.dataset.phase = phase;
       btn.append(mkSwatch(true, phase), document.createTextNode(label));
@@ -759,12 +749,7 @@ export class WaterfallChart extends HTMLElement {
   /** Build phase filter buttons for the dynamic (JS-rendered) path. */
   private _renderPhaseFilters(types: string[]) {
     this._phaseGroupEl.innerHTML = '';
-    for (const [phase, label] of [
-      ['blocked', 'Blocked'],
-      ['dns', 'DNS Lookup'],
-      ['connect', 'TCP Connect'],
-      ['ssl', 'TLS Handshake'],
-    ] as const) {
+    for (const [phase, label] of PHASE_BUTTONS) {
       const active = this._activePhaseFilters.has(phase);
       const btn = el('button', {
         type: 'button',
@@ -817,29 +802,7 @@ export class WaterfallChart extends HTMLElement {
   private _renderEventFilters() {
     this._eventGroupEl.innerHTML = '';
 
-    const EVENTS: Array<{
-      key: string;
-      label: string;
-      hasValue: boolean;
-    }> = [
-      {
-        key: 'ev-dcl',
-        label: 'DOM Content Loaded',
-        hasValue: (this._pageTimings.onContentLoad ?? 0) > 0,
-      },
-      {
-        key: 'ev-load',
-        label: 'Page Load',
-        hasValue: (this._pageTimings.onLoad ?? 0) > 0,
-      },
-      {
-        key: 'ev-lcp',
-        label: 'Largest Contentful Paint',
-        hasValue: (this._pageTimings._lcp ?? 0) > 0,
-      },
-    ];
-
-    const present = EVENTS.filter((e) => e.hasValue);
+    const present = presentEvents(this._pageTimings);
     // Remove the group from the toolbar entirely when no metrics are present,
     // so that querySelector('.wf-legend-group[aria-label="Toggle metrics"]')
     // returns null (matching the static renderer, which omits it entirely).
@@ -891,79 +854,29 @@ export class WaterfallChart extends HTMLElement {
 
   private _makeTimelineCell(entry: HarEntry): HTMLElement {
     const cell = el('span', { className: 'wf-cell wf-cell--timeline' });
-    const type = resourceType(entry);
-    const { key } = typeConfig(type);
-    const t = entry.timings;
-    const blocked = Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0));
-    const dns = Math.max(0, t.dns);
-    const connect = Math.max(0, t.connect);
-    const ssl = Math.max(0, t.ssl ?? 0);
-    const send = Math.max(0, t.send);
-    const wait = Math.max(0, t.wait);
-    const receive = Math.max(0, t.receive);
-    const offsetPct =
-      this._totalMs > 0
-        ? ((+new Date(entry.startedDateTime) - this._originMs) /
-            this._totalMs) *
-          100
-        : 0;
-
     const wrap = el('div', { className: 'wf-bar-wrap' });
     // No inline height — .wf-bar-wrap picks up --wf-bar-wrap-h from the row class.
 
-    // Only left and width are set via inline style — heights come from CSS classes.
-    const addBar = (
-      cls: string,
-      leftPct: number,
-      widthPct: number,
-      tooltip: string,
-    ) => {
-      if (widthPct <= 0) return;
-      const b = el('div', { className: `wb ${cls}`, title: tooltip });
-      b.style.left = `${leftPct}%`;
-      b.style.width = `${Math.max(widthPct, 0.1)}%`;
-      wrap.appendChild(b);
-    };
+    const { segments, barEndPct, durLabel } = computeTimelineLayout(
+      entry,
+      this._totalMs,
+      this._originMs,
+    );
 
-    const phases: Array<[string, number, string]> = [
-      ['wb--blocked wb--phase', blocked, 'Blocked'],
-      ['wb--dns wb--phase', dns, 'DNS Lookup'],
-      ['wb--connect wb--phase', connect, 'TCP Connect'],
-      ['wb--ssl wb--phase', ssl, 'TLS Handshake'],
-    ];
-    let cursor = offsetPct;
-    for (const [cls, val, label] of phases) {
-      const pct = (val / this._totalMs) * 100;
-      addBar(cls, cursor, pct, `${label}: ${fmtMs(val)}`);
-      cursor += pct;
+    // Only left and width are set via inline style — heights come from CSS classes.
+    for (const s of segments) {
+      const b = el('div', { className: `wb ${s.cls}`, title: s.tooltip });
+      b.style.left = `${s.leftPct}%`;
+      b.style.width = `${Math.max(s.widthPct, 0.1)}%`;
+      wrap.appendChild(b);
     }
 
-    const resCursor =
-      offsetPct + ((blocked + dns + connect + ssl) / this._totalMs) * 100;
-    const sentPct = ((send + wait) / this._totalMs) * 100;
-    const recvPct = (receive / this._totalMs) * 100;
-    addBar(
-      `wb--${key}-light`,
-      resCursor,
-      sentPct,
-      `Send+Wait: ${fmtMs(send + wait)}`,
-    );
-    addBar(
-      `wb--${key}-dark`,
-      resCursor + sentPct,
-      recvPct,
-      `Receive: ${fmtMs(receive)}`,
-    );
+    cell.style.setProperty('--wf-bar-end', `${barEndPct.toFixed(4)}%`);
 
-    const barEndPct = (offsetPct + (entry.time / this._totalMs) * 100).toFixed(
-      4,
-    );
-    cell.style.setProperty('--wf-bar-end', `${barEndPct}%`);
+    const durLabelEl = el('span', { className: 'wf-bar-dur' });
+    durLabelEl.textContent = durLabel;
 
-    const durLabel = el('span', { className: 'wf-bar-dur' });
-    durLabel.textContent = fmtMs(entry.time);
-
-    wrap.appendChild(durLabel);
+    wrap.appendChild(durLabelEl);
     cell.append(wrap);
     return cell;
   }
@@ -981,7 +894,7 @@ export class WaterfallChart extends HTMLElement {
     }
 
     const t = entry.timings;
-    const size = entry.response._transferSize ?? entry.response.bodySize;
+    const size = entrySize(entry);
 
     const panel = el('div', { className: 'wf-panel' });
     panel.dataset.panelIndex = String(index);
@@ -1096,19 +1009,9 @@ export class WaterfallChart extends HTMLElement {
 
   // ── Ruler ─────────────────────────────────────────────────────────────────
 
-  private _tickPositions(): number[] {
-    const targets = [50, 100, 200, 250, 500, 1000, 2000, 5000] as const;
-    const interval: number = (targets.find((t) => t >= this._totalMs / 8) ??
-      targets[targets.length - 1])!;
-    const positions: number[] = [];
-    for (let ms = interval; ms < this._totalMs; ms += interval)
-      positions.push(ms);
-    return positions;
-  }
-
   private _renderRuler() {
     this._rulerEl.innerHTML = '';
-    for (const ms of this._tickPositions()) {
+    for (const ms of tickPositions(this._totalMs)) {
       const tick = el('span', { className: 'wf-tick' });
       tick.style.left = `${(ms / this._totalMs) * 100}%`;
       tick.textContent = `${parseFloat((ms / 1000).toFixed(3))}s`;
@@ -1140,7 +1043,7 @@ export class WaterfallChart extends HTMLElement {
     this._listWrapEl.style.setProperty('--wf-overlay-h', h);
 
     // Grid lines — in the low-z-index overlay so they render behind the bars.
-    for (const ms of this._tickPositions()) {
+    for (const ms of tickPositions(this._totalMs)) {
       const gridLine = el('div', { className: 'wf-grid-line' });
       gridLine.style.left = `${(ms / this._totalMs) * 100}%`;
       this._gridOverlayEl.appendChild(gridLine);
@@ -1278,45 +1181,21 @@ export class WaterfallChart extends HTMLElement {
       const type = resourceType(entry);
       const { barH } = typeConfig(type);
       const status = entry.response.status;
-      const size = entry.response._transferSize ?? entry.response.bodySize;
+      const size = entrySize(entry);
       const { domain, path } = parseUrl(entry.request.url);
 
-      const statusCls =
-        status >= 500
-          ? 's5xx'
-          : status >= 400
-            ? 's4xx'
-            : status >= 300
-              ? 's3xx'
-              : 's2xx';
+      const statusCls = statusClass(status);
 
-      const rowClasses = [
-        'wf-row',
-        `wf-row--rh${barH + 10}`,
-        isBlocking(entry) ? 'row--blocking' : '',
-        this._openPanels.has(i) ? 'row--open' : '',
-      ]
-        .filter(Boolean)
-        .join(' ');
+      const classStr = rowClasses(
+        entry,
+        barH,
+        this._openPanels.has(i) ? ['row--open'] : [],
+      );
 
-      const li = el('li', { className: rowClasses });
+      const li = el('li', { className: classStr });
       li.dataset.index = String(i);
       li.dataset.type = type;
-      const t = entry.timings;
-      const phases = (
-        [
-          [
-            'blocked',
-            Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0)),
-          ],
-          ['dns', Math.max(0, t.dns)],
-          ['connect', Math.max(0, t.connect)],
-          ['ssl', Math.max(0, t.ssl ?? 0)],
-        ] as [string, number][]
-      )
-        .filter(([, v]) => v > 0)
-        .map(([p]) => p)
-        .join(' ');
+      const phases = phasesDataAttr(entry);
       if (phases) li.dataset.phases = phases;
 
       // # index — always the original 1-based position

@@ -16,12 +16,21 @@ import { fmtSize, fmtMs } from './formatters.js';
 import {
   parseUrl,
   resourceType,
-  isBlocking,
   computeTotalMs,
   uniqueTypes,
   pageEvents,
   fmtEventLabel,
 } from './helpers.js';
+import {
+  PHASE_BUTTONS,
+  computeTimelineLayout,
+  entrySize,
+  presentEvents,
+  rowClasses,
+  rowDataAttrs,
+  statusClass,
+  tickPositions,
+} from './layout.js';
 import type { Har, HarEntry, HarPage } from './har.js';
 
 type HarPageTimings = HarPage['pageTimings'];
@@ -44,7 +53,7 @@ function esc(s: string): string {
 
 const typeLabel = (t: string): string => TYPE_LABEL[t] ?? t;
 
-// ───────────────────────────��─────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // Toolbar (filter chips + toggle button)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -59,18 +68,15 @@ function renderToolbar(types: string[], pageTimings: HarPageTimings): string {
     })
     .join('\n    ');
 
-  const phaseBtn = (key: string, label: string) =>
-    `<button type="button" class="wf-filter-btn" data-phase="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`;
-  const eventBtn = (key: string, label: string) =>
-    `<button type="button" class="wf-filter-btn active" data-event="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`;
+  const phaseBtns = PHASE_BUTTONS.map(
+    ([key, label]) =>
+      `<button type="button" class="wf-filter-btn" data-phase="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`,
+  ).join('\n    ');
 
-  const eventBtns: string[] = [];
-  if ((pageTimings.onContentLoad ?? 0) > 0)
-    eventBtns.push(eventBtn('ev-dcl', 'DOM Content Loaded'));
-  if ((pageTimings.onLoad ?? 0) > 0)
-    eventBtns.push(eventBtn('ev-load', 'Page Load'));
-  if ((pageTimings._lcp ?? 0) > 0)
-    eventBtns.push(eventBtn('ev-lcp', 'Largest Contentful Paint'));
+  const eventBtns = presentEvents(pageTimings).map(
+    ({ key, label }) =>
+      `<button type="button" class="wf-filter-btn active" data-event="${key}"><span class="wf-swatch wf-swatch--thin wf-swatch--${key}"></span>${esc(label)}</button>`,
+  );
 
   const metricsGroup =
     eventBtns.length > 0
@@ -85,10 +91,7 @@ function renderToolbar(types: string[], pageTimings: HarPageTimings): string {
     ${chips}
   </div>
   <div class="wf-legend-group" role="group" aria-label="Filter by connection phase">
-    ${phaseBtn('blocked', 'Blocked')}
-    ${phaseBtn('dns', 'DNS Lookup')}
-    ${phaseBtn('connect', 'TCP Connect')}
-    ${phaseBtn('ssl', 'TLS Handshake')}
+    ${phaseBtns}
   </div>
   ${metricsGroup}
 </div>`.trim();
@@ -97,15 +100,6 @@ function renderToolbar(types: string[], pageTimings: HarPageTimings): string {
 // ─────────────────────────────────────────────────────────────────────────────
 // Ruler
 // ─────────────────────────────────────────────────────────────────────────────
-
-function tickPositions(totalMs: number): number[] {
-  const targets = [50, 100, 200, 250, 500, 1000, 2000, 5000] as const;
-  const interval: number = (targets.find((t) => t >= totalMs / 8) ??
-    targets[targets.length - 1])!;
-  const positions: number[] = [];
-  for (let ms = interval; ms < totalMs; ms += interval) positions.push(ms);
-  return positions;
-}
 
 function renderRuler(totalMs: number): string {
   return tickPositions(totalMs)
@@ -157,72 +151,22 @@ function renderTimelineCell(
   totalMs: number,
   originMs: number,
 ): string {
-  const type = resourceType(entry);
-  const { key } = typeConfig(type);
-  const t = entry.timings;
-  const blocked = Math.max(0, (t.blocked ?? 0) + (t._blocked_queueing ?? 0));
-  const dns = Math.max(0, t.dns);
-  const connect = Math.max(0, t.connect);
-  const ssl = Math.max(0, t.ssl ?? 0);
-  const send = Math.max(0, t.send);
-  const wait = Math.max(0, t.wait);
-  const receive = Math.max(0, t.receive);
-  const offsetPct =
-    totalMs > 0
-      ? ((+new Date(entry.startedDateTime) - originMs) / totalMs) * 100
-      : 0;
-
-  const bars: string[] = [];
-
-  // Only left and width are set via inline style — all heights come from CSS.
-  const addBar = (
-    cls: string,
-    leftPct: number,
-    widthPct: number,
-    tooltip: string,
-  ) => {
-    if (widthPct <= 0) return;
-    bars.push(
-      `<div class="wb ${cls}" title="${esc(tooltip)}" style="left:${leftPct.toFixed(4)}%;width:${Math.max(widthPct, 0.1).toFixed(4)}%"></div>`,
-    );
-  };
-
-  const phases: Array<[string, number, string]> = [
-    ['wb--blocked wb--phase', blocked, 'Blocked'],
-    ['wb--dns wb--phase', dns, 'DNS Lookup'],
-    ['wb--connect wb--phase', connect, 'TCP Connect'],
-    ['wb--ssl wb--phase', ssl, 'TLS Handshake'],
-  ];
-
-  let cursor = offsetPct;
-  for (const [cls, val, label] of phases) {
-    const pct = (val / totalMs) * 100;
-    addBar(cls, cursor, pct, `${label}: ${fmtMs(val)}`);
-    cursor += pct;
-  }
-
-  const resCursor =
-    offsetPct + ((blocked + dns + connect + ssl) / totalMs) * 100;
-  const sentPct = ((send + wait) / totalMs) * 100;
-  const recvPct = (receive / totalMs) * 100;
-  addBar(
-    `wb--${key}-light`,
-    resCursor,
-    sentPct,
-    `Send+Wait: ${fmtMs(send + wait)}`,
-  );
-  addBar(
-    `wb--${key}-dark`,
-    resCursor + sentPct,
-    recvPct,
-    `Receive: ${fmtMs(receive)}`,
+  const { segments, barEndPct, durLabel } = computeTimelineLayout(
+    entry,
+    totalMs,
+    originMs,
   );
 
-  const barEndPct = (offsetPct + (entry.time / totalMs) * 100).toFixed(4);
-  const durLabel = fmtMs(entry.time);
-  return `<span class="wf-cell wf-cell--timeline" style="--wf-bar-end:${barEndPct}%">
+  const bars = segments
+    .map(
+      (s) =>
+        `<div class="wb ${s.cls}" title="${esc(s.tooltip)}" style="left:${s.leftPct.toFixed(4)}%;width:${Math.max(s.widthPct, 0.1).toFixed(4)}%"></div>`,
+    )
+    .join('\n          ');
+
+  return `<span class="wf-cell wf-cell--timeline" style="--wf-bar-end:${barEndPct.toFixed(4)}%">
         <div class="wf-bar-wrap">
-          ${bars.join('\n          ')}
+          ${bars}
           <span class="wf-bar-dur">${esc(durLabel)}</span>
         </div>
       </span>`;
@@ -241,52 +185,36 @@ function renderRow(
 ): string {
   const type = resourceType(entry);
   const { barH } = typeConfig(type);
-  const rowH = barH + 10;
   const status = entry.response.status;
-  const transferSize = entry.response._transferSize;
-  const size = transferSize ?? entry.response.bodySize;
+  const size = entrySize(entry);
   const { domain, path } = parseUrl(entry.request.url);
-  const t = entry.timings;
 
-  const statusCls =
-    status >= 500
-      ? 's5xx'
-      : status >= 400
-        ? 's4xx'
-        : status >= 300
-          ? 's3xx'
-          : 's2xx';
-
-  const rowClasses = [
-    'wf-row',
-    `wf-row--rh${rowH}`,
-    isBlocking(entry) ? 'row--blocking' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const statusCls = statusClass(status);
+  const rowClassStr = rowClasses(entry, barH);
 
   const pathCell = path ? `<span class="wf-url-path">${esc(path)}</span>` : '';
 
   // data-* attributes encode all values needed by _entryFromRow() in the
   // web component's adopt path, so interactivity works without re-fetching HAR.
+  const data = rowDataAttrs(entry);
   const dataAttrs = [
     `data-index="${index}"`,
-    `data-started="${esc(entry.startedDateTime)}"`,
-    `data-time="${entry.time}"`,
-    `data-blocked="${Math.max(0, t.blocked ?? 0)}"`,
-    `data-dns="${Math.max(0, t.dns)}"`,
-    `data-connect="${Math.max(0, t.connect)}"`,
-    `data-ssl="${Math.max(0, t.ssl ?? 0)}"`,
-    `data-send="${Math.max(0, t.send)}"`,
-    `data-wait="${Math.max(0, t.wait)}"`,
-    `data-receive="${Math.max(0, t.receive)}"`,
-    `data-body-size="${entry.response.bodySize}"`,
-    ...(transferSize !== undefined
-      ? [`data-transfer-size="${transferSize}"`]
+    `data-started="${esc(data.started!)}"`,
+    `data-time="${data.time}"`,
+    `data-blocked="${data.blocked}"`,
+    `data-dns="${data.dns}"`,
+    `data-connect="${data.connect}"`,
+    `data-ssl="${data.ssl}"`,
+    `data-send="${data.send}"`,
+    `data-wait="${data.wait}"`,
+    `data-receive="${data.receive}"`,
+    `data-body-size="${data['body-size']}"`,
+    ...(data['transfer-size'] !== undefined
+      ? [`data-transfer-size="${data['transfer-size']}"`]
       : []),
   ].join(' ');
 
-  return `<li class="${rowClasses}" ${dataAttrs}>
+  return `<li class="${rowClassStr}" ${dataAttrs}>
       <span class="wf-cell wf-cell--idx">${visIdx}</span>
       <span class="wf-cell wf-cell--url" title="${esc(entry.request.url)}"><span class="wf-url-domain">${esc(domain)}</span>${pathCell}</span>
       <span class="wf-cell wf-cell--info">${esc(entry.request.method)}</span>
