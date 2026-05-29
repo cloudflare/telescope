@@ -376,7 +376,7 @@ function main(): void {
 
   const extras = harCopied ? `, HAR copied as ${harCopied}` : '';
   process.stdout.write(
-    `Wrote ${outputPath} (assets in ${resolve(outputDir, 'waterfall')}/${extras})\n`,
+    `Wrote ${outputPath} (assets in ${resolve(outputDir, 'waterfall')}${extras})\n`,
   );
 }
 
