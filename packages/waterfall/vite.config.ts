@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, normalizePath } from 'vite';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import type { Plugin } from 'vite';
@@ -39,9 +39,19 @@ function srcAliasPlugin(): Plugin {
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        if (req.url && req.url in urlToFile) {
-          // Rewrite the request URL so Vite's transform pipeline picks it up
-          req.url = '/@fs' + urlToFile[req.url];
+        if (req.url) {
+          // Strip query/hash before looking up the alias — Vite appends
+          // `?import`, `?t=…`, etc. to dev requests.
+          const pathname = req.url.split(/[?#]/, 1)[0];
+          const file = urlToFile[pathname];
+          if (file) {
+            // Rewrite the request URL so Vite's transform pipeline picks it
+            // up. `/@fs/` expects a forward-slash, URL-safe absolute path —
+            // `normalizePath` converts Windows backslashes (and drive
+            // letters) into the form Vite expects, and `encodeURI` handles
+            // spaces and other characters that need escaping.
+            req.url = '/@fs/' + encodeURI(normalizePath(file));
+          }
         }
         next();
       });
