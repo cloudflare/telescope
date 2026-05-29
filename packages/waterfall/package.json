@@ -36,7 +36,6 @@
     "clean": "rm -rf dist node_modules"
   },
   "devDependencies": {
-    "@vitest/browser": "^4.0.18",
     "playwright": "^1.59.1",
     "prettier": "^3.8.1",
     "typescript": "^5.4.0",
