@@ -6,11 +6,11 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'packages/telescope-web/**'
+      - "packages/telescope-web/**"
   pull_request:
     branches: [main]
     paths-ignore:
-      - 'packages/telescope-web/**'
+      - "packages/telescope-web/**"
 
 jobs:
   # Detect which package directories changed so we can skip unaffected test jobs.
@@ -27,7 +27,7 @@ jobs:
 
       - name: Detect changed packages
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           # A package is "changed" when files within it are touched OR when
           # shared root-level files that affect every package change (workspace
@@ -63,9 +63,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: './packages/telescope/package-lock.json'
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: "./packages/telescope/package-lock.json"
 
       - name: Install xz-utils
         run: apt-get update && apt-get install -y xz-utils
@@ -109,9 +109,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: './packages/waterfall/package-lock.json'
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: "./packages/waterfall/package-lock.json"
 
       - name: Install dependencies
         # Don't run lifecycle scripts (the pre-built container already has browsers).
