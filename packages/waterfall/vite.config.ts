@@ -67,8 +67,8 @@ export default defineConfig({
   // but we expose them through clean URLs via the plugin above.
   server: {
     fs: {
-      // Allow Vite to serve files from the workspace root (one level up).
-      // dist/ is under __dirname, so it's reachable too.
+      // Allow Vite to serve files from the package root (one level above `root`).
+      // dist/ and src/ live under this directory, so they're reachable too.
       allow: [__dirname],
     },
   },
