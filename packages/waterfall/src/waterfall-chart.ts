@@ -625,12 +625,21 @@ export class WaterfallChart extends HTMLElement {
 
   private async _fetchAndRender(src: string) {
     this._showLoading(true);
+    const expectedSrc = src;
     try {
-      const res = await fetch(src);
+      const res = await fetch(expectedSrc);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const har: Har = await res.json();
+      // Ignore stale fetches (src changed) or programmatic overrides.
+      if (!this.isConnected) return;
+      if (this._harData) return;
+      if (this.getAttribute('src') !== expectedSrc) return;
       this._loadHarData(har);
     } catch (err) {
+      // Only surface the error if this request is still current.
+      if (!this.isConnected) return;
+      if (this._harData) return;
+      if (this.getAttribute('src') !== expectedSrc) return;
       this._showError(`Failed to load waterfall: ${(err as Error).message}`);
     }
   }
