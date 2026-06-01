@@ -1,3 +1,7 @@
+import { readFileSync } from 'fs';
+import path from 'path';
+import url from 'url';
+
 import { Command, Option, InvalidArgumentError } from 'commander';
 const program = new Command();
 import { BrowserConfig } from './browsers.js';
@@ -32,6 +36,44 @@ function parseJSON<T>(flag: string, value: string, schema: ZodSchema<T>): T {
     return parseCLIOption(flag, value, schema);
   } catch (err) {
     throw new InvalidArgumentError((err as Error).message);
+  }
+}
+
+/**
+ * Read the package version from package.json at runtime.
+ *
+ * Walks up the directory tree from this module's location looking for the
+ * first `package.json` whose `name` matches `@cloudflare/telescope`. This
+ * works regardless of whether the code runs from source (`src/index.ts`) or
+ * compiled output (`dist/src/index.js`), and is cross-platform (no reliance
+ * on POSIX-only path separators).
+ */
+function getPackageVersion(): string {
+  const startDir = path.dirname(url.fileURLToPath(import.meta.url));
+  let dir = startDir;
+
+  // Walk up until we either find our package.json or hit the filesystem root.
+  while (true) {
+    const candidate = path.join(dir, 'package.json');
+    try {
+      const pkg = JSON.parse(readFileSync(candidate, 'utf8')) as {
+        name?: string;
+        version?: string;
+      };
+      if (pkg.name === '@cloudflare/telescope' && pkg.version) {
+        return pkg.version;
+      }
+    } catch {
+      // No package.json at this level (or unreadable); keep walking.
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      // Reached the filesystem root without finding our package.json.
+      throw new Error(
+        'Unable to locate @cloudflare/telescope package.json to read version',
+      );
+    }
+    dir = parent;
   }
 }
 
@@ -186,9 +228,12 @@ export async function launchTest(options: LaunchOptions): Promise<TestResult> {
 }
 
 export default function browserAgent(): void {
+  const pkgVersion = getPackageVersion();
+
   program
     .name('telescope')
     .description('Cross-browser synthetic testing agent')
+    .version(pkgVersion, '-v, --version', 'Output the package version number')
     .requiredOption('-u, --url <url>', 'URL to run tests against')
     .addOption(
       new Option(
@@ -283,13 +328,13 @@ export default function browserAgent(): void {
       new Option(
         '--width <int>',
         'Viewport width, in pixels. If both width and device are provided, the width value will override device emulation viewport width.',
-      ).argParser((v) => parseNumeric(PositiveIntSchema, v, '--width')),
+      ).argParser(v => parseNumeric(PositiveIntSchema, v, '--width')),
     )
     .addOption(
       new Option(
         '--height <int>',
         'Viewport height, in pixels. If both height and device are provided, the height value will override device emulation viewport height.',
-      ).argParser((v) => parseNumeric(PositiveIntSchema, v, '--height')),
+      ).argParser(v => parseNumeric(PositiveIntSchema, v, '--height')),
     )
     .addOption(
       new Option(
@@ -377,8 +422,9 @@ export default function browserAgent(): void {
         '--device <string>',
         'Device to use for device emulation (viewport size, DPR, touch events). Also sets the default browser engine unless overridden with -b. Devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
       ),
-    )
-    .parse(process.argv);
+    );
+
+  program.parse(process.argv);
 
   const cliOptions = program.opts() as CLIOptions;
   let options: LaunchOptions;
