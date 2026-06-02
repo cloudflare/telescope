@@ -32,8 +32,11 @@ telescope -u https://example.com
 If the URL is provided without a scheme, `https://` is prepended automatically:
 
 ```
-telescope example.com   # tests https://example.com
+telescope example.com         # tests https://example.com
+telescope localhost:3000      # tests https://localhost:3000
 ```
+
+Only `http://` and `https://` URLs are supported. Other schemes (`file://`, `ftp://`, `about:blank`, `data:...`, `mailto:...`, etc.) are rejected with an error.
 
 Here's what's currently supported:
 

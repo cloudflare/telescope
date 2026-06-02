@@ -3,7 +3,7 @@ const program = new Command();
 import { BrowserConfig } from './browsers.js';
 import { TestRunner } from './testRunner.js';
 import { ChromeRunner } from './chromeRunner.js';
-import { log, normalizeUrl } from './helpers.js';
+import { log, normalizeUrlScheme, isHttpUrl } from './helpers.js';
 import { normalizeCLIConfig } from './config.js';
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
 import {
@@ -105,6 +105,15 @@ function getRunner(
 async function executeTest(
   options: LaunchOptions,
 ): Promise<SuccessfulTestResult> {
+  // Enforce the http(s)-only contract here so it applies to both the CLI
+  // and programmatic callers. The CLI normalizes scheme-less inputs to
+  // https:// before reaching this point; programmatic callers must pass a
+  // well-formed http(s) URL.
+  if (!isHttpUrl(options.url)) {
+    throw new Error(
+      `Only http:// and https:// URLs are supported (got "${options.url}")`,
+    );
+  }
   const config: LaunchOptions = {
     ...DEFAULT_OPTIONS,
     ...options,
@@ -412,9 +421,16 @@ export default function browserAgent(): void {
     process.exit(1);
   }
   // Auto-prepend `https://` when the URL was provided without a scheme
-  // (e.g. `telescope example.com`). CLI-only convenience; programmatic
-  // callers (launchTest, Telescope) are expected to provide well-formed URLs.
-  cliOptions.url = normalizeUrl(resolvedUrl);
+  // (e.g. `telescope example.com`). Reject non-http(s) URLs up front so
+  // the user gets a clearer error than the deeper validation in
+  // executeTest would produce. CLI-only convenience; programmatic callers
+  // (launchTest, Telescope) must provide a well-formed http(s) URL.
+  try {
+    cliOptions.url = normalizeUrlScheme(resolvedUrl);
+  } catch (err) {
+    console.error(`error: ${(err as Error).message}`);
+    process.exit(1);
+  }
 
   let options: LaunchOptions;
 

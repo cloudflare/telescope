@@ -2,7 +2,7 @@ import { spawnSync } from 'child_process';
 import { describe, beforeAll, expect, it } from 'vitest';
 
 import { retrieveConfig, cleanupTestDirectory } from './helpers.js';
-import { normalizeUrl } from '../src/helpers.js';
+import { normalizeUrlScheme, isHttpUrl } from '../src/helpers.js';
 import type { SavedConfig } from '../src/types.js';
 
 describe('CLI: no arguments shows help', () => {
@@ -202,37 +202,68 @@ describe('CLI: options without a URL fail', () => {
   });
 });
 
-describe('normalizeUrl()', () => {
+describe('normalizeUrlScheme()', () => {
   it('prepends https:// when no scheme is present', () => {
-    expect(normalizeUrl('example.com')).toBe('https://example.com');
+    expect(normalizeUrlScheme('example.com')).toBe('https://example.com');
   });
 
   it('preserves paths and query strings when prepending', () => {
-    expect(normalizeUrl('example.com/path?x=1')).toBe(
+    expect(normalizeUrlScheme('example.com/path?x=1')).toBe(
       'https://example.com/path?x=1',
     );
   });
 
   it('leaves https:// URLs unchanged', () => {
-    expect(normalizeUrl('https://example.com')).toBe('https://example.com');
+    expect(normalizeUrlScheme('https://example.com')).toBe(
+      'https://example.com',
+    );
   });
 
   it('leaves http:// URLs unchanged (does not upgrade)', () => {
-    expect(normalizeUrl('http://example.com')).toBe('http://example.com');
+    expect(normalizeUrlScheme('http://example.com')).toBe('http://example.com');
   });
 
-  it('leaves other explicit schemes unchanged', () => {
-    expect(normalizeUrl('file:///tmp/page.html')).toBe('file:///tmp/page.html');
-  });
-
-  it('handles uppercase schemes', () => {
-    expect(normalizeUrl('HTTPS://example.com')).toBe('HTTPS://example.com');
+  it('handles uppercase http(s) schemes', () => {
+    expect(normalizeUrlScheme('HTTPS://example.com')).toBe(
+      'HTTPS://example.com',
+    );
   });
 
   it('prepends https:// to host:port without scheme', () => {
-    // `localhost:3000` has no `://` separator, so it is treated as a host:port
-    // rather than a URI scheme.
-    expect(normalizeUrl('localhost:3000')).toBe('https://localhost:3000');
+    expect(normalizeUrlScheme('localhost:3000')).toBe('https://localhost:3000');
+  });
+
+  it('prepends https:// to an IPv4:port input', () => {
+    expect(normalizeUrlScheme('127.0.0.1:8080')).toBe('https://127.0.0.1:8080');
+  });
+
+  it.each([
+    ['ftp://example.com'],
+    ['file:///tmp/page.html'],
+    ['about:blank'],
+    ['data:text/html,<h1>hi</h1>'],
+    ['mailto:user@example.com'],
+    ['tel:+15555550123'],
+    ['javascript:alert(1)'],
+  ])('rejects non-http(s) URL %s', input => {
+    expect(() => normalizeUrlScheme(input)).toThrow(
+      /Only http:\/\/ and https:\/\/ URLs are supported/,
+    );
+  });
+});
+
+describe('isHttpUrl()', () => {
+  it.each([
+    ['http://example.com', true],
+    ['https://example.com', true],
+    ['HTTPS://example.com', true],
+    ['ftp://example.com', false],
+    ['file:///tmp/page.html', false],
+    ['about:blank', false],
+    ['example.com', false],
+    ['localhost:3000', false],
+  ])('isHttpUrl(%s) === %s', (input, expected) => {
+    expect(isHttpUrl(input)).toBe(expected);
   });
 });
 
@@ -287,5 +318,28 @@ describe('CLI: --url without scheme is also normalized', () => {
 
   it('saves the URL with https:// prepended', () => {
     expect(config?.options.url).toBe('https://www.example.com');
+  });
+});
+
+describe.each([
+  ['ftp://example.com'],
+  ['file:///tmp/page.html'],
+  ['about:blank'],
+])('CLI: rejects non-http(s) URL %s', input => {
+  let stderr: string;
+  let status: number | null;
+
+  beforeAll(() => {
+    const output = spawnSync('node', ['dist/src/cli.js', '--dry', input]);
+    stderr = output.stderr.toString();
+    status = output.status;
+  });
+
+  it('exits with a non-zero status', () => {
+    expect(status).not.toBe(0);
+  });
+
+  it('reports the http(s)-only restriction on stderr', () => {
+    expect(stderr).toMatch(/Only http:\/\/ and https:\/\/ URLs are supported/);
   });
 });
