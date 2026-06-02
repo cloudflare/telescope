@@ -229,18 +229,51 @@ describe('normalizeUrlScheme()', () => {
     );
   });
 
-  it('prepends https:// to host:port without scheme', () => {
-    expect(normalizeUrlScheme('localhost:3000')).toBe('https://localhost:3000');
-  });
-
-  it('prepends https:// to an IPv4:port input', () => {
-    expect(normalizeUrlScheme('127.0.0.1:8080')).toBe('https://127.0.0.1:8080');
-  });
-
   it('preserves fragments (e.g. SPA routes)', () => {
     expect(normalizeUrlScheme('example.com/#/dashboard')).toBe(
       'https://example.com/#/dashboard',
     );
+  });
+
+  describe('localhost http:// default', () => {
+    it.each([
+      ['localhost', 'http://localhost'],
+      ['localhost:3000', 'http://localhost:3000'],
+      ['localhost/path?x=1', 'http://localhost/path?x=1'],
+      ['LOCALHOST:3000', 'http://LOCALHOST:3000'],
+      ['app.localhost', 'http://app.localhost'],
+      ['my-app.localhost:8080', 'http://my-app.localhost:8080'],
+      ['127.0.0.1', 'http://127.0.0.1'],
+      ['127.0.0.1:8080', 'http://127.0.0.1:8080'],
+      ['127.1.2.3', 'http://127.1.2.3'],
+    ])('defaults %s to http://', (input, expected) => {
+      expect(normalizeUrlScheme(input)).toBe(expected);
+    });
+
+    it('keeps explicit https://localhost unchanged', () => {
+      expect(normalizeUrlScheme('https://localhost:3000')).toBe(
+        'https://localhost:3000',
+      );
+    });
+
+    it('does not match localhost-lookalike hostnames', () => {
+      // `localhostlookalike.com` starts with `localhost` but is a different
+      // host -- it should get https:// like any other public hostname.
+      expect(normalizeUrlScheme('localhostlookalike.com')).toBe(
+        'https://localhostlookalike.com',
+      );
+    });
+
+    it('does not treat 0.0.0.0 as localhost', () => {
+      expect(normalizeUrlScheme('0.0.0.0:8080')).toBe('https://0.0.0.0:8080');
+    });
+
+    it('does not treat private LAN ranges as localhost', () => {
+      expect(normalizeUrlScheme('192.168.1.10:8080')).toBe(
+        'https://192.168.1.10:8080',
+      );
+      expect(normalizeUrlScheme('10.0.0.5')).toBe('https://10.0.0.5');
+    });
   });
 
   it.each([

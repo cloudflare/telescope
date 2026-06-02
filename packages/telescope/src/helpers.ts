@@ -35,13 +35,36 @@ const HOSTNAME_LIKE_RE =
   /^[a-z0-9][a-z0-9.-]*(?::\d+)?(?:\/[^?#]*)?(?:\?[^#]*)?(?:#.*)?$/i;
 
 /**
+ * Matches the host portion of a hostname-like input that should default to
+ * `http://` rather than `https://` when scheme auto-prefixing kicks in.
+ *
+ * Treats the following as localhost-equivalents (RFC 6761 / RFC 1122):
+ *
+ *   - `localhost` (case-insensitive)
+ *   - `*.localhost` -- any subdomain of `.localhost`
+ *   - `127.x.x.x` -- the entire IPv4 loopback `/8`
+ *
+ * Other private/local-network conventions (`0.0.0.0`, `10.x`, `192.168.x`,
+ * `*.local`, `host.docker.internal`, etc.) are NOT treated as localhost
+ * and default to `https://` like any other host.
+ *
+ * The lookahead `(?=[:/?#]|$)` ensures we only match the host portion,
+ * preventing false matches against something like `localhostlookalike.com`.
+ */
+const LOCALHOST_HOST_RE =
+  /^(?:localhost|[^/?#:]+\.localhost|127(?:\.\d{1,3}){3})(?=[:/?#]|$)/i;
+
+/**
  * Normalize the scheme of a CLI-provided URL.
  *
  * Behavior:
  *   - If the input already starts with `http://` or `https://`, return it
- *     unchanged.
+ *     unchanged (explicit user choice wins).
  *   - Otherwise, if it looks like a hostname (optionally with `:port`,
- *     `/path`, `?query`, or `#fragment`), prepend `https://` and return.
+ *     `/path`, `?query`, or `#fragment`), prepend a scheme:
+ *       - `http://` for localhost-equivalents (`localhost`, `*.localhost`,
+ *         `127.x.x.x`) since local dev servers rarely have TLS configured.
+ *       - `https://` for everything else.
  *   - Otherwise, throw an Error. Telescope only supports HTTP testing, so
  *     non-http(s) URLs (`file://`, `ftp://`, `about:blank`, `data:...`,
  *     `mailto:...`, etc.) are rejected at the CLI boundary.
@@ -51,13 +74,16 @@ const HOSTNAME_LIKE_RE =
  * NOT auto-prefix scheme-less inputs.
  *
  * Examples:
- *   normalizeUrlScheme('example.com')         -> 'https://example.com'
- *   normalizeUrlScheme('example.com/p?x=1')   -> 'https://example.com/p?x=1'
- *   normalizeUrlScheme('localhost:3000')      -> 'https://localhost:3000'
- *   normalizeUrlScheme('https://example.com') -> 'https://example.com'
- *   normalizeUrlScheme('http://example.com')  -> 'http://example.com'
- *   normalizeUrlScheme('ftp://example.com')   -> throws
- *   normalizeUrlScheme('about:blank')         -> throws
+ *   normalizeUrlScheme('example.com')          -> 'https://example.com'
+ *   normalizeUrlScheme('example.com/p?x=1')    -> 'https://example.com/p?x=1'
+ *   normalizeUrlScheme('localhost:3000')       -> 'http://localhost:3000'
+ *   normalizeUrlScheme('127.0.0.1:8080')       -> 'http://127.0.0.1:8080'
+ *   normalizeUrlScheme('app.localhost')        -> 'http://app.localhost'
+ *   normalizeUrlScheme('https://localhost')    -> 'https://localhost'
+ *   normalizeUrlScheme('https://example.com')  -> 'https://example.com'
+ *   normalizeUrlScheme('http://example.com')   -> 'http://example.com'
+ *   normalizeUrlScheme('ftp://example.com')    -> throws
+ *   normalizeUrlScheme('about:blank')          -> throws
  *
  * @param url - The URL string to normalize
  * @returns The normalized URL with an explicit http(s) scheme
@@ -68,7 +94,8 @@ export function normalizeUrlScheme(url: string): string {
     return url;
   }
   if (HOSTNAME_LIKE_RE.test(url)) {
-    return `https://${url}`;
+    const scheme = LOCALHOST_HOST_RE.test(url) ? 'http' : 'https';
+    return `${scheme}://${url}`;
   }
   throw new Error(
     `Only http:// and https:// URLs are supported (got "${url}")`,
