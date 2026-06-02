@@ -1,6 +1,33 @@
 import crypto from 'crypto';
 
 /**
+ * Matches a URI scheme followed by `://`, per RFC 3986 §3.1
+ * (scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )).
+ */
+const SCHEME_RE = /^[a-z][a-z0-9+.-]*:\/\//i;
+
+/**
+ * Normalize a URL by prepending `https://` if no scheme is present.
+ * Examples:
+ *   normalizeUrl('example.com')         -> 'https://example.com'
+ *   normalizeUrl('example.com/path')    -> 'https://example.com/path'
+ *   normalizeUrl('https://example.com') -> 'https://example.com'
+ *   normalizeUrl('http://example.com')  -> 'http://example.com'
+ *
+ * Strings that already contain an explicit scheme (e.g. `http://`, `https://`,
+ * `file://`) are returned unchanged.
+ *
+ * @param url - The URL string to normalize
+ * @returns The normalized URL with an explicit scheme
+ */
+export function normalizeUrl(url: string): string {
+  if (SCHEME_RE.test(url)) {
+    return url;
+  }
+  return `https://${url}`;
+}
+
+/**
  * Simple debug logger that only logs when DEBUG_MODE is set
  */
 export function log(msg: unknown): void {

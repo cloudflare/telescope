@@ -3,7 +3,7 @@ const program = new Command();
 import { BrowserConfig } from './browsers.js';
 import { TestRunner } from './testRunner.js';
 import { ChromeRunner } from './chromeRunner.js';
-import { log } from './helpers.js';
+import { log, normalizeUrl } from './helpers.js';
 import { normalizeCLIConfig } from './config.js';
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
 import {
@@ -108,6 +108,9 @@ async function executeTest(
   const config: LaunchOptions = {
     ...DEFAULT_OPTIONS,
     ...options,
+    // Auto-prepend `https://` when the URL was provided without a scheme
+    // (e.g. `telescope example.com`). This also benefits programmatic callers.
+    url: normalizeUrl(options.url),
   };
   const browserConfig = new BrowserConfig().getBrowserConfig(
     config.browser || 'chrome',

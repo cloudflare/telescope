@@ -29,6 +29,12 @@ telescope https://example.com
 telescope -u https://example.com
 ```
 
+If the URL is provided without a scheme, `https://` is prepended automatically:
+
+```
+telescope example.com   # tests https://example.com
+```
+
 Here's what's currently supported:
 
 ```
