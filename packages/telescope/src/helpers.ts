@@ -10,7 +10,8 @@ const HTTP_SCHEME_RE = /^https?:\/\//i;
 
 /**
  * Matches a "hostname-like" input that the CLI is willing to auto-prefix
- * with `https://`.
+ * with an http(s) scheme. The scheme chosen depends on the host: see
+ * `LOCALHOST_HOST_RE` below for the http:// fallback rules.
  *
  *   - Starts with an alphanumeric character (DNS label or IPv4 octet).
  *   - Continues with letters/digits/dots/hyphens (DNS labels, IPv4).
@@ -25,8 +26,9 @@ const HTTP_SCHEME_RE = /^https?:\/\//i;
  * the optional `:\d+` requirement. They are rejected up front instead of
  * being silently rewritten to nonsense like `https://mailto:user@...`.
  *
- * Inputs like `localhost:3000` and `127.0.0.1:8080` DO match (host:port)
- * and get `https://` prepended.
+ * Inputs like `localhost:3000` and `127.0.0.1:8080` DO match (host:port).
+ * They are auto-prefixed with `http://` because localhost-equivalent hosts
+ * rarely have TLS configured. Non-localhost hosts get `https://`.
  *
  * IPv6 literals (`[::1]:3000`) are not supported here -- callers should
  * provide them with an explicit `http(s)://` prefix.
