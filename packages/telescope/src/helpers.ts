@@ -1,8 +1,17 @@
 import crypto from 'crypto';
 
 /**
- * Matches a URI scheme followed by `://`, per RFC 3986 §3.1
- * (scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )).
+ * Matches a hierarchical URI prefix: a scheme followed by the literal `://`
+ * (as in `http://`, `https://`, `file://`, `ftp://`).
+ *
+ * The scheme character class (`[a-z][a-z0-9+.-]*`) follows RFC 3986 §3.1,
+ * but this regex intentionally requires the `://` separator and does NOT
+ * match bare-scheme URIs such as `mailto:user@example.com` or
+ * `tel:+15555550123`. That is deliberate: it lets `normalizeUrl` treat
+ * inputs like `localhost:3000` as a host:port pair (no `://`) rather than
+ * as a URI with scheme `localhost`. Browsers cannot navigate to bare-scheme
+ * URIs anyway, so refining this regex to accept them would only break
+ * host:port handling.
  */
 const SCHEME_RE = /^[a-z][a-z0-9+.-]*:\/\//i;
 
