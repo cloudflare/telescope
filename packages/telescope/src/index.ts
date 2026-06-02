@@ -108,9 +108,6 @@ async function executeTest(
   const config: LaunchOptions = {
     ...DEFAULT_OPTIONS,
     ...options,
-    // Auto-prepend `https://` when the URL was provided without a scheme
-    // (e.g. `telescope example.com`). This also benefits programmatic callers.
-    url: normalizeUrl(options.url),
   };
   const browserConfig = new BrowserConfig().getBrowserConfig(
     config.browser || 'chrome',
@@ -412,7 +409,10 @@ export default function browserAgent(): void {
     );
     process.exit(1);
   }
-  cliOptions.url = resolvedUrl;
+  // Auto-prepend `https://` when the URL was provided without a scheme
+  // (e.g. `telescope example.com`). CLI-only convenience; programmatic
+  // callers (launchTest, Telescope) are expected to provide well-formed URLs.
+  cliOptions.url = normalizeUrl(resolvedUrl);
 
   let options: LaunchOptions;
 
