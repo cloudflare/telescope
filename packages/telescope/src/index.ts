@@ -394,11 +394,13 @@ export default function browserAgent(): void {
   const cliOptions = program.opts() as CLIOptions;
   const positionalUrl = program.args[0];
 
-  // Resolve URL precedence: positional argument takes precedence when both
-  // are provided; otherwise use whichever is set. Error out if neither.
-  if (positionalUrl && cliOptions.url && positionalUrl !== cliOptions.url) {
+  // Reject duplicate URLs: providing the URL both as a positional argument
+  // and via -u/--url is always an error, even if the values are textually
+  // identical or normalize to the same URL. There is no good reason to
+  // specify it twice, so treat it as a user mistake.
+  if (positionalUrl && cliOptions.url) {
     console.error(
-      `error: conflicting URLs provided. Positional argument "${positionalUrl}" and --url "${cliOptions.url}" do not match.`,
+      `error: URL provided both as a positional argument ("${positionalUrl}") and via --url ("${cliOptions.url}"). Provide it only once.`,
     );
     process.exit(1);
   }

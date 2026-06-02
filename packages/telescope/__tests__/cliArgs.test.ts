@@ -129,29 +129,57 @@ describe('CLI: --url flag still works for backwards compatibility', () => {
   });
 });
 
-describe('CLI: conflicting positional URL and --url fails', () => {
-  let stderr: string;
-  let status: number | null;
+describe('CLI: URL provided both positionally and via --url fails', () => {
+  describe('different values', () => {
+    let stderr: string;
+    let status: number | null;
 
-  beforeAll(() => {
-    const args = [
-      'node',
-      'dist/src/cli.js',
-      'https://www.example.com',
-      '--url',
-      'https://other.example.com',
-    ];
-    const output = spawnSync(args[0], args.slice(1));
-    stderr = output.stderr.toString();
-    status = output.status;
+    beforeAll(() => {
+      const args = [
+        'node',
+        'dist/src/cli.js',
+        'https://www.example.com',
+        '--url',
+        'https://other.example.com',
+      ];
+      const output = spawnSync(args[0], args.slice(1));
+      stderr = output.stderr.toString();
+      status = output.status;
+    });
+
+    it('exits with a non-zero status', () => {
+      expect(status).not.toBe(0);
+    });
+
+    it('reports the duplicate on stderr', () => {
+      expect(stderr).toMatch(/provided both as a positional argument/i);
+    });
   });
 
-  it('exits with a non-zero status', () => {
-    expect(status).not.toBe(0);
-  });
+  describe('identical values', () => {
+    let stderr: string;
+    let status: number | null;
 
-  it('reports the conflict on stderr', () => {
-    expect(stderr).toMatch(/conflicting URLs/i);
+    beforeAll(() => {
+      const args = [
+        'node',
+        'dist/src/cli.js',
+        'https://www.example.com',
+        '--url',
+        'https://www.example.com',
+      ];
+      const output = spawnSync(args[0], args.slice(1));
+      stderr = output.stderr.toString();
+      status = output.status;
+    });
+
+    it('exits with a non-zero status', () => {
+      expect(status).not.toBe(0);
+    });
+
+    it('reports the duplicate on stderr', () => {
+      expect(stderr).toMatch(/provided both as a positional argument/i);
+    });
   });
 });
 
