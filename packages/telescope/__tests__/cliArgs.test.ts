@@ -237,6 +237,12 @@ describe('normalizeUrlScheme()', () => {
     expect(normalizeUrlScheme('127.0.0.1:8080')).toBe('https://127.0.0.1:8080');
   });
 
+  it('preserves fragments (e.g. SPA routes)', () => {
+    expect(normalizeUrlScheme('example.com/#/dashboard')).toBe(
+      'https://example.com/#/dashboard',
+    );
+  });
+
   it.each([
     ['ftp://example.com'],
     ['file:///tmp/page.html'],

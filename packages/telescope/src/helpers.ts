@@ -15,7 +15,9 @@ const HTTP_SCHEME_RE = /^https?:\/\//i;
  *   - Starts with an alphanumeric character (DNS label or IPv4 octet).
  *   - Continues with letters/digits/dots/hyphens (DNS labels, IPv4).
  *   - Optionally followed by a `:port` (digits only).
- *   - Optionally followed by a path (`/...`) and/or query string (`?...`).
+ *   - Optionally followed by a path (`/...`), query string (`?...`), and/or
+ *     fragment (`#...`). All three are allowed because SPA-style routes such
+ *     as `example.com/#/dashboard` are a common test target.
  *
  * This is deliberately stricter than RFC 3986 so that bare-scheme URIs
  * like `mailto:user@example.com`, `about:blank`, or `data:text/html,...`
@@ -39,7 +41,7 @@ const HOSTNAME_LIKE_RE =
  *   - If the input already starts with `http://` or `https://`, return it
  *     unchanged.
  *   - Otherwise, if it looks like a hostname (optionally with `:port`,
- *     `/path`, or `?query`), prepend `https://` and return.
+ *     `/path`, `?query`, or `#fragment`), prepend `https://` and return.
  *   - Otherwise, throw an Error. Telescope only supports HTTP testing, so
  *     non-http(s) URLs (`file://`, `ftp://`, `about:blank`, `data:...`,
  *     `mailto:...`, etc.) are rejected at the CLI boundary.
