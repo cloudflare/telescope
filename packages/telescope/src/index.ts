@@ -189,7 +189,11 @@ export default function browserAgent(): void {
   program
     .name('telescope')
     .description('Cross-browser synthetic testing agent')
-    .requiredOption('-u, --url <url>', 'URL to run tests against')
+    .argument(
+      '[url]',
+      'URL to run tests against. Can also be provided via -u/--url.',
+    )
+    .addOption(new Option('-u, --url <url>', 'URL to run tests against'))
     .addOption(
       new Option(
         '-b, --browser <browser_name>',
@@ -283,13 +287,13 @@ export default function browserAgent(): void {
       new Option(
         '--width <int>',
         'Viewport width, in pixels. If both width and device are provided, the width value will override device emulation viewport width.',
-      ).argParser((v) => parseNumeric(PositiveIntSchema, v, '--width')),
+      ).argParser(v => parseNumeric(PositiveIntSchema, v, '--width')),
     )
     .addOption(
       new Option(
         '--height <int>',
         'Viewport height, in pixels. If both height and device are provided, the height value will override device emulation viewport height.',
-      ).argParser((v) => parseNumeric(PositiveIntSchema, v, '--height')),
+      ).argParser(v => parseNumeric(PositiveIntSchema, v, '--height')),
     )
     .addOption(
       new Option(
@@ -380,7 +384,33 @@ export default function browserAgent(): void {
     )
     .parse(process.argv);
 
+  // Show help and exit when invoked with no arguments at all
+  // (e.g. `npx @cloudflare/telescope` or bare `telescope`)
+  if (process.argv.length <= 2) {
+    program.outputHelp();
+    process.exit(0);
+  }
+
   const cliOptions = program.opts() as CLIOptions;
+  const positionalUrl = program.args[0];
+
+  // Resolve URL precedence: positional argument takes precedence when both
+  // are provided; otherwise use whichever is set. Error out if neither.
+  if (positionalUrl && cliOptions.url && positionalUrl !== cliOptions.url) {
+    console.error(
+      `error: conflicting URLs provided. Positional argument "${positionalUrl}" and --url "${cliOptions.url}" do not match.`,
+    );
+    process.exit(1);
+  }
+  const resolvedUrl = positionalUrl ?? cliOptions.url;
+  if (!resolvedUrl) {
+    console.error(
+      "error: missing required URL argument. Use 'telescope --help' for usage.",
+    );
+    process.exit(1);
+  }
+  cliOptions.url = resolvedUrl;
+
   let options: LaunchOptions;
 
   try {

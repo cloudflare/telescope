@@ -20,9 +20,21 @@ Inside the test folder, the following files are added:
 
 ## Parameters
 
-A full list of parameters can be printed to the terminal by running `telescope --help`. Here's what's currently supported:
+A full list of parameters can be printed to the terminal by running `telescope --help`. Running `telescope` (or `npx @cloudflare/telescope`) with no arguments also prints the help message.
+
+The URL to test can be provided either as a positional argument or via the `-u`/`--url` option:
 
 ```
+telescope https://example.com
+telescope -u https://example.com
+```
+
+Here's what's currently supported:
+
+```
+Arguments:
+  url                           URL to run tests against. Can also be provided via -u/--url.
+
 Options:
   -u, --url <url>               URL to run tests against
   -b, --browser <browser_name>  Browser to run tests with (choices: "chrome", "chrome-beta", "canary", "edge", "safari", "firefox", default: "chrome")
@@ -216,7 +228,7 @@ Network throttling (`--connectionType`) requires OS-level traffic shaping via th
 
 ```bash
 npm install -g @cloudflare/telescope
-telescope -u https://example.com
+telescope https://example.com
 ```
 
 The `postinstall` script automatically runs `npx playwright install` to download Chrome, Firefox, and Safari (~700MB, may take 2–5 minutes).
