@@ -17,7 +17,7 @@ import { chromium, type Browser, type Page } from 'playwright';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 
 import { createFixtureServer, type FixtureServer } from './fixture-server.js';
-import { WHITE, DARK_PANEL, BRAND_SUBTLE } from './helpers.js';
+import { bgColor, WHITE, DARK_PANEL, BRAND_SUBTLE } from './helpers.js';
 
 /**
  * `.wf-filter-btn` has `transition: background 0.12s, color 0.12s, ...`.
@@ -34,13 +34,6 @@ async function disableTransitions(page: Page): Promise<void> {
   await page.addStyleTag({
     content: '*, *::before, *::after { transition: none !important; }',
   });
-}
-
-async function bgColor(page: Page, selector: string): Promise<string> {
-  return page.evaluate(
-    (sel) => getComputedStyle(document.querySelector(sel)!).backgroundColor,
-    selector,
-  );
 }
 
 /** Open a fixture page with the given OS colour scheme. */

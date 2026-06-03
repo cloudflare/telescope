@@ -667,30 +667,6 @@ export class WaterfallChart extends HTMLElement {
     }
   }
 
-  // ── Reset ─────────────────────────────────────────────────────────────────
-
-  private _reset() {
-    this._allEntries = [];
-    this._activeFilters = new Set(['all']);
-    this._activePhaseFilters = new Set();
-    this._hiddenEvents = new Set();
-    this._openPanels.clear();
-    this._pageTimings = {};
-    this._totalMs = 0;
-    this._originMs = 0;
-    this._listEl.innerHTML = '';
-    this._filtersEl.innerHTML = '';
-    this._rulerEl.innerHTML = '';
-    this._gridOverlayEl.innerHTML = '';
-    this._overlayEl.innerHTML = '';
-    this._overlayEl.appendChild(this._scrubberEl);
-    this._errorEl.hidden = true;
-    this._errorEl.textContent = '';
-    // Remove any open detail panels
-    this.querySelectorAll('.wf-panel').forEach((p) => p.remove());
-    this._showLoading(true);
-  }
-
   // ── UI state helpers ──────────────────────────────────────────────────────
 
   private _showLoading(visible: boolean) {

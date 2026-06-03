@@ -19,6 +19,7 @@ import { chromium, type Browser, type Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createFixtureServer, type FixtureServer } from './fixture-server.js';
+import { bgColor } from './helpers.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -42,13 +43,6 @@ async function openFixture(
   const page = await ctx.newPage();
   await page.goto(`${baseUrl}/${fixture}`);
   return page;
-}
-
-async function bgColor(page: Page, selector: string): Promise<string> {
-  return page.evaluate(
-    (sel) => getComputedStyle(document.querySelector(sel)!).backgroundColor,
-    selector,
-  );
 }
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────

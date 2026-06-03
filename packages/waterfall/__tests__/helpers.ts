@@ -153,5 +153,4 @@ export async function bgColor(page: Page, selector: string): Promise<string> {
 
 export const WHITE = 'rgb(255, 255, 255)'; // --wf-panel light  (#ffffff)
 export const DARK_PANEL = 'rgb(31, 41, 55)'; // --wf-panel dark   (#1f2937)
-export const BRAND_BLUE = 'rgb(30, 64, 175)'; // --wf-brand        (#1e40af)
 export const BRAND_SUBTLE = 'rgb(219, 234, 254)'; // --wf-brand-subtle (#dbeafe)
