@@ -75,7 +75,7 @@ jobs:
       # Compute the next versions that `changeset version` would produce for
       # each published package. Used to inject versions into the PR title and
       # commit message below. Falls back to "next" when no pending changesets
-      # exist for a given package.
+      # exist for any package.
       - name: Compute next versions
         id: next_version
         run: |
