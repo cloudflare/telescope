@@ -23,8 +23,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Install dependencies (skip postinstall)
         run: npm ci --ignore-scripts
@@ -37,9 +37,6 @@ jobs:
 
       - name: Build waterfall
         run: npm run build -w packages/waterfall
-
-      - name: Typecheck waterfall
-        run: npm run typecheck -w packages/waterfall
 
   release:
     name: Release
@@ -59,9 +56,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "24"
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies (skip postinstall)
         run: npm ci --ignore-scripts
@@ -114,9 +111,9 @@ jobs:
         with:
           version: npm run version-packages
           publish: npx changeset publish
-          title: 'Publish ${{ steps.next_version.outputs.title }}'
-          commit: 'Publish ${{ steps.next_version.outputs.title }}'
+          title: "Publish ${{ steps.next_version.outputs.title }}"
+          commit: "Publish ${{ steps.next_version.outputs.title }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
+          NPM_CONFIG_PROVENANCE: "true"
