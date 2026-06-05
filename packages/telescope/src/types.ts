@@ -197,6 +197,11 @@ export interface LaunchOptions {
   command?: string[];
   delay?: Record<string, number>;
   delayUsing?: DelayMethod;
+  a11y?: {
+    disable?: string[],
+    exclude?: string[],
+    tags: string[],
+  };
   device?: CustomDeviceDescriptor;
 }
 
@@ -662,6 +667,11 @@ export interface CLIOptions {
   delayUsing?: DelayMethod;
   userAgent?: string;
   agentExtra?: string;
+  a11y?: {
+    disable?: string[],
+    exclude?: string[],
+    tags: string[],
+  };
   device?: string;
 }
 
