@@ -98,7 +98,11 @@ jobs:
           if [ ${#PARTS[@]} -eq 0 ]; then
             TITLE="next"
           else
-            TITLE=$(IFS=', '; echo "${PARTS[*]}")
+            # Join array elements with ", ". Note: "${PARTS[*]}" with IFS=', '
+            # would only use the first IFS character as the separator, so we
+            # use printf and strip the trailing separator instead.
+            TITLE=$(printf '%s, ' "${PARTS[@]}")
+            TITLE=${TITLE%, }
           fi
 
           echo "title=$TITLE" >> "$GITHUB_OUTPUT"
