@@ -1,6 +1,6 @@
 {
   "name": "@cloudflare/waterfall",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "HAR waterfall chart as a framework-free web component",
   "type": "module",
   "main": "./dist/index.js",
