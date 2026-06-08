@@ -249,7 +249,6 @@ export default function browserAgent(): void {
     )
     .addOption(new Option('-u, --url <url>', 'URL to run tests against'))
     .version(pkgVersion, '-v, --version', 'Output the package version number')
-    .requiredOption('-u, --url <url>', 'URL to run tests against')
     .addOption(
       new Option(
         '-b, --browser <browser_name>',
