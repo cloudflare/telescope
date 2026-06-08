@@ -7,7 +7,7 @@ const program = new Command();
 import { BrowserConfig } from './browsers.js';
 import { TestRunner } from './testRunner.js';
 import { ChromeRunner } from './chromeRunner.js';
-import { log } from './helpers.js';
+import { log, normalizeUrlScheme, isHttpUrl } from './helpers.js';
 import { normalizeCLIConfig } from './config.js';
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
 import {
@@ -147,6 +147,16 @@ function getRunner(
 async function executeTest(
   options: LaunchOptions,
 ): Promise<SuccessfulTestResult> {
+  // Enforce the http(s)-only contract here so it applies to both the CLI
+  // and programmatic callers. The CLI normalizes scheme-less inputs to
+  // either http:// or https:// (see normalizeUrlScheme; localhost-equivalent
+  // hosts default to http://) before reaching this point; programmatic
+  // callers must pass a well-formed http(s) URL.
+  if (!isHttpUrl(options.url)) {
+    throw new Error(
+      `Only http:// and https:// URLs are supported (got "${options.url}")`,
+    );
+  }
   const config: LaunchOptions = {
     ...DEFAULT_OPTIONS,
     ...options,
@@ -233,8 +243,12 @@ export default function browserAgent(): void {
   program
     .name('telescope')
     .description('Cross-browser synthetic testing agent')
+    .argument(
+      '[url]',
+      'URL to run tests against. Can also be provided via -u/--url.',
+    )
+    .addOption(new Option('-u, --url <url>', 'URL to run tests against'))
     .version(pkgVersion, '-v, --version', 'Output the package version number')
-    .requiredOption('-u, --url <url>', 'URL to run tests against')
     .addOption(
       new Option(
         '-b, --browser <browser_name>',
@@ -426,7 +440,47 @@ export default function browserAgent(): void {
 
   program.parse(process.argv);
 
+  // Show help and exit when invoked with no arguments at all
+  // (e.g. `npx @cloudflare/telescope` or bare `telescope`)
+  if (process.argv.length <= 2) {
+    program.outputHelp();
+    process.exit(0);
+  }
+
   const cliOptions = program.opts() as CLIOptions;
+  const positionalUrl = program.args[0];
+
+  // Reject duplicate URLs: providing the URL both as a positional argument
+  // and via -u/--url is always an error, even if the values are textually
+  // identical or normalize to the same URL. There is no good reason to
+  // specify it twice, so treat it as a user mistake.
+  if (positionalUrl && cliOptions.url) {
+    console.error(
+      `error: URL provided both as a positional argument ("${positionalUrl}") and via --url ("${cliOptions.url}"). Provide it only once.`,
+    );
+    process.exit(1);
+  }
+  const resolvedUrl = positionalUrl ?? cliOptions.url;
+  if (!resolvedUrl) {
+    console.error(
+      "error: missing required URL argument. Use 'telescope --help' for usage.",
+    );
+    process.exit(1);
+  }
+  // Auto-prepend a scheme when the URL was provided without one
+  // (e.g. `telescope example.com` -> `https://example.com`, or
+  // `telescope localhost:3000` -> `http://localhost:3000`; see
+  // normalizeUrlScheme for the rules). Reject non-http(s) URLs up front so
+  // the user gets a clearer error than the deeper validation in executeTest
+  // would produce. CLI-only convenience; programmatic callers (launchTest,
+  // Telescope) must provide a well-formed http(s) URL.
+  try {
+    cliOptions.url = normalizeUrlScheme(resolvedUrl);
+  } catch (err) {
+    console.error(`error: ${(err as Error).message}`);
+    process.exit(1);
+  }
+
   let options: LaunchOptions;
 
   try {

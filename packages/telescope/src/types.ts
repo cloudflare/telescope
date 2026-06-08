@@ -632,9 +632,14 @@ declare global {
 /**
  * CLI options from Commander.js
  * Numeric and JSON fields are parsed at the CLI boundary via argParser.
+ *
+ * `url` is optional here because it may be supplied as a positional argument
+ * (`telescope https://example.com`) instead of via the `-u, --url` flag. The
+ * CLI entry point resolves the final URL from either source before passing
+ * the options on to `normalizeCLIConfig` / `launchTest`.
  */
 export interface CLIOptions {
-  url: string;
+  url?: string;
   browser?: string;
   headers?: Record<string, string>;
   cookies?: Cookie | Cookie[];
