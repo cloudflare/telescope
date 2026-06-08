@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Surface test fixture — fixed white background, no theming</title>
+    <style>
+      /* Fixed white background. Deliberately does NOT react to the system
+         colour scheme — simulates a host page that hasn't been theme-aware. */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        color: #000000;
+      }
+    </style>
+    <link rel="stylesheet" href="/waterfall.css" />
+  </head>
+  <body>
+    <waterfall-chart>
+      <!-- WATERFALL_CONTENT -->
+    </waterfall-chart>
+  </body>
+</html>
