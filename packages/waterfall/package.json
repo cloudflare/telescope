@@ -21,6 +21,10 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc && vite build --config vite.lib.config.ts && chmod +x dist/cli.js",
     "build:demo": "npm run gen-demo && vite build",
