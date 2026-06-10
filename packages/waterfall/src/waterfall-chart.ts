@@ -1,0 +1,1340 @@
+/**
+ * <waterfall-chart> — HAR waterfall chart custom element.
+ *
+ * Renders into the **light DOM** (no Shadow Root) so that the companion
+ * `waterfall.css` stylesheet — linked in <head> — applies immediately and
+ * paints before this JS module is parsed.
+ *
+ * Usage
+ * ─────
+ *   <!-- stylesheet must come before the script -->
+ *   <link rel="stylesheet" href="/waterfall/waterfall.css" />
+ *   <script type="module" src="/waterfall/dist/index.js"></script>
+ *
+ *   <!-- pre-rendered static HTML children (from renderToHTML()) -->
+ *   <waterfall-chart>
+ *     <!-- ...output of renderToHTML(har)... -->
+ *   </waterfall-chart>
+ *
+ *   <!-- fetch HAR from a URL -->
+ *   <waterfall-chart src="/api/tests/abc123/pageload.har"></waterfall-chart>
+ *
+ *   <!-- or supply HAR data programmatically -->
+ *   <waterfall-chart id="wf"></waterfall-chart>
+ *   <script>document.getElementById('wf').har = harObject;</script>
+ *
+ * Data source priority (highest → lowest):
+ *   1. `.har` JS property
+ *   2. `src` attribute (fetch)
+ *   3. Pre-rendered static HTML children (from renderToHTML())
+ *
+ * When pre-rendered children are detected, the component wires up
+ * interactivity (filters, row click → detail panel, column toggle,
+ * event-line pixel positioning) without re-rendering.
+ *
+ * Attributes
+ * ──────────
+ *   src   URL from which to fetch HAR JSON.  Changing the attribute
+ *         causes the component to re-fetch and re-render.
+ *
+ * Properties
+ * ──────────
+ *   har   Set a Har object directly (overrides src).
+ */
+
+import { typeConfig, TYPE_SWATCH, TYPE_LABEL } from './config.js';
+import { fmtSize, fmtMs } from './formatters.js';
+import {
+  parseUrl,
+  resourceType,
+  computeTotalMs,
+  uniqueTypes,
+  pageEvents,
+  fmtEventLabel,
+} from './helpers.js';
+import {
+  PHASE_BUTTONS,
+  computeTimelineLayout,
+  entrySize,
+  phasesDataAttr,
+  presentEvents,
+  rowClasses,
+  statusClass,
+  tickPositions,
+} from './layout.js';
+import type { Har, HarEntry, HarPage } from './har.js';
+
+type HarPageTimings = HarPage['pageTimings'];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lightweight typed DOM helper
+// ─────────────────────────────────────────────────────────────────────────────
+
+function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  props: Partial<Record<string, string>> = {},
+  text?: string,
+): HTMLElementTagNameMap[K] {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v === undefined) continue;
+    if (k === 'className') node.className = v;
+    else node.setAttribute(k, v);
+  }
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom element
+// ─────────────────────────────────────────────────────────────────────────────
+
+export class WaterfallChart extends HTMLElement {
+  static observedAttributes = ['src'];
+
+  // ── Light-DOM refs (populated by _buildDOM or _adoptDOM) ──────────────────
+  private _filtersEl!: HTMLElement;
+  private _phaseGroupEl!: HTMLElement;
+  private _eventGroupEl!: HTMLElement;
+  private _listWrapEl!: HTMLElement;
+  private _colHeadersEl!: HTMLElement;
+  private _listEl!: HTMLOListElement;
+  private _rulerEl!: HTMLElement;
+  private _gridOverlayEl!: HTMLElement;
+  private _overlayEl!: HTMLElement;
+  private _scrubberEl!: HTMLElement;
+  private _eventLineEls: HTMLElement[] = [];
+  private _loadingEl!: HTMLElement;
+  private _errorEl!: HTMLElement;
+  private _toggleBtn!: HTMLButtonElement;
+
+  // ── Observers ─────────────────────────────────────────────────────────────
+  private _resizeObserver: ResizeObserver | null = null;
+
+  // ── Component state ───────────────────────────────────────────────────────
+  private _allEntries: HarEntry[] = [];
+  private _activeFilters = new Set<string>(['all']);
+  private _activePhaseFilters = new Set<string>();
+  private _hiddenEvents = new Set<string>();
+  private _openPanels = new Map<number, HTMLElement>();
+  private _pageTimings: HarPageTimings = {};
+  private _totalMs = 0;
+  private _originMs = 0;
+
+  // ── Programmatic HAR property ─────────────────────────────────────────────
+  private _harData: Har | null = null;
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+  connectedCallback() {
+    if (this._harData) {
+      // Programmatic .har property was set before connection
+      this._buildDOM();
+      this._loadHarData(this._harData);
+    } else if (this.hasAttribute('src')) {
+      this._buildDOM();
+      this._fetchAndRender(this.getAttribute('src')!);
+    } else if (this.querySelector('.wf-list')) {
+      // Pre-rendered static HTML children detected — adopt and wire up
+      this._adoptDOM();
+    }
+    // else: empty element, nothing to do until src/har are set
+  }
+
+  disconnectedCallback() {
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = null;
+  }
+
+  attributeChangedCallback(
+    name: string,
+    old: string | null,
+    next: string | null,
+  ) {
+    // Ignore the initial attribute parse (old === null) — connectedCallback
+    // handles the first render. Only react to genuine changes after connection.
+    if (name !== 'src' || old === null || !this.isConnected) return;
+    this._teardownAndBuild();
+    if (next) {
+      this._fetchAndRender(next);
+    }
+    // next === null means src was removed — _teardownAndBuild() already left
+    // the element in a clean empty/loading state; nothing more to do.
+  }
+
+  // ── Public API ────────────────────────────────────────────────────────────
+
+  /** Set a HAR object directly — bypasses the src attribute fetch.
+   *  Set to null to clear the chart; if a src attribute is present it will
+   *  be re-fetched, otherwise the element returns to its empty state.
+   */
+  set har(data: Har | null) {
+    this._harData = data;
+    if (!this.isConnected) return;
+    if (data) {
+      this._teardownAndBuild();
+      this._loadHarData(data);
+    } else {
+      this._teardownAndBuild();
+      const src = this.getAttribute('src');
+      if (src) this._fetchAndRender(src);
+    }
+  }
+
+  get har(): Har | null {
+    return this._harData;
+  }
+
+  // ── Teardown helpers ──────────────────────────────────────────────────────
+
+  /**
+   * Clear all existing content (pre-rendered or previously JS-rendered) and
+   * call _buildDOM() to lay down a fresh skeleton ready for _loadHarData().
+   */
+  private _teardownAndBuild() {
+    this.innerHTML = '';
+    this._openPanels.clear();
+    this._activeFilters = new Set(['all']);
+    this._activePhaseFilters = new Set();
+    this._hiddenEvents = new Set();
+    this._allEntries = [];
+    this._pageTimings = {};
+    this._totalMs = 0;
+    this._originMs = 0;
+    this._buildDOM();
+  }
+
+  // ── Adopt pre-rendered DOM ────────────────────────────────────────────────
+
+  /**
+   * Called when pre-rendered static HTML children (from renderToHTML()) are
+   * present. Grabs refs to the existing nodes, reconstructs component state
+   * by reading data-* attributes from <li> rows, then wires up all
+   * interactivity without touching the existing DOM structure.
+   */
+  private _adoptDOM() {
+    // Grab refs to existing nodes
+    this._listWrapEl = this.querySelector('.wf-list-wrap') as HTMLElement;
+    this._colHeadersEl = this.querySelector('.wf-col-headers') as HTMLElement;
+    this._listEl = this.querySelector('.wf-list') as HTMLOListElement;
+    this._rulerEl = this.querySelector('.wf-ruler') as HTMLElement;
+    this._gridOverlayEl = this.querySelector(
+      '.wf-col-header--timeline .wf-grid-overlay',
+    ) as HTMLElement;
+    this._overlayEl = this.querySelector(
+      '.wf-col-header--timeline .wf-events-overlay',
+    ) as HTMLElement;
+
+    // Scrubber is not part of the static HTML — create it and inject it.
+    this._scrubberEl = el('div', { className: 'wf-scrubber' });
+    this._scrubberEl.appendChild(
+      el('span', { className: 'wf-scrubber__label' }),
+    );
+    this._overlayEl.appendChild(this._scrubberEl);
+
+    this._filtersEl = this.querySelector('.wf-filters') as HTMLElement;
+    this._phaseGroupEl = this.querySelector(
+      '.wf-legend-group[aria-label="Filter by connection phase"]',
+    ) as HTMLElement;
+    this._loadingEl = this.querySelector('.wf-loading') as HTMLElement;
+    this._errorEl = this.querySelector('.wf-error') as HTMLElement;
+
+    // Hide the loading message (pre-rendered content is already visible)
+    if (this._loadingEl) this._loadingEl.hidden = true;
+
+    // Inject the toggle button into the URL header cell (JS-only)
+    const urlHeaderEl = this.querySelector(
+      '.wf-col-header--url',
+    ) as HTMLElement;
+    this._toggleBtn = el('button', {
+      type: 'button',
+      className: 'wf-toggle-cols',
+      'aria-expanded': 'false',
+      'aria-label': 'Show columns',
+    });
+    this._toggleBtn.textContent = '\u2192';
+    this._toggleBtn.addEventListener('click', () => this._onToggleCols());
+    urlHeaderEl.appendChild(this._toggleBtn);
+
+    // Reconstruct _allEntries from data-* on the <li> rows.
+    // We read enough to support filtering, panel rendering, and event lines.
+    const rows = Array.from(
+      this._listEl.querySelectorAll<HTMLElement>('li[data-index]'),
+    );
+    this._allEntries = rows.map((li) => this._entryFromRow(li));
+
+    if (!this._allEntries.length) return;
+
+    // Stamp data-type and data-phases on each pre-rendered row.
+    rows.forEach((li, i) => {
+      const entry = this._allEntries[i]!;
+      li.dataset.type = resourceType(entry);
+      const phaseList = phasesDataAttr(entry);
+      if (phaseList) li.dataset.phases = phaseList;
+    });
+
+    this._totalMs = computeTotalMs(this._allEntries);
+    this._originMs = +new Date(this._allEntries[0]!.startedDateTime);
+    this._pageTimings = this._readPageTimings();
+
+    // Wire up filter chips — they already have the right labels from SSR
+    const chipBtns = Array.from(
+      this._filtersEl.querySelectorAll<HTMLButtonElement>('.wf-filter-btn'),
+    );
+    const types = chipBtns.map(
+      (b) => b.textContent?.trim().toLowerCase() ?? '',
+    );
+    chipBtns.forEach((btn) => {
+      const type = btn.textContent?.trim().toLowerCase() ?? '';
+      btn.addEventListener('click', () => {
+        if (type === 'all') {
+          this._activeFilters = new Set(['all']);
+          this._activePhaseFilters = new Set();
+        } else {
+          this._activeFilters.delete('all');
+          this._activeFilters.has(type)
+            ? this._activeFilters.delete(type)
+            : this._activeFilters.add(type);
+          if (!this._activeFilters.size && !this._activePhaseFilters.size)
+            this._activeFilters = new Set(['all']);
+        }
+        this._syncFilterChips(types);
+        this._syncPhaseChips();
+        this._renderRows();
+      });
+      if (type !== 'all') {
+        btn.addEventListener('mouseenter', () => {
+          this._listWrapEl.dataset.hoverType = type;
+        });
+        btn.addEventListener('mouseleave', () => {
+          delete this._listWrapEl.dataset.hoverType;
+        });
+      }
+    });
+
+    // Wire up phase filter buttons
+    this._phaseGroupEl
+      ?.querySelectorAll<HTMLButtonElement>('[data-phase]')
+      .forEach((btn) => {
+        const phase = btn.dataset.phase!;
+        btn.addEventListener('click', () => {
+          this._activePhaseFilters.has(phase)
+            ? this._activePhaseFilters.delete(phase)
+            : this._activePhaseFilters.add(phase);
+          if (!this._activeFilters.size && !this._activePhaseFilters.size)
+            this._activeFilters = new Set(['all']);
+          this._syncFilterChips(types);
+          this._syncPhaseChips();
+          this._renderRows();
+        });
+        btn.addEventListener('mouseenter', () => {
+          this._listWrapEl.dataset.hoverPhase = phase;
+        });
+        btn.addEventListener('mouseleave', () => {
+          delete this._listWrapEl.dataset.hoverPhase;
+        });
+      });
+
+    // Build event toggle buttons from actual pageTimings (adopt path).
+    // The group may not exist in pre-rendered HTML if no metrics were collected.
+    this._eventGroupEl =
+      (this.querySelector(
+        '.wf-legend-group[aria-label="Toggle metrics"]',
+      ) as HTMLElement | null) ??
+      (() => {
+        const g = el('div', {
+          className: 'wf-legend-group',
+          role: 'group',
+          'aria-label': 'Toggle metrics',
+        });
+        this.querySelector('.wf-toolbar')?.appendChild(g);
+        return g;
+      })();
+    this._renderEventFilters();
+
+    // Wire up row click + keyboard → detail panel.
+    // Rows aren't focusable by default; the helper adds role/tabindex/keydown
+    // handlers so keyboard users can open the same detail panel that click does.
+    rows.forEach((li, i) => {
+      this._makeRowInteractive(li, () =>
+        this._togglePanel(i, this._allEntries[i]!),
+      );
+    });
+
+    this._wireScrubber();
+
+    // Re-position event lines with accurate pixel measurements
+    this._observeRulerForEventLines();
+  }
+
+  /**
+   * Reconstruct a minimal HarEntry from the data-* attributes and visible
+   * text content of a pre-rendered <li> row.
+   *
+   * The static renderer embeds everything needed: timings as inline bar
+   * widths/positions are re-derived from the entry data, so we read the
+   * source values from the li's dataset.
+   */
+  private _entryFromRow(li: HTMLElement): HarEntry {
+    const d = li.dataset;
+    const url = li.querySelector('.wf-cell--url')?.getAttribute('title') ?? '';
+    const cells = li.querySelectorAll('.wf-cell--info');
+    const method = cells[0]?.textContent?.trim() ?? 'GET';
+    const protocol = cells[1]?.textContent?.trim() ?? 'h2';
+    const statusText = cells[2]?.textContent?.trim() ?? '200';
+    const type = cells[3]?.textContent?.trim() ?? 'other';
+
+    // Timings are stored in data-* by the SSR renderer.
+    const n = (k: string) => parseFloat(d[k] ?? '0') || 0;
+    const blocked = n('blocked');
+    // _blocked_queueing is a Chrome-DevTools subset of blocked, surfaced via
+    // data-blocked-queueing when present. Reconstruct it on the entry so the
+    // adopted DOM faithfully matches a freshly-loaded HAR.
+    const blockedQueueing = n('blockedQueueing');
+    const dns = n('dns');
+    const connect = n('connect');
+    const ssl = n('ssl');
+    const send = n('send');
+    const wait = n('wait');
+    const receive = n('receive');
+    const time = n('time');
+    const bodySize = n('bodySize');
+    const transferSize = n('transferSize');
+    const startedDateTime = d['started'] ?? new Date().toISOString();
+    const status = parseInt(statusText, 10) || 200;
+
+    return {
+      startedDateTime,
+      time,
+      _resourceType: type,
+      request: {
+        method,
+        url,
+        httpVersion: protocol,
+        headers: [],
+        cookies: [],
+        queryString: [],
+        headersSize: -1,
+        bodySize: 0,
+      },
+      response: {
+        status,
+        statusText: status === 200 ? 'OK' : String(status),
+        httpVersion: protocol,
+        headers: [],
+        cookies: [],
+        content: { size: bodySize, mimeType: '' },
+        redirectURL: '',
+        headersSize: -1,
+        bodySize,
+        _transferSize: transferSize || undefined,
+      },
+      timings: {
+        blocked,
+        ...(blockedQueueing > 0 ? { _blocked_queueing: blockedQueueing } : {}),
+        dns,
+        connect,
+        ssl,
+        send,
+        wait,
+        receive,
+      },
+    };
+  }
+
+  /**
+   * Read page timings from the overlay's event-line data-ms attributes.
+   * The static renderer encodes the raw ms value in data-ms so we can read
+   * it back directly without parsing formatted label strings.
+   */
+  private _readPageTimings(): HarPageTimings {
+    const timings: HarPageTimings = {};
+    this._overlayEl
+      ?.querySelectorAll<HTMLElement>('.wf-event-line')
+      .forEach((line) => {
+        const ms = parseFloat(line.dataset.ms ?? '0');
+        if (line.classList.contains('wf-event--dcl'))
+          timings.onContentLoad = ms;
+        else if (line.classList.contains('wf-event--load')) timings.onLoad = ms;
+        else if (line.classList.contains('wf-event--lcp')) timings._lcp = ms;
+      });
+    return timings;
+  }
+
+  // ── ResizeObserver helper ─────────────────────────────────────────────────
+
+  /**
+   * Watch the ruler element for a non-zero width, then render event lines
+   * once and disconnect. Stores the observer in _resizeObserver so that
+   * disconnectedCallback can clean it up if the element is removed before
+   * the ruler gains layout.
+   */
+  private _observeRulerForEventLines() {
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this._rulerEl.offsetWidth > 0) {
+        this._resizeObserver!.disconnect();
+        this._resizeObserver = null;
+        this._renderEventLines();
+      }
+    });
+    this._resizeObserver.observe(this._rulerEl);
+  }
+
+  // ── Initial DOM construction (dynamic path) ───────────────────────────────
+
+  private _buildDOM() {
+    // ── Toolbar (filters + phase/event legend groups + col toggle) ────────────
+
+    const mkSwatch = (thin: boolean, key: string) =>
+      el('span', {
+        className: `wf-swatch wf-swatch--${thin ? 'thin' : 'thick'} wf-swatch--${key}`,
+      });
+
+    this._filtersEl = el('div', {
+      className: 'wf-legend-group wf-filters',
+      role: 'group',
+      'aria-label': 'Filter by resource type',
+    });
+
+    this._phaseGroupEl = el('div', {
+      className: 'wf-legend-group',
+      role: 'group',
+      'aria-label': 'Filter by connection phase',
+    });
+    for (const [phase, label] of PHASE_BUTTONS) {
+      const btn = el('button', { type: 'button', className: 'wf-filter-btn' });
+      btn.dataset.phase = phase;
+      btn.append(mkSwatch(true, phase), document.createTextNode(label));
+      this._phaseGroupEl.appendChild(btn);
+    }
+
+    this._eventGroupEl = el('div', {
+      className: 'wf-legend-group',
+      role: 'group',
+      'aria-label': 'Toggle metrics',
+    });
+    // Buttons are populated later by _renderEventFilters() once pageTimings are known.
+
+    this._toggleBtn = el('button', {
+      type: 'button',
+      className: 'wf-toggle-cols',
+      'aria-expanded': 'false',
+      'aria-label': 'Show columns',
+    });
+    this._toggleBtn.textContent = '\u2192';
+    this._toggleBtn.addEventListener('click', () => this._onToggleCols());
+
+    const toolbar = el('div', { className: 'wf-toolbar' });
+    toolbar.append(this._filtersEl, this._phaseGroupEl, this._eventGroupEl);
+
+    // ── List wrapper ──────────────────────────────────────────────────────────
+
+    // Column header row
+    this._rulerEl = el('div', { className: 'wf-ruler', 'aria-hidden': 'true' });
+    this._gridOverlayEl = el('div', {
+      className: 'wf-grid-overlay',
+      'aria-hidden': 'true',
+    });
+    this._overlayEl = el('div', {
+      className: 'wf-events-overlay',
+      'aria-hidden': 'true',
+    });
+    this._scrubberEl = el('div', { className: 'wf-scrubber' });
+    this._scrubberEl.appendChild(
+      el('span', { className: 'wf-scrubber__label' }),
+    );
+    this._overlayEl.appendChild(this._scrubberEl);
+    const timelineHeader = el('div', {
+      className: 'wf-col-header wf-col-header--timeline',
+    });
+    timelineHeader.append(this._rulerEl, this._gridOverlayEl, this._overlayEl);
+
+    this._colHeadersEl = el('div', {
+      className: 'wf-col-headers',
+      'aria-hidden': 'true',
+    });
+    const urlHeader = el('div', {
+      className: 'wf-col-header wf-col-header--url',
+    });
+    urlHeader.append(document.createTextNode('URL'), this._toggleBtn);
+
+    this._colHeadersEl.append(
+      el('div', { className: 'wf-col-header wf-col-header--idx' }, '#'),
+      urlHeader,
+      el('div', { className: 'wf-col-header wf-col-header--info' }, 'Method'),
+      el('div', { className: 'wf-col-header wf-col-header--info' }, 'Protocol'),
+      el('div', { className: 'wf-col-header wf-col-header--info' }, 'Status'),
+      el('div', { className: 'wf-col-header wf-col-header--info' }, 'Type'),
+      el(
+        'div',
+        { className: 'wf-col-header wf-col-header--info wf-col-header--size' },
+        'Size',
+      ),
+      el(
+        'div',
+        { className: 'wf-col-header wf-col-header--info wf-col-header--dur' },
+        'Duration',
+      ),
+      timelineHeader,
+    );
+
+    // Request list
+    this._listEl = el('ol', { className: 'wf-list' });
+    this._listEl.setAttribute('aria-label', 'Network requests');
+
+    this._listWrapEl = el('div', { className: 'wf-list-wrap' });
+    this._listWrapEl.append(this._colHeadersEl, this._listEl);
+    // _wireScrubber() is called by _loadHarData() after data and the overlay
+    // are ready, not here during skeleton construction.
+
+    // ── State messages ────────────────────────────────────────────────────────
+    this._loadingEl = el(
+      'p',
+      { className: 'wf-message wf-loading', 'aria-live': 'polite' },
+      'Loading waterfall\u2026',
+    );
+    this._errorEl = el('p', {
+      className: 'wf-message wf-message--error wf-error',
+    });
+    this._errorEl.hidden = true;
+
+    // ── Append everything to the element itself (light DOM) ───────────────────
+    this.append(toolbar, this._listWrapEl, this._loadingEl, this._errorEl);
+  }
+
+  // ── Column toggle ─────────────────────────────────────────────────────────
+
+  private _onToggleCols() {
+    const expanded = this._toggleBtn.getAttribute('aria-expanded') === 'true';
+    if (expanded) {
+      this._listWrapEl.classList.remove('cols-expanded');
+      this._toggleBtn.setAttribute('aria-expanded', 'false');
+      this._toggleBtn.setAttribute('aria-label', 'Show columns');
+      this._toggleBtn.textContent = '\u2192';
+    } else {
+      this._listWrapEl.classList.add('cols-expanded');
+      this._toggleBtn.setAttribute('aria-expanded', 'true');
+      this._toggleBtn.setAttribute('aria-label', 'Hide columns');
+      this._toggleBtn.textContent = '\u2190';
+    }
+    this._renderEventLines();
+  }
+
+  // ── Data loading ──────────────────────────────────────────────────────────
+
+  private async _fetchAndRender(src: string) {
+    this._showLoading(true);
+    const expectedSrc = src;
+    try {
+      const res = await fetch(expectedSrc);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const har: Har = await res.json();
+      // Ignore stale fetches (src changed) or programmatic overrides.
+      if (!this.isConnected) return;
+      if (this._harData) return;
+      if (this.getAttribute('src') !== expectedSrc) return;
+      this._loadHarData(har);
+    } catch (err) {
+      // Only surface the error if this request is still current.
+      if (!this.isConnected) return;
+      if (this._harData) return;
+      if (this.getAttribute('src') !== expectedSrc) return;
+      this._showError(`Failed to load waterfall: ${(err as Error).message}`);
+    }
+  }
+
+  private _loadHarData(har: Har) {
+    try {
+      const entries = har.log.entries ?? [];
+      if (!entries.length) throw new Error('No entries in HAR file');
+      this._allEntries = entries;
+      this._pageTimings = har.log.pages?.[0]?.pageTimings ?? {};
+      this._totalMs = computeTotalMs(entries);
+      this._originMs = +new Date(entries[0]!.startedDateTime);
+      this._showLoading(false);
+      const types = uniqueTypes(entries);
+      this._renderFilters(types);
+      this._renderPhaseFilters(types);
+      this._renderEventFilters();
+      this._renderRuler();
+      this._renderRows();
+      this._wireScrubber();
+      // Defer event lines until layout has settled
+      this._observeRulerForEventLines();
+    } catch (err) {
+      this._showError(`Failed to render waterfall: ${(err as Error).message}`);
+    }
+  }
+
+  // ── UI state helpers ──────────────────────────────────────────────────────
+
+  private _showLoading(visible: boolean) {
+    this._loadingEl.hidden = !visible;
+  }
+
+  private _showError(msg: string) {
+    this._showLoading(false);
+    this._errorEl.hidden = false;
+    this._errorEl.textContent = msg;
+  }
+
+  // ── Filter chips ──────────────────────────────────────────────────────────
+
+  private _renderFilters(types: string[]) {
+    this._filtersEl.innerHTML = '';
+    for (const type of types) {
+      const active =
+        type === 'all'
+          ? this._activeFilters.has('all') &&
+            this._activePhaseFilters.size === 0
+          : this._activeFilters.has(type);
+      const btn = el('button', {
+        type: 'button',
+        className: `wf-filter-btn${active ? ' active' : ''}`,
+      });
+      const key = TYPE_SWATCH[type];
+      if (key) {
+        btn.appendChild(
+          el('span', {
+            className: `wf-swatch wf-swatch--thick wf-swatch--${key}`,
+          }),
+        );
+      }
+      btn.appendChild(document.createTextNode(TYPE_LABEL[type] ?? type));
+      btn.addEventListener('click', () => {
+        if (type === 'all') {
+          this._activeFilters = new Set(['all']);
+          this._activePhaseFilters = new Set();
+        } else {
+          this._activeFilters.delete('all');
+          this._activeFilters.has(type)
+            ? this._activeFilters.delete(type)
+            : this._activeFilters.add(type);
+          if (!this._activeFilters.size && !this._activePhaseFilters.size)
+            this._activeFilters = new Set(['all']);
+        }
+        this._renderFilters(types);
+        this._renderPhaseFilters(types);
+        this._renderRows();
+      });
+      if (type !== 'all') {
+        btn.addEventListener('mouseenter', () => {
+          this._listWrapEl.dataset.hoverType = type;
+        });
+        btn.addEventListener('mouseleave', () => {
+          delete this._listWrapEl.dataset.hoverType;
+        });
+      }
+      this._filtersEl.appendChild(btn);
+    }
+  }
+
+  /** Sync active/inactive CSS classes on pre-existing filter chip buttons. */
+  private _syncFilterChips(types: string[]) {
+    const btns = Array.from(
+      this._filtersEl.querySelectorAll<HTMLButtonElement>('.wf-filter-btn'),
+    );
+    btns.forEach((btn, i) => {
+      const type = types[i] ?? '';
+      const isActive =
+        type === 'all'
+          ? this._activeFilters.has('all') &&
+            this._activePhaseFilters.size === 0
+          : this._activeFilters.has(type);
+      btn.classList.toggle('active', isActive);
+    });
+  }
+
+  /** Build phase filter buttons for the dynamic (JS-rendered) path. */
+  private _renderPhaseFilters(types: string[]) {
+    this._phaseGroupEl.innerHTML = '';
+    for (const [phase, label] of PHASE_BUTTONS) {
+      const active = this._activePhaseFilters.has(phase);
+      const btn = el('button', {
+        type: 'button',
+        className: `wf-filter-btn${active ? ' active' : ''}`,
+      });
+      btn.dataset.phase = phase;
+      btn.append(
+        el('span', {
+          className: `wf-swatch wf-swatch--thin wf-swatch--${phase}`,
+        }),
+        document.createTextNode(label),
+      );
+      btn.addEventListener('click', () => {
+        this._activePhaseFilters.has(phase)
+          ? this._activePhaseFilters.delete(phase)
+          : this._activePhaseFilters.add(phase);
+        if (!this._activeFilters.size && !this._activePhaseFilters.size)
+          this._activeFilters = new Set(['all']);
+        this._renderFilters(types);
+        this._renderPhaseFilters(types);
+        this._renderRows();
+      });
+      btn.addEventListener('mouseenter', () => {
+        this._listWrapEl.dataset.hoverPhase = phase;
+      });
+      btn.addEventListener('mouseleave', () => {
+        delete this._listWrapEl.dataset.hoverPhase;
+      });
+      this._phaseGroupEl.appendChild(btn);
+    }
+  }
+
+  /** Sync active/inactive CSS classes on phase filter buttons (adopt path). */
+  private _syncPhaseChips() {
+    this._phaseGroupEl
+      ?.querySelectorAll<HTMLButtonElement>('[data-phase]')
+      .forEach((btn) => {
+        btn.classList.toggle(
+          'active',
+          this._activePhaseFilters.has(btn.dataset.phase!),
+        );
+      });
+  }
+
+  /**
+   * Build event toggle buttons from the current _pageTimings — one button per
+   * metric that has a positive value. Replaces any previously rendered buttons.
+   * Also hides the group entirely when no metrics are present.
+   */
+  private _renderEventFilters() {
+    this._eventGroupEl.innerHTML = '';
+
+    const present = presentEvents(this._pageTimings);
+    // Remove the group from the toolbar entirely when no metrics are present,
+    // so that querySelector('.wf-legend-group[aria-label="Toggle metrics"]')
+    // returns null (matching the static renderer, which omits it entirely).
+    if (present.length === 0) {
+      this._eventGroupEl.remove();
+      return;
+    }
+    // Re-attach if it was previously removed
+    if (!this._eventGroupEl.isConnected) {
+      this.querySelector('.wf-toolbar')?.appendChild(this._eventGroupEl);
+    }
+
+    for (const { key, label } of present) {
+      const btn = el('button', {
+        type: 'button',
+        className: 'wf-filter-btn active',
+        'data-event': key,
+      });
+      btn.append(
+        el('span', {
+          className: `wf-swatch wf-swatch--thin wf-swatch--${key}`,
+        }),
+        document.createTextNode(label),
+      );
+      btn.addEventListener('click', () => {
+        this._hiddenEvents.has(key)
+          ? this._hiddenEvents.delete(key)
+          : this._hiddenEvents.add(key);
+        this._syncEventChips();
+        this._renderEventLines();
+      });
+      this._eventGroupEl.appendChild(btn);
+    }
+  }
+
+  /** Sync active/inactive CSS classes on event toggle buttons. */
+  private _syncEventChips() {
+    this._eventGroupEl
+      ?.querySelectorAll<HTMLButtonElement>('[data-event]')
+      .forEach((btn) => {
+        btn.classList.toggle(
+          'active',
+          !this._hiddenEvents.has(btn.dataset.event!),
+        );
+      });
+  }
+
+  // ── Timeline cell ─────────────────────────────────────────────────────────
+
+  private _makeTimelineCell(entry: HarEntry): HTMLElement {
+    const cell = el('span', { className: 'wf-cell wf-cell--timeline' });
+    const wrap = el('div', { className: 'wf-bar-wrap' });
+    // No inline height — .wf-bar-wrap picks up --wf-bar-wrap-h from the row class.
+
+    const { segments, barEndPct, durLabel } = computeTimelineLayout(
+      entry,
+      this._totalMs,
+      this._originMs,
+    );
+
+    // Only left and width are set via inline style — heights come from CSS classes.
+    for (const s of segments) {
+      const b = el('div', { className: `wb ${s.cls}`, title: s.tooltip });
+      b.style.left = `${s.leftPct}%`;
+      b.style.width = `${Math.max(s.widthPct, 0.1)}%`;
+      wrap.appendChild(b);
+    }
+
+    cell.style.setProperty('--wf-bar-end', `${barEndPct.toFixed(4)}%`);
+
+    const durLabelEl = el('span', { className: 'wf-bar-dur' });
+    durLabelEl.textContent = durLabel;
+
+    wrap.appendChild(durLabelEl);
+    cell.append(wrap);
+    return cell;
+  }
+
+  // ── Detail panel ──────────────────────────────────────────────────────────
+
+  private _togglePanel(index: number, entry: HarEntry) {
+    if (this._openPanels.has(index)) {
+      this._openPanels.get(index)!.remove();
+      this._openPanels.delete(index);
+      this.querySelectorAll(`.wf-row[data-index="${index}"]`).forEach((r) =>
+        r.classList.remove('row--open'),
+      );
+      return;
+    }
+
+    const t = entry.timings;
+    const size = entrySize(entry);
+
+    const panel = el('div', { className: 'wf-panel' });
+    panel.dataset.panelIndex = String(index);
+
+    // Header
+    const titleEl = el('span', { className: 'wf-panel-title' });
+    titleEl.textContent = `#${index + 1} \u2014 ${entry.request.url}`;
+    titleEl.title = entry.request.url;
+    const closeBtn = el(
+      'button',
+      { type: 'button', className: 'wf-panel-close', title: 'Close' },
+      '\u00d7',
+    );
+    closeBtn.addEventListener('click', () => this._togglePanel(index, entry));
+    const hdr = el('div', { className: 'wf-panel-header' });
+    hdr.append(titleEl, closeBtn);
+    panel.appendChild(hdr);
+
+    const body = el('div', { className: 'wf-panel-body' });
+
+    const section = (title: string, content: HTMLElement): HTMLElement => {
+      const s = el('div', { className: 'wf-panel-section' });
+      s.appendChild(el('div', { className: 'wf-section-title' }, title));
+      s.appendChild(content);
+      return s;
+    };
+
+    // General
+    const generalWrap = el('div');
+    const infoRows: Array<[string, string]> = [
+      ['URL', entry.request.url],
+      ['Method', entry.request.method],
+      ['Protocol', entry.request.httpVersion],
+      ['Status', `${entry.response.status} ${entry.response.statusText}`],
+      ['Type', resourceType(entry)],
+      ['Size', fmtSize(size)],
+      ['IP', entry.serverIPAddress ?? '-'],
+    ];
+    for (const [k, v] of infoRows) {
+      const row = el('div', { className: 'wf-info-row' });
+      row.appendChild(el('span', { className: 'wf-info-key' }, k));
+      row.appendChild(el('span', { className: 'wf-info-val' }, v));
+      generalWrap.appendChild(row);
+    }
+    body.appendChild(section('General', generalWrap));
+
+    // Timings — always emit a single "Blocked" parent row showing the total.
+    // When the Chrome `_blocked_queueing` extension is present, additionally
+    // emit "Queueing" and "Stalled" sub-rows indented beneath it.
+    const blocked = Math.max(0, t.blocked ?? 0);
+    const queueing = Math.min(blocked, Math.max(0, t._blocked_queueing ?? 0));
+    const stalled = blocked - queueing;
+
+    interface TimingRow {
+      cls: string;
+      label: string;
+      val: number;
+      sub?: boolean;
+    }
+    const blockedRows: TimingRow[] =
+      queueing > 0
+        ? [
+            { cls: 'wb--blocked', label: 'Blocked', val: blocked },
+            {
+              cls: 'wb--queueing',
+              label: 'Queueing',
+              val: queueing,
+              sub: true,
+            },
+            { cls: 'wb--stalled', label: 'Stalled', val: stalled, sub: true },
+          ]
+        : [{ cls: 'wb--blocked', label: 'Blocked', val: blocked }];
+    const timingRows: TimingRow[] = [
+      ...blockedRows,
+      { cls: 'wb--dns', label: 'DNS Lookup', val: Math.max(0, t.dns) },
+      { cls: 'wb--connect', label: 'TCP Connect', val: Math.max(0, t.connect) },
+      {
+        cls: 'wb--ssl',
+        label: 'TLS Handshake',
+        val: Math.max(0, t.ssl ?? 0),
+      },
+      { cls: 'wb--send', label: 'Send', val: Math.max(0, t.send) },
+      { cls: 'wb--wait', label: 'Wait', val: Math.max(0, t.wait) },
+      { cls: 'wb--receive', label: 'Receive', val: Math.max(0, t.receive) },
+    ];
+    const timingWrap = el('div');
+    for (const { cls, label, val, sub } of timingRows) {
+      if (val <= 0) continue;
+      const row = el('div', {
+        className: sub ? 'wf-timing-row wf-timing-sub' : 'wf-timing-row',
+      });
+      const lbl = el('span', { className: 'wf-timing-label' });
+      lbl.appendChild(el('span', { className: `wf-timing-swatch ${cls}` }));
+      lbl.appendChild(document.createTextNode(label));
+      row.appendChild(lbl);
+      row.appendChild(el('span', { className: 'wf-timing-val' }, fmtMs(val)));
+      timingWrap.appendChild(row);
+    }
+    const totalRow = el('div', { className: 'wf-timing-row wf-timing-total' });
+    totalRow.appendChild(el('span', { className: 'wf-timing-label' }, 'Total'));
+    totalRow.appendChild(
+      el('span', { className: 'wf-timing-val' }, fmtMs(entry.time)),
+    );
+    timingWrap.appendChild(totalRow);
+    body.appendChild(section('Timings', timingWrap));
+
+    // Headers (may be empty for entries reconstructed from static HTML)
+    const headersSection = (
+      title: string,
+      headers: HarEntry['request']['headers'],
+    ): HTMLElement => {
+      const tbl = el('table', { className: 'wf-headers-table' });
+      if (!headers.length) {
+        const tr = el('tr');
+        tr.appendChild(
+          el('td', { className: 'wf-info-val' }, '(not available)'),
+        );
+        tbl.appendChild(tr);
+      } else {
+        for (const h of headers) {
+          const tr = el('tr');
+          tr.appendChild(el('td', {}, h.name));
+          tr.appendChild(el('td', {}, h.value));
+          tbl.appendChild(tr);
+        }
+      }
+      return section(title, tbl);
+    };
+    body.appendChild(headersSection('Request Headers', entry.request.headers));
+    body.appendChild(
+      headersSection('Response Headers', entry.response.headers),
+    );
+    panel.appendChild(body);
+
+    // Insert immediately after the list wrapper
+    this._listWrapEl.after(panel);
+    this._openPanels.set(index, panel);
+    this.querySelectorAll(`.wf-row[data-index="${index}"]`).forEach((r) =>
+      r.classList.add('row--open'),
+    );
+  }
+
+  // ── Ruler ─────────────────────────────────────────────────────────────────
+
+  private _renderRuler() {
+    this._rulerEl.innerHTML = '';
+    for (const ms of tickPositions(this._totalMs)) {
+      const tick = el('span', { className: 'wf-tick' });
+      tick.style.left = `${(ms / this._totalMs) * 100}%`;
+      tick.textContent = `${parseFloat((ms / 1000).toFixed(3))}s`;
+      this._rulerEl.appendChild(tick);
+    }
+  }
+
+  // ── Event lines ───────────────────────────────────────────────────────────
+
+  private _renderEventLines() {
+    this._gridOverlayEl.innerHTML = '';
+    // Remove all overlay children except the scrubber so the stored
+    // _scrubberEl reference stays valid (innerHTML='' would detach it).
+    let child = this._overlayEl.firstChild;
+    while (child) {
+      const next = child.nextSibling;
+      if (child !== this._scrubberEl) this._overlayEl.removeChild(child);
+      child = next;
+    }
+    if (this._totalMs <= 0) return;
+
+    // Both overlays live inside .wf-col-header--timeline, so their width equals
+    // the timeline column width. left:X% therefore aligns with ruler ticks and
+    // bar positions — same coordinate space, no measurement needed.
+
+    // Size the overlays to exactly match the list-wrap height so they don't
+    // extend beyond the component boundary.
+    const h = `${this._listWrapEl.offsetHeight}px`;
+    this._listWrapEl.style.setProperty('--wf-overlay-h', h);
+
+    // Grid lines — in the low-z-index overlay so they render behind the bars.
+    for (const ms of tickPositions(this._totalMs)) {
+      const gridLine = el('div', { className: 'wf-grid-line' });
+      gridLine.style.left = `${(ms / this._totalMs) * 100}%`;
+      this._gridOverlayEl.appendChild(gridLine);
+    }
+
+    // Event lines (DCL, Load) — in the high-z-index overlay, in front of bars.
+    for (const { ms, cls, label } of pageEvents(
+      this._pageTimings,
+      this._totalMs,
+    )) {
+      const eventKey = 'ev-' + cls.replace('wf-event--', '');
+      if (this._hiddenEvents.has(eventKey)) continue; // skip hidden metrics
+      const line = el('div', { className: `wf-event-line ${cls}` });
+      line.dataset.label = fmtEventLabel(label, ms);
+      line.dataset.name = label;
+      line.style.left = `${(ms / this._totalMs) * 100}%`;
+      this._overlayEl.appendChild(line);
+    }
+
+    // Cache the rendered event lines so the mousemove handler doesn't need
+    // to query the DOM on every move.
+    this._eventLineEls = Array.from(
+      this._overlayEl.querySelectorAll<HTMLElement>('.wf-event-line'),
+    );
+
+    // Ensure the scrubber is the last child so it renders on top of event
+    // lines. It may already be last if no lines were added, but appending it
+    // again moves it to the end without cloning.
+    this._overlayEl.appendChild(this._scrubberEl);
+  }
+
+  // ── Scrubber ──────────────────────────────────────────────────────────────
+
+  private _wireScrubber() {
+    const label = this._scrubberEl.querySelector(
+      '.wf-scrubber__label',
+    ) as HTMLElement;
+
+    // Snap threshold in CSS pixels: scrubber locks to a metric when closer
+    // than this many pixels.
+    const SNAP_PX = 8;
+
+    // Track which event line the scrubber is currently snapped to so we can
+    // remove the snapped class when it moves away.
+    let snappedLine: HTMLElement | null = null;
+
+    const snapTo = (line: HTMLElement) => {
+      if (snappedLine === line) return;
+      if (snappedLine) snappedLine.classList.remove('wf-event-line--snapped');
+      snappedLine = line;
+      line.classList.add('wf-event-line--snapped');
+    };
+
+    const unsnap = () => {
+      if (snappedLine) snappedLine.classList.remove('wf-event-line--snapped');
+      snappedLine = null;
+    };
+
+    this._listWrapEl.addEventListener('mousemove', (e: MouseEvent) => {
+      if (this._totalMs <= 0) return;
+      const rect = this._overlayEl.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const pct = Math.min(1, Math.max(0, x / rect.width));
+
+      // Find the closest event line within snap threshold.
+      // Uses the cached list built by _renderEventLines() — no DOM query needed.
+      let closest: HTMLElement | null = null;
+      let closestDx = Infinity;
+      for (const line of this._eventLineEls) {
+        const linePct = parseFloat(line.style.left) / 100;
+        const linePx = linePct * rect.width;
+        const dx = Math.abs(x - linePx);
+        if (dx < closestDx) {
+          closestDx = dx;
+          closest = line;
+        }
+      }
+
+      if (closest && closestDx <= SNAP_PX) {
+        // Snap: hide scrubber, show metric label.
+        snapTo(closest);
+        this._scrubberEl.classList.remove('wf-scrubber--visible');
+      } else {
+        // Free: show scrubber with cursor position in ms.
+        const ms = Math.round(pct * this._totalMs);
+        this._scrubberEl.style.left = `${pct * 100}%`;
+        label.textContent = `${ms} ms`;
+        unsnap();
+        this._scrubberEl.classList.add('wf-scrubber--visible');
+      }
+    });
+
+    this._listWrapEl.addEventListener('mouseleave', () => {
+      this._scrubberEl.classList.remove('wf-scrubber--visible');
+      unsnap();
+    });
+  }
+
+  // ── Render rows (<li> items) ──────────────────────────────────────────────
+
+  private _rowPasses(entry: HarEntry): boolean {
+    if (
+      !this._activeFilters.has('all') &&
+      !this._activeFilters.has(resourceType(entry))
+    )
+      return false;
+    if (this._activePhaseFilters.size > 0) {
+      const t = entry.timings;
+      // `_blocked_queueing` is a subset of `blocked`, not additive — so the
+      // "blocked" phase matches whenever t.blocked > 0 (regardless of how the
+      // queueing/stalled split renders).
+      const phaseVal: Record<string, number> = {
+        blocked: Math.max(0, t.blocked ?? 0),
+        dns: Math.max(0, t.dns),
+        connect: Math.max(0, t.connect),
+        ssl: Math.max(0, t.ssl ?? 0),
+      };
+      return [...this._activePhaseFilters].some((p) => (phaseVal[p] ?? 0) > 0);
+    }
+    return true;
+  }
+
+  private _renderRows() {
+    // If rows already exist, just show/hide them — preserving DOM indexes.
+    const existing =
+      this._listEl.querySelectorAll<HTMLElement>('li[data-index]');
+    if (existing.length > 0) {
+      existing.forEach((li) => {
+        const i = Number(li.dataset.index);
+        const entry = this._allEntries[i];
+        li.style.display = entry && this._rowPasses(entry) ? '' : 'none';
+      });
+      return;
+    }
+
+    // Initial build — create one <li> per entry and leave filtering to CSS.
+    this._allEntries.forEach((entry, i) => {
+      const type = resourceType(entry);
+      const { barH } = typeConfig(type);
+      const status = entry.response.status;
+      const size = entrySize(entry);
+      const { domain, path } = parseUrl(entry.request.url);
+
+      const statusCls = statusClass(status);
+
+      const classStr = rowClasses(
+        entry,
+        barH,
+        this._openPanels.has(i) ? ['row--open'] : [],
+      );
+
+      const li = el('li', { className: classStr });
+      li.dataset.index = String(i);
+      li.dataset.type = type;
+      const phases = phasesDataAttr(entry);
+      if (phases) li.dataset.phases = phases;
+
+      // # index — always the original 1-based position
+      const cellIdx = el(
+        'span',
+        { className: 'wf-cell wf-cell--idx' },
+        String(i + 1),
+      );
+
+      // URL (domain + path inline)
+      const cellUrl = el('span', { className: 'wf-cell wf-cell--url' });
+      cellUrl.title = entry.request.url;
+      cellUrl.appendChild(el('span', { className: 'wf-url-domain' }, domain));
+      if (path)
+        cellUrl.appendChild(el('span', { className: 'wf-url-path' }, path));
+
+      // Info cells
+      const cellMeth = el(
+        'span',
+        { className: 'wf-cell wf-cell--info' },
+        entry.request.method,
+      );
+      const cellProt = el(
+        'span',
+        { className: 'wf-cell wf-cell--info' },
+        entry.request.httpVersion,
+      );
+      const cellStat = el(
+        'span',
+        { className: `wf-cell wf-cell--info wf-cell--stat ${statusCls}` },
+        String(status),
+      );
+      const cellType = el('span', { className: 'wf-cell wf-cell--info' }, type);
+      const cellSize = el(
+        'span',
+        { className: 'wf-cell wf-cell--info wf-cell--size' },
+        fmtSize(size),
+      );
+      const cellDur = el(
+        'span',
+        { className: 'wf-cell wf-cell--info wf-cell--dur' },
+        fmtMs(entry.time),
+      );
+
+      li.append(
+        cellIdx,
+        cellUrl,
+        cellMeth,
+        cellProt,
+        cellStat,
+        cellType,
+        cellSize,
+        cellDur,
+      );
+      li.appendChild(this._makeTimelineCell(entry));
+
+      this._makeRowInteractive(li, () => this._togglePanel(i, entry));
+
+      this._listEl.appendChild(li);
+    });
+  }
+
+  /**
+   * Make a row `<li>` keyboard-accessible.
+   *
+   * Adds the ARIA semantics of a toggle button (`role="button"`,
+   * `aria-expanded`, `tabindex="0"`) and binds both click and Enter/Space
+   * keydown to the same activation callback. The shared callback keeps the
+   * row's `aria-expanded` value in sync with the open/closed state of its
+   * detail panel.
+   *
+   * Only called after JS upgrade — the static SSR HTML keeps plain
+   * non-focusable `<li>` rows because there is no handler to drive them.
+   */
+  private _makeRowInteractive(li: HTMLElement, onActivate: () => void) {
+    li.setAttribute('role', 'button');
+    li.setAttribute('tabindex', '0');
+    if (!li.hasAttribute('aria-expanded')) {
+      li.setAttribute(
+        'aria-expanded',
+        li.classList.contains('row--open') ? 'true' : 'false',
+      );
+    }
+
+    const activate = () => {
+      onActivate();
+      li.setAttribute(
+        'aria-expanded',
+        li.classList.contains('row--open') ? 'true' : 'false',
+      );
+    };
+
+    li.addEventListener('click', activate);
+    li.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault(); // prevent space from scrolling the page
+        activate();
+      }
+    });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Registration
+// ─────────────────────────────────────────────────────────────────────────────
+
+if (!customElements.get('waterfall-chart')) {
+  customElements.define('waterfall-chart', WaterfallChart);
+}

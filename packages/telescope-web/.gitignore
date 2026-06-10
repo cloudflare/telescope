@@ -32,5 +32,9 @@ pnpm-debug.log*
 # types 
 worker-configuration.d.ts
 
+# playwright
+playwright-report/
+test-results/
+
 # prisma 
 /generated

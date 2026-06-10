@@ -1,5 +1,11 @@
 # @cloudflare/telescope
 
+## 1.1.1
+
+### Patch Changes
+
+- [#291](https://github.com/cloudflare/telescope/pull/291) [`815eb9e`](https://github.com/cloudflare/telescope/commit/815eb9e13779dc86ba075d1b6395a308982ff07e) Thanks [@sergeychernyshev](https://github.com/sergeychernyshev)! - Improvements to CLI parameters
+
 ## 1.1.0
 
 ### Minor Changes

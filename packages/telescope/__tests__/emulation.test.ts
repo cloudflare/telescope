@@ -3,11 +3,7 @@ import type { SuccessfulTestResult } from '../src/index.js';
 import { launchTest } from '../src/index.js';
 import { BrowserConfig } from '../src/browsers.js';
 import { normalizeCLIConfig } from '../src/config.js';
-import type {
-  LaunchOptions,
-  BrowserConfigOptions,
-  CustomDeviceDescriptor,
-} from '../src/types.js';
+import type { LaunchOptions, BrowserConfigOptions } from '../src/types.js';
 import { describe, it, expect, beforeAll } from 'vitest';
 
 const browsers = BrowserConfig.getBrowsers();

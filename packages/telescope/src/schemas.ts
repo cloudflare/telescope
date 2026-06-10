@@ -99,7 +99,17 @@ export const BrowserConfigSchema = z.object({
  **/
 
 export const ConfigFileSchema = z.object({
-  url: z.string().url().optional(),
+  url: z.string().refine((uri) => { // Zod v3
+    if (!(/^https?:\/\//).test(uri)) {
+      uri = `https://${uri}`; // Append missing protocol so new URL can work
+    }
+    try {
+      new URL(uri);
+      return true;
+    } catch {
+      return { message: 'Invalid URL format in config file' };
+    }
+  }).optional(),
   options: ConfigCLIOptionsSchema.optional(),
   browserConfig: BrowserConfigSchema.optional(),
 });

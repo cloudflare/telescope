@@ -11,15 +11,15 @@ const {
 } = Astro.props;
 
 const cookieValue = Astro.cookies.get('theme-override')?.value;
-const themeOverride =
-  cookieValue === 'dark' || cookieValue === 'light' ? cookieValue : undefined;
+
+// hasOverride: true if the user has explicitly set a preference
+const hasOverride = cookieValue === 'dark' || cookieValue === 'light';
+// isDark: true if the explicit preference is dark
+const isDark = cookieValue === 'dark';
 ---
 
 <!doctype html>
-<html
-  lang="en"
-  {...themeOverride ? { 'data-theme-override': themeOverride } : {}}
->
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
@@ -29,6 +29,49 @@ const themeOverride =
     <title>{title}</title>
   </head>
   <body>
+    <!-- State indicators for CSS -->
+    <input
+      type="checkbox"
+      id="theme-has-override"
+      checked={hasOverride}
+      style="display: none;"
+    />
+    <input
+      type="checkbox"
+      id="theme-toggle-input"
+      checked={isDark}
+      style="display: none;"
+    />
+
     <slot />
+
+    <script is:inline>
+      const toggle = document.getElementById('theme-toggle-input');
+      const hasOverride = document.getElementById('theme-has-override');
+
+      if (toggle && hasOverride) {
+        toggle.addEventListener('change', e => {
+          // If this is the first click (no cookie), ensure we toggle correctly relative to system
+          const cookieExists = document.cookie.includes('theme-override=');
+          if (!cookieExists) {
+            const isSystemDark = window.matchMedia(
+              '(prefers-color-scheme: dark)',
+            ).matches;
+            // If system is dark, the checkbox was 'unchecked' but the theme was 'dark'.
+            // The browser just flipped the checkbox to 'checked'.
+            // To change the theme, we actually want 'light' if system was dark.
+            if (isSystemDark && e.target.checked) {
+              e.target.checked = false;
+            } else if (!isSystemDark && !e.target.checked) {
+              e.target.checked = true;
+            }
+          }
+
+          hasOverride.checked = true;
+          const theme = e.target.checked ? 'dark' : 'light';
+          document.cookie = `theme-override=${theme};path=/;max-age=31536000;SameSite=Lax`;
+        });
+      }
+    </script>
   </body>
 </html>

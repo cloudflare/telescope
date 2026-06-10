@@ -1,9 +1,13 @@
+import { readFileSync } from 'fs';
+import path from 'path';
+import url from 'url';
+
 import { Command, Option, InvalidArgumentError } from 'commander';
 const program = new Command();
 import { BrowserConfig } from './browsers.js';
 import { TestRunner } from './testRunner.js';
 import { ChromeRunner } from './chromeRunner.js';
-import { log } from './helpers.js';
+import { log, normalizeUrlScheme, isHttpUrl } from './helpers.js';
 import { getBaseConfig, normalizeCLIConfig } from './config.js';
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
 import {
@@ -32,6 +36,44 @@ function parseJSON<T>(flag: string, value: string, schema: ZodSchema<T>): T {
     return parseCLIOption(flag, value, schema);
   } catch (err) {
     throw new InvalidArgumentError((err as Error).message);
+  }
+}
+
+/**
+ * Read the package version from package.json at runtime.
+ *
+ * Walks up the directory tree from this module's location looking for the
+ * first `package.json` whose `name` matches `@cloudflare/telescope`. This
+ * works regardless of whether the code runs from source (`src/index.ts`) or
+ * compiled output (`dist/src/index.js`), and is cross-platform (no reliance
+ * on POSIX-only path separators).
+ */
+function getPackageVersion(): string {
+  const startDir = path.dirname(url.fileURLToPath(import.meta.url));
+  let dir = startDir;
+
+  // Walk up until we either find our package.json or hit the filesystem root.
+  while (true) {
+    const candidate = path.join(dir, 'package.json');
+    try {
+      const pkg = JSON.parse(readFileSync(candidate, 'utf8')) as {
+        name?: string;
+        version?: string;
+      };
+      if (pkg.name === '@cloudflare/telescope' && pkg.version) {
+        return pkg.version;
+      }
+    } catch {
+      // No package.json at this level (or unreadable); keep walking.
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      // Reached the filesystem root without finding our package.json.
+      throw new Error(
+        'Unable to locate @cloudflare/telescope package.json to read version',
+      );
+    }
+    dir = parent;
   }
 }
 
@@ -107,14 +149,42 @@ async function executeTest(
   options: LaunchOptions,
   baseConfig: LaunchOptions
 ): Promise<SuccessfulTestResult> {
-  const url = options.url || baseConfig.url;
-  if (!url) {
-    throw new Error("required 'url' option not specified");
+  const positionalUrl = program.args[0];
+  const resolvedUrl = positionalUrl ?? (options.url || baseConfig.url);
+  if (!resolvedUrl) {
+    console.error(
+      "error: missing required URL argument. Use 'telescope --help' for usage.",
+    );
+    process.exit(1);
+  }
+  // Auto-prepend a scheme when the URL was provided without one
+  // (e.g. `telescope example.com` -> `https://example.com`, or
+  // `telescope localhost:3000` -> `http://localhost:3000`; see
+  // normalizeUrlScheme for the rules). Reject non-http(s) URLs up front so
+  // the user gets a clearer error than the deeper validation in executeTest
+  // would produce. CLI-only convenience; programmatic callers (launchTest,
+  // Telescope) must provide a well-formed http(s) URL.
+  try {
+    options.url = normalizeUrlScheme(resolvedUrl);
+  } catch (err) {
+    console.error(`error: ${(err as Error).message}`);
+    process.exit(1);
+  }
+
+  // Enforce the http(s)-only contract here so it applies to both the CLI
+  // and programmatic callers. The CLI normalizes scheme-less inputs to
+  // either http:// or https:// (see normalizeUrlScheme; localhost-equivalent
+  // hosts default to http://) before reaching this point; programmatic
+  // callers must pass a well-formed http(s) URL.
+  if (!isHttpUrl(options.url)) {
+    throw new Error(
+      `Only http:// and https:// URLs are supported (got "${options.url}")`,
+    );
   }
 
   // Do not let undefined values override earlier values
   const config: LaunchOptions = {
-    url: url, // Always required to have a value
+    url: options.url,
     ...DEFAULT_OPTIONS,
     ...(Object.fromEntries(
       Object.entries(baseConfig).filter(([_, val]) => val !== undefined)
@@ -202,12 +272,19 @@ export async function launchTest(options: LaunchOptions): Promise<TestResult> {
 }
 
 export default function browserAgent(): void {
+  const pkgVersion = getPackageVersion();
+
   program
     .name('telescope')
     .description('Cross-browser synthetic testing agent')
+    .argument(
+      '[url]',
+      'URL to run tests against. Can also be provided via -u/--url.',
+    )
     .addOption( // Required, but might be in the configuration file
       new Option('-u, --url <url>', 'URL to run tests against')
     )
+    .version(pkgVersion, '-v, --version', 'Output the package version number')
     .addOption(
       new Option(
         '-b, --browser <browser_name>',
@@ -299,13 +376,13 @@ export default function browserAgent(): void {
       new Option(
         '--width <int>',
         'Viewport width, in pixels. If both width and device are provided, the width value will override device emulation viewport width.',
-      ).argParser((v) => parseNumeric(PositiveIntSchema, v, '--width')),
+      ).argParser(v => parseNumeric(PositiveIntSchema, v, '--width')),
     )
     .addOption(
       new Option(
         '--height <int>',
         'Viewport height, in pixels. If both height and device are provided, the height value will override device emulation viewport height.',
-      ).argParser((v) => parseNumeric(PositiveIntSchema, v, '--height')),
+      ).argParser(v => parseNumeric(PositiveIntSchema, v, '--height')),
     )
     .addOption(
       new Option(
@@ -386,14 +463,54 @@ export default function browserAgent(): void {
         'Use a configuration file for the options',
       )
     )
-    .action((opts) => {
-      if (!opts.url && !opts.config) {
-        program.error(`Error: - required option '-u, --url <url>' not specified`);
-      }
-    })
+    // .action((opts) => {
+    //   if (!opts.url && !opts.config) {
+    //     program.error(`Error: - required option '-u, --url <url>' not specified`);
+    //   }
+    // })
     .parse(process.argv);
 
+  // Show help and exit when invoked with no arguments at all
+  // (e.g. `npx @cloudflare/telescope` or bare `telescope`)
+  if (process.argv.length <= 2) {
+    program.outputHelp();
+    process.exit(0);
+  }
+
   const cliOptions = program.opts() as CLIOptions;
+  const positionalUrl = program.args[0];
+
+  // Reject duplicate URLs: providing the URL both as a positional argument
+  // and via -u/--url is always an error, even if the values are textually
+  // identical or normalize to the same URL. There is no good reason to
+  // specify it twice, so treat it as a user mistake.
+  if (positionalUrl && cliOptions.url) {
+    console.error(
+      `error: URL provided both as a positional argument ("${positionalUrl}") and via --url ("${cliOptions.url}"). Provide it only once.`,
+    );
+    process.exit(1);
+  }
+  // const resolvedUrl = positionalUrl ?? cliOptions.url;
+  // if (!resolvedUrl) {
+  //   console.error(
+  //     "error: missing required URL argument. Use 'telescope --help' for usage.",
+  //   );
+  //   process.exit(1);
+  // }
+  // // Auto-prepend a scheme when the URL was provided without one
+  // // (e.g. `telescope example.com` -> `https://example.com`, or
+  // // `telescope localhost:3000` -> `http://localhost:3000`; see
+  // // normalizeUrlScheme for the rules). Reject non-http(s) URLs up front so
+  // // the user gets a clearer error than the deeper validation in executeTest
+  // // would produce. CLI-only convenience; programmatic callers (launchTest,
+  // // Telescope) must provide a well-formed http(s) URL.
+  // try {
+  //   cliOptions.url = normalizeUrlScheme(resolvedUrl);
+  // } catch (err) {
+  //   console.error(`error: ${(err as Error).message}`);
+  //   process.exit(1);
+  // }
+
   let options: LaunchOptions;
 
   try {

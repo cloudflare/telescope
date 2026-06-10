@@ -36,12 +36,17 @@ const ENGINE_TO_BROWSER_NAME: Record<PlaywrightEngine, BrowserName> = {
  * Since the only caller is the CLI path, inputs are already validated by
  * Commander's argParser callbacks before they reach here.
  *
+ * The caller (browserAgent) is responsible for resolving the URL from either
+ * the positional argument or the `--url` flag and must ensure `options.url` is
+ * set before calling this function. We assert that contract here.
+ *
  * @param options - CLI options (typed fields already validated by Commander)
  * @returns Normalized config object with correct types and defaults applied
+ * @throws If `options.url` is not set (programmer error: caller broke contract)
  */
 export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
   const config: LaunchOptions = {
-    url: options.url,
+    url: options.url || "", // Might come from config file
     browser: options.browser as BrowserName | undefined,
     width: options.width,
     height: options.height,
