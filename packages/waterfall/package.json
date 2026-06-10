@@ -21,6 +21,19 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cloudflare/telescope.git",
+    "directory": "packages/waterfall"
+  },
+  "homepage": "https://github.com/cloudflare/telescope/tree/main/packages/waterfall",
+  "bugs": {
+    "url": "https://github.com/cloudflare/telescope/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc && vite build --config vite.lib.config.ts && chmod +x dist/cli.js",
     "build:demo": "npm run gen-demo && vite build",
@@ -49,5 +62,6 @@
     "custom-element",
     "performance"
   ],
+  "author": "Cloudflare Inc.",
   "license": "Apache-2.0"
 }
