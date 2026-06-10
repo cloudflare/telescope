@@ -167,8 +167,7 @@ async function executeTest(
   try {
     options.url = normalizeUrlScheme(resolvedUrl);
   } catch (err) {
-    console.error(`error: ${(err as Error).message}`);
-    process.exit(1);
+    throw err;
   }
 
   // Enforce the http(s)-only contract here so it applies to both the CLI
