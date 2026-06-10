@@ -43,6 +43,7 @@ async function expectHeadless(expected: boolean): Promise<void> {
 
 const ALL_BROWSERS: BrowserName[] = [
   'chrome',
+  'chromium',
   'chrome-beta',
   'canary',
   'firefox',

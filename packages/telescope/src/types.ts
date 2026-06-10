@@ -60,6 +60,7 @@ export type NetworkTypes = Record<
 export type BrowserName =
   | 'chrome'
   | 'chrome-beta'
+  | 'chromium'
   | 'canary'
   | 'firefox'
   | 'safari'
@@ -77,6 +78,7 @@ export type BrowserChannel =
   | 'chrome'
   | 'chrome-beta'
   | 'chrome-canary'
+  | 'chromium'
   | 'msedge';
 
 /**
@@ -434,6 +436,7 @@ export interface RequestTiming {
  */
 export interface RequestData {
   timing: RequestTiming;
+  resourceType: string;
   telescopeId: string;
 }
 
@@ -458,6 +461,16 @@ export interface ResourceTiming {
   transferSize: number;
   encodedBodySize: number;
   decodedBodySize: number;
+}
+
+/**
+ * Request priority information
+ */
+export type PriorityObject = {
+  initialPriority: string,
+};
+export interface PriorityInfo {
+  [key: string]: PriorityObject;
 }
 
 // ============================================================================
@@ -567,6 +580,9 @@ export interface HarEntry {
   _dns_end?: number;
   _connect_start?: number;
   _connect_end?: number;
+  _initialPriority?: string;
+  _priority?: string;
+  _resourceType?: string;
   _secure_start?: number;
   _secure_end?: number;
   _request_start?: number;
@@ -722,3 +738,28 @@ export interface CustomDeviceDescriptor {
    */
   defaultBrowserType: 'chromium' | 'firefox' | 'webkit';
 }
+
+// ============================================================================
+// Testing types
+// ============================================================================
+
+export interface testServerConfig {
+  fixturesDirPath: string,
+  delay?: number,
+  compress?: number
+}
+
+export const mimeTypes: Record<string, string> = {
+  avif: 'image/avif',
+  css: 'text/css',
+  gif: 'image/gif',
+  html: 'text/html',
+  jpg: 'image/jpeg',
+  js: 'text/javascript',
+  json: 'application/json',
+  jxl: 'image/jpeg-xl',
+  png: 'image/png',
+  svg: 'image/svg_xml',
+  webp: 'image/webp',
+  woff2: 'font/woff2'
+};

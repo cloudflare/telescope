@@ -34,6 +34,7 @@ import ffmpeg from 'ffmpeg';
 import ejs from 'ejs';
 import { log, logTimer, generateTestID } from './helpers.js';
 import AdmZip from 'adm-zip';
+import crypto from 'crypto';
 import type {
   BrowserConfigOptions,
   SimplifiedBrowserConfigOptions,
@@ -49,6 +50,7 @@ import type {
   LCPEvent,
   LayoutShift,
   NavigationTiming,
+  PriorityInfo,
   FilmstripFrame,
   ConnectionType,
   SavedConfig,
@@ -63,9 +65,12 @@ class TestRunner {
   consoleMessages: ConsoleMessage[] = [];
   browserConfig: BrowserConfigOptions;
   metrics?: Metrics;
+  newPriorities: Record<string, string> = {};
   resourceTimings: ResourceTiming[] = [];
   paths: TestPaths = {} as TestPaths;
+  priorities: PriorityInfo = {} as PriorityInfo;
   requests: RequestData[] = [];
+  telescopeIdToRequestId: Record<string, string> = {};
   resultAssets: ResultAssets = {
     filmstripFiles: [],
     videoFile: null,
@@ -338,6 +343,7 @@ class TestRunner {
       }
       const reqData: RequestData = {
         timing: data.timing(),
+        resourceType: data.resourceType(),
         telescopeId,
       };
       this.requests.push(reqData);
@@ -920,14 +926,34 @@ class TestRunner {
           _request_end: request.timing.responseStart,
           _response_start: request.timing.responseStart,
           _response_end: request.timing.responseEnd,
+          _resourceType: request.resourceType,
         };
         if (harEntries[indexToUpdate].request.url === lcpURL) {
           updatedObject._is_lcp = true;
         }
+
+        if (this.telescopeIdToRequestId) {
+          const requestId = this.telescopeIdToRequestId[request.telescopeId];
+
+          if (requestId && this.priorities && this.priorities[requestId]) {
+            const priority_obj = this.priorities[requestId];
+            if (priority_obj) {
+              updatedObject._initialPriority = priority_obj.initialPriority;
+
+              if (this.newPriorities && this.newPriorities[requestId]) {
+                updatedObject._priority = this.newPriorities[requestId];
+              } else {
+                updatedObject._priority = updatedObject._initialPriority;
+              }
+            }
+          }
+        }
+
         // replace the object at the specified index with the updated object
         harEntries.splice(indexToUpdate, 1, updatedObject);
       }
     }
+
     return harEntries;
   }
 
