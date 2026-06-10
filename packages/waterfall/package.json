@@ -21,6 +21,15 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cloudflare/telescope.git",
+    "directory": "packages/waterfall"
+  },
+  "homepage": "https://github.com/cloudflare/telescope/tree/main/packages/waterfall",
+  "bugs": {
+    "url": "https://github.com/cloudflare/telescope/issues"
+  },
   "publishConfig": {
     "access": "public",
     "provenance": true
@@ -53,5 +62,6 @@
     "custom-element",
     "performance"
   ],
+  "author": "Cloudflare Inc.",
   "license": "Apache-2.0"
 }
