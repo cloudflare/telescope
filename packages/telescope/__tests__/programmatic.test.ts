@@ -13,7 +13,7 @@ describe('Programmatic API: http(s)-only restriction', () => {
     ['file:///tmp/page.html'],
     ['about:blank'],
     ['data:text/html,<h1>hi</h1>'],
-    ['example.com'], // no scheme -- programmatic API does NOT auto-prefix
+    ['//example.com'], // no scheme -- programmatic API does NOT partially auto-prefix
   ])('launchTest rejects non-http(s) URL: %s', async input => {
     const result = await launchTest({ url: input });
     expect(result.success).toBe(false);
@@ -54,15 +54,15 @@ describe.each(browsers)('Programmatic API (%s)', browser => {
     }
   }, 60000);
 
-  // test('launchTest handles errors gracefully', async () => {
-  //   const result = await launchTest({
-  //     url: 'not-a-valid-url',
-  //     browser,
-  //   });
+  test('launchTest handles errors gracefully', async () => {
+    const result = await launchTest({
+      url: '❗-a-valid-url',
+      browser,
+    });
 
-  //   expect(result.success).toBe(false);
-  //   expect(result).toHaveProperty('error');
-  // });
+    expect(result.success).toBe(false);
+    expect(result).toHaveProperty('error');
+  });
 
   test('launchTest accepts programmatic options', async () => {
     const result = await launchTest({

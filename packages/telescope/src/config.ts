@@ -1,13 +1,18 @@
+import { access, constants, readFileSync, stat } from 'node:fs';
+
 import type {
+  BrowserConfigType,
   LaunchOptions,
   CLIOptions,
+  ConfigCLIOptionsType,
+  ConfigFileType,
   ConnectionType,
   BrowserName,
   CustomDeviceDescriptor,
   PlaywrightEngine,
 } from './types.js';
 import { parseUnknown } from './validation.js';
-import { StringArraySchema } from './schemas.js';
+import { ConfigCLIOptionsSchema, ConfigFileSchema, StringArraySchema } from './schemas.js';
 
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
 import { devices } from 'playwright';
@@ -40,29 +45,24 @@ const ENGINE_TO_BROWSER_NAME: Record<PlaywrightEngine, BrowserName> = {
  * @throws If `options.url` is not set (programmer error: caller broke contract)
  */
 export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
-  if (!options.url) {
-    throw new Error('normalizeCLIConfig: url is required');
-  }
   const config: LaunchOptions = {
-    url: options.url,
+    url: options.url || "", // Might come from config file
     browser: options.browser as BrowserName | undefined,
     width: options.width,
     height: options.height,
-    frameRate: options.frameRate ?? DEFAULT_OPTIONS.frameRate,
-    timeout: options.timeout ?? DEFAULT_OPTIONS.timeout,
-    blockDomains: options.blockDomains || DEFAULT_OPTIONS.blockDomains,
-    block: options.block || DEFAULT_OPTIONS.block,
-    disableJS: options.disableJS || DEFAULT_OPTIONS.disableJS,
-    debug: options.debug || DEFAULT_OPTIONS.debug,
-    html: options.html || DEFAULT_OPTIONS.html,
-    openHtml: options.openHtml || DEFAULT_OPTIONS.openHtml,
-    list: options.list || DEFAULT_OPTIONS.list,
-    connectionType:
-      (options.connectionType as ConnectionType) ||
-      DEFAULT_OPTIONS.connectionType,
+    frameRate: options.frameRate,
+    timeout: options.timeout,
+    blockDomains: options.blockDomains,
+    block: options.block,
+    disableJS: options.disableJS,
+    debug: options.debug,
+    html: options.html,
+    openHtml: options.openHtml,
+    list: options.list,
+    connectionType: options.connectionType as ConnectionType,
     auth: DEFAULT_OPTIONS.auth,
-    zip: options.zip || DEFAULT_OPTIONS.zip,
-    dry: options.dry || DEFAULT_OPTIONS.dry,
+    zip: options.zip,
+    dry: options.dry,
     delayUsing: DEFAULT_OPTIONS.delayUsing,
     userAgent: options.userAgent,
     agentExtra: options.agentExtra,
@@ -165,9 +165,118 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     config.browser = options.browser as BrowserName;
   }
 
-  config.browser = config.browser ?? DEFAULT_OPTIONS.browser;
+  if (options.config) {
+    config.config = options.config;
+  }
 
   return config;
+}
+
+/**
+ * Get the base configuration from a file.
+ *
+ * @param configFileName - Name and path to configuration file
+ * @return configuration object to be used by executeTest
+ */
+
+export function getBaseConfig(configFileName: string): LaunchOptions {
+  let baseConfig: ConfigFileType = { };
+
+  access(configFileName, constants.R_OK, (err) => {
+    if (err) {
+      throw new Error(`Can not read file ${configFileName}`);
+    }
+  });
+
+  stat(configFileName, (err, cfgStat) => {
+    if (err) {
+      throw err;
+    }
+
+    if (cfgStat.size > 4096) { // Arbitrary size
+      throw new Error(`Config file ${configFileName} is suspect - oversized.`);
+    }
+  });
+
+  try {
+    const cfgData = readFileSync(configFileName, "utf-8");
+    const cfgObject = JSON.parse(cfgData);
+    baseConfig = ConfigFileSchema.parse(cfgObject);
+  } catch (err) {
+    console.error(err);
+    throw new Error(`Problem parsing ${configFileName}`);
+  }
+
+  let cfg: LaunchOptions = { url: baseConfig.url || '' }; // Always required
+
+  if (baseConfig.options) {
+    type CommonCLIKeys = Extract<keyof ConfigCLIOptionsType, keyof LaunchOptions>;
+
+    for (const key of Object.keys(ConfigCLIOptionsSchema.shape) as CommonCLIKeys[]) {
+      const value = baseConfig.options[key];
+      if (value !== undefined) {
+        // Safe because of the Extract above
+        cfg[key] = value as any; // eslint-disable-line
+      }
+    }
+  }
+
+  if (baseConfig.browserConfig) {
+    extractBrowserConfig(cfg, baseConfig.browserConfig);
+  }
+
+  return cfg;
+}
+
+/**
+ * Extract the useful settings from the configuration file browserConfig section
+ * @params cfg - The configuration object
+ *         browserConfig - the browserConfig object from the configuration file
+ * @returns Updated cfg
+ */
+
+function extractBrowserConfig(cfg: LaunchOptions, browserConfig: BrowserConfigType) {
+  if (browserConfig.args && Array.isArray(browserConfig.args)) {
+    cfg.args = browserConfig.args;
+  }
+
+  const engine = browserConfig.engine; // Required
+
+  if (engine === 'firefox') {
+    cfg.browser = 'firefox';
+    if (browserConfig.firefoxUserPrefs) {
+      cfg.firefoxPrefs = browserConfig.firefoxUserPrefs;
+    }
+  } else if (engine === 'webkit') {
+    cfg.browser = 'safari';
+  } else { // chromium
+    const channel = browserConfig.channel;
+    if (channel === 'chrome') {
+      cfg.browser = 'chrome';
+    } else if (channel === 'chrome-beta') {
+      cfg.browser = 'chrome-beta';
+    } else if (channel === 'chrome-canary') {
+      cfg.browser = 'canary';
+    } else if (channel === 'msedge') {
+      cfg.browser = 'edge';
+    }
+  }
+
+  if (browserConfig.httpCredentials) {
+    cfg.auth = browserConfig.httpCredentials;
+  }
+
+  if (browserConfig.javaScriptEnabled !== undefined) {
+    cfg.disableJS = !browserConfig.javaScriptEnabled;
+  }
+
+  // Overrides options.height/width
+  if (browserConfig.viewport) {
+    cfg.height = browserConfig.viewport.height;
+    cfg.width = browserConfig.viewport.width;
+  }
+
+  return cfg;
 }
 
 /**
