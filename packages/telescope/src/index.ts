@@ -8,7 +8,7 @@ import { BrowserConfig } from './browsers.js';
 import { TestRunner } from './testRunner.js';
 import { ChromeRunner } from './chromeRunner.js';
 import { log, normalizeUrlScheme, isHttpUrl } from './helpers.js';
-import { normalizeCLIConfig } from './config.js';
+import { getBaseConfig, normalizeCLIConfig } from './config.js';
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
 import {
   PositiveIntSchema,
@@ -140,13 +140,36 @@ function getRunner(
  * Normalizes options, creates browser instance, runs test, and ensures cleanup.
  *
  * @param options - Test options (raw from CLI or programmatic use)
+ *        baseConfig - Test options from a config file
  * @returns Test result with ID and results path
  * @throws If the test fails
  * @private
  */
 async function executeTest(
   options: LaunchOptions,
+  baseConfig: LaunchOptions
 ): Promise<SuccessfulTestResult> {
+  const positionalUrl = program.args[0];
+  const resolvedUrl = positionalUrl ?? (options.url || baseConfig.url);
+  if (!resolvedUrl) {
+    console.error(
+      "error: missing required URL argument. Use 'telescope --help' for usage.",
+    );
+    process.exit(1);
+  }
+  // Auto-prepend a scheme when the URL was provided without one
+  // (e.g. `telescope example.com` -> `https://example.com`, or
+  // `telescope localhost:3000` -> `http://localhost:3000`; see
+  // normalizeUrlScheme for the rules). Reject non-http(s) URLs up front so
+  // the user gets a clearer error than the deeper validation in executeTest
+  // would produce. CLI-only convenience; programmatic callers (launchTest,
+  // Telescope) must provide a well-formed http(s) URL.
+  try {
+    options.url = normalizeUrlScheme(resolvedUrl);
+  } catch (err) {
+    throw err;
+  }
+
   // Enforce the http(s)-only contract here so it applies to both the CLI
   // and programmatic callers. The CLI normalizes scheme-less inputs to
   // either http:// or https:// (see normalizeUrlScheme; localhost-equivalent
@@ -157,10 +180,19 @@ async function executeTest(
       `Only http:// and https:// URLs are supported (got "${options.url}")`,
     );
   }
+
+  // Do not let undefined values override earlier values
   const config: LaunchOptions = {
+    url: options.url,
     ...DEFAULT_OPTIONS,
-    ...options,
+    ...(Object.fromEntries(
+      Object.entries(baseConfig).filter(([_, val]) => val !== undefined)
+    )),
+    ...(Object.fromEntries(
+      Object.entries(options).filter(([_, val]) => val !== undefined)
+    )),
   };
+
   const browserConfig = new BrowserConfig().getBrowserConfig(
     config.browser || 'chrome',
     config,
@@ -228,7 +260,8 @@ async function executeTest(
  */
 export async function launchTest(options: LaunchOptions): Promise<TestResult> {
   try {
-    return await executeTest(options);
+    const baseConfig = options.config ? getBaseConfig(options.config) : { url: '' };
+    return await executeTest(options, baseConfig);
   } catch (error) {
     return {
       success: false,
@@ -247,7 +280,9 @@ export default function browserAgent(): void {
       '[url]',
       'URL to run tests against. Can also be provided via -u/--url.',
     )
-    .addOption(new Option('-u, --url <url>', 'URL to run tests against'))
+    .addOption( // Required, but might be in the configuration file
+      new Option('-u, --url <url>', 'URL to run tests against')
+    )
     .version(pkgVersion, '-v, --version', 'Output the package version number')
     .addOption(
       new Option(
@@ -307,7 +342,6 @@ export default function browserAgent(): void {
     )
     .addOption(
       new Option('--delayUsing <string>', 'Method to use to delay responses')
-        .default(DEFAULT_OPTIONS.delayUsing)
         .choices(['continue', 'fulfill']),
     )
     .addOption(
@@ -326,7 +360,6 @@ export default function browserAgent(): void {
         '--connectionType <string>',
         'Network connection type. By default, no throttling is applied.',
       )
-        .default(DEFAULT_OPTIONS.connectionType)
         .choices([
           'cable',
           'dsl',
@@ -354,51 +387,37 @@ export default function browserAgent(): void {
       new Option(
         '--frameRate <int>',
         'Filmstrip frame rate, in frames per second',
-      )
-        .default(DEFAULT_OPTIONS.frameRate)
-        .argParser(v => parseNumeric(PositiveIntSchema, v, '--frameRate')),
+      ).argParser(v => parseNumeric(PositiveIntSchema, v, '--frameRate')),
     )
     .addOption(
-      new Option('--disableJS', 'Disable JavaScript').default(
-        DEFAULT_OPTIONS.disableJS,
-      ),
+      new Option('--disableJS', 'Disable JavaScript')
     )
     .addOption(
-      new Option('--debug', 'Output debug lines').default(
-        DEFAULT_OPTIONS.debug,
-      ),
+      new Option('--debug', 'Output debug lines')
     )
     .addOption(
       new Option(
         '--auth <object>',
         'Basic HTTP authentication (Expects: {"username": "", "password": ""})',
-      )
-        .argParser(v => parseJSON('--auth', v, AuthSchema))
-        .default(DEFAULT_OPTIONS.auth),
+      ).argParser(v => parseJSON('--auth', v, AuthSchema))
     )
     .addOption(
       new Option(
         '--timeout <int>',
         'Maximum time (in milliseconds) to wait for test to complete',
-      )
-        .default(DEFAULT_OPTIONS.timeout)
-        .argParser(v => parseNumeric(PositiveIntSchema, v, '--timeout')),
+      ).argParser(v => parseNumeric(PositiveIntSchema, v, '--timeout')),
     )
     .addOption(
-      new Option('--html', 'Generate HTML report').default(
-        DEFAULT_OPTIONS.html,
-      ),
+      new Option('--html', 'Generate HTML report')
     )
     .addOption(
       new Option(
         '--openHtml',
         'Open HTML report in browser (requires --html)',
-      ).default(DEFAULT_OPTIONS.openHtml),
+      )
     )
     .addOption(
-      new Option('--list', 'Generate list of results in HTML').default(
-        DEFAULT_OPTIONS.list,
-      ),
+      new Option('--list', 'Generate list of results in HTML')
     )
     .addOption(
       new Option(
@@ -410,19 +429,19 @@ export default function browserAgent(): void {
       new Option(
         '--zip',
         'Zip the results of the test into the results directory.',
-      ).default(DEFAULT_OPTIONS.zip),
+      )
     )
     .addOption(
       new Option(
         '--uploadUrl <string>',
         'Upload zipped results to URL. Must be a valid URL if provided.',
-      ).default(DEFAULT_OPTIONS.uploadUrl),
+      )
     )
     .addOption(
       new Option(
         '--dry',
         'Dry run (do not run test, just save config and cleanup)',
-      ).default(DEFAULT_OPTIONS.dry),
+      )
     )
     .addOption(new Option('--userAgent <string>', 'Set the browser User Agent'))
     .addOption(
@@ -436,9 +455,19 @@ export default function browserAgent(): void {
         '--device <string>',
         'Device to use for device emulation (viewport size, DPR, touch events). Also sets the default browser engine unless overridden with -b. Devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)',
       ),
-    );
-
-  program.parse(process.argv);
+    )
+    .addOption(
+      new Option(
+        '--config <string>',
+        'Use a configuration file for the options',
+      )
+    )
+    // .action((opts) => {
+    //   if (!opts.url && !opts.config) {
+    //     program.error(`Error: - required option '-u, --url <url>' not specified`);
+    //   }
+    // })
+    .parse(process.argv);
 
   // Show help and exit when invoked with no arguments at all
   // (e.g. `npx @cloudflare/telescope` or bare `telescope`)
@@ -460,26 +489,26 @@ export default function browserAgent(): void {
     );
     process.exit(1);
   }
-  const resolvedUrl = positionalUrl ?? cliOptions.url;
-  if (!resolvedUrl) {
-    console.error(
-      "error: missing required URL argument. Use 'telescope --help' for usage.",
-    );
-    process.exit(1);
-  }
-  // Auto-prepend a scheme when the URL was provided without one
-  // (e.g. `telescope example.com` -> `https://example.com`, or
-  // `telescope localhost:3000` -> `http://localhost:3000`; see
-  // normalizeUrlScheme for the rules). Reject non-http(s) URLs up front so
-  // the user gets a clearer error than the deeper validation in executeTest
-  // would produce. CLI-only convenience; programmatic callers (launchTest,
-  // Telescope) must provide a well-formed http(s) URL.
-  try {
-    cliOptions.url = normalizeUrlScheme(resolvedUrl);
-  } catch (err) {
-    console.error(`error: ${(err as Error).message}`);
-    process.exit(1);
-  }
+  // const resolvedUrl = positionalUrl ?? cliOptions.url;
+  // if (!resolvedUrl) {
+  //   console.error(
+  //     "error: missing required URL argument. Use 'telescope --help' for usage.",
+  //   );
+  //   process.exit(1);
+  // }
+  // // Auto-prepend a scheme when the URL was provided without one
+  // // (e.g. `telescope example.com` -> `https://example.com`, or
+  // // `telescope localhost:3000` -> `http://localhost:3000`; see
+  // // normalizeUrlScheme for the rules). Reject non-http(s) URLs up front so
+  // // the user gets a clearer error than the deeper validation in executeTest
+  // // would produce. CLI-only convenience; programmatic callers (launchTest,
+  // // Telescope) must provide a well-formed http(s) URL.
+  // try {
+  //   cliOptions.url = normalizeUrlScheme(resolvedUrl);
+  // } catch (err) {
+  //   console.error(`error: ${(err as Error).message}`);
+  //   process.exit(1);
+  // }
 
   let options: LaunchOptions;
 

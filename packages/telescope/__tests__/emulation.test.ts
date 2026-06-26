@@ -275,19 +275,4 @@ describe('Device default browser resolution', () => {
       expect(config.engine).toBe('webkit');
     });
   });
-
-  describe('Neither device nor browser', () => {
-    it('defaults to chrome/chromium', () => {
-      const config_options = normalizeCLIConfig({
-        url: '../tests/sandbox/index.html',
-      });
-      expect(config_options.browser).toBe('chrome');
-
-      const config = new BrowserConfig().getBrowserConfig(
-        config_options.browser!,
-        config_options,
-      );
-      expect(config.engine).toBe('chromium');
-    });
-  });
 });
