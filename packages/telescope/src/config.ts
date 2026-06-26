@@ -156,6 +156,10 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     config.device = playwrightDevice as CustomDeviceDescriptor;
   }
 
+  if (options.a11y) {
+    config.a11y = options.a11y;
+  }
+
   // resolve browser: device default first, explicit -b overrides, then fallback
   if (config.device) {
     config.browser = ENGINE_TO_BROWSER_NAME[config.device.defaultBrowserType];
