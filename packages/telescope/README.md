@@ -20,9 +20,34 @@ Inside the test folder, the following files are added:
 
 ## Parameters
 
-A full list of parameters can be printed to the terminal by running `telescope --help`. Here's what's currently supported:
+A full list of parameters can be printed to the terminal by running `telescope --help`. Running `telescope` (or `npx @cloudflare/telescope`) with no arguments also prints the help message.
+
+The URL to test can be provided either as a positional argument or via the `-u`/`--url` option:
 
 ```
+telescope https://example.com
+telescope -u https://example.com
+```
+
+If the URL is provided without a scheme, one is prepended automatically:
+
+```
+telescope example.com         # tests https://example.com
+telescope localhost:3000      # tests http://localhost:3000  (localhost defaults to http)
+telescope 127.0.0.1:8080      # tests http://127.0.0.1:8080  (loopback defaults to http)
+telescope app.localhost       # tests http://app.localhost
+```
+
+Localhost-equivalent hosts (`localhost`, `*.localhost`, and the `127.0.0.0/8` loopback range) default to `http://` since local dev servers rarely have TLS configured. All other scheme-less hosts default to `https://`. An explicit scheme always wins (`telescope https://localhost:3000` stays https).
+
+Only `http://` and `https://` URLs are supported. Other schemes (`file://`, `ftp://`, `about:blank`, `data:...`, `mailto:...`, etc.) are rejected with an error.
+
+Here's what's currently supported:
+
+```
+Arguments:
+  url                           URL to run tests against. Can also be provided via -u/--url.
+
 Options:
   -u, --url <url>               URL to run tests against
   -b, --browser <browser_name>  Browser to run tests with (choices: "chrome", "chrome-beta", "canary", "edge", "safari", "firefox", default: "chrome")
@@ -216,7 +241,7 @@ Network throttling (`--connectionType`) requires OS-level traffic shaping via th
 
 ```bash
 npm install -g @cloudflare/telescope
-telescope -u https://example.com
+telescope https://example.com
 ```
 
 The `postinstall` script automatically runs `npx playwright install` to download Chrome, Firefox, and Safari (~700MB, may take 2–5 minutes).

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Progressive fixture — pre-rendered chart + JS upgrade</title>
+    <style>
+      /* Theme-aware body background reacts to the OS colour scheme via
+         media query — but deliberately does NOT communicate with the
+         <waterfall-chart> component (no `data-theme` mapping). Use this
+         fixture to test the chart after progressive JS enhancement. */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        color: #111827;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background: #111827;
+          color: #f9fafb;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="/waterfall.css" />
+    <script type="module" src="/waterfall.js"></script>
+  </head>
+  <body>
+    <waterfall-chart>
+      <!-- WATERFALL_CONTENT -->
+    </waterfall-chart>
+  </body>
+</html>

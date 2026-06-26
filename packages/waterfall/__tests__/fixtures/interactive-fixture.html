@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Interactive fixture — empty chart, HAR injected via JS</title>
+    <style>
+      /* Theme-aware body background reacts to the OS colour scheme via
+         media query — but deliberately does NOT communicate with the
+         <waterfall-chart> component (no `data-theme` mapping). Use this
+         fixture to test the chart in fully-dynamic mode by setting the
+         `.har` property on the empty <waterfall-chart> from test code. */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        color: #111827;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background: #111827;
+          color: #f9fafb;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="/waterfall.css" />
+    <script type="module" src="/waterfall.js"></script>
+  </head>
+  <body>
+    <waterfall-chart></waterfall-chart>
+  </body>
+</html>

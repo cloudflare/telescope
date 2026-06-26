@@ -1,6 +1,6 @@
 {
   "name": "@cloudflare/telescope",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Cross-browser performance testing agent and library, built on Playwright. Collects HAR, Web Vitals, screenshots, filmstrip, and video.",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -64,20 +64,20 @@
     "provenance": true
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.60.0",
     "@types/adm-zip": "^0.5.7",
     "@types/ejs": "^3.1.5",
     "@types/node": "^25.2.1",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
-    "@vitest/coverage-v8": "^4.0.6",
+    "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^9.39.2",
     "msw": "^2.12.10",
     "prettier": "^3.6.2",
     "prettier-plugin-ejs": "^1.0.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.6"
+    "vitest": "^4.1.8"
   },
   "dependencies": {
     "@axe-core/playwright": "^4.11.1",
@@ -86,8 +86,8 @@
     "commander": "^10.0.0",
     "ejs": "^3.1.10",
     "ffmpeg": "^0.0.4",
-    "playwright": "^1.59.1",
-    "playwright-webkit": "^1.59.1",
+    "playwright": "^1.60.0",
+    "playwright-webkit": "^1.60.0",
     "zod": "^3.25.76"
   },
   "engines": {
