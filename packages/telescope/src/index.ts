@@ -149,32 +149,23 @@ async function executeTest(
   options: LaunchOptions,
   baseConfig: LaunchOptions
 ): Promise<SuccessfulTestResult> {
-  const positionalUrl = program.args[0];
-  const resolvedUrl = positionalUrl ?? (options.url || baseConfig.url);
+  const resolvedUrl = options.url || baseConfig.url;
   if (!resolvedUrl) {
-    console.error(
-      "error: missing required URL argument. Use 'telescope --help' for usage.",
+    throw new Error(
+      "Missing required URL argument. Use 'telescope --help' for usage.",
     );
-    process.exit(1);
   }
   // Auto-prepend a scheme when the URL was provided without one
   // (e.g. `telescope example.com` -> `https://example.com`, or
   // `telescope localhost:3000` -> `http://localhost:3000`; see
   // normalizeUrlScheme for the rules). Reject non-http(s) URLs up front so
   // the user gets a clearer error than the deeper validation in executeTest
-  // would produce. CLI-only convenience; programmatic callers (launchTest,
-  // Telescope) must provide a well-formed http(s) URL.
-  try {
-    options.url = normalizeUrlScheme(resolvedUrl);
-  } catch (err) {
-    throw err;
-  }
+  // would produce. localhost-equivalent hosts default to http://) before
+  // reaching this point.
+  options.url = normalizeUrlScheme(resolvedUrl);
 
   // Enforce the http(s)-only contract here so it applies to both the CLI
-  // and programmatic callers. The CLI normalizes scheme-less inputs to
-  // either http:// or https:// (see normalizeUrlScheme; localhost-equivalent
-  // hosts default to http://) before reaching this point; programmatic
-  // callers must pass a well-formed http(s) URL.
+  // and programmatic callers.
   if (!isHttpUrl(options.url)) {
     throw new Error(
       `Only http:// and https:// URLs are supported (got "${options.url}")`,
@@ -462,11 +453,6 @@ export default function browserAgent(): void {
         'Use a configuration file for the options',
       )
     )
-    // .action((opts) => {
-    //   if (!opts.url && !opts.config) {
-    //     program.error(`Error: - required option '-u, --url <url>' not specified`);
-    //   }
-    // })
     .parse(process.argv);
 
   // Show help and exit when invoked with no arguments at all
@@ -489,26 +475,6 @@ export default function browserAgent(): void {
     );
     process.exit(1);
   }
-  // const resolvedUrl = positionalUrl ?? cliOptions.url;
-  // if (!resolvedUrl) {
-  //   console.error(
-  //     "error: missing required URL argument. Use 'telescope --help' for usage.",
-  //   );
-  //   process.exit(1);
-  // }
-  // // Auto-prepend a scheme when the URL was provided without one
-  // // (e.g. `telescope example.com` -> `https://example.com`, or
-  // // `telescope localhost:3000` -> `http://localhost:3000`; see
-  // // normalizeUrlScheme for the rules). Reject non-http(s) URLs up front so
-  // // the user gets a clearer error than the deeper validation in executeTest
-  // // would produce. CLI-only convenience; programmatic callers (launchTest,
-  // // Telescope) must provide a well-formed http(s) URL.
-  // try {
-  //   cliOptions.url = normalizeUrlScheme(resolvedUrl);
-  // } catch (err) {
-  //   console.error(`error: ${(err as Error).message}`);
-  //   process.exit(1);
-  // }
 
   let options: LaunchOptions;
 
@@ -517,6 +483,10 @@ export default function browserAgent(): void {
   } catch (err) {
     console.error(err);
     process.exit(1);
+  }
+
+  if (positionalUrl) {
+    options.url = positionalUrl;
   }
 
   // Capture the CLI command for repeatability

@@ -52,12 +52,12 @@ const CustomDeviceSchema = z.object({
 });
 
 export const ConfigCLIOptionsSchema = z.object({
-  auth: AuthSchema.or(z.boolean()).optional(),
+  auth: AuthSchema.or(z.literal(false)).optional(),
   agentExtra: z.string().optional(),
   block: z.array(z.string()).optional(),
   blockDomains: z.array(z.string()).optional(),
   browser: z.enum(['chrome','chrome-beta', 'canary', 'firefox', 'safari', 'edge']).optional(),
-  connectionType: z.enum(['3g', '3gfast', '3gslow', '2g', 'cable', 'dsl', '4g', 'fios']).or(z.boolean()).optional(),
+  connectionType: z.enum(['3g', '3gfast', '3gslow', '2g', 'cable', 'dsl', '4g', 'fios']).or(z.literal(false)).optional(),
   cookies: z.array(CookieSchema).optional(),
   cpuThrottle: z.coerce.number().optional(),
   debug: z.coerce.boolean().optional(),
@@ -107,9 +107,11 @@ export const ConfigFileSchema = z.object({
       new URL(uri);
       return true;
     } catch {
-      return { message: 'Invalid URL format in config file' };
+      return false;
     }
-  }).optional(),
+  },
+  (uri) => ({ message: `Invalid URL format in config file (Got ${uri})` })
+  ).optional(),
   options: ConfigCLIOptionsSchema.optional(),
   browserConfig: BrowserConfigSchema.optional(),
 });

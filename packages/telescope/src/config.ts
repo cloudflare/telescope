@@ -1,4 +1,4 @@
-import { access, constants, readFileSync, stat } from 'node:fs';
+import { accessSync, constants, readFileSync, statSync } from 'node:fs';
 
 import type {
   BrowserConfigType,
@@ -182,43 +182,39 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
 export function getBaseConfig(configFileName: string): LaunchOptions {
   let baseConfig: ConfigFileType = { };
 
-  access(configFileName, constants.R_OK, (err) => {
-    if (err) {
-      throw new Error(`Can not read file ${configFileName}`);
-    }
-  });
+  try {
+    accessSync(configFileName, constants.R_OK);
+  } catch (err) {
+    throw new Error(`Can not read file ${configFileName}: ${(err as Error).message}`);
+  }
 
-  stat(configFileName, (err, cfgStat) => {
-    if (err) {
-      throw err;
-    }
-
-    if (cfgStat.size > 4096) { // Arbitrary size
-      throw new Error(`Config file ${configFileName} is suspect - oversized.`);
-    }
-  });
+  const cfgStat = statSync(configFileName);
+  if (cfgStat.size > 32768) { // Arbitrary size, headers can be big
+    throw new Error(`Config file ${configFileName} is suspect - oversized.`);
+  }
 
   try {
     const cfgData = readFileSync(configFileName, "utf-8");
     const cfgObject = JSON.parse(cfgData);
     baseConfig = ConfigFileSchema.parse(cfgObject);
   } catch (err) {
-    console.error(err);
-    throw new Error(`Problem parsing ${configFileName}`);
+    throw new Error(`Problem parsing ${configFileName}: ${(err as Error).message}`);
   }
 
-  let cfg: LaunchOptions = { url: baseConfig.url || '' }; // Always required
+  let cfg: LaunchOptions = { url: baseConfig.url || '' }; // Always required to exist
 
   if (baseConfig.options) {
     type CommonCLIKeys = Extract<keyof ConfigCLIOptionsType, keyof LaunchOptions>;
+    const configOptions: Partial<LaunchOptions> = {};
 
     for (const key of Object.keys(ConfigCLIOptionsSchema.shape) as CommonCLIKeys[]) {
       const value = baseConfig.options[key];
       if (value !== undefined) {
-        // Safe because of the Extract above
-        cfg[key] = value as any; // eslint-disable-line
+        (configOptions as Record<CommonCLIKeys, unknown>)[key] = value;
       }
     }
+
+    Object.assign(cfg, configOptions);
   }
 
   if (baseConfig.browserConfig) {
