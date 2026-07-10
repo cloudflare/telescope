@@ -9,7 +9,7 @@ import { TestRunner } from './testRunner.js';
 import { ChromeRunner } from './chromeRunner.js';
 import { log, normalizeUrlScheme, isHttpUrl } from './helpers.js';
 import { getBaseConfig, normalizeCLIConfig } from './config.js';
-import { DEFAULT_OPTIONS } from './defaultOptions.js';
+import { DEFAULT_OPTIONS, DEFAULT_BROWSER_WIDTH, DEFAULT_BROWSER_HEIGHT } from './defaultOptions.js';
 import {
   PositiveIntSchema,
   PositiveFloatSchema,
@@ -279,6 +279,7 @@ export default function browserAgent(): void {
       new Option(
         '-b, --browser <browser_name>',
         'Browser to run tests with. Defaults to chrome, or to the device default browser engine if --device is provided.',
+      ).default(null, DEFAULT_OPTIONS.browser
       ).choices([
         'chrome',
         'chrome-beta',
@@ -332,8 +333,9 @@ export default function browserAgent(): void {
       ).argParser(v => parseJSON('--delay', v, DelaySchema)),
     )
     .addOption(
-      new Option('--delayUsing <string>', 'Method to use to delay responses')
-        .choices(['continue', 'fulfill']),
+      new Option('--delayUsing <string>', 'Method to use to delay responses'
+        ).default(null, `${DEFAULT_OPTIONS.delayUsing}`
+        ).choices(['continue', 'fulfill']),
     )
     .addOption(
       new Option(
@@ -366,25 +368,32 @@ export default function browserAgent(): void {
       new Option(
         '--width <int>',
         'Viewport width, in pixels. If both width and device are provided, the width value will override device emulation viewport width.',
+      ).default(null, `${DEFAULT_BROWSER_WIDTH}`
       ).argParser(v => parseNumeric(PositiveIntSchema, v, '--width')),
     )
     .addOption(
       new Option(
         '--height <int>',
         'Viewport height, in pixels. If both height and device are provided, the height value will override device emulation viewport height.',
+      ).default(null, `${DEFAULT_BROWSER_HEIGHT}`
       ).argParser(v => parseNumeric(PositiveIntSchema, v, '--height')),
     )
     .addOption(
       new Option(
         '--frameRate <int>',
         'Filmstrip frame rate, in frames per second',
+      ).default(null, `${DEFAULT_OPTIONS.frameRate}`
       ).argParser(v => parseNumeric(PositiveIntSchema, v, '--frameRate')),
     )
     .addOption(
-      new Option('--disableJS', 'Disable JavaScript')
+      new Option(
+        '--disableJS',
+        `Disable JavaScript (default: ${DEFAULT_OPTIONS.disableJS})`)
     )
     .addOption(
-      new Option('--debug', 'Output debug lines')
+      new Option(
+        '--debug',
+        `Output debug lines (default: ${DEFAULT_OPTIONS.debug})`)
     )
     .addOption(
       new Option(
@@ -396,19 +405,23 @@ export default function browserAgent(): void {
       new Option(
         '--timeout <int>',
         'Maximum time (in milliseconds) to wait for test to complete',
+      ).default(null, `${DEFAULT_OPTIONS.timeout}`
       ).argParser(v => parseNumeric(PositiveIntSchema, v, '--timeout')),
     )
     .addOption(
-      new Option('--html', 'Generate HTML report')
+      new Option(
+        '--html',
+        `Generate HTML report (default: ${DEFAULT_OPTIONS.html})`)
     )
     .addOption(
       new Option(
         '--openHtml',
-        'Open HTML report in browser (requires --html)',
-      )
+        `Open HTML report in browser (requires --html) (default: ${DEFAULT_OPTIONS.openHtml})`)
     )
     .addOption(
-      new Option('--list', 'Generate list of results in HTML')
+      new Option(
+        '--list',
+        `Generate list of results in HTML (default: ${DEFAULT_OPTIONS.list})`)
     )
     .addOption(
       new Option(
@@ -419,8 +432,7 @@ export default function browserAgent(): void {
     .addOption(
       new Option(
         '--zip',
-        'Zip the results of the test into the results directory.',
-      )
+        `Zip the results of the test into the results directory (default: ${DEFAULT_OPTIONS.zip})`)
     )
     .addOption(
       new Option(
@@ -431,8 +443,7 @@ export default function browserAgent(): void {
     .addOption(
       new Option(
         '--dry',
-        'Dry run (do not run test, just save config and cleanup)',
-      )
+        `Dry run (do not run test, just save config and cleanup) (default: ${DEFAULT_OPTIONS.dry})`)
     )
     .addOption(new Option('--userAgent <string>', 'Set the browser User Agent'))
     .addOption(
