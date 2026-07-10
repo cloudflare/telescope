@@ -3,8 +3,16 @@
  * All shared types are defined here and exported for use across the codebase
  */
 
+import type { z } from 'zod'; // for infer
+
 import type { BrowserContext, HTTPCredentials } from 'playwright';
 import type { DelayMethod } from './delay.js';
+import type {
+  BrowserConfigSchema,
+  ConfigCLIOptionsSchema,
+  ConfigFileSchema
+} from './schemas.js';
+
 
 // ============================================================================
 // Cookie Types
@@ -171,6 +179,7 @@ export interface LaunchOptions {
   url: string;
   browser?: BrowserName;
   headers?: Record<string, string>;
+  config?: string | false;
   cookies?: Cookie | Cookie[];
   args?: string[];
   blockDomains?: string[];
@@ -642,6 +651,7 @@ export interface CLIOptions {
   url?: string;
   browser?: string;
   headers?: Record<string, string>;
+  config?: string;
   cookies?: Cookie | Cookie[];
   flags?: string[];
   blockDomains?: string[];
@@ -722,3 +732,11 @@ export interface CustomDeviceDescriptor {
    */
   defaultBrowserType: 'chromium' | 'firefox' | 'webkit';
 }
+
+/**
+ * Possible Command Line Options that came from a configuration file
+ */
+
+export type ConfigCLIOptionsType = z.infer<typeof ConfigCLIOptionsSchema>;
+export type ConfigFileType = z.infer<typeof ConfigFileSchema>;
+export type BrowserConfigType = z.infer<typeof BrowserConfigSchema>;

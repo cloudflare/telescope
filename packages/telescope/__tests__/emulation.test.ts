@@ -2,7 +2,7 @@ import fs from 'fs';
 import type { SuccessfulTestResult } from '../src/index.js';
 import { launchTest } from '../src/index.js';
 import { BrowserConfig } from '../src/browsers.js';
-import { normalizeCLIConfig } from '../src/config.js';
+import { normalizeCLIConfig, resolveOptions } from '../src/config.js';
 import type { LaunchOptions, BrowserConfigOptions } from '../src/types.js';
 import { describe, it, expect, beforeAll } from 'vitest';
 
@@ -23,15 +23,19 @@ describe.each(browsers)(
     describe.each(target_devices)(
       'Setting device emulation updates the config for device: %s',
       device => {
+        let cli_options: LaunchOptions;
         let config_options: LaunchOptions;
         let config: BrowserConfigOptions;
 
         beforeAll(() => {
-          config_options = normalizeCLIConfig({
+          cli_options = normalizeCLIConfig({
             browser,
             device: device,
             url: '../tests/sandbox/index.html',
           });
+          let baseConfig: ConfigFileType = { }; // No config file
+          // Merge options on top of defaults
+          config_options = resolveOptions(cli_options, baseConfig);
           config = new BrowserConfig().getBrowserConfig(
             browser,
             config_options,
@@ -80,17 +84,21 @@ describe.each(browsers)(
     describe.each(target_devices)(
       'Setting device emulation updates the config for device: %s',
       device => {
+        let cli_options: LaunchOptions;
         let config_options: LaunchOptions;
         let config: BrowserConfigOptions;
 
         beforeAll(() => {
-          config_options = normalizeCLIConfig({
+          cli_options = normalizeCLIConfig({
             browser,
             device: device,
             url: '../tests/sandbox/index.html',
             width: 1122,
             height: 3344,
           });
+          let baseConfig: ConfigFileType = { }; // No config file
+          // Merge options on top of defaults
+          config_options = resolveOptions(cli_options, baseConfig);
           config = new BrowserConfig().getBrowserConfig(
             browser,
             config_options,
@@ -208,14 +216,18 @@ describe('Device default browser resolution', () => {
   describe.each(deviceBrowserExpectations)(
     'Device only (no -b): $device',
     ({ device, expectedBrowser, expectedEngine }) => {
+      let cli_options: LaunchOptions;
       let config_options: LaunchOptions;
       let config: BrowserConfigOptions;
 
       beforeAll(() => {
-        config_options = normalizeCLIConfig({
+        cli_options = normalizeCLIConfig({
           device,
           url: '../tests/sandbox/index.html',
         });
+        let baseConfig: ConfigFileType = { }; // No config file
+        // Merge options on top of defaults
+        config_options = resolveOptions(cli_options, baseConfig);
         config = new BrowserConfig().getBrowserConfig(
           config_options.browser!,
           config_options,
@@ -235,15 +247,19 @@ describe('Device default browser resolution', () => {
   describe.each(deviceBrowserExpectations)(
     'Device + explicit -b override: $device',
     ({ device }) => {
+      let cli_options: LaunchOptions;
       let config_options: LaunchOptions;
       let config: BrowserConfigOptions;
 
       beforeAll(() => {
-        config_options = normalizeCLIConfig({
+        cli_options = normalizeCLIConfig({
           device,
           browser: 'firefox',
           url: '../tests/sandbox/index.html',
         });
+        let baseConfig: ConfigFileType = { }; // No config file
+        // Merge options on top of defaults
+        config_options = resolveOptions(cli_options, baseConfig);
         config = new BrowserConfig().getBrowserConfig(
           config_options.browser!,
           config_options,
@@ -262,11 +278,14 @@ describe('Device default browser resolution', () => {
 
   describe('Browser only (no device)', () => {
     it('uses the provided browser', () => {
-      const config_options = normalizeCLIConfig({
+      const cli_options = normalizeCLIConfig({
         browser: 'safari',
         url: '../tests/sandbox/index.html',
       });
-      expect(config_options.browser).toBe('safari');
+      expect(cli_options.browser).toBe('safari');
+      let baseConfig: ConfigFileType = { }; // No config file
+      // Merge options on top of defaults
+      const config_options = resolveOptions(cli_options, baseConfig);
 
       const config = new BrowserConfig().getBrowserConfig(
         config_options.browser!,
@@ -281,11 +300,15 @@ describe('Device default browser resolution', () => {
       const config_options = normalizeCLIConfig({
         url: '../tests/sandbox/index.html',
       });
-      expect(config_options.browser).toBe('chrome');
+
+      let baseConfig: ConfigFileType = { }; // No config file
+      // Merge options on top of defaults
+      const mergedConfig = resolveOptions(config_options, baseConfig);
+      expect(mergedConfig.browser).toBe('chrome');
 
       const config = new BrowserConfig().getBrowserConfig(
-        config_options.browser!,
-        config_options,
+        mergedConfig.browser!,
+        mergedConfig,
       );
       expect(config.engine).toBe('chromium');
     });
