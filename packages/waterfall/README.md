@@ -4,6 +4,8 @@ A self-contained, framework-free web component that renders an HTTP Archive
 (HAR) waterfall chart. Styling lives in a standalone `waterfall.css` — link it
 in `<head>` and the chart renders correctly with or without JavaScript.
 
+**Live demo:** [waterfall.telescopetest.io](https://waterfall.telescopetest.io)
+
 ## Usage
 
 ### 1. Static (CSS-only, no JavaScript)

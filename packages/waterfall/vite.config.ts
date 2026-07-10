@@ -86,4 +86,13 @@ export default defineConfig({
       },
     },
   },
+
+  // Demo-only static assets (theme.js, progressive.js, interactive.js,
+  // demo.css, demo.har) live alongside the entry HTML in `public/`. They
+  // are referenced from the HTML via absolute paths (e.g. `/theme.js`),
+  // which Vite does not rewrite as build inputs, so we mark the same
+  // directory as `publicDir` to have Vite copy them verbatim into
+  // `dist-demo/`. Setting `publicDir` equal to `root` is supported; Vite
+  // just excludes files listed as HTML entry inputs from the copy.
+  publicDir: resolve(__dirname, 'public'),
 });

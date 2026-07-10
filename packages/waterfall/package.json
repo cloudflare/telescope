@@ -36,7 +36,7 @@
   },
   "scripts": {
     "build": "tsc && vite build --config vite.lib.config.ts && chmod +x dist/cli.js",
-    "build:demo": "npm run gen-demo && vite build",
+    "build:demo": "npm run build && npm run gen-demo && vite build",
     "predev": "npm run build",
     "prestart": "npm run build",
     "start": "vite",
@@ -46,7 +46,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "clean": "rm -rf dist node_modules"
+    "clean": "rm -rf dist dist-demo node_modules"
   },
   "devDependencies": {
     "playwright": "^1.60.0",
