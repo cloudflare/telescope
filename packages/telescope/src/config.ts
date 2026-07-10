@@ -305,3 +305,30 @@ function parseJSONArrayOrCommaSeparatedStrings(
 
   return chosen;
 }
+
+/**
+ * Merge the configuration options together so that
+ * command line options > config file > defaults
+ *
+ * @param options - From the command line or programmatic options
+ * @param baseConfig - From config file
+ * @returns config - Merged options, ignoring undefines
+ */
+export function resolveOptions(
+  options: LaunchOptions,
+  baseConfig: LaunchOptions
+): LaunchOptions {
+  // Do not let undefined values override earlier values
+  const config: LaunchOptions = {
+    url: options.url, // Should have been already checked
+    ...DEFAULT_OPTIONS,
+    ...(Object.fromEntries(
+      Object.entries(baseConfig).filter(([_, val]) => val !== undefined)
+    )),
+    ...(Object.fromEntries(
+      Object.entries(options).filter(([_, val]) => val !== undefined)
+    )),
+  };
+
+  return config;
+}

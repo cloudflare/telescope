@@ -8,7 +8,7 @@ import { BrowserConfig } from './browsers.js';
 import { TestRunner } from './testRunner.js';
 import { ChromeRunner } from './chromeRunner.js';
 import { log, normalizeUrlScheme, isHttpUrl } from './helpers.js';
-import { getBaseConfig, normalizeCLIConfig } from './config.js';
+import { getBaseConfig, normalizeCLIConfig, resolveOptions } from './config.js';
 import { DEFAULT_OPTIONS, DEFAULT_BROWSER_WIDTH, DEFAULT_BROWSER_HEIGHT } from './defaultOptions.js';
 import {
   PositiveIntSchema,
@@ -172,17 +172,7 @@ async function executeTest(
     );
   }
 
-  // Do not let undefined values override earlier values
-  const config: LaunchOptions = {
-    url: options.url,
-    ...DEFAULT_OPTIONS,
-    ...(Object.fromEntries(
-      Object.entries(baseConfig).filter(([_, val]) => val !== undefined)
-    )),
-    ...(Object.fromEntries(
-      Object.entries(options).filter(([_, val]) => val !== undefined)
-    )),
-  };
+  const config = resolveOptions(options, baseConfig);
 
   const browserConfig = new BrowserConfig().getBrowserConfig(
     config.browser || 'chrome',
