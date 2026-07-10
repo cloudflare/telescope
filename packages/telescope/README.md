@@ -20,9 +20,34 @@ Inside the test folder, the following files are added:
 
 ## Parameters
 
-A full list of parameters can be printed to the terminal by running `npx . --help`. Here's what's currently supported:
+A full list of parameters can be printed to the terminal by running `telescope --help`. Running `telescope` (or `npx @cloudflare/telescope`) with no arguments also prints the help message.
+
+The URL to test can be provided either as a positional argument or via the `-u`/`--url` option:
 
 ```
+telescope https://example.com
+telescope -u https://example.com
+```
+
+If the URL is provided without a scheme, one is prepended automatically:
+
+```
+telescope example.com         # tests https://example.com
+telescope localhost:3000      # tests http://localhost:3000  (localhost defaults to http)
+telescope 127.0.0.1:8080      # tests http://127.0.0.1:8080  (loopback defaults to http)
+telescope app.localhost       # tests http://app.localhost
+```
+
+Localhost-equivalent hosts (`localhost`, `*.localhost`, and the `127.0.0.0/8` loopback range) default to `http://` since local dev servers rarely have TLS configured. All other scheme-less hosts default to `https://`. An explicit scheme always wins (`telescope https://localhost:3000` stays https).
+
+Only `http://` and `https://` URLs are supported. Other schemes (`file://`, `ftp://`, `about:blank`, `data:...`, `mailto:...`, etc.) are rejected with an error.
+
+Here's what's currently supported:
+
+```
+Arguments:
+  url                           URL to run tests against. Can also be provided via -u/--url.
+
 Options:
   -u, --url <url>               URL to run tests against
   -b, --browser <browser_name>  Browser to run tests with (choices: "chrome", "chrome-beta", "canary", "edge", "safari", "firefox", default: "chrome")
@@ -61,7 +86,7 @@ Options:
 Telescope uses Playwright to control and manage individual browser engines:
 
 ```
-npx . -u https://www.example.com -b firefox
+telescope -u https://www.example.com -b firefox
 ```
 
 And supports the following browsers:
@@ -79,7 +104,7 @@ And supports the following browsers:
 You can set a custom timeout by passing the desired timeout in milliseconds using the `--timeout` parameter. Defaults to 30000, or 30 seconds.
 
 ```
-npx . -u https://www.example.com -b chrome --timeout 50000
+telescope -u https://www.example.com -b chrome --timeout 50000
 ```
 
 ### HTML Report Generation
@@ -95,13 +120,13 @@ You can generate an HTML report of your test results by passing the `--html` par
 #### Generate HTML report
 
 ```
-npx . -u https://example.com -b chrome --html
+telescope -u https://example.com -b chrome --html
 ```
 
 #### Generate and automatically open HTML report
 
 ```
-npx . -u https://example.com -b chrome --html --openHtml
+telescope -u https://example.com -b chrome --html --openHtml
 ```
 
 ### Setting Custom Cookies
@@ -119,19 +144,19 @@ Cookies must have a name and value passed. Optionally, you can also pass in eith
 #### Set a custom cookie for all requests
 
 ```
-npx . -u https://www.example.com -b chrome -c '{"name": "foo", "value": "bar"}'
+telescope -u https://www.example.com -b chrome -c '{"name": "foo", "value": "bar"}'
 ```
 
 #### Set multiple cookies for all requests
 
 ```
-npx . -u https://www.example.com -b chrome -c '[{"name": "foo", "value": "bar"}, {"name": "foo2", "value": "bar2"}]'
+telescope -u https://www.example.com -b chrome -c '[{"name": "foo", "value": "bar"}, {"name": "foo2", "value": "bar2"}]'
 ```
 
 #### Set a custom cookie for only a particular path
 
 ```
-npx . -u https://www.example.com -b chrome -c '{"name": "foo", "value": "bar", "domain":"www.example.com", "path":"/optim"}'
+telescope -u https://www.example.com -b chrome -c '{"name": "foo", "value": "bar", "domain":"www.example.com", "path":"/optim"}'
 ```
 
 ### Disabling JavaScript
@@ -145,7 +170,7 @@ npx . -u https://www.example.com -b chrome -c '{"name": "foo", "value": "bar", "
 You can run tests with JavaScript disabled to see the impact on performance by passing the `--disableJS` parameter like so:
 
 ```
-npx . -u https://playwright.dev/ -b firefox --disableJS
+telescope -u https://playwright.dev/ -b firefox --disableJS
 ```
 
 ### Basic HTTP Authentication
@@ -159,7 +184,7 @@ npx . -u https://playwright.dev/ -b firefox --disableJS
 To test sites [protected with HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication), you can pass the `--auth` parameter. It expects an object with a `username` and `password` like so:
 
 ```
-npx . -u https://newsletter.www.example.com/admin -b safari --auth '{"username": "username", "password": "password"}'
+telescope -u https://newsletter.www.example.com/admin -b safari --auth '{"username": "username", "password": "password"}'
 ```
 
 ### Host overrides
@@ -175,14 +200,14 @@ To override hostnames during a test run, use the `--overrideHost` option with an
 For example, you can cause requests to `cdn.example.com` to route to local web server running on port 8080 via:
 
 ```
-npx . -u https://www.example.com -b firefox \
+telescope -u https://www.example.com -b firefox \
   --overrideHost '{"cdn.example.com": "127.0.0.1:8080"}'
 ```
 
 Note: Firefox uses an HSTS preload list, which automatically upgrades requests prior to Playwright can intercept it. To work around this, you can disable the HSTS preload list with `--firefoxPrefs`:
 
 ```
-npx . -u https://www.example.com -b firefox \
+telescope -u https://www.example.com -b firefox \
   --overrideHost '{"cdn.example.com": "127.0.0.1:8080"}' \
   --firefoxPrefs '{"network.stricttransportsecurity.preloadlist": false}'
 ```
@@ -212,10 +237,21 @@ Network throttling (`--connectionType`) requires OS-level traffic shaping via th
 
 ## Installation
 
-### From npm
+### Quick start
 
 ```bash
 npm install -g @cloudflare/telescope
+telescope https://example.com
+```
+
+The `postinstall` script automatically runs `npx playwright install` to download Chrome, Firefox, and Safari (~700MB, may take 2–5 minutes).
+
+After `npm install -g`, the `telescope` command is on your PATH and can be invoked directly without `npx`. Verify with `which telescope` (Unix) or `where telescope` (Windows).
+
+If you see `command not found: telescope`, your global npm `bin` directory isn't on PATH. Add it with:
+
+```bash
+export PATH="$(npm config get prefix)/bin:$PATH"
 ```
 
 ### From source
@@ -225,6 +261,7 @@ From the repo root:
 ```bash
 npm install
 npm run build -w packages/telescope
+npm link                          # registers the `telescope` command globally
 ```
 
 Or from `packages/telescope/` directly:
@@ -233,13 +270,20 @@ Or from `packages/telescope/` directly:
 cd packages/telescope
 npm install
 npm run build
+npm link
 ```
 
 ### Browsers
 
 ### Chrome, Firefox, and Safari
 
-Telescope will automatically run `npx playwright install` to install `chrome`, `firefox`, and `safari`.
+Telescope's `postinstall` script automatically runs `npx playwright install` to install `chrome`, `firefox`, and `safari`. The download is ~700MB and may take 2–5 minutes.
+
+If you skipped the postinstall (e.g. `npm install --ignore-scripts`), run it manually:
+
+```bash
+npx playwright install
+```
 
 ### Microsoft Edge and Chrome-beta
 

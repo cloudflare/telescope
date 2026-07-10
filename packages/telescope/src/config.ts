@@ -4,12 +4,23 @@ import type {
   ConnectionType,
   BrowserName,
   CustomDeviceDescriptor,
+  PlaywrightEngine,
 } from './types.js';
 import { parseUnknown } from './validation.js';
 import { StringArraySchema } from './schemas.js';
 
 import { DEFAULT_OPTIONS } from './defaultOptions.js';
 import { devices } from 'playwright';
+
+/**
+ * Maps a Playwright engine name to the corresponding Telescope BrowserName.
+ * Used to derive a default browser from a device's defaultBrowserType.
+ */
+const ENGINE_TO_BROWSER_NAME: Record<PlaywrightEngine, BrowserName> = {
+  chromium: 'chrome',
+  firefox: 'firefox',
+  webkit: 'safari',
+};
 
 /**
  * Normalize CLI options into a typed LaunchOptions config.
@@ -20,13 +31,21 @@ import { devices } from 'playwright';
  * Since the only caller is the CLI path, inputs are already validated by
  * Commander's argParser callbacks before they reach here.
  *
+ * The caller (browserAgent) is responsible for resolving the URL from either
+ * the positional argument or the `--url` flag and must ensure `options.url` is
+ * set before calling this function. We assert that contract here.
+ *
  * @param options - CLI options (typed fields already validated by Commander)
  * @returns Normalized config object with correct types and defaults applied
+ * @throws If `options.url` is not set (programmer error: caller broke contract)
  */
 export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
+  if (!options.url) {
+    throw new Error('normalizeCLIConfig: url is required');
+  }
   const config: LaunchOptions = {
     url: options.url,
-    browser: (options.browser as BrowserName) || DEFAULT_OPTIONS.browser,
+    browser: options.browser as BrowserName | undefined,
     width: options.width,
     height: options.height,
     frameRate: options.frameRate ?? DEFAULT_OPTIONS.frameRate,
@@ -136,6 +155,17 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     // the 'device' in config is the playwright object with device metadata
     config.device = playwrightDevice as CustomDeviceDescriptor;
   }
+
+  // resolve browser: device default first, explicit -b overrides, then fallback
+  if (config.device) {
+    config.browser = ENGINE_TO_BROWSER_NAME[config.device.defaultBrowserType];
+  }
+
+  if (options.browser) {
+    config.browser = options.browser as BrowserName;
+  }
+
+  config.browser = config.browser ?? DEFAULT_OPTIONS.browser;
 
   return config;
 }

@@ -1,7 +1,9 @@
 {
-  "name": "telescope-web",
+  "name": "@cloudflare/telescope-web",
+  "private": true,
   "type": "module",
   "version": "0.0.1",
+  "description": "Telescope web UI — Astro + Cloudflare Workers app for viewing test results. Not published to npm.",
   "scripts": {
     "dev": "cross-env CLOUDFLARE_ENV=development astro dev",
     "dev:setup": "./scripts/dev-setup.sh",
@@ -16,7 +18,8 @@
     "deploy:staging": "npm run build:staging && wrangler deploy --env staging",
     "generate": "prisma generate",
     "studio": "prisma studio",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:ui": "playwright test -c playwright.config.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.1.10",
@@ -24,22 +27,23 @@
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-d1": "^7.5.0",
     "@prisma/client": "^7.5.0",
-    "@vitest/coverage-v8": "^4.0.6",
-    "astro": "^6.1.8",
+    "@vitest/coverage-v8": "^4.1.8",
+    "astro": "^6.3.2",
     "fflate": "^0.8.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "zod": "^4.3.6",
-    "vitest": "^4.0.6"
+    "vitest": "^4.1.8",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "playwright": "^1.60.0",
     "cross-env": "^10.1.0",
     "dotenv": "^17.2.4",
     "prisma": "^7.7.0",
-    "wrangler": "^4.61.0"
+    "wrangler": "^4.104.0"
   },
   "engines": {
     "node": ">=24",

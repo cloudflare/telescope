@@ -12,7 +12,10 @@
         "test": "npm run test --workspaces",
         "lint": "npm run lint --workspaces",
         "lint:fix": "npm run lint:fix --workspaces",
-        "prettier": "npm run prettier --workspaces"
+        "prettier": "npm run prettier --workspaces",
+        "changeset": "changeset",
+        "version-packages": "changeset version && npm install --package-lock-only",
+        "release": "changeset publish"
     },
     "bin": {
         "telescope": "packages/telescope/dist/src/cli.js"
@@ -28,5 +31,9 @@
     "license": "Apache-2.0",
     "engines": {
         "node": ">=24"
+    },
+    "devDependencies": {
+        "@changesets/changelog-github": "^0.6.0",
+        "@changesets/cli": "^2.27.0"
     }
 }

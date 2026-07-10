@@ -264,7 +264,8 @@ class TestRunner {
       await tmpbrowser.close();
 
       this.selectedBrowser.userAgent = originalUserAgent.concat(
-        this.options.agentExtra,
+        " ",
+        this.options.agentExtra.trim(),
       );
     }
 

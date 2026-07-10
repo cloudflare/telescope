@@ -26,27 +26,21 @@ A TypeScript CLI and Node.js library that launches real browsers, collects perfo
 
 ### Quick start
 
-From the repo root:
+Install from npm:
+
+```bash
+npm install -g @cloudflare/telescope
+telescope -u https://example.com -b chrome
+```
+
+The `postinstall` script automatically downloads Playwright's browser binaries (~700MB).
+
+Or from a clone of this repo:
 
 ```bash
 npm install
 npm run build -w packages/telescope
-npx . -u https://example.com -b chrome
-```
-
-Or from `packages/telescope/` directly:
-
-```bash
-cd packages/telescope
-npm install
-npm run build
-npx . -u https://example.com -b chrome
-```
-
-Or install from npm and use the CLI:
-
-```bash
-npm install -g @cloudflare/telescope
+npm link                          # registers `telescope` globally
 telescope -u https://example.com -b chrome
 ```
 
