@@ -59,6 +59,24 @@ function srcAliasPlugin(): Plugin {
   };
 }
 
+function lazyModulePlugin(): Plugin {
+  return {
+    name: 'lazy-module',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (!ctx.filename.endsWith('index.html')) return html;
+        const chunk = Object.values(ctx.bundle ?? {}).find(
+          (c) => c.type === 'chunk' && c.name === 'waterfall',
+        );
+        if (!chunk) return html;
+        return html.replace('/waterfall/waterfall.js', '/' + chunk.fileName);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   // Serve public/ as the web root: index.html lives at /
   root: resolve(__dirname, 'public'),
@@ -73,7 +91,7 @@ export default defineConfig({
     },
   },
 
-  plugins: [srcAliasPlugin()],
+  plugins: [srcAliasPlugin(), lazyModulePlugin()],
 
   build: {
     outDir: resolve(__dirname, 'dist-demo'),
