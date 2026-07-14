@@ -59,6 +59,24 @@ function srcAliasPlugin(): Plugin {
   };
 }
 
+function lazyModulePlugin(): Plugin {
+  return {
+    name: 'lazy-module',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (!ctx.filename.endsWith('index.html')) return html;
+        const chunk = Object.values(ctx.bundle ?? {}).find(
+          (c) => c.type === 'chunk' && c.name === 'waterfall',
+        );
+        if (!chunk) return html;
+        return html.replace('/waterfall/waterfall.js', '/' + chunk.fileName);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   // Serve public/ as the web root: index.html lives at /
   root: resolve(__dirname, 'public'),
@@ -73,7 +91,7 @@ export default defineConfig({
     },
   },
 
-  plugins: [srcAliasPlugin()],
+  plugins: [srcAliasPlugin(), lazyModulePlugin()],
 
   build: {
     outDir: resolve(__dirname, 'dist-demo'),
@@ -86,4 +104,13 @@ export default defineConfig({
       },
     },
   },
+
+  // Demo-only static assets (theme.js, progressive.js, interactive.js,
+  // demo.css, demo.har) live alongside the entry HTML in `public/`. They
+  // are referenced from the HTML via absolute paths (e.g. `/theme.js`),
+  // which Vite does not rewrite as build inputs, so we mark the same
+  // directory as `publicDir` to have Vite copy them verbatim into
+  // `dist-demo/`. Setting `publicDir` equal to `root` is supported; Vite
+  // just excludes files listed as HTML entry inputs from the copy.
+  publicDir: resolve(__dirname, 'public'),
 });

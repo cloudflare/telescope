@@ -7,9 +7,12 @@ btn.addEventListener(
     btn.disabled = true;
     status.textContent = 'Loading…';
 
+    const inert = document.querySelector(`script[type="application/wf-lazy"]`);
+    const src = inert ? inert.getAttribute('src') : '/waterfall/waterfall.js';
+
     const s = document.createElement('script');
     s.type = 'module';
-    s.src = '/waterfall/waterfall.js';
+    s.src = src;
     s.addEventListener('load', function () {
       status.textContent =
         '✓ Web component active — filters and row details now work.';
