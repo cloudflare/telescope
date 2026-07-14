@@ -258,6 +258,7 @@ export default function browserAgent(): void {
         'chrome-beta',
         'canary',
         'edge',
+        'chromium',
         'safari',
         'firefox',
       ]),
