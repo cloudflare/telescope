@@ -90,3 +90,12 @@ export function retrieveResources(
     'resources',
   );
 }
+
+/**
+ * Blocks the thread for ms milliseconds by timing out while waiting for a
+ * shared memory location to change (which will not happen)
+ **/
+
+export function blockingSleep(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}

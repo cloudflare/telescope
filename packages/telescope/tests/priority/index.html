@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>HAR Priority test</title>
+    <link rel="stylesheet" href="style.css">
+    <script defer src="script.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <h1>HAR Priority test</h1>
+    <p>
+      <img alt="telescope icon" width="51" height="52" src="telescope.png?first0" />
+      <img alt="telescope icon" width="51" height="52" src="telescope.png?first1" />
+      <img alt="telescope icon" width="51" height="52" src="telescope.png?first2" />
+      <img alt="telescope icon" width="51" height="52" src="telescope.png?first3" />
+      <img alt="telescope icon" width="51" height="52" src="telescope.png?first4" />
+      <img alt="telescope icon" width="51" height="52" src="telescope.png?first5" />
+      <img alt="telescope icon" width="51" height="52" src="telescope.png?first6" />
+      <img alt="telescope icon" width="51" height="52" src="telescope.png?first7" />
+      <img alt="telescope icon" width="51" height="52" src="telescope.png?first8" />
+      <img alt="telescope icon" width="51" height="52" src="telescope.png?first9" />
+    </p>
+    <p>
+      <img alt="large telescope icon" width="102" height="104" src="telescope.png?first11" />
+      <img alt="large telescope icon" width="102" height="104" src="telescope.png?first12" />
+      <img alt="large telescope icon" width="102" height="104" src="telescope.png?first13" />
+      <img alt="large telescope icon" width="102" height="104" src="telescope.png?first14" />
+      <img alt="large telescope icon" width="102" height="104" src="telescope.png?first15" />
+    </p>
+    <p>
+      This test page is to check the initial priority and final priority of the
+      image requests are recorded correctly in the HAR file. The <em>first</em>
+      sets of images are <span class="em">above-the-fold</span> and so the
+      browser will increase their priority.  <em>At the moment, Chromium
+      based browsers increase the priority of the first <b>5</b> large
+      (&gt; 10,000 pixels) images to <strong>Medium</strong></em> before
+      further increasing them.
+    </p>
+    <p>
+      The <em>second</em> image is <span class="em">below-the-fold</span> and
+      so should have a <strong>Low</strong> priority. The <em>third</em> image
+      asks the browser to increase it's priority and so <u>should not</u> have a
+      <strong>Low</strong> priority. The final image should have the default
+      <strong>Low</strong> priority that images
+      <span class="em">below-the-fold</span> get.
+    </p>
+    <h2>Second image</h2>
+    <img alt="large telescope icon" width="51" height="52" src="telescope.png?second" />
+    <h2>Third image</h2>
+    <img alt="large telescope icon" width="51" height="52" src="telescope.png?third" fetchpriority="high" />
+    <h2>Fourth image</h2>
+    <img alt="large telescope icon" width="51" height="52" src="telescope.png?fourth" />
+  </body>
+</html>
