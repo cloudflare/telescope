@@ -571,6 +571,8 @@ export interface HarEntry {
     content: {
       size: number;
       mimeType: string;
+      text?: string;
+      encoding?: string;
     };
   };
   time: number;
@@ -624,6 +626,18 @@ export interface HarLog {
  */
 export interface HarData {
   log: HarLog;
+}
+
+// ============================================================================
+// Baseline Types
+// ============================================================================
+
+/**
+ * A block of CSS extracted from a HAR, with its origin location.
+ */
+export interface CSSSource {
+  css: string;
+  file: string;
 }
 
 // ============================================================================
