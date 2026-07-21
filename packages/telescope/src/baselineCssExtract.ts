@@ -18,7 +18,7 @@ export function extractCSSFromHar(harData: HarData): CSSSource[] {
     const { text, encoding, mimeType } = entry.response.content;
     if (!text) continue;
 
-    if (mimeType.includes('text/css')) {
+    if (mimeType.toLowerCase().startsWith('text/css')) {
       sources.push({
         css: decodeContent(text, encoding),
         file: entry.request.url,
