@@ -1,5 +1,11 @@
 # @cloudflare/telescope
 
+## 1.2.0
+
+### Minor Changes
+
+- [#310](https://github.com/cloudflare/telescope/pull/310) [`9e7f91e`](https://github.com/cloudflare/telescope/commit/9e7f91eb313a20748066daa2ce4aa2bf425e3e72) Thanks [@sergeychernyshev](https://github.com/sergeychernyshev)! - Fetch priority support, added chromium to browser options.
+
 ## 1.1.1
 
 ### Patch Changes
