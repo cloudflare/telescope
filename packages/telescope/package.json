@@ -71,7 +71,7 @@
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
     "@vitest/coverage-v8": "^4.1.8",
-    "eslint": "^9.39.2",
+    "eslint": "^10.7.0",
     "msw": "^2.12.10",
     "prettier": "^3.6.2",
     "prettier-plugin-ejs": "^1.0.3",
