@@ -572,7 +572,7 @@ export interface HarEntry {
       size: number;
       mimeType: string;
       text?: string;
-      encoding?: string;
+      encoding?: 'base64';
     };
   };
   time: number;
