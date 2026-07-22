@@ -36,7 +36,7 @@ export function extractCSSFromHar(harData: HarData): CSSSource[] {
  * @param encoding - The `content.encoding` value, if present.
  * @returns The decoded body as UTF-8 text.
  */
-function decodeContent(text: string, encoding?: string): string {
+function decodeContent(text: string, encoding?: 'base64'): string {
   if (encoding === 'base64') {
     return Buffer.from(text, 'base64').toString('utf8');
   }
