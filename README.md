@@ -92,6 +92,10 @@ packages/
 - **`test.yml`** — runs on every push and PR (excluding `packages/telescope-web/**` changes). Builds `packages/telescope` and runs the full browser test suite inside the official Playwright Docker container.
 - **`deploy.yml`** — runs on push to `main` when `packages/telescope-web/**` changes. Applies D1 migrations, builds, and deploys to Cloudflare Workers.
 
+## NPM Releases
+
+We use `changesets` package to maintain changelog and publish `telescope` and `waterfall` packages to NPM registry. See [.changeset/README.md](.changeset/README.md) for instructions on how to use it.
+
 ## License
 
 Apache 2.0 — see [LICENSE](./LICENSE).
