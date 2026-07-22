@@ -50,21 +50,20 @@ Arguments:
 
 Options:
   -u, --url <url>               URL to run tests against
-  -b, --browser <browser_name>  Browser to run tests with (choices: "chrome", "chrome-beta", "canary", "edge", "safari", "firefox", default: "chrome")
+  -v, --version                 Output the package version number
+  -b, --browser <browser_name>  Browser to run tests with. Defaults to chrome, or to the device default browser engine if --device is provided. (choices: "chrome", "chrome-beta", "chromium", "canary", "edge", "safari", "firefox")
   -h, --headers <object>        Any custom headers to apply to requests
   -c, --cookies <object>        Any custom cookies to apply
   -f, --flags <string>          A comma separated list of Chromium flags to launch Chrome with. See: https://peter.sh/experiments/chromium-command-line-switches/
-  --agentExtra <string>         A string to append to the end of the default User-Agent. Takes precedence over --userAgent option.
-  --device '<string>'           Device to use device emulation (viewport size, DPR, touch events); devices are based on the Playwright device list (see https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)
   --blockDomains <domains...>   A comma separated list of domains to block
   --block <substrings...>       A comma-delimited list of urls to block (based on a substring match)
   --delay <object>              An object mapping request regexes to response delays. Example: '{".css$": 2000, ".js$": 5000}'
   --delayUsing <string>         Method to use to delay responses (choices: "continue", "fulfill", default: "continue")
   --firefoxPrefs <object>       Any Firefox User Preferences to apply (Firefox only). Example: '{"network.trr.mode": 2}'
-  --cpuThrottle <int>           CPU throttling factor
+  --cpuThrottle <number>        CPU throttling factor
   --connectionType <string>     Network connection type. By default, no throttling is applied. (choices: "cable", "dsl", "4g", "3g", "3gfast", "3gslow", "2g", "fios", default: false)
-  --width <int>                 Viewport width, in pixels (default: "1366")
-  --height <int>                Viewport height, in pixels (default: "768")
+  --width <int>                 Viewport width, in pixels. If both width and device are provided, the width value will override device emulation viewport width.
+  --height <int>                Viewport height, in pixels. If both height and device are provided, the height value will override device emulation viewport height.
   --frameRate <int>             Filmstrip frame rate, in frames per second (default: 1)
   --disableJS                   Disable JavaScript (default: false)
   --debug                       Output debug lines (default: false)
@@ -74,10 +73,13 @@ Options:
   --openHtml                    Open HTML report in browser (requires --html) (default: false)
   --list                        Generate list of results in HTML (default: false)
   --overrideHost <object>       Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})
-  --userAgent <string>          Set the browsers User-Agent
   --zip                         Zip the results of the test into the results directory. (default: false)
-  --uploadUrl <string>          Upload results to URL. Must be a valid URL if provided. (default: null)
+  --uploadUrl <string>          Upload zipped results to URL. Must be a valid URL if provided. (default: null)
   --dry                         Dry run (do not run test, just save config and cleanup) (default: false)
+  --userAgent <string>          Set the browser User Agent
+  --agentExtra <string>         Append to the browser User Agent. Takes precedence over --userAgent
+  --device <string>             Device to use for device emulation (viewport size, DPR, touch events). Also sets the default browser engine unless overridden with -b. Devices are based on the Playwright device list (see
+                                https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/deviceDescriptorsSource.json)
   --help                        display help for command
 ```
 
@@ -91,7 +93,7 @@ telescope -u https://www.example.com -b firefox
 
 And supports the following browsers:
 
-- [Chromium](https://www.chromium.org/Home/)
+- [Chromium](https://www.chromium.org/Home/) - `chromium`
   - [Chrome](https://www.google.com/chrome/) - `chrome`
   - [Chrome Beta](https://www.google.com/chrome/beta/) - `chrome-beta`
   - [Chrome Canary](https://www.google.com/chrome/canary/) - `canary`
