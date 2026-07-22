@@ -71,7 +71,7 @@ jobs:
         run: apt-get update && apt-get install -y xz-utils
 
       - name: Set up FFmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v3
+        uses: FedericoCarboni/setup-ffmpeg@v3.1
 
       - name: Install dependencies
         # don't install the browsers since we're using the pre-built container
