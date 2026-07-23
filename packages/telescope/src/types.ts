@@ -557,6 +557,17 @@ export interface HTTPHeader {
 }
 
 /**
+ * The only content encoding Telescope decodes from a HAR response body.
+ */
+export const BASE64 = 'base64';
+
+/**
+ * Allowed values for a HAR entry's `content.encoding` field. `undefined`
+ * indicates the body is already plain text.
+ */
+export type HARContentEncoding = typeof BASE64 | undefined;
+
+/**
  * HAR entry with extended timing data
  */
 export interface HarEntry {
@@ -572,7 +583,7 @@ export interface HarEntry {
       size: number;
       mimeType: string;
       text?: string;
-      encoding?: 'base64';
+      encoding: HARContentEncoding;
     };
   };
   time: number;

@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest';
 
 import { extractCSSFromHar } from '../src/baselineCssExtract.js';
-import type { HarData, HarEntry } from '../src/types.js';
+import { BASE64 } from '../src/types.js';
+import type { HarData, HarEntry, HARContentEncoding } from '../src/types.js';
 
 // Build a minimal HAR entry in-memory (only the fields the extractor reads).
 function makeEntry(
   url: string,
   mimeType: string,
   text: string | undefined,
-  encoding?: string,
+  encoding?: HARContentEncoding,
 ): HarEntry {
   return {
     request: { url, method: 'GET', headers: [] },
@@ -27,8 +28,7 @@ function makeHar(entries: HarEntry[]): HarData {
   };
 }
 
-const toBase64 = (value: string) =>
-  Buffer.from(value, 'utf8').toString('base64');
+const toBase64 = (value: string) => Buffer.from(value, 'utf8').toString(BASE64);
 
 describe('extractCSSFromHar — external stylesheets', () => {
   it('extracts a text/css response as one source with the URL as file', () => {
@@ -52,7 +52,7 @@ describe('extractCSSFromHar — external stylesheets', () => {
   it('decodes base64-encoded CSS bodies', () => {
     const css = '.a { color: blue; }';
     const har = makeHar([
-      makeEntry('https://x.test/a.css', 'text/css', toBase64(css), 'base64'),
+      makeEntry('https://x.test/a.css', 'text/css', toBase64(css), BASE64),
     ]);
 
     expect(extractCSSFromHar(har)[0].css).toBe(css);

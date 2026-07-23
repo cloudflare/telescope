@@ -1,4 +1,5 @@
-import type { CSSSource, HarData } from './types.js';
+import { BASE64 } from './types.js';
+import type { CSSSource, HarData, HARContentEncoding } from './types.js';
 
 /**
  * Extract external stylesheets (`text/css` responses) shipped by a page from
@@ -36,9 +37,9 @@ export function extractCSSFromHar(harData: HarData): CSSSource[] {
  * @param encoding - The `content.encoding` value, if present.
  * @returns The decoded body as UTF-8 text.
  */
-function decodeContent(text: string, encoding?: 'base64'): string {
-  if (encoding === 'base64') {
-    return Buffer.from(text, 'base64').toString('utf8');
+function decodeContent(text: string, encoding: HARContentEncoding): string {
+  if (encoding === BASE64) {
+    return Buffer.from(text, BASE64).toString('utf8');
   }
   return text;
 }
