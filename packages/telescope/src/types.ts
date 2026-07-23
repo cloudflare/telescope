@@ -557,6 +557,17 @@ export interface HTTPHeader {
 }
 
 /**
+ * The only content encoding Telescope decodes from a HAR response body.
+ */
+export const BASE64 = 'base64';
+
+/**
+ * Allowed values for a HAR entry's `content.encoding` field. `undefined`
+ * indicates the body is already plain text.
+ */
+export type HARContentEncoding = typeof BASE64 | undefined;
+
+/**
  * HAR entry with extended timing data
  */
 export interface HarEntry {
@@ -571,6 +582,8 @@ export interface HarEntry {
     content: {
       size: number;
       mimeType: string;
+      text?: string;
+      encoding: HARContentEncoding;
     };
   };
   time: number;
@@ -624,6 +637,18 @@ export interface HarLog {
  */
 export interface HarData {
   log: HarLog;
+}
+
+// ============================================================================
+// Baseline Types
+// ============================================================================
+
+/**
+ * A block of CSS extracted from a HAR, with its origin location.
+ */
+export interface CSSSource {
+  css: string;
+  file: string;
 }
 
 // ============================================================================
