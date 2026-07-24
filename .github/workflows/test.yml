@@ -65,7 +65,7 @@ jobs:
         with:
           node-version: "24"
           cache: "npm"
-          cache-dependency-path: "./packages/telescope/package-lock.json"
+          cache-dependency-path: "./package-lock.json"
 
       - name: Install xz-utils
         run: apt-get update && apt-get install -y xz-utils
@@ -73,23 +73,24 @@ jobs:
       - name: Set up FFmpeg
         uses: FedericoCarboni/setup-ffmpeg@v3.1
 
+      # Install from the repo root: this is an npm workspaces monorepo with a
+      # single lockfile at the root, so `npm ci` cannot run inside a package.
       - name: Install dependencies
         # don't install the browsers since we're using the pre-built container
-        working-directory: ./packages/telescope
         run: npm ci --ignore-scripts
 
       - name: Build TypeScript
-        working-directory: ./packages/telescope
-        run: npm run build
+        run: npm run build -w packages/telescope
+
+      - name: Lint
+        run: npm run lint -w packages/telescope
 
       - name: Run tests
-        working-directory: ./packages/telescope
-        run: npm test
+        run: npm test -w packages/telescope
 
       - name: List all results
         if: ${{ always() }}
-        working-directory: ./packages/telescope
-        run: find results
+        run: find packages/telescope/results
 
   test-waterfall:
     needs: changes
@@ -111,17 +112,16 @@ jobs:
         with:
           node-version: "24"
           cache: "npm"
-          cache-dependency-path: "./packages/waterfall/package-lock.json"
+          cache-dependency-path: "./package-lock.json"
 
+      # Install from the repo root: this is an npm workspaces monorepo with a
+      # single lockfile at the root, so `npm ci` cannot run inside a package.
       - name: Install dependencies
         # Don't run lifecycle scripts (the pre-built container already has browsers).
-        working-directory: ./packages/waterfall
         run: npm ci --ignore-scripts
 
       - name: Build
-        working-directory: ./packages/waterfall
-        run: npm run build
+        run: npm run build -w packages/waterfall
 
       - name: Run tests
-        working-directory: ./packages/waterfall
-        run: npm test
+        run: npm test -w packages/waterfall
