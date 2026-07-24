@@ -193,7 +193,7 @@ class TestRunner {
           const message =
             `Invalid delay rule regex '${regexString}': ` +
             (error instanceof Error ? error.message : String(error));
-          throw new Error(message);
+          throw new Error(message, { cause: error });
         }
 
         if (this.options.delayUsing === 'fulfill') {
@@ -1005,7 +1005,7 @@ class TestRunner {
    * Opens a file in the default browser
    */
   openInBrowser(filePath: string): void {
-    let command = '';
+    let command: string;
     if (process.platform === 'darwin') {
       command = `open "${filePath}"`;
     } else if (process.platform === 'win32') {

@@ -21,6 +21,7 @@ export function parseCLIOption<T>(
   } catch (err) {
     throw new Error(
       `Invalid JSON for "${flagName}": ${(err as SyntaxError).message}`,
+      { cause: err },
     );
   }
 

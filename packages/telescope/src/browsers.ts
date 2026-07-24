@@ -194,7 +194,7 @@ class BrowserConfig {
   addFirefoxPrefs(prefs: Record<string, string | number | boolean>): void {
     const userPrefLines: string[] = [];
     for (const [key, value] of Object.entries(prefs)) {
-      let prefline = '';
+      let prefline: string;
       if (typeof value == 'boolean') {
         prefline = `user_pref("${key}", ${value});\n`;
       } else {

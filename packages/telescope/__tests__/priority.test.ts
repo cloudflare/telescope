@@ -41,7 +41,7 @@ describe('Request HAR entries', () => {
 
         har.log.entries.forEach((entry: HarEntry) => {
           const uri = entry.request.url;
-          let parts = [];
+          let parts: RegExpExecArray | null;
 
           if (isStyleFile.test(uri)) {
             expect(entry._priority,
