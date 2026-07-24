@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.4",
-    "@astrojs/react": "^5.0.1",
+    "@astrojs/react": "^6.0.1",
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-d1": "^7.5.0",
     "@prisma/client": "^7.5.0",
