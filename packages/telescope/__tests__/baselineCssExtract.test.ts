@@ -195,8 +195,8 @@ describe.each(engines)('harvestInlineStyles — %s', engine => {
     ]);
   });
 
-  // Read-only is what lets this run after metrics collection without perturbing
-  // performance measurements; assert it leaves the document untouched.
+  // Read-only is what lets this run in the shared detection pass without side
+  // effects; assert it leaves the document untouched.
   it('does not modify the DOM', async () => {
     await withPage(
       '<style>.a { color: red; }</style><main>hi</main>',
