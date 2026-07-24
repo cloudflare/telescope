@@ -24,10 +24,14 @@ jobs:
         with:
           node-version: 'lts/krypton'
           cache: 'npm'
-          cache-dependency-path: './packages/telescope-web/package-lock.json'
+          cache-dependency-path: './package-lock.json'
 
+      # Install from the repo root: this is an npm workspaces monorepo with a
+      # single lockfile at the root, so `npm ci` cannot run inside a package.
+      # Later steps stay in ./packages/telescope-web because wrangler, prisma
+      # and astro need that directory's config files; npx resolves their
+      # binaries from the hoisted root node_modules/.bin.
       - name: install dependencies
-        working-directory: ./packages/telescope-web
         run: npm ci
 
       - name: run any new migrations

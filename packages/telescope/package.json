@@ -64,14 +64,14 @@
     "provenance": true
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0",
-    "@types/adm-zip": "^0.5.7",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
     "@types/ejs": "^3.1.5",
     "@types/node": "^25.2.1",
-    "@typescript-eslint/eslint-plugin": "^8.54.0",
-    "@typescript-eslint/parser": "^8.54.0",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
     "@vitest/coverage-v8": "^4.1.8",
-    "eslint": "^9.39.2",
+    "eslint": "^10.7.0",
     "msw": "^2.12.10",
     "prettier": "^3.6.2",
     "prettier-plugin-ejs": "^1.0.3",
@@ -81,12 +81,12 @@
   },
   "dependencies": {
     "@sitespeed.io/throttle": "^5.0.0",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.0",
     "commander": "^10.0.0",
-    "ejs": "^3.1.10",
+    "ejs": "^6.0.1",
     "ffmpeg": "^0.0.4",
-    "playwright": "^1.60.0",
-    "playwright-webkit": "^1.60.0",
+    "playwright": "^1.61.1",
+    "playwright-webkit": "^1.61.1",
     "zod": "^3.25.76"
   },
   "engines": {

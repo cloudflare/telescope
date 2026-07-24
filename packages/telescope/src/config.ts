@@ -116,6 +116,7 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     } catch (err) {
       throw new Error(
         `Problem parsing "--block" options - ${(err as Error).message}`,
+        { cause: err },
       );
     }
   }
@@ -129,6 +130,7 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     } catch (err) {
       throw new Error(
         `Problem parsing "--blockDomains" options - ${(err as Error).message}`,
+        { cause: err },
       );
     }
   }
@@ -137,8 +139,8 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
   if (options.uploadUrl) {
     try {
       new URL(options.uploadUrl);
-    } catch (_err) {
-      throw new Error(`--uploadUrl must be a valid URL`);
+    } catch (err) {
+      throw new Error(`--uploadUrl must be a valid URL`, { cause: err });
     }
     config.uploadUrl = options.uploadUrl;
   }
