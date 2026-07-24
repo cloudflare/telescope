@@ -22,15 +22,15 @@ jobs:
         with:
           node-version: "lts/krypton"
           cache: "npm"
-          cache-dependency-path: "./packages/waterfall/package-lock.json"
+          cache-dependency-path: "./package-lock.json"
 
+      # Install from the repo root: this is an npm workspaces monorepo with a
+      # single lockfile at the root, so `npm ci` cannot run inside a package.
       - name: install dependencies
-        working-directory: ./packages/waterfall
         run: npm ci
 
       - name: build demo site
-        working-directory: ./packages/waterfall
-        run: npm run build:demo
+        run: npm run build:demo -w packages/waterfall
 
       - name: deploy to cloudflare workers
         working-directory: ./packages/waterfall
