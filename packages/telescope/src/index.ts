@@ -1,7 +1,3 @@
-import { readFileSync } from 'fs';
-import path from 'path';
-import url from 'url';
-
 import { Command, Option, InvalidArgumentError } from 'commander';
 const program = new Command();
 import { BrowserConfig } from './browsers.js';
@@ -21,6 +17,7 @@ import {
   DelaySchema,
 } from './schemas.js';
 import { parseWithSchema, parseCLIOption } from './validation.js';
+import { getPackageVersion } from './packageVersion.js';
 import type { ZodSchema } from 'zod';
 
 function parseNumeric<T>(schema: ZodSchema<T>, value: string, flag: string): T {
@@ -39,47 +36,10 @@ function parseJSON<T>(flag: string, value: string, schema: ZodSchema<T>): T {
   }
 }
 
-/**
- * Read the package version from package.json at runtime.
- *
- * Walks up the directory tree from this module's location looking for the
- * first `package.json` whose `name` matches `@cloudflare/telescope`. This
- * works regardless of whether the code runs from source (`src/index.ts`) or
- * compiled output (`dist/src/index.js`), and is cross-platform (no reliance
- * on POSIX-only path separators).
- */
-function getPackageVersion(): string {
-  const startDir = path.dirname(url.fileURLToPath(import.meta.url));
-  let dir = startDir;
-
-  // Walk up until we either find our package.json or hit the filesystem root.
-  while (true) {
-    const candidate = path.join(dir, 'package.json');
-    try {
-      const pkg = JSON.parse(readFileSync(candidate, 'utf8')) as {
-        name?: string;
-        version?: string;
-      };
-      if (pkg.name === '@cloudflare/telescope' && pkg.version) {
-        return pkg.version;
-      }
-    } catch {
-      // No package.json at this level (or unreadable); keep walking.
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      // Reached the filesystem root without finding our package.json.
-      throw new Error(
-        'Unable to locate @cloudflare/telescope package.json to read version',
-      );
-    }
-    dir = parent;
-  }
-}
-
 import type {
   LaunchOptions,
   BrowserConfigOptions,
+  TestConfig,
   SuccessfulTestResult,
   FailedTestResult,
   TestResult,
@@ -124,7 +84,7 @@ export class Telescope {
  * Get the appropriate runner based on the browser engine
  */
 function getRunner(
-  options: LaunchOptions,
+  options: TestConfig,
   browserConfig: BrowserConfigOptions,
 ): TestRunner {
   if (browserConfig.engine === 'chromium') {
@@ -157,9 +117,10 @@ async function executeTest(
       `Only http:// and https:// URLs are supported (got "${options.url}")`,
     );
   }
-  const config: LaunchOptions = {
+  const config: TestConfig = {
     ...DEFAULT_OPTIONS,
     ...options,
+    baseline: options.baseline || DEFAULT_OPTIONS.baseline,
   };
   const browserConfig = new BrowserConfig().getBrowserConfig(
     config.browser || 'chrome',
@@ -358,6 +319,12 @@ export default function browserAgent(): void {
       )
         .default(DEFAULT_OPTIONS.frameRate)
         .argParser(v => parseNumeric(PositiveIntSchema, v, '--frameRate')),
+    )
+    .addOption(
+      new Option(
+        '--baseline',
+        'Run Baseline web platform compatibility analysis',
+      ).default(DEFAULT_OPTIONS.baseline),
     )
     .addOption(
       new Option('--disableJS', 'Disable JavaScript').default(

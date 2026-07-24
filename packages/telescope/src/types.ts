@@ -171,6 +171,7 @@ export type SimplifiedBrowserConfigOptions = Omit<
  */
 export interface LaunchOptions {
   url: string;
+  baseline?: boolean;
   browser?: BrowserName;
   headers?: Record<string, string>;
   cookies?: Cookie | Cookie[];
@@ -206,6 +207,7 @@ export interface LaunchOptions {
  * Default options type (subset of LaunchOptions that have defaults)
  */
 export interface DefaultOptions {
+  baseline: boolean;
   browser: BrowserName;
   width?: number;
   height?: number;
@@ -227,6 +229,13 @@ export interface DefaultOptions {
   delay: Record<string, number>;
   delayUsing: DelayMethod;
   device?: CustomDeviceDescriptor;
+}
+
+/**
+ * Options used internally after the Baseline default has been applied.
+ */
+export interface TestConfig extends LaunchOptions {
+  baseline: boolean;
 }
 
 // ============================================================================
@@ -643,6 +652,20 @@ export interface HarData {
 // Baseline Types
 // ============================================================================
 
+export type JsonPrimitive = boolean | number | string | null;
+export type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+/**
+ * Inputs available to the post-performance Baseline pipeline.
+ */
+export interface BaselinePipelineOptions {
+  resultsPath: string;
+  url: string;
+}
+
 /**
  * A block of CSS extracted from a HAR, with its origin location.
  */
@@ -681,6 +704,7 @@ declare global {
  */
 export interface CLIOptions {
   url?: string;
+  baseline?: boolean;
   browser?: string;
   headers?: Record<string, string>;
   cookies?: Cookie | Cookie[];
