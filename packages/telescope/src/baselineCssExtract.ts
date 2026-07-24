@@ -41,8 +41,8 @@ export function extractCSSFromHar(harData: HarData): CSSSource[] {
  * parsing would miss.
  *
  * The read is strictly read-only: it neither mutates the DOM nor triggers
- * layout, so it can run after metrics collection without perturbing
- * performance measurements.
+ * layout, so it can run in the shared Baseline detection pass without
+ * interfering with co-located instrumentation or page state.
  *
  * Only the text of `<style>` elements in the main document is read. CSS with
  * no `<style>` text — rules added via `CSSStyleSheet.insertRule()` or
