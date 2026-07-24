@@ -49,7 +49,7 @@
     "clean": "rm -rf dist dist-demo node_modules"
   },
   "devDependencies": {
-    "playwright": "^1.60.0",
+    "playwright": "^1.60.1",
     "prettier": "^3.8.1",
     "typescript": "^5.4.0",
     "vite": "^8.0.16",

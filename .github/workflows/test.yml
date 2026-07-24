@@ -88,9 +88,11 @@ jobs:
       - name: Run tests
         run: npm test -w packages/telescope
 
+      # Diagnostic only: never fail the job here, or a missing results
+      # directory masks the real failure from an earlier step.
       - name: List all results
         if: ${{ always() }}
-        run: find packages/telescope/results
+        run: find packages/telescope/results || echo "No results directory was produced."
 
   test-waterfall:
     needs: changes
