@@ -644,10 +644,21 @@ export interface HarData {
 // ============================================================================
 
 /**
- * A block of CSS extracted from a HAR, with its origin location.
+ * A block of CSS to analyse for Baseline feature detection, with its origin.
+ *
+ * Sources come from two places: external stylesheets recovered from the HAR
+ * (see `extractCSSFromHar`) and inline `<style>` blocks read from the live DOM
+ * (see `harvestInlineStyles`).
  */
 export interface CSSSource {
+  /** The CSS text to analyse. This — not {@link file} — is what gets parsed. */
   css: string;
+  /**
+   * Human-readable provenance for reporting where a feature was found. For
+   * external stylesheets this is the request URL; for inline blocks it is a
+   * label derived from the page URL. Treat it as a display string, not a URL to
+   * parse.
+   */
   file: string;
 }
 
