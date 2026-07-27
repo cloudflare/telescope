@@ -87,6 +87,7 @@
     "ffmpeg": "^0.0.4",
     "playwright": "^1.61.1",
     "playwright-webkit": "^1.61.1",
+    "web-features": "^3.34.2",
     "zod": "^3.25.76"
   },
   "engines": {

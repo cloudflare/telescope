@@ -23,15 +23,7 @@ export type Cookie = Parameters<BrowserContext['addCookies']>[0][number];
  * Available connection types for network throttling
  */
 export type ConnectionType =
-  | '3g'
-  | '3gfast'
-  | '3gslow'
-  | '2g'
-  | 'cable'
-  | 'dsl'
-  | '4g'
-  | 'fios'
-  | false;
+  '3g' | '3gfast' | '3gslow' | '2g' | 'cable' | 'dsl' | '4g' | 'fios' | false;
 
 /**
  * Network profile configuration for throttling
@@ -75,11 +67,7 @@ export type PlaywrightEngine = 'chromium' | 'webkit' | 'firefox';
  * Browser channel for Chromium-based browsers
  */
 export type BrowserChannel =
-  | 'chrome'
-  | 'chrome-beta'
-  | 'chrome-canary'
-  | 'chromium'
-  | 'msedge';
+  'chrome' | 'chrome-beta' | 'chrome-canary' | 'chromium' | 'msedge';
 
 /**
  * Base browser configuration
@@ -119,9 +107,7 @@ export interface WebKitBrowserConfig extends BaseBrowserConfig {
  * Union of all browser configurations
  */
 export type BrowserConfigEntry =
-  | ChromiumBrowserConfig
-  | FirefoxBrowserConfig
-  | WebKitBrowserConfig;
+  ChromiumBrowserConfig | FirefoxBrowserConfig | WebKitBrowserConfig;
 
 /**
  * Full browser configuration with all runtime options
@@ -467,7 +453,7 @@ export interface ResourceTiming {
  * Request priority information
  */
 export type PriorityObject = {
-  initialPriority: string,
+  initialPriority: string;
 };
 export interface PriorityInfo {
   [key: string]: PriorityObject;
@@ -651,6 +637,51 @@ export interface CSSSource {
   file: string;
 }
 
+/**
+ * Baseline status of a feature: Widely available (`'high'`), Newly available
+ * (`'low'`), or not a Baseline feature (`false`).
+ */
+export type BaselineStatus = 'high' | 'low' | false;
+
+/** Browser versions that most-recently introduced a feature (browser -> version). */
+export type BaselineSupport = Record<string, string>;
+
+/**
+ * Metadata for features formally discouraged by their specification or
+ * implementers. Sourced from the web-features package.
+ */
+export interface Discouraged {
+  /** Brief, developer-focused explanation of why the feature is discouraged. */
+  reason: string;
+  /** Links to formal discouragement notices (spec text, intent-to-unship, etc.). */
+  according_to: string[];
+  /** web-features feature IDs that substitute some or all of this feature's utility. */
+  alternatives?: string[];
+  /** Expected or actual removal date, e.g. "2029-12-31". */
+  removal_date?: string;
+}
+
+/**
+ * Baseline status resolved for a single MDN Browser Compatibility Data key,
+ * looked up via the web-features package.
+ */
+export interface BaselineLookupResult {
+  /** web-features feature ID that owns the BCD key. */
+  featureId: string;
+  /** Human-readable feature name. */
+  featureName: string;
+  /** Baseline classification of the key. */
+  baseline: BaselineStatus;
+  /** Date the feature reached Baseline low (Newly available), if any. */
+  baselineLowDate: string | null;
+  /** Date the feature reached Baseline high (Widely available), if any. */
+  baselineHighDate: string | null;
+  /** Browser versions that most-recently introduced the feature. */
+  support: BaselineSupport;
+  /** Present only when the feature is formally discouraged. */
+  discouraged?: Discouraged;
+}
+
 // ============================================================================
 // Window Extensions (for page.evaluate)
 // ============================================================================
@@ -769,9 +800,9 @@ export interface CustomDeviceDescriptor {
 // ============================================================================
 
 export interface testServerConfig {
-  fixturesDirPath: string,
-  delay?: number,
-  compress?: number
+  fixturesDirPath: string;
+  delay?: number;
+  compress?: number;
 }
 
 export const mimeTypes: Record<string, string> = {
@@ -786,5 +817,5 @@ export const mimeTypes: Record<string, string> = {
   png: 'image/png',
   svg: 'image/svg_xml',
   webp: 'image/webp',
-  woff2: 'font/woff2'
+  woff2: 'font/woff2',
 };
