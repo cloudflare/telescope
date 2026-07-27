@@ -151,23 +151,20 @@ class TestRunner {
       return;
     }
 
-    const domain_rx = new RegExp(
-      domains.map(original => '//(' + original + ')/').join('|'),
-    );
+    const matchHost = (url: URL): boolean =>
+      Object.prototype.hasOwnProperty.call(overrides, url.host);
 
-    await page.route(domain_rx, async (route: Route, request: Request) => {
-      const original_url = request.url();
-      const parts = domain_rx.exec(original_url);
-      const original_domain = parts?.findLast(d => !!d); /* Grab what matched */
-      if (!original_domain) {
+    await page.route(matchHost, async (route: Route, request: Request) => {
+      const original_url = new URL(request.url());
+      const original_domain = original_url.host;
+      const override = overrides[original_domain];
+      if (!override) {
         route.fallback();
         return;
       }
-      const host_rx = new RegExp('//' + original_domain);
-      const new_url = original_url.replace(
-        host_rx,
-        '//' + overrides[original_domain],
-      );
+
+      const new_url = new URL(original_url.toString());
+      new_url.host = override;
 
       const all_headers = await request.allHeaders();
       const headers = {
@@ -175,7 +172,7 @@ class TestRunner {
         'X-Host': original_domain,
       };
 
-      route.fallback({ headers, url: new_url });
+      route.fallback({ headers, url: new_url.toString() });
     });
 
     return;
