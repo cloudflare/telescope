@@ -36,6 +36,7 @@ describe.each(engines)('live DOM HTML collection — %s', engine => {
       <div
         click="not-an-event-handler"
         children="not-a-content-attribute"
+        data-="not-a-custom-data-attribute"
         data-first="one"
         data-second="two"
         madeup="value"

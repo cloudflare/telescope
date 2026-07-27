@@ -123,7 +123,7 @@ export async function collectHTMLFeatures(
           const value = attribute.value.toLowerCase();
           let ruleName = `${tag}.${name}`;
 
-          if (name.startsWith('data-')) {
+          if (name.startsWith('data-') && name.length > 5) {
             record('html.global_attributes.data_attributes');
             continue;
           }
