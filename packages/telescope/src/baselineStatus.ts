@@ -14,7 +14,6 @@ import { features } from 'web-features';
 import type {
   BaselineLookupResult,
   BaselineStatus,
-  BaselineSupport,
   Discouraged,
 } from './types.js';
 
@@ -62,22 +61,11 @@ export function lookupBaselineStatus(
     baseline: status.baseline as BaselineStatus,
     baselineLowDate: status.baseline_low_date ?? null,
     baselineHighDate: status.baseline_high_date ?? null,
-    support: toSupport(status.support),
+    support: { ...status.support },
     ...(feature.discouraged && {
       discouraged: toDiscouraged(feature.discouraged),
     }),
   };
-}
-
-/** Copy the web-features support map, dropping any absent browser entries. */
-function toSupport(
-  support: Record<string, string | undefined>,
-): BaselineSupport {
-  const result: BaselineSupport = {};
-  for (const [browser, version] of Object.entries(support)) {
-    if (version !== undefined) result[browser] = version;
-  }
-  return result;
 }
 
 /** Map web-features discouraged metadata to our {@link Discouraged} type. */
@@ -89,8 +77,10 @@ function toDiscouraged(discouraged: {
 }): Discouraged {
   return {
     reason: discouraged.reason,
-    according_to: discouraged.according_to,
-    ...(discouraged.alternatives && { alternatives: discouraged.alternatives }),
+    according_to: [...discouraged.according_to],
+    ...(discouraged.alternatives && {
+      alternatives: [...discouraged.alternatives],
+    }),
     ...(discouraged.removal_date && { removal_date: discouraged.removal_date }),
   };
 }

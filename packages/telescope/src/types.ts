@@ -643,8 +643,18 @@ export interface CSSSource {
  */
 export type BaselineStatus = 'high' | 'low' | false;
 
+/** Browsers represented in web-features Baseline support data. */
+export type BaselineBrowser =
+  | 'chrome'
+  | 'chrome_android'
+  | 'edge'
+  | 'firefox'
+  | 'firefox_android'
+  | 'safari'
+  | 'safari_ios';
+
 /** Browser versions that most-recently introduced a feature (browser -> version). */
-export type BaselineSupport = Record<string, string>;
+export type BaselineSupport = Partial<Record<BaselineBrowser, string>>;
 
 /**
  * Metadata for features formally discouraged by their specification or
@@ -672,9 +682,15 @@ export interface BaselineLookupResult {
   featureName: string;
   /** Baseline classification of the key. */
   baseline: BaselineStatus;
-  /** Date the feature reached Baseline low (Newly available), if any. */
+  /**
+   * Baseline low date as represented by web-features, possibly prefixed with
+   * `≤` when the exact date is uncertain.
+   */
   baselineLowDate: string | null;
-  /** Date the feature reached Baseline high (Widely available), if any. */
+  /**
+   * Baseline high date as represented by web-features, possibly prefixed with
+   * `≤` when the exact date is uncertain.
+   */
   baselineHighDate: string | null;
   /** Browser versions that most-recently introduced the feature. */
   support: BaselineSupport;

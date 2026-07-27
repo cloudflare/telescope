@@ -63,6 +63,22 @@ describe('lookupBaselineStatus', () => {
     expect(result?.discouraged?.removal_date).toBeUndefined();
   });
 
+  it('returns independent copies of discouraged metadata arrays', () => {
+    const first = lookupBaselineStatus(
+      'api.AudioListener.setOrientation',
+    )?.discouraged;
+    expect(first).toBeDefined();
+
+    first?.according_to.push('https://example.com/mutation');
+    first?.alternatives?.push('mutation');
+
+    const second = lookupBaselineStatus(
+      'api.AudioListener.setOrientation',
+    )?.discouraged;
+    expect(second?.according_to).not.toContain('https://example.com/mutation');
+    expect(second?.alternatives).not.toContain('mutation');
+  });
+
   it('omits discouraged metadata for a non-discouraged feature key', () => {
     const result = lookupBaselineStatus('css.properties.display.grid');
     expect(result?.discouraged).toBeUndefined();
