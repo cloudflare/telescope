@@ -651,6 +651,12 @@ export interface CSSSource {
   file: string;
 }
 
+/** A detected HTML BCD key and its number of live-DOM occurrences. */
+export interface HTMLFeatureCount {
+  bcdKey: string;
+  count: number;
+}
+
 // ============================================================================
 // Window Extensions (for page.evaluate)
 // ============================================================================
