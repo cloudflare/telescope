@@ -133,18 +133,27 @@ class TestRunner {
   }
 
   /**
-   * Set up any hostname overrides that have been requested
+   * Set up any hostname overrides that have been requested.
+   *
+   * Registers a `page.route()` handler only when there is at least one
+   * override entry. Calling `page.route()` disables Playwright's HTTP
+   * cache (see https://playwright.dev/docs/api/class-page#page-route),
+   * so this must be a no-op for the common case where no overrides are
+   * configured — otherwise features like Early Hints break silently.
+   * See https://github.com/cloudflare/telescope/issues/327.
    */
   async setupHostOverrides(
     page: Page,
     overrides: Record<string, string>,
   ): Promise<void> {
-    const domains: string[] = [];
+    const domains = Object.keys(overrides);
+    if (domains.length === 0) {
+      return;
+    }
 
-    Object.keys(overrides).forEach(original => {
-      domains.push('//(' + original + ')/'); /* Domain part of URL */
-    });
-    const domain_rx = new RegExp(domains.join('|'));
+    const domain_rx = new RegExp(
+      domains.map(original => '//(' + original + ')/').join('|'),
+    );
 
     await page.route(domain_rx, async (route: Route, request: Request) => {
       const original_url = request.url();
@@ -304,7 +313,10 @@ class TestRunner {
   async preparePage(page: Page): Promise<void> {
     this.setupConsoleMessages(page);
 
-    if (this.options.overrideHost) {
+    if (
+      this.options.overrideHost &&
+      Object.keys(this.options.overrideHost).length > 0
+    ) {
       await this.setupHostOverrides(page, this.options.overrideHost);
     }
 
