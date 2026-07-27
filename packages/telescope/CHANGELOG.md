@@ -1,5 +1,16 @@
 # @cloudflare/telescope
 
+## 1.2.1
+
+### Patch Changes
+
+- [#336](https://github.com/cloudflare/telescope/pull/336) [`db626bf`](https://github.com/cloudflare/telescope/commit/db626bf5eb3f5e349cb088b529e626c07a41c038) Thanks [@sufian-cf](https://github.com/sufian-cf)! - Bump adm-zip to ^0.6.0 to fix CVE-2026-39244, where a crafted archive declaring
+  a huge uncompressed size could force an unbounded Buffer.alloc and exhaust
+  memory.
+
+  Also bumps ejs to ^6.0.1 and eslint to ^10.7.0 to clear a transitive
+  brace-expansion advisory.
+
 ## 1.2.0
 
 ### Minor Changes
