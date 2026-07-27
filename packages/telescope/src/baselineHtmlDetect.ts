@@ -70,9 +70,15 @@ const VALUE_KEYS: Record<string, Record<string, string>> = {
 
 const VALUE_ONLY_ATTRIBUTES = ['img.loading', 'input.type'] as const;
 
+// HTML lowercases content-attribute names, but this BCD key is camel-cased.
+const ATTRIBUTE_BCD_NAMES: Record<string, string> = {
+  'iframe.privatetoken': 'privateToken',
+};
+
 /**
  * Collect HTML element and attribute BCD keys from a page's live main-document
- * DOM. Shadow roots and child-frame documents are intentionally not pierced.
+ * DOM. Shadow roots, child-frame documents, and inert `<template>` contents
+ * are intentionally not pierced.
  *
  * @param page - A loaded Playwright page.
  * @returns Unique BCD keys sorted lexicographically with occurrence counts.
@@ -82,6 +88,7 @@ export async function collectHTMLFeatures(
 ): Promise<HTMLFeatureCount[]> {
   return page.evaluate(
     ({
+      attributeBcdNames,
       elementAttributes,
       globalAttributes,
       valueKeys,
@@ -90,6 +97,12 @@ export async function collectHTMLFeatures(
       const counts = new Map<string, number>();
       const globals = new Set<string>(globalAttributes);
       const valueOnly = new Set<string>(valueOnlyAttributes);
+      const supportedElements = new Map(
+        Object.entries(elementAttributes).map(([tag, attributeNames]) => [
+          tag,
+          new Set(attributeNames.length === 0 ? [] : attributeNames.split(',')),
+        ]),
+      );
 
       const record = (bcdKey: string): void => {
         counts.set(bcdKey, (counts.get(bcdKey) ?? 0) + 1);
@@ -101,13 +114,9 @@ export async function collectHTMLFeatures(
         }
 
         const tag = element.localName;
-        const attributeNames = elementAttributes[tag];
-        if (attributeNames === undefined) continue;
-
-        const supportedAttributes = new Set(
-          attributeNames.length === 0 ? [] : attributeNames.split(','),
-        );
-        const elementKeys = new Set<string>([`html.elements.${tag}`]);
+        const supportedAttributes = supportedElements.get(tag);
+        const elementKeys = new Set<string>();
+        if (supportedAttributes) elementKeys.add(`html.elements.${tag}`);
 
         for (const attribute of element.attributes) {
           const name = attribute.name.toLowerCase();
@@ -129,9 +138,12 @@ export async function collectHTMLFeatures(
           if (globals.has(name)) {
             elementKeys.add(`html.global_attributes.${name}`);
             ruleName = `global.${name}`;
-          } else if (!valueOnly.has(ruleName)) {
+          } else if (supportedAttributes && !valueOnly.has(ruleName)) {
             if (!supportedAttributes.has(name)) continue;
-            elementKeys.add(`html.elements.${tag}.${name}`);
+            const bcdName = attributeBcdNames[ruleName] ?? name;
+            elementKeys.add(`html.elements.${tag}.${bcdName}`);
+          } else if (!supportedAttributes) {
+            continue;
           }
 
           const valueKey = valueKeys[ruleName]?.[value];
@@ -146,6 +158,7 @@ export async function collectHTMLFeatures(
         .map(([bcdKey, count]) => ({ bcdKey, count }));
     },
     {
+      attributeBcdNames: ATTRIBUTE_BCD_NAMES,
       elementAttributes: HTML_ELEMENT_ATTRIBUTES,
       globalAttributes: GLOBAL_ATTRIBUTES,
       valueKeys: VALUE_KEYS,

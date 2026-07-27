@@ -32,6 +32,7 @@ describe.each(engines)('live DOM HTML collection — %s', engine => {
       <input type="date">
       <input form="missing-form" type="datetime-local">
       <fencedframe></fencedframe>
+      <iframe privateToken></iframe>
       <div
         click="not-an-event-handler"
         children="not-a-content-attribute"
@@ -40,7 +41,11 @@ describe.each(engines)('live DOM HTML collection — %s', engine => {
         madeup="value"
         role="button"
       ></div>
-      <not-an-html-element strange="value"></not-an-html-element>
+      <not-an-html-element
+        data-third="three"
+        inert
+        strange="value"
+      ></not-an-html-element>
       <canvas></canvas>
       <script>
         document.body.append(document.createElement('dialog'));
@@ -66,6 +71,8 @@ describe.each(engines)('live DOM HTML collection — %s', engine => {
       { bcdKey: 'html.elements.fencedframe', count: 1 },
       { bcdKey: 'html.elements.head', count: 1 },
       { bcdKey: 'html.elements.html', count: 1 },
+      { bcdKey: 'html.elements.iframe', count: 1 },
+      { bcdKey: 'html.elements.iframe.privateToken', count: 1 },
       { bcdKey: 'html.elements.img', count: 3 },
       { bcdKey: 'html.elements.img.alt', count: 1 },
       { bcdKey: 'html.elements.img.loading', count: 1 },
@@ -76,8 +83,9 @@ describe.each(engines)('live DOM HTML collection — %s', engine => {
       { bcdKey: 'html.elements.input.type_datetime-local', count: 1 },
       { bcdKey: 'html.elements.script', count: 1 },
       { bcdKey: 'html.elements.style', count: 1 },
-      { bcdKey: 'html.global_attributes.data_attributes', count: 2 },
+      { bcdKey: 'html.global_attributes.data_attributes', count: 3 },
       { bcdKey: 'html.global_attributes.id', count: 1 },
+      { bcdKey: 'html.global_attributes.inert', count: 1 },
     ]);
   });
 

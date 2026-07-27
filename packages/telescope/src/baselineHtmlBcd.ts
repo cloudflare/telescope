@@ -6,6 +6,12 @@
  * comma-delimited to keep this generated snapshot compact and reviewable.
  * Pinning this data makes detection independent of the tested browser's own
  * DOM implementation, including for features that browser does not support.
+ *
+ * Source: https://github.com/mdn/browser-compat-data/releases/tag/v8.0.8
+ * To regenerate, read `html.elements` from that release's `data.json`, retain
+ * each element and its first-level keys without underscores, then review the
+ * small set of non-literal entries. DOM-to-BCD casing aliases are documented
+ * beside `ATTRIBUTE_BCD_NAMES` in `baselineHtmlDetect.ts`.
  */
 export const HTML_ELEMENT_ATTRIBUTES: Readonly<Record<string, string>> = {
   a: 'attributionsourceid,attributionsrc,charset,coords,download,href,hreflang,hreftranslate,interestfor,name,ping,referrerpolicy,rel,rev,shape,target,type',
@@ -70,7 +76,7 @@ export const HTML_ELEMENT_ATTRIBUTES: Readonly<Record<string, string>> = {
   html: 'version,xmlns',
   i: '',
   iframe:
-    'align,allow,allowfullscreen,allowpaymentrequest,browsingtopics,credentialless,csp,frameborder,height,loading,longdesc,marginheight,marginwidth,name,referrerpolicy,sandbox,scrolling,src,srcdoc,width',
+    'align,allow,allowfullscreen,allowpaymentrequest,browsingtopics,credentialless,csp,frameborder,height,loading,longdesc,marginheight,marginwidth,name,privatetoken,referrerpolicy,sandbox,scrolling,src,srcdoc,width',
   img: 'align,alt,attributionsrc,border,crossorigin,decoding,fetchpriority,height,hspace,ismap,loading,longdesc,name,referrerpolicy,sizes,src,srcset,usemap,vspace,width',
   input:
     'accept,align,alpha,alt,autocomplete,capture,checked,colorspace,dirname,disabled,form,formaction,formenctype,formmethod,formnovalidate,formtarget,max,maxlength,min,minlength,multiple,name,pattern,placeholder,popovertarget,popovertargetaction,readonly,required,size,src,step,switch,usemap,webkitdirectory',
