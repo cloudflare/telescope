@@ -146,18 +146,19 @@ class TestRunner {
     page: Page,
     overrides: Record<string, string>,
   ): Promise<void> {
-    const domains = Object.keys(overrides);
-    if (domains.length === 0) {
+    const rewrites = new Map(
+      Object.entries(overrides).filter(([, target]) => !!target),
+    );
+    if (rewrites.size === 0) {
       return;
     }
 
-    const matchHost = (url: URL): boolean =>
-      Object.prototype.hasOwnProperty.call(overrides, url.host);
+    const matchHost = (url: URL): boolean => rewrites.has(url.host);
 
     await page.route(matchHost, async (route: Route, request: Request) => {
       const original_url = new URL(request.url());
       const original_domain = original_url.host;
-      const override = overrides[original_domain];
+      const override = rewrites.get(original_domain);
       if (!override) {
         return route.fallback();
       }
