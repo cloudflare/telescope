@@ -159,8 +159,7 @@ class TestRunner {
       const original_domain = original_url.host;
       const override = overrides[original_domain];
       if (!override) {
-        route.fallback();
-        return;
+        return route.fallback();
       }
 
       const new_url = new URL(original_url.toString());
@@ -172,7 +171,7 @@ class TestRunner {
         'X-Host': original_domain,
       };
 
-      route.fallback({ headers, url: new_url.toString() });
+      return route.fallback({ headers, url: new_url.toString() });
     });
 
     return;
@@ -270,7 +269,7 @@ class TestRunner {
       await tmpbrowser.close();
 
       this.selectedBrowser.userAgent = originalUserAgent.concat(
-        " ",
+        ' ',
         this.options.agentExtra.trim(),
       );
     }
