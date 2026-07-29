@@ -20,17 +20,11 @@ import type {
 /**
  * Reverse index from BCD key to its owning web-features feature ID.
  *
- * Built once at module load so each lookup is O(1). Only `kind: 'feature'`
+ * Built on the first lookup and reused thereafter. Only `kind: 'feature'`
  * entries carry compatibility data; `moved`/`split` redirect entries are
  * skipped.
  */
-const bcdKeyToFeatureId = new Map<string, string>();
-for (const [id, feature] of Object.entries(features)) {
-  if (feature.kind !== 'feature') continue;
-  for (const key of feature.compat_features ?? []) {
-    bcdKeyToFeatureId.set(key, id);
-  }
-}
+let bcdKeyToFeatureId: Map<string, string> | undefined;
 
 /**
  * Look up the Baseline status of a single BCD key.
@@ -46,6 +40,16 @@ for (const [id, feature] of Object.entries(features)) {
 export function lookupBaselineStatus(
   bcdKey: string,
 ): BaselineLookupResult | null {
+  if (bcdKeyToFeatureId === undefined) {
+    bcdKeyToFeatureId = new Map<string, string>();
+    for (const [id, feature] of Object.entries(features)) {
+      if (feature.kind !== 'feature') continue;
+      for (const key of feature.compat_features ?? []) {
+        bcdKeyToFeatureId.set(key, id);
+      }
+    }
+  }
+
   const featureId = bcdKeyToFeatureId.get(bcdKey);
   if (featureId === undefined) return null;
 
