@@ -23,7 +23,15 @@ export type Cookie = Parameters<BrowserContext['addCookies']>[0][number];
  * Available connection types for network throttling
  */
 export type ConnectionType =
-  '3g' | '3gfast' | '3gslow' | '2g' | 'cable' | 'dsl' | '4g' | 'fios' | false;
+  | '3g'
+  | '3gfast'
+  | '3gslow'
+  | '2g'
+  | 'cable'
+  | 'dsl'
+  | '4g'
+  | 'fios'
+  | false;
 
 /**
  * Network profile configuration for throttling
@@ -67,7 +75,11 @@ export type PlaywrightEngine = 'chromium' | 'webkit' | 'firefox';
  * Browser channel for Chromium-based browsers
  */
 export type BrowserChannel =
-  'chrome' | 'chrome-beta' | 'chrome-canary' | 'chromium' | 'msedge';
+  | 'chrome'
+  | 'chrome-beta'
+  | 'chrome-canary'
+  | 'chromium'
+  | 'msedge';
 
 /**
  * Base browser configuration
@@ -107,7 +119,9 @@ export interface WebKitBrowserConfig extends BaseBrowserConfig {
  * Union of all browser configurations
  */
 export type BrowserConfigEntry =
-  ChromiumBrowserConfig | FirefoxBrowserConfig | WebKitBrowserConfig;
+  | ChromiumBrowserConfig
+  | FirefoxBrowserConfig
+  | WebKitBrowserConfig;
 
 /**
  * Full browser configuration with all runtime options
@@ -453,7 +467,7 @@ export interface ResourceTiming {
  * Request priority information
  */
 export type PriorityObject = {
-  initialPriority: string;
+  initialPriority: string,
 };
 export interface PriorityInfo {
   [key: string]: PriorityObject;
@@ -816,9 +830,9 @@ export interface CustomDeviceDescriptor {
 // ============================================================================
 
 export interface testServerConfig {
-  fixturesDirPath: string;
-  delay?: number;
-  compress?: number;
+  fixturesDirPath: string,
+  delay?: number,
+  compress?: number
 }
 
 export const mimeTypes: Record<string, string> = {
@@ -833,5 +847,5 @@ export const mimeTypes: Record<string, string> = {
   png: 'image/png',
   svg: 'image/svg_xml',
   webp: 'image/webp',
-  woff2: 'font/woff2',
+  woff2: 'font/woff2'
 };
