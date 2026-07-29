@@ -7,8 +7,8 @@ import type {
   CSSSource,
 } from './types.js';
 
-const CSS_NAME_PATTERN = /^[a-z][a-z0-9-]*$/i;
-const CSS_VALUE_PATTERN = /^[a-z][a-z0-9-]*$/i;
+// Requiring a leading letter intentionally excludes vendor-prefixed identifiers.
+const BCD_SEGMENT_PATTERN = /^[a-z][a-z0-9-]*$/i;
 const CSS_WIDE_KEYWORDS = new Set([
   'inherit',
   'initial',
@@ -141,13 +141,13 @@ function getSource(node: CssNode, file: string): CSSFeatureSource {
 
 function normalizeName(name: string): string | null {
   const decodedName = ident.decode(name);
-  if (!CSS_NAME_PATTERN.test(decodedName)) return null;
+  if (!BCD_SEGMENT_PATTERN.test(decodedName)) return null;
   return decodedName.toLowerCase();
 }
 
 function normalizeValue(value: string): string | null {
   const decodedValue = ident.decode(value.trim());
-  if (!CSS_VALUE_PATTERN.test(decodedValue)) return null;
+  if (!BCD_SEGMENT_PATTERN.test(decodedValue)) return null;
 
   const lowerCaseValue = decodedValue.toLowerCase();
   return VALUE_CANONICAL_CASE.get(lowerCaseValue) ?? lowerCaseValue;
