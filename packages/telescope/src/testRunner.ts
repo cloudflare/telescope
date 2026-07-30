@@ -133,32 +133,38 @@ class TestRunner {
   }
 
   /**
-   * Set up any hostname overrides that have been requested
+   * Set up any hostname overrides that have been requested.
+   *
+   * Registers a `page.route()` handler only when there is at least one
+   * override entry. Calling `page.route()` disables Playwright's HTTP
+   * cache (see https://playwright.dev/docs/api/class-page#page-route),
+   * so this must be a no-op for the common case where no overrides are
+   * configured — otherwise features like Early Hints break silently.
+   * See https://github.com/cloudflare/telescope/issues/327.
    */
   async setupHostOverrides(
     page: Page,
     overrides: Record<string, string>,
   ): Promise<void> {
-    const domains: string[] = [];
+    const rewrites = new Map(
+      Object.entries(overrides).filter(([, target]) => !!target),
+    );
+    if (rewrites.size === 0) {
+      return;
+    }
 
-    Object.keys(overrides).forEach(original => {
-      domains.push('//(' + original + ')/'); /* Domain part of URL */
-    });
-    const domain_rx = new RegExp(domains.join('|'));
+    const matchHost = (url: URL): boolean => rewrites.has(url.host);
 
-    await page.route(domain_rx, async (route: Route, request: Request) => {
-      const original_url = request.url();
-      const parts = domain_rx.exec(original_url);
-      const original_domain = parts?.findLast(d => !!d); /* Grab what matched */
-      if (!original_domain) {
-        route.fallback();
-        return;
+    await page.route(matchHost, async (route: Route, request: Request) => {
+      const original_url = new URL(request.url());
+      const original_domain = original_url.host;
+      const override = rewrites.get(original_domain);
+      if (!override) {
+        return route.fallback();
       }
-      const host_rx = new RegExp('//' + original_domain);
-      const new_url = original_url.replace(
-        host_rx,
-        '//' + overrides[original_domain],
-      );
+
+      const new_url = new URL(original_url.toString());
+      new_url.host = override;
 
       const all_headers = await request.allHeaders();
       const headers = {
@@ -166,7 +172,7 @@ class TestRunner {
         'X-Host': original_domain,
       };
 
-      route.fallback({ headers, url: new_url });
+      return route.fallback({ headers, url: new_url.toString() });
     });
 
     return;
@@ -264,7 +270,7 @@ class TestRunner {
       await tmpbrowser.close();
 
       this.selectedBrowser.userAgent = originalUserAgent.concat(
-        " ",
+        ' ',
         this.options.agentExtra.trim(),
       );
     }
@@ -304,7 +310,10 @@ class TestRunner {
   async preparePage(page: Page): Promise<void> {
     this.setupConsoleMessages(page);
 
-    if (this.options.overrideHost) {
+    if (
+      this.options.overrideHost &&
+      Object.keys(this.options.overrideHost).length > 0
+    ) {
       await this.setupHostOverrides(page, this.options.overrideHost);
     }
 
