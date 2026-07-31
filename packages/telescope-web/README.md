@@ -1,86 +1,86 @@
 # telescope-web
 
-The web application for [telescopetest.io](https://telescopetest.io) — upload and view [`@cloudflare/telescope`](../telescope) test results in an interactive UI. Built with Astro and hosted on Cloudflare Workers.
+The web application for uploading and viewing
+[`@cloudflare/telescope`](../telescope) test results. It supports two deployment
+targets from the same routes and UI:
 
-Part of the [`cloudflare/telescope`](https://github.com/cloudflare/telescope) monorepo. Lives at `packages/telescope-web/`.
+- Local Node.js: SQLite metadata plus filesystem artifact storage
+- Cloudflare Workers: D1 metadata plus R2 artifact storage, with optional
+  Workers AI content filtering
 
-## Stack
+Node.js 24+ and npm 11.9+ are required.
 
-- **Astro v6** with `@astrojs/cloudflare` adapter
-- **Cloudflare Workers** (D1, R2, AI bindings)
-- **Prisma v7** with `@prisma/adapter-d1` for D1 (SQLite)
-- **React v19** for interactive components
-- Node.js 24+ required
+## Run locally without Cloudflare
 
-## Project Setup
-
-To set up for local development, install dependencies and run the one-time setup script from `packages/telescope-web/`:
+Install dependencies once from the repository root:
 
 ```bash
-cd packages/telescope-web
 npm install
 ```
 
-Then initialize a few things:
+Start the Node.js development server:
 
-- create local database (will prompt you to confirm that you want to perform the DB migrations)
-- generate Prisma client (in `generated/prisma` folder)
-- create R2 bucket (might prompt you to log into your Cloudflare account)
-- generate TypeScript types to match wrangler configuration (`worker-configuration.d.ts`)
-
-To accomplish all that, you can simply run:
-
-```
-npm run dev:setup
+```bash
+npm run dev -w packages/telescope-web
 ```
 
-You should now be able to use the application and run `npm run studio` to view local D1 data in Prisma Studio and create migrations.
+Open the URL printed by Astro, normally <http://localhost:4321>. No Cloudflare
+account, Wrangler login, binding setup, or migration command is required. The
+SQLite schema and storage directories are created automatically on first use.
 
-## Running Locally
+Local data defaults to `packages/telescope-web/.telescope-data/`. Override it
+with `TELESCOPE_DATA_DIR`:
 
-Run `npm run dev` to view the site with Astro's hot reload (instantly reflect changes) using the adapter for Cloudflare.
-
-## DB Migrations
-
-We use Prisma to generate SQL for migrations, and Wrangler to apply them. Prisma migrate does not fully support D1 yet, so you cannot follow the default prisma migrate workflows. Instead, migration need to be done as follows:
-
-#### Normal Use
-
-1. Make your edits to `prisma/schema.prisma`.
-2. Run `npx wrangler d1 migrations create telescope-db-development {{describe_changes_here}} --env development`. This should create an empty SQLite file with a comment at the top.
-3. Run
-
-```
-npx prisma migrate diff \
-  --from-config-datasource \
-  --to-schema ./prisma/schema.prisma \
-  --script \
-  --output migrations/{{file_created_by_previous_step}}.sql
+```bash
+TELESCOPE_DATA_DIR=/path/to/telescope-data npm run dev -w packages/telescope-web
 ```
 
-This should fill your created file with the raw SQLite for your changes.
+For a production-style local deployment:
 
-4. Run `npm run generate` to regenerate a Prisma Client that reflects your new changes in `schema.prisma`.
-5. Run `npm run migrate:development` to apply this new migration to your local database.
+```bash
+npm run build -w packages/telescope-web
+npm run start -w packages/telescope-web
+```
 
-### Note about Workers AI (AI content review)
+The standalone Node server honors the `HOST` and `PORT` environment variables.
 
-One thing to note is that telescope-web uses Workers AI for AI content review on uploads. Workers AI _always_ uses tokens that can incur costs, even in local/remote testing. AI content review is disabled locally by default. You can optionally enable AI content review (which may start costing money) by running the command `cp .dev.vars.example .dev.vars` and setting `ENABLE_AI_RATING=true`.
+## Cloudflare development and deployment
 
-## Testing in Staging
+Cloudflare remains a supported deployment target. Its bindings and environments
+are defined in `wrangler.jsonc`.
 
-Staging allows you to test changes in a remote environment that isn't production. To deploy to staging, run `npm run deploy:staging`. This command will only work if you have permission to deploy to telescope-web's remote Worker.
+```bash
+# Build using the Cloudflare adapter
+npm run build:cloudflare -w packages/telescope-web
 
-## Deployment to Production
+# Develop against the Cloudflare runtime and local binding emulators
+npm run dev:cloudflare -w packages/telescope-web
 
-Changes to the production website should only be deployed on Cloudflare workers on successful PR into @cloudflare/telescope. To run this deployment, we have a GitHub workflow `.github/workflows/deploy.yml`. This is what that workflow does:
+# Deploy configured environments
+npm run deploy:development -w packages/telescope-web
+npm run deploy:staging -w packages/telescope-web
+```
 
-1. Checks out code
-2. Installs Node.js 24
-3. Installs project dependencies
-4. Applies any new D1 migrations
-5. Generates Prisma client
-6. Builds project (generates `dist/`)
-7. Deploys project (uploads `dist/` to Cloudflare)
+Apply D1 migrations before deploying a schema change:
 
-Once successful, the deployed site can be found on [telescopetest.io](telescopetest.io).
+```bash
+npm run migrate:development -w packages/telescope-web
+npm run migrate:staging -w packages/telescope-web
+```
+
+Run `npm run cf-typegen -w packages/telescope-web` after changing bindings in
+`wrangler.jsonc`, and commit the updated `worker-configuration.d.ts`.
+
+Workers AI content review is disabled in the development environment and
+enabled in staging and production. It is never used by the local Node target.
+
+## Validation
+
+```bash
+npm test -w packages/telescope-web
+npm run build -w packages/telescope-web
+npm run build:cloudflare -w packages/telescope-web
+```
+
+Production Cloudflare deployment remains automated by
+`.github/workflows/deploy.yml` after changes land on `main`.

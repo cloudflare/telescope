@@ -1,5 +1,5 @@
 import type { APIContext } from 'astro';
-import { getPrismaClient } from '@/lib/prisma/client';
+import { getRuntimeServices } from '@/lib/runtime/context';
 import { getTestRating } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
 
@@ -23,8 +23,8 @@ export async function checkTestRating(
   } catch (error) {
     console.warn(`[Cache] Cache read error (ignoring):`, error);
   }
-  const prisma = getPrismaClient(context);
-  const test = await getTestRating(prisma, testId);
+  const { tests } = getRuntimeServices(context);
+  const test = await getTestRating(tests, testId);
   if (!test) {
     return ContentRating.UNKNOWN;
   }

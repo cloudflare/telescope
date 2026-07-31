@@ -1,33 +1,33 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
+import { fileURLToPath } from 'node:url';
 
 import cloudflare from '@astrojs/cloudflare';
+import node from '@astrojs/node';
 import react from '@astrojs/react';
+import { defineConfig } from 'astro/config';
 
-// https://astro.build/config
+const deployTarget = process.env.DEPLOY_TARGET ?? 'node';
+if (deployTarget !== 'node' && deployTarget !== 'cloudflare') {
+  throw new Error(`Unsupported DEPLOY_TARGET: ${deployTarget}`);
+}
+const isCloudflare = deployTarget === 'cloudflare';
+
 export default defineConfig({
   output: 'server',
-  adapter: cloudflare({
-    imageService: 'cloudflare',
-  }),
+  adapter: isCloudflare
+    ? cloudflare({ imageService: 'cloudflare' })
+    : node({ mode: 'standalone' }),
   vite: {
-    plugins: [
-      {
-        name: 'pre-compile-deps',
-        configEnvironment(name) {
-          if (name !== 'client') {
-            return {
-              optimizeDeps: {
-                // wasm-compiler-edge must never be bundled by esbuild — it contains a ?module import that only workerd can handle natively
-                // https://docs.astro.build/en/guides/integrations-guide/cloudflare/#cloudflare-module-imports
-                // https://developers.cloudflare.com/workers/wrangler/bundling/#including-non-javascript-modules
-                exclude: ['@prisma/client/runtime/wasm-compiler-edge'],
-              },
-            };
-          }
-        },
+    resolve: {
+      alias: {
+        '@/lib/runtime/current': fileURLToPath(
+          new URL(
+            `./src/lib/runtime/${isCloudflare ? 'cloudflare' : 'node'}.ts`,
+            import.meta.url,
+          ),
+        ),
       },
-    ],
+    },
   },
   integrations: [react()],
 });
