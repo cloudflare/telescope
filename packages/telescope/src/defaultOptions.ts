@@ -42,6 +42,8 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   uploadUrl: null,
   // Dry run (false = no dry run)
   dry: false,
+  // Telescope upload source (cli = from CLI, api = from programmatic API)
+  source: 'cli',
 };
 
 /**
