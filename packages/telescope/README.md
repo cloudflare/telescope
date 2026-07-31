@@ -6,8 +6,6 @@
 
 When you run the agent, it will load the page in the browser you chose and apply any special parameters you have provided. By default, it will store results for the test in a `/results` directory. Each test gets its own folder with the date prefixed, followed by a unique ID.
 
-> **Note:** Telescope injects an `x-telescope-id` header into every outgoing request during testing. This header carries a unique ID used to correlate timing data with HAR entries. It is sent to the target server and will be visible in the saved HAR file.
-
 Inside the test folder, the following files are added:
 
 - `console.json` - Console output from the page to look for warnings, JS errors, etc
@@ -73,6 +71,7 @@ Options:
   --openHtml                    Open HTML report in browser (requires --html) (default: false)
   --list                        Generate list of results in HTML (default: false)
   --overrideHost <object>       Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})
+  --priority                    Collect resource fetch priorities (Chromium engines only). Tags every request with an x-telescope-id header, which disables the browser HTTP cache. (default: false)
   --zip                         Zip the results of the test into the results directory. (default: false)
   --uploadUrl <string>          Upload zipped results to URL. Must be a valid URL if provided. (default: null)
   --dry                         Dry run (do not run test, just save config and cleanup) (default: false)
@@ -213,6 +212,39 @@ telescope -u https://www.example.com -b firefox \
   --overrideHost '{"cdn.example.com": "127.0.0.1:8080"}' \
   --firefoxPrefs '{"network.stricttransportsecurity.preloadlist": false}'
 ```
+
+### Fetch priority
+
+**Browser Support**
+✅ Edge
+✅ Chrome
+❌ Safari
+❌ Firefox
+
+Chromium reports the priority it assigned to each resource, and may raise that priority mid-flight (for example, boosting an image it discovers is in the viewport). Collecting this data is off by default — enable it with `--priority`:
+
+```
+telescope -u https://www.example.com --priority
+```
+
+With the flag enabled, each entry in `pageload.har` gains two extension fields:
+
+- `_initialPriority` — the priority Chromium assigned when the request was created
+- `_priority` — the final priority, after any mid-flight change. Equal to `_initialPriority` when the priority was never changed.
+
+Priority data comes from the Chrome DevTools Protocol, so it is only available on Chromium engines (`chrome`, `chrome-beta`, `chromium`, `canary`, `edge`). The flag has no effect on Firefox or Safari.
+
+#### The `x-telescope-id` header
+
+Chromium reports priorities against its own internal request IDs, which do not appear in the HAR. To join the two, Telescope tags each outgoing request with a unique `x-telescope-id` header, then matches the CDP request ID and the HAR entry that carry the same value. This is what makes the priority fields land on the right entry even when several requests share a URL.
+
+Two consequences are worth knowing before you enable it:
+
+- **The header is sent to the server.** It goes out with every request and is recorded in the saved HAR file.
+- **It disables the browser HTTP cache.** Injecting the header requires a catch-all Playwright route handler, and [registering one disables the HTTP cache](https://playwright.dev/docs/api/class-page#page-route). Cache-dependent behaviour therefore changes: notably, resources advertised in an Early Hints (`103`) response are re-requested instead of being reused.
+- **Recorded request headers change shape.** Requests pass back through the route handler, so the HAR lists the headers Telescope replayed — canonically cased (`User-Agent`) and without HTTP/2 pseudo-headers. Without the flag, the HAR lists the headers as they went out on the wire — lower-cased (`user-agent`) and including pseudo-headers such as `:method` and `:path`. Match header names case-insensitively if you consume the HAR either way.
+
+Because of these points, priority collection is opt-in rather than always-on — leaving `--priority` off keeps the cache intact and sends no extra header, so the measurement reflects normal browser behaviour.
 
 ## Docker
 

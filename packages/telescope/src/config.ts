@@ -61,6 +61,7 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
       (options.connectionType as ConnectionType) ||
       DEFAULT_OPTIONS.connectionType,
     auth: DEFAULT_OPTIONS.auth,
+    priority: options.priority || DEFAULT_OPTIONS.priority,
     zip: options.zip || DEFAULT_OPTIONS.zip,
     dry: options.dry || DEFAULT_OPTIONS.dry,
     delayUsing: DEFAULT_OPTIONS.delayUsing,

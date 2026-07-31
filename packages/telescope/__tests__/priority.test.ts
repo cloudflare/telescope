@@ -29,7 +29,7 @@ describe('Request HAR entries', () => {
 
   describe.each(browsers)('Using %s', (browser: BrowserName) => {
     test('Check priorities', async () => {
-      await withHAR({ url: `${baseUrl}/index.html`, browser }, har => {
+      await withHAR({ url: `${baseUrl}/index.html`, browser, priority: true }, har => {
         expect(har).not.toBeNull();
 
         const isFirstImages = new RegExp('first(\\d+)$');

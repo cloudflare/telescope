@@ -191,6 +191,7 @@ export interface LaunchOptions {
   openHtml?: boolean;
   list?: boolean;
   overrideHost?: Record<string, string>;
+  priority?: boolean;
   zip?: boolean;
   uploadUrl?: string | null;
   dry?: boolean;
@@ -219,6 +220,7 @@ export interface DefaultOptions {
   openHtml: boolean;
   list: boolean;
   overrideHost: Record<string, string>;
+  priority: boolean;
   connectionType: ConnectionType;
   auth: HTTPCredentials | false;
   zip: boolean;
@@ -701,6 +703,7 @@ export interface CLIOptions {
   openHtml?: boolean;
   list?: boolean;
   overrideHost?: Record<string, string>;
+  priority?: boolean;
   zip?: boolean;
   uploadUrl?: string;
   dry?: boolean;
