@@ -120,7 +120,7 @@ async function executeTest(
   const config: TestConfig = {
     ...DEFAULT_OPTIONS,
     ...options,
-    baseline: options.baseline || DEFAULT_OPTIONS.baseline,
+    baseline: options.baseline ?? DEFAULT_OPTIONS.baseline,
   };
   const browserConfig = new BrowserConfig().getBrowserConfig(
     config.browser || 'chrome',
