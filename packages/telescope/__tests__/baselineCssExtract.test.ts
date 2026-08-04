@@ -107,11 +107,8 @@ describe('extractCSSFromHar — ignored and edge cases', () => {
 });
 
 // Inline `<style>` blocks are read from the live DOM rather than the HAR, so
-// these tests drive a real page in each browser from Telescope's own matrix,
-// launched from that browser's Telescope config (engine + channel + headless)
-// so coverage tracks the browsers Telescope actually runs rather than a
-// separate engine list. setContent leaves the page on `about:blank`, which is
-// what `file` reflects.
+// these tests drive a real page in each browser from Telescope's matrix.
+// setContent leaves the page on `about:blank`, which is what `file` reflects.
 const browsers = BrowserConfig.getBrowsers();
 
 describe.each(browsers)('harvestInlineStyles — %s', browserName => {
