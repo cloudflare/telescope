@@ -107,22 +107,24 @@ describe('extractCSSFromHar — ignored and edge cases', () => {
 });
 
 // Inline `<style>` blocks are read from the live DOM rather than the HAR, so
-// these tests drive a real page per rendering engine in the selected matrix
-// (CI runs Firefox only; locally all engines run). setContent leaves the page
-// on `about:blank`, which is what `file` reflects.
-const engines = [
-  ...new Set(
-    BrowserConfig.getBrowsers().map(
-      name => BrowserConfig.browserConfigs[name].engine,
-    ),
-  ),
-];
+// these tests drive a real page in each browser from Telescope's own matrix,
+// launched from that browser's Telescope config (engine + channel + headless)
+// so coverage tracks the browsers Telescope actually runs rather than a
+// separate engine list. setContent leaves the page on `about:blank`, which is
+// what `file` reflects.
+const browsers = BrowserConfig.getBrowsers();
 
-describe.each(engines)('harvestInlineStyles — %s', engine => {
+describe.each(browsers)('harvestInlineStyles — %s', browserName => {
+  const config = BrowserConfig.browserConfigs[browserName];
   let browser: Browser;
 
   beforeAll(async () => {
-    browser = await playwright[engine].launch({ headless: true });
+    browser = await playwright[config.engine].launch({
+      headless: config.headless,
+      ...('channel' in config && config.channel
+        ? { channel: config.channel }
+        : {}),
+    });
   }, 120000);
 
   afterAll(async () => {

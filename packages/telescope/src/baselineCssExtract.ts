@@ -65,17 +65,12 @@ export async function harvestInlineStyles(page: Page): Promise<CSSSource[]> {
   );
 
   const pageUrl = page.url();
-  const sources: CSSSource[] = [];
-  for (const css of blocks) {
-    if (css.trim().length === 0) continue;
-
-    sources.push({
+  return blocks
+    .filter(css => css.trim().length > 0)
+    .map((css, index) => ({
       css,
-      file: `${pageUrl} (inline style #${sources.length + 1})`,
-    });
-  }
-
-  return sources;
+      file: `${pageUrl} (inline style #${index + 1})`,
+    }));
 }
 
 /**
