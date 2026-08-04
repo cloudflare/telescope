@@ -17,9 +17,13 @@
     "start": "node dist/server/entry.mjs",
     "migrate:development": "npx wrangler d1 migrations apply telescope-db-development --local --env development",
     "migrate:staging": "npx wrangler d1 migrations apply telescope-db-staging --remote --env staging",
+    "migration:create": "node scripts/create-d1-migration.js",
+    "schema:check": "node scripts/create-d1-migration.js --check",
+    "schema:format": "prisma format",
+    "schema:validate": "prisma validate",
     "deploy:development": "npm run build:cloudflare && wrangler deploy --env development",
     "deploy:staging": "npm run build:staging && wrangler deploy --env staging",
-    "test": "vitest run",
+    "test": "npm run schema:check && vitest run",
     "test:ui": "playwright test -c playwright.config.ts"
   },
   "dependencies": {
@@ -40,9 +44,10 @@
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "playwright": "^1.61.1",
     "cross-env": "^10.1.0",
     "dotenv": "^17.2.4",
+    "playwright": "^1.61.1",
+    "prisma": "^7.9.1",
     "wrangler": "^4.114.0"
   },
   "engines": {

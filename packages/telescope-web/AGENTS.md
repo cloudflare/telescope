@@ -8,6 +8,8 @@ Key subdirectories:
 
 - `src/` — Astro pages, React components, API routes, and runtime storage adapters
 - `migrations/` — D1 database migrations for Cloudflare deployments
+- `prisma/` — declarative D1 schema used only for migration authoring
+- `scripts/create-d1-migration.js` — generates the next D1 migration from the Prisma schema
 - `.telescope-data/` — automatically created local SQLite database and artifacts (gitignored)
 
 ---
@@ -42,6 +44,9 @@ npm run deploy:staging      # build:staging + wrangler deploy --env staging
 ### Cloudflare database
 
 ```bash
+npm run schema:validate       # validate prisma/schema.prisma
+npm run schema:check          # ensure Prisma schema matches D1 migration history
+npm run migration:create -- add_field  # generate the next D1 SQL migration
 npm run migrate:development  # apply D1 migrations locally (development)
 npm run migrate:staging      # apply D1 migrations remotely (staging)
 ```
@@ -67,4 +72,6 @@ npm test                     # vitest run
 - `DEPLOY_TARGET` selects the Astro adapter; Node is the default and Cloudflare builds set it to `cloudflare`.
 - Local storage uses SQLite and the filesystem under `.telescope-data/`, configurable with `TELESCOPE_DATA_DIR`.
 - Cloudflare storage uses D1 and R2 bindings from `wrangler.jsonc`; Workers AI remains optional and Cloudflare-only.
+- Prisma is a development-only schema and SQL generation tool. Do not add Prisma Client or its D1 adapter to application runtime code.
+- After editing `prisma/schema.prisma`, use `npm run migration:create -- <name>`, review the generated SQL, update the local Node SQLite adapter when applicable, and apply the migration with Wrangler.
 - Routes must use `context.locals.services`, never import Cloudflare bindings directly, so both targets stay portable.
