@@ -231,13 +231,6 @@ export interface DefaultOptions {
   device?: CustomDeviceDescriptor;
 }
 
-/**
- * Options used internally after the Baseline default has been applied.
- */
-export interface TestConfig extends LaunchOptions {
-  baseline: boolean;
-}
-
 // ============================================================================
 // Test Results
 // ============================================================================
@@ -652,11 +645,11 @@ export interface HarData {
 // Baseline Types
 // ============================================================================
 
-export type JsonPrimitive = boolean | number | string | null;
-export type JsonValue =
-  | JsonPrimitive
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+export type JSONPrimitive = boolean | number | string | null;
+export type JSONValue =
+  | JSONPrimitive
+  | JSONValue[]
+  | { [key: string]: JSONValue };
 
 /**
  * Inputs available to the post-performance Baseline pipeline.

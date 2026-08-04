@@ -4,7 +4,11 @@ import type { Server } from 'node:http';
 
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
-import { runBaselinePipeline, writeBaselineArtifact } from '../src/baseline.js';
+import {
+  BASELINE_SCHEMA_VERSION,
+  runBaselinePipeline,
+  writeBaselineArtifact,
+} from '../src/baseline.js';
 import { BrowserConfig } from '../src/browsers.js';
 import { launchTest } from '../src/index.js';
 import type { BrowserName } from '../src/types.js';
@@ -64,7 +68,7 @@ describe.each(browsers)('Baseline pipeline artifacts (%s)', browser => {
   );
 });
 
-test('the pipeline isolates performance artifacts and writes stable JSON', async () => {
+test('the pipeline writes a run manifest and isolates performance artifacts', async () => {
   fs.mkdirSync(path.resolve('results'), { recursive: true });
   const resultsPath = fs.mkdtempSync(
     path.join(process.cwd(), 'results', 'baseline-isolation-'),
@@ -86,7 +90,7 @@ test('the pipeline isolates performance artifacts and writes stable JSON', async
       fs.readFileSync(path.join(resultsPath, 'baseline', 'meta.json'), 'utf8'),
     ) as Record<string, unknown>;
     expect(meta).toEqual({
-      schemaVersion: 1,
+      schemaVersion: BASELINE_SCHEMA_VERSION,
       telescopeVersion: packageVersion,
       timestamp: expect.any(String),
       url: 'https://example.com',
@@ -96,17 +100,29 @@ test('the pipeline isolates performance artifacts and writes stable JSON', async
     );
     expect(fs.readFileSync(harPath, 'utf8')).toBe(har);
     expect(fs.readFileSync(metricsPath, 'utf8')).toBe(metrics);
-    writeBaselineArtifact(resultsPath, 'detection/example.json', {
-      z: [{ b: 2, a: 1 }],
-      a: { d: 4, c: 3 },
-    });
+  } finally {
+    fs.rmSync(resultsPath, { recursive: true, force: true });
+  }
+});
 
-    expect(
+test('writeBaselineArtifact round-trips content and blocks path escapes', () => {
+  fs.mkdirSync(path.resolve('results'), { recursive: true });
+  const resultsPath = fs.mkdtempSync(
+    path.join(process.cwd(), 'results', 'baseline-artifact-'),
+  );
+
+  try {
+    const artifact = { detected: ['grid', 'flexbox'] };
+    writeBaselineArtifact(resultsPath, 'detection/example.json', artifact);
+
+    const written = JSON.parse(
       fs.readFileSync(
         path.join(resultsPath, 'baseline', 'detection', 'example.json'),
         'utf8',
       ),
-    ).toBe('{"a":{"c":3,"d":4},"z":[{"a":1,"b":2}]}');
+    ) as unknown;
+    expect(written).toEqual(artifact);
+
     expect(() =>
       writeBaselineArtifact(resultsPath, '../outside.json', {}),
     ).toThrow('Invalid baseline artifact path');

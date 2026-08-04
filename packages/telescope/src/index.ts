@@ -39,7 +39,6 @@ function parseJSON<T>(flag: string, value: string, schema: ZodSchema<T>): T {
 import type {
   LaunchOptions,
   BrowserConfigOptions,
-  TestConfig,
   SuccessfulTestResult,
   FailedTestResult,
   TestResult,
@@ -84,7 +83,7 @@ export class Telescope {
  * Get the appropriate runner based on the browser engine
  */
 function getRunner(
-  options: TestConfig,
+  options: LaunchOptions,
   browserConfig: BrowserConfigOptions,
 ): TestRunner {
   if (browserConfig.engine === 'chromium') {
@@ -117,7 +116,7 @@ async function executeTest(
       `Only http:// and https:// URLs are supported (got "${options.url}")`,
     );
   }
-  const config: TestConfig = {
+  const config: LaunchOptions = {
     ...DEFAULT_OPTIONS,
     ...options,
     baseline: options.baseline ?? DEFAULT_OPTIONS.baseline,

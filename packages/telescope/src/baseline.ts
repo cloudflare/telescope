@@ -2,26 +2,12 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { getPackageVersion } from './packageVersion.js';
-import type { BaselinePipelineOptions, JsonValue } from './types.js';
+import type { BaselinePipelineOptions, JSONValue } from './types.js';
 
-const BASELINE_SCHEMA_VERSION = 1;
-
-function sortJson(value: JsonValue): JsonValue {
-  if (Array.isArray(value)) {
-    return value.map(sortJson);
-  }
-  if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-        .map(([key, child]) => [key, sortJson(child)]),
-    );
-  }
-  return value;
-}
+export const BASELINE_SCHEMA_VERSION = 1;
 
 /**
- * Writes a deterministic JSON artifact beneath the results baseline directory.
+ * Writes a JSON artifact beneath the results baseline directory.
  * @param resultsPath - Directory containing the performance test results.
  * @param artifactPath - Path relative to the baseline directory.
  * @param artifact - JSON-compatible artifact content.
@@ -30,7 +16,7 @@ function sortJson(value: JsonValue): JsonValue {
 export function writeBaselineArtifact(
   resultsPath: string,
   artifactPath: string,
-  artifact: JsonValue,
+  artifact: JSONValue,
 ): void {
   const baselinePath = path.resolve(resultsPath, 'baseline');
   const outputPath = path.resolve(baselinePath, artifactPath);
@@ -42,7 +28,7 @@ export function writeBaselineArtifact(
   }
 
   mkdirSync(path.dirname(outputPath), { recursive: true });
-  writeFileSync(outputPath, JSON.stringify(sortJson(artifact)), 'utf8');
+  writeFileSync(outputPath, JSON.stringify(artifact), 'utf8');
 }
 
 /**

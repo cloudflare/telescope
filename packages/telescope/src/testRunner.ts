@@ -38,7 +38,7 @@ import crypto from 'crypto';
 import type {
   BrowserConfigOptions,
   SimplifiedBrowserConfigOptions,
-  TestConfig,
+  LaunchOptions,
   TestPaths,
   ResultAssets,
   Metrics,
@@ -76,7 +76,7 @@ class TestRunner {
     filmstripFiles: [],
     videoFile: null,
   };
-  options: TestConfig;
+  options: LaunchOptions;
   testURL: string;
   selectedBrowser: BrowserConfigOptions;
   TESTID: string;
@@ -84,7 +84,7 @@ class TestRunner {
   browserInstance: BrowserContext | null = null;
   page: Page | null = null;
 
-  constructor(options: TestConfig, browserConfig: BrowserConfigOptions) {
+  constructor(options: LaunchOptions, browserConfig: BrowserConfigOptions) {
     this.options = options;
     this.testURL = options.url;
     this.selectedBrowser = browserConfig;
