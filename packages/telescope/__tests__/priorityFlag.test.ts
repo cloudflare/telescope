@@ -3,6 +3,7 @@ import { rmSync } from 'node:fs';
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 
 import { BrowserConfig } from '../src/browsers.js';
+import { normalizeCLIConfig } from '../src/config.js';
 import { DEFAULT_OPTIONS } from '../src/defaultOptions.js';
 import { TestRunner } from '../src/testRunner.js';
 import {
@@ -129,6 +130,30 @@ describe('setupPriorityCorrelation', () => {
 describe('--priority CLI flag', () => {
   test('defaults to false', () => {
     expect(DEFAULT_OPTIONS.priority).toBe(false);
+  });
+
+  describe('normalizeCLIConfig', () => {
+    test('falls back to the default when omitted', () => {
+      expect(normalizeCLIConfig({ url: 'https://example.com' }).priority).toBe(
+        DEFAULT_OPTIONS.priority,
+      );
+    });
+
+    test('preserves an explicit true', () => {
+      expect(
+        normalizeCLIConfig({ url: 'https://example.com', priority: true })
+          .priority,
+      ).toBe(true);
+    });
+
+    // Uses ?? rather than ||, so an explicit false is not silently replaced by
+    // the default if the default ever changes.
+    test('preserves an explicit false', () => {
+      expect(
+        normalizeCLIConfig({ url: 'https://example.com', priority: false })
+          .priority,
+      ).toBe(false);
+    });
   });
 
   function runDry(extraArgs: string[]): SavedConfig | null {

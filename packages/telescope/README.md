@@ -232,7 +232,9 @@ With the flag enabled, each entry in `pageload.har` gains two extension fields:
 - `_initialPriority` — the priority Chromium assigned when the request was created
 - `_priority` — the final priority, after any mid-flight change. Equal to `_initialPriority` when the priority was never changed.
 
-Priority data comes from the Chrome DevTools Protocol, so it is only available on Chromium engines (`chrome`, `chrome-beta`, `chromium`, `canary`, `edge`). The flag has no effect on Firefox or Safari.
+Priority data comes from the Chrome DevTools Protocol, so those two fields are only produced on Chromium engines (`chrome`, `chrome-beta`, `chromium`, `canary`, `edge`).
+
+The flag is not Chromium-only in its other effects, though. On every browser it turns on the request correlation described below, which additionally gives each HAR entry its own timing fields (`_dns_start`, `_connect_start`, `_request_start`, `_response_end`, `_resourceType`) — worth having when several requests share a URL, since those entries are otherwise indistinguishable. On Firefox and Safari you get that correlation, and pay the same cache cost, but no priority fields.
 
 #### The `x-telescope-id` header
 
