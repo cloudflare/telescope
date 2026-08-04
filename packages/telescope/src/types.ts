@@ -171,6 +171,7 @@ export type SimplifiedBrowserConfigOptions = Omit<
  */
 export interface LaunchOptions {
   url: string;
+  baseline?: boolean;
   browser?: BrowserName;
   headers?: Record<string, string>;
   cookies?: Cookie | Cookie[];
@@ -206,6 +207,7 @@ export interface LaunchOptions {
  * Default options type (subset of LaunchOptions that have defaults)
  */
 export interface DefaultOptions {
+  baseline: boolean;
   browser: BrowserName;
   width?: number;
   height?: number;
@@ -643,6 +645,20 @@ export interface HarData {
 // Baseline Types
 // ============================================================================
 
+export type JSONPrimitive = boolean | number | string | null;
+export type JSONValue =
+  | JSONPrimitive
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
+/**
+ * Inputs available to the post-performance Baseline pipeline.
+ */
+export interface BaselinePipelineOptions {
+  resultsPath: string;
+  url: string;
+}
+
 /**
  * A block of CSS to analyse for Baseline feature detection, with its origin.
  *
@@ -692,6 +708,7 @@ declare global {
  */
 export interface CLIOptions {
   url?: string;
+  baseline?: boolean;
   browser?: string;
   headers?: Record<string, string>;
   cookies?: Cookie | Cookie[];
