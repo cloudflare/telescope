@@ -120,16 +120,21 @@ describe('Duplicate request HAR entries', () => {
   });
 
   describe.each(browsers)('%s', (browser: BrowserName) => {
+    // Per-entry timing enrichment is keyed off the x-telescope-id header, which
+    // is only injected when priority collection is enabled.
     test('each duplicate-URL HAR entry gets its own timing data', async () => {
-      await withHAR({ url: `${baseUrl}/index.html`, browser }, har => {
-        const entries = styleCssEntries(har);
-        expect(entries.length).toBe(3);
+      await withHAR(
+        { url: `${baseUrl}/index.html`, browser, priority: true },
+        har => {
+          const entries = styleCssEntries(har);
+          expect(entries.length).toBe(3);
 
-        const entriesWithTimingData = entries.filter(
-          (entry: HarEntry) => entry._dns_start !== undefined,
-        );
-        expect(entriesWithTimingData.length).toBe(entries.length);
-      });
+          const entriesWithTimingData = entries.filter(
+            (entry: HarEntry) => entry._dns_start !== undefined,
+          );
+          expect(entriesWithTimingData.length).toBe(entries.length);
+        },
+      );
     }, 120000);
   });
 });

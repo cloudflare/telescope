@@ -324,6 +324,25 @@ class TestRunner {
     await this.setupResponseDelays(page);
     await this.setupBlocking(page);
 
+    await this.setupPriorityCorrelation(page);
+  }
+
+  /**
+   * Tag every request with a unique `x-telescope-id` header and collect the
+   * per-request timings keyed by that ID, so fetch priorities can later be
+   * matched to the right HAR entry.
+   *
+   * Only runs when the `priority` option is enabled. The catch-all
+   * `page.route()` this needs disables the browser HTTP cache
+   * (see https://playwright.dev/docs/api/class-page#page-route), which changes
+   * what is being measured, so it must stay opt-in.
+   * See https://github.com/cloudflare/telescope/issues/327.
+   */
+  async setupPriorityCorrelation(page: Page): Promise<void> {
+    if (!this.options.priority) {
+      return;
+    }
+
     // Registered last so it runs first — injects a unique ID header into every
     // request, which Playwright records in the HAR.
     await page.route('**/*', async (route: Route, request: Request) => {
