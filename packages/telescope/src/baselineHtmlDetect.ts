@@ -77,8 +77,15 @@ const ATTRIBUTE_BCD_NAMES: Record<string, string> = {
 
 /**
  * Collect HTML element and attribute BCD keys from a page's live main-document
- * DOM. Shadow roots, child-frame documents, and inert `<template>` contents
- * are intentionally not pierced.
+ * DOM. The following subtrees are not traversed, for distinct reasons:
+ *
+ * - `<template>` contents: inert and never rendered, so their features are not
+ *   actually "in use" by the page — counting them would over-report.
+ * - Shadow roots and same-origin child-frame documents: reachable and would
+ *   give more complete coverage, but left out of this initial collector to keep
+ *   its scope focused; candidates for a follow-up.
+ * - Cross-origin child-frame documents: the browser blocks reading their DOM,
+ *   so their features are not detectable from the main document at all.
  *
  * @param page - A loaded Playwright page.
  * @returns Unique BCD keys sorted lexicographically with occurrence counts.
@@ -116,7 +123,9 @@ export async function collectHTMLFeatures(
         const tag = element.localName;
         const supportedAttributes = supportedElements.get(tag);
         const elementKeys = new Set<string>();
-        if (supportedAttributes) elementKeys.add(`html.elements.${tag}`);
+        if (supportedAttributes) {
+          elementKeys.add(`html.elements.${tag}`);
+        }
 
         for (const attribute of element.attributes) {
           const name = attribute.name.toLowerCase();
@@ -139,7 +148,9 @@ export async function collectHTMLFeatures(
             elementKeys.add(`html.global_attributes.${name}`);
             ruleName = `global.${name}`;
           } else if (supportedAttributes && !valueOnly.has(ruleName)) {
-            if (!supportedAttributes.has(name)) continue;
+            if (!supportedAttributes.has(name)) {
+              continue;
+            }
             const bcdName = attributeBcdNames[ruleName] ?? name;
             elementKeys.add(`html.elements.${tag}.${bcdName}`);
           } else if (!supportedAttributes) {
@@ -147,10 +158,14 @@ export async function collectHTMLFeatures(
           }
 
           const valueKey = valueKeys[ruleName]?.[value];
-          if (valueKey) elementKeys.add(valueKey);
+          if (valueKey) {
+            elementKeys.add(valueKey);
+          }
         }
 
-        for (const key of elementKeys) record(key);
+        for (const key of elementKeys) {
+          record(key);
+        }
       }
 
       return [...counts.entries()]
