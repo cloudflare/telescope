@@ -1,13 +1,11 @@
 ---
-import { env } from 'cloudflare:workers';
-
 import type { Tests } from '@/lib/types/tests';
 
 import Page from '@/layouts/Page.astro';
 import TestCard from '@/components/TestCard.astro';
 
-import { getPrismaClient } from '@/lib/prisma/client';
 import { getAllTests } from '@/lib/repositories/testRepository';
+import { getRuntimeServices } from '@/lib/runtime/context';
 
 import { ListIcon, SquaresFourIcon } from '@phosphor-icons/react/ssr';
 
@@ -16,10 +14,9 @@ const savedView = Astro.cookies.get('resultsView')?.value;
 const viewLayout =
   savedView === 'grid' || savedView === 'vertical' ? savedView : 'vertical';
 
-// Fetch all tests from D1
-const aiEnabled = env.ENABLE_AI_RATING === 'true';
-const prisma = getPrismaClient(Astro);
-const tests = await getAllTests(prisma, aiEnabled);
+const services = getRuntimeServices(Astro);
+const { aiEnabled } = services;
+const tests = await getAllTests(services.tests, aiEnabled);
 
 // get proper interface with screenshot
 type TestWithScreenshot = Tests & {
@@ -31,8 +28,7 @@ const testsWithScreenshots: TestWithScreenshot[] = await Promise.all(
   tests.map(async (test: Tests): Promise<TestWithScreenshot> => {
     let screenshotUrl: string | null = null;
     const key = `${test.test_id}/${filename}`;
-    const obj = await env.RESULTS_BUCKET!.head(key);
-    if (obj) {
+    if (await services.results.has(key)) {
       screenshotUrl = `/api/tests/${test.test_id}/${filename}`;
     }
     return {

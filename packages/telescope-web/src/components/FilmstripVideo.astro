@@ -1,15 +1,15 @@
 ---
-import { env } from 'cloudflare:workers';
-
 import type { MetricsJson } from '@/lib/types/metrics';
+import { getRuntimeServices } from '@/lib/runtime/context';
 interface Props {
   testId: string;
   metrics: MetricsJson | null;
 }
 const { testId, metrics } = Astro.props;
+const { results } = getRuntimeServices(Astro);
 let frameRate = 1;
 try {
-  const configObj = await env.RESULTS_BUCKET.get(`${testId}/config.json`);
+  const configObj = await results.get(`${testId}/config.json`);
   if (configObj) {
     const config = await configObj.json<{ options?: { frameRate?: number } }>();
     frameRate = config?.options?.frameRate || 1;
@@ -41,15 +41,15 @@ interface FilmstripFrame {
 let filmstripFrames: FilmstripFrame[] = [];
 let videoUrl: string | null = null;
 try {
-  const listed = await env.RESULTS_BUCKET.list({ prefix: `${testId}/` });
-  const frames = listed.objects
+  const keys = await results.list(`${testId}/`);
+  const frames = keys
     .filter(
-      obj =>
-        obj.key.includes('/filmstrip/') &&
-        (obj.key.endsWith('.jpg') || obj.key.endsWith('.png')),
+      key =>
+        key.includes('/filmstrip/') &&
+        (key.endsWith('.jpg') || key.endsWith('.png')),
     )
-    .map(obj => {
-      const filename = obj.key.split('/').pop() || '';
+    .map(key => {
+      const filename = key.split('/').pop() || '';
       const match = filename.match(/frame_\d+x\d+_(\d+)\.(jpg|png)/);
       const frameNum = match ? parseInt(match[1], 10) : 0;
       return {
@@ -75,14 +75,14 @@ try {
     );
     return { ...frame, ms, timeLabel, isFcp, isLcp, hasShift };
   });
-  const videoFile = listed.objects.find(
-    obj =>
-      obj.key.startsWith(`${testId}/`) &&
-      !obj.key.includes('/filmstrip/') &&
-      obj.key.endsWith('.webm'),
+  const videoFile = keys.find(
+    key =>
+      key.startsWith(`${testId}/`) &&
+      !key.includes('/filmstrip/') &&
+      key.endsWith('.webm'),
   );
   if (videoFile) {
-    videoUrl = `/api/tests/${testId}/${videoFile.key.replace(`${testId}/`, '')}`;
+    videoUrl = `/api/tests/${testId}/${videoFile.replace(`${testId}/`, '')}`;
   }
 } catch (error) {
   console.error('Error loading filmstrip/video:', error);

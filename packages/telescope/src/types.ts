@@ -201,6 +201,7 @@ export interface LaunchOptions {
   delay?: Record<string, number>;
   delayUsing?: DelayMethod;
   device?: CustomDeviceDescriptor;
+  source: 'cli' | 'upload';
 }
 
 /**
@@ -229,6 +230,7 @@ export interface DefaultOptions {
   delay: Record<string, number>;
   delayUsing: DelayMethod;
   device?: CustomDeviceDescriptor;
+  source: 'cli' | 'upload';
 }
 
 // ============================================================================

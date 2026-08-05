@@ -1,6 +1,6 @@
 import type { APIContext, APIRoute } from 'astro';
-import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestRating } from '@/lib/repositories/testRepository';
+import { getRuntimeServices } from '@/lib/runtime/context';
 
 /**
  * GET /api/tests/:testId/rating
@@ -14,8 +14,8 @@ export const GET: APIRoute = async (context: APIContext) => {
       headers: { 'Content-Type': 'application/json' },
     });
   }
-  const prisma = getPrismaClient(context);
-  const test = await getTestRating(prisma, testId);
+  const { tests } = getRuntimeServices(context);
+  const test = await getTestRating(tests, testId);
   if (test === null) {
     return new Response(JSON.stringify({ error: 'Test not found' }), {
       status: 404,

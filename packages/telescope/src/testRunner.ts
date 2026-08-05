@@ -881,9 +881,13 @@ class TestRunner {
           new Blob([readFileSync(outputZip)], { type: 'application/zip' }),
           `${this.TESTID}.zip`,
         );
+        form.append('source', this.options.source);
+
+        const uploadOrigin = new URL(this.options.uploadUrl).origin;
 
         const response = await fetch(this.options.uploadUrl, {
           method: 'POST',
+          headers: { Origin: uploadOrigin },
           body: form,
         });
 
