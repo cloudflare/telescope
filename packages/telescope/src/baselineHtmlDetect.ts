@@ -1,79 +1,14 @@
 import type { Page } from 'playwright';
 
-import { HTML_ELEMENT_ATTRIBUTES } from './baselineHtmlBcd.js';
+import {
+  ATTRIBUTE_BCD_NAMES,
+  CUSTOM_DATA_ATTRIBUTE_BCD_KEY,
+  GLOBAL_ATTRIBUTES,
+  HTML_ELEMENT_ATTRIBUTES,
+  VALUE_KEYS,
+  VALUE_ONLY_ATTRIBUTES,
+} from './baselineHtmlBcd.js';
 import type { HTMLFeatureCount } from './types.js';
-
-const GLOBAL_ATTRIBUTES = [
-  'accesskey',
-  'anchor',
-  'autocapitalize',
-  'autocorrect',
-  'autofocus',
-  'class',
-  'contenteditable',
-  'dir',
-  'draggable',
-  'enterkeyhint',
-  'exportparts',
-  'headingoffset',
-  'headingreset',
-  'hidden',
-  'id',
-  'inert',
-  'inputmode',
-  'is',
-  'lang',
-  'nonce',
-  'part',
-  'popover',
-  'slot',
-  'spellcheck',
-  'style',
-  'tabindex',
-  'title',
-  'translate',
-  'virtualkeyboardpolicy',
-  'writingsuggestions',
-] as const;
-
-const VALUE_KEYS: Record<string, Record<string, string>> = {
-  'img.loading': {
-    lazy: 'html.elements.img.loading',
-  },
-  'input.type': Object.fromEntries(
-    [
-      'button',
-      'checkbox',
-      'color',
-      'date',
-      'datetime-local',
-      'email',
-      'file',
-      'hidden',
-      'image',
-      'month',
-      'number',
-      'password',
-      'radio',
-      'range',
-      'reset',
-      'search',
-      'submit',
-      'tel',
-      'text',
-      'time',
-      'url',
-      'week',
-    ].map(value => [value, `html.elements.input.type_${value}`]),
-  ),
-};
-
-const VALUE_ONLY_ATTRIBUTES = ['img.loading', 'input.type'] as const;
-
-// HTML lowercases content-attribute names, but this BCD key is camel-cased.
-const ATTRIBUTE_BCD_NAMES: Record<string, string> = {
-  'iframe.privatetoken': 'privateToken',
-};
 
 /**
  * Collect HTML element and attribute BCD keys from a page's live main-document
@@ -96,12 +31,12 @@ export async function collectHTMLFeatures(
   return page.evaluate(
     ({
       attributeBcdNames,
+      customDataAttributeBcdKey,
       elementAttributes,
       globalAttributes,
       valueKeys,
       valueOnlyAttributes,
     }) => {
-      const counts = new Map<string, number>();
       const globals = new Set<string>(globalAttributes);
       const valueOnly = new Set<string>(valueOnlyAttributes);
       const supportedElements = new Map(
@@ -111,62 +46,88 @@ export async function collectHTMLFeatures(
         ]),
       );
 
-      const record = (bcdKey: string): void => {
-        counts.set(bcdKey, (counts.get(bcdKey) ?? 0) + 1);
+      const getAttributeName = (attribute: Attr): string =>
+        attribute.name.toLowerCase();
+
+      const isCustomDataAttribute = (attribute: Attr): boolean => {
+        const name = getAttributeName(attribute);
+        return name.startsWith('data-') && name.length > 5;
       };
 
-      for (const element of document.querySelectorAll('*')) {
-        if (element.namespaceURI !== 'http://www.w3.org/1999/xhtml') {
-          continue;
+      const isIgnoredAttribute = (attribute: Attr): boolean => {
+        const name = getAttributeName(attribute);
+        return (
+          name === 'role' || name.startsWith('aria-') || name.startsWith('on')
+        );
+      };
+
+      const getAttributeKeys = (
+        attribute: Attr,
+        tag: string,
+        supportedAttributes: Set<string> | undefined,
+      ): string[] => {
+        const name = getAttributeName(attribute);
+        const value = attribute.value.toLowerCase();
+        const ruleName = `${tag}.${name}`;
+
+        if (globals.has(name)) {
+          const globalRuleName = `global.${name}`;
+          const valueKey = valueKeys[globalRuleName]?.[value];
+          return [
+            `html.global_attributes.${name}`,
+            ...(valueKey ? [valueKey] : []),
+          ];
         }
 
-        const tag = element.localName;
-        const supportedAttributes = supportedElements.get(tag);
-        const elementKeys = new Set<string>();
-        if (supportedAttributes) {
-          elementKeys.add(`html.elements.${tag}`);
+        if (!supportedAttributes) {
+          return [];
         }
 
-        for (const attribute of element.attributes) {
-          const name = attribute.name.toLowerCase();
-          const value = attribute.value.toLowerCase();
-          let ruleName = `${tag}.${name}`;
-
-          if (name.startsWith('data-') && name.length > 5) {
-            record('html.global_attributes.data_attributes');
-            continue;
-          }
-          if (
-            name === 'role' ||
-            name.startsWith('aria-') ||
-            name.startsWith('on')
-          ) {
-            continue;
-          }
-
-          if (globals.has(name)) {
-            elementKeys.add(`html.global_attributes.${name}`);
-            ruleName = `global.${name}`;
-          } else if (supportedAttributes && !valueOnly.has(ruleName)) {
-            if (!supportedAttributes.has(name)) {
-              continue;
-            }
-            const bcdName = attributeBcdNames[ruleName] ?? name;
-            elementKeys.add(`html.elements.${tag}.${bcdName}`);
-          } else if (!supportedAttributes) {
-            continue;
-          }
-
-          const valueKey = valueKeys[ruleName]?.[value];
-          if (valueKey) {
-            elementKeys.add(valueKey);
-          }
+        const valueKey = valueKeys[ruleName]?.[value];
+        if (valueOnly.has(ruleName)) {
+          return valueKey ? [valueKey] : [];
         }
 
-        for (const key of elementKeys) {
-          record(key);
+        if (!supportedAttributes.has(name)) {
+          return [];
         }
-      }
+
+        const bcdName = attributeBcdNames[ruleName] ?? name;
+        return [
+          `html.elements.${tag}.${bcdName}`,
+          ...(valueKey ? [valueKey] : []),
+        ];
+      };
+
+      const counts = [...document.querySelectorAll('*')]
+        .filter(
+          element => element.namespaceURI === 'http://www.w3.org/1999/xhtml',
+        )
+        .reduce((result, element) => {
+          const tag = element.localName;
+          const supportedAttributes = supportedElements.get(tag);
+          const attributes = [...element.attributes];
+          const customDataAttributeKeys = attributes
+            .filter(isCustomDataAttribute)
+            .map(() => customDataAttributeBcdKey);
+          const elementKeys = new Set([
+            ...(supportedAttributes ? [`html.elements.${tag}`] : []),
+            ...attributes
+              .filter(
+                attribute =>
+                  !isCustomDataAttribute(attribute) &&
+                  !isIgnoredAttribute(attribute),
+              )
+              .flatMap(attribute =>
+                getAttributeKeys(attribute, tag, supportedAttributes),
+              ),
+          ]);
+
+          [...customDataAttributeKeys, ...elementKeys].forEach(bcdKey => {
+            result.set(bcdKey, (result.get(bcdKey) ?? 0) + 1);
+          });
+          return result;
+        }, new Map<string, number>());
 
       return [...counts.entries()]
         .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
@@ -174,6 +135,7 @@ export async function collectHTMLFeatures(
     },
     {
       attributeBcdNames: ATTRIBUTE_BCD_NAMES,
+      customDataAttributeBcdKey: CUSTOM_DATA_ATTRIBUTE_BCD_KEY,
       elementAttributes: HTML_ELEMENT_ATTRIBUTES,
       globalAttributes: GLOBAL_ATTRIBUTES,
       valueKeys: VALUE_KEYS,

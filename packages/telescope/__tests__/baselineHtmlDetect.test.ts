@@ -32,7 +32,10 @@ describe.each(engines)('live DOM HTML collection — %s', engine => {
       <input type="date">
       <input form="missing-form" type="datetime-local">
       <fencedframe></fencedframe>
-      <iframe privateToken></iframe>
+      <iframe
+        cross-origin-top-navigation-by-user-activation
+        privateToken
+      ></iframe>
       <div
         click="not-an-event-handler"
         children="not-a-content-attribute"
@@ -50,6 +53,11 @@ describe.each(engines)('live DOM HTML collection — %s', engine => {
       <canvas></canvas>
       <script>
         document.body.append(document.createElement('dialog'));
+        const mixedCaseAttributes = document.createElement('div');
+        mixedCaseAttributes.setAttributeNS(null, 'ARIA-LABEL', 'ignored');
+        mixedCaseAttributes.setAttributeNS(null, 'DATA-MIXED', 'included');
+        mixedCaseAttributes.setAttributeNS(null, 'ONCLICK', 'ignored');
+        document.body.append(mixedCaseAttributes);
         document.querySelector('canvas').remove();
       </script>
     `);
@@ -68,7 +76,7 @@ describe.each(engines)('live DOM HTML collection — %s', engine => {
       { bcdKey: 'html.elements.details.open', count: 1 },
       { bcdKey: 'html.elements.dialog', count: 3 },
       { bcdKey: 'html.elements.dialog.closedby', count: 1 },
-      { bcdKey: 'html.elements.div', count: 1 },
+      { bcdKey: 'html.elements.div', count: 2 },
       { bcdKey: 'html.elements.fencedframe', count: 1 },
       { bcdKey: 'html.elements.head', count: 1 },
       { bcdKey: 'html.elements.html', count: 1 },
@@ -84,7 +92,7 @@ describe.each(engines)('live DOM HTML collection — %s', engine => {
       { bcdKey: 'html.elements.input.type_datetime-local', count: 1 },
       { bcdKey: 'html.elements.script', count: 1 },
       { bcdKey: 'html.elements.style', count: 1 },
-      { bcdKey: 'html.global_attributes.data_attributes', count: 3 },
+      { bcdKey: 'html.global_attributes.data_attributes', count: 4 },
       { bcdKey: 'html.global_attributes.id', count: 1 },
       { bcdKey: 'html.global_attributes.inert', count: 1 },
     ]);
