@@ -171,6 +171,7 @@ export type SimplifiedBrowserConfigOptions = Omit<
  */
 export interface LaunchOptions {
   url: string;
+  baseline?: boolean;
   browser?: BrowserName;
   headers?: Record<string, string>;
   cookies?: Cookie | Cookie[];
@@ -206,6 +207,7 @@ export interface LaunchOptions {
  * Default options type (subset of LaunchOptions that have defaults)
  */
 export interface DefaultOptions {
+  baseline: boolean;
   browser: BrowserName;
   width?: number;
   height?: number;
@@ -679,13 +681,36 @@ export interface CSSPropertyValueDetection {
   property: string;
   source: CSSFeatureSource;
   value: string;
+export type JSONPrimitive = boolean | number | string | null;
+export type JSONValue =
+  | JSONPrimitive
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
+/**
+ * Inputs available to the post-performance Baseline pipeline.
+ */
+export interface BaselinePipelineOptions {
+  resultsPath: string;
+  url: string;
 }
 
 /**
- * A block of CSS extracted from a HAR, with its origin location.
+ * A block of CSS to analyse for Baseline feature detection, with its origin.
+ *
+ * Sources come from two places: external stylesheets recovered from the HAR
+ * (see `extractCSSFromHar`) and inline `<style>` blocks read from the live DOM
+ * (see `harvestInlineStyles`).
  */
 export interface CSSSource {
+  /** The CSS text to analyse. This — not {@link file} — is what gets parsed. */
   css: string;
+  /**
+   * Human-readable provenance for reporting where a feature was found. For
+   * external stylesheets this is the request URL; for inline blocks it is a
+   * label derived from the page URL. Treat it as a display string, not a URL to
+   * parse.
+   */
   file: string;
 }
 
@@ -719,6 +744,7 @@ declare global {
  */
 export interface CLIOptions {
   url?: string;
+  baseline?: boolean;
   browser?: string;
   headers?: Record<string, string>;
   cookies?: Cookie | Cookie[];
