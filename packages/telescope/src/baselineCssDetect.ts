@@ -1,37 +1,18 @@
 import { generate, ident, parse, walk } from 'css-tree';
 
 import type { CssNode, WalkContext } from 'css-tree';
+import {
+  BCD_SEGMENT_PATTERN,
+  CSS_WIDE_KEYWORDS,
+  DESCRIPTOR_AT_RULES,
+  PAGE_DESCRIPTORS,
+  VALUE_CANONICAL_CASE,
+} from './baselineCssBcd.js';
 import type {
   CSSFeatureDetection,
   CSSFeatureSource,
   CSSSource,
 } from './types.js';
-
-// Requiring a leading letter intentionally excludes vendor-prefixed identifiers.
-const BCD_SEGMENT_PATTERN = /^[a-z][a-z0-9-]*$/i;
-const CSS_WIDE_KEYWORDS = new Set([
-  'inherit',
-  'initial',
-  'revert',
-  'revert-layer',
-  'unset',
-]);
-const DESCRIPTOR_AT_RULES = new Set([
-  'counter-style',
-  'font-face',
-  'font-palette-values',
-  'function',
-  'property',
-]);
-const PAGE_DESCRIPTORS = new Set(['page-orientation', 'size']);
-// BCD preserves canonical casing for this small set of CSS keyword segments.
-const VALUE_CANONICAL_CASE = new Map([
-  ['currentcolor', 'currentColor'],
-  ['geometricprecision', 'geometricPrecision'],
-  ['linearrgb', 'linearRGB'],
-  ['nan', 'NaN'],
-  ['srgb', 'sRGB'],
-]);
 
 /**
  * Detect CSS properties and keyword values that can map to MDN Browser
@@ -68,9 +49,13 @@ export function detectCSSFeatures(sources: CSSSource[]): CSSFeatureDetection[] {
           return;
         }
 
-        if (node.type !== 'Declaration' || this.atrulePrelude) return;
+        if (node.type !== 'Declaration' || this.atrulePrelude) {
+          return;
+        }
 
-        if (atRuleStack.includes('font-feature-values')) return;
+        if (atRuleStack.includes('font-feature-values')) {
+          return;
+        }
 
         const location = getSource(node, source.file);
         const decodedProperty = ident.decode(node.property);
@@ -85,7 +70,9 @@ export function detectCSSFeatures(sources: CSSSource[]): CSSFeatureDetection[] {
         }
 
         const property = normalizeName(decodedProperty);
-        if (!property) return;
+        if (!property) {
+          return;
+        }
 
         const parentAtRule = atRuleStack.at(-1);
         const isDescriptor =
@@ -111,7 +98,9 @@ export function detectCSSFeatures(sources: CSSSource[]): CSSFeatureDetection[] {
         });
 
         const value = normalizeValue(generate(node.value));
-        if (!value) return;
+        if (!value) {
+          return;
+        }
 
         detections.push({
           type: 'property-value',
@@ -124,7 +113,9 @@ export function detectCSSFeatures(sources: CSSSource[]): CSSFeatureDetection[] {
         });
       },
       leave(node: CssNode) {
-        if (node.type === 'Atrule') atRuleStack.pop();
+        if (node.type === 'Atrule') {
+          atRuleStack.pop();
+        }
       },
     });
   }
@@ -141,13 +132,17 @@ function getSource(node: CssNode, file: string): CSSFeatureSource {
 
 function normalizeName(name: string): string | null {
   const decodedName = ident.decode(name);
-  if (!BCD_SEGMENT_PATTERN.test(decodedName)) return null;
+  if (!BCD_SEGMENT_PATTERN.test(decodedName)) {
+    return null;
+  }
   return decodedName.toLowerCase();
 }
 
 function normalizeValue(value: string): string | null {
   const decodedValue = ident.decode(value.trim());
-  if (!BCD_SEGMENT_PATTERN.test(decodedValue)) return null;
+  if (!BCD_SEGMENT_PATTERN.test(decodedValue)) {
+    return null;
+  }
 
   const lowerCaseValue = decodedValue.toLowerCase();
   return VALUE_CANONICAL_CASE.get(lowerCaseValue) ?? lowerCaseValue;
