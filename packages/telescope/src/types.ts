@@ -645,6 +645,42 @@ export interface HarData {
 // Baseline Types
 // ============================================================================
 
+/** A CSS syntax occurrence that can be resolved against Baseline data. */
+export type CSSFeatureDetection =
+  | CSSDescriptorDetection
+  | CSSPropertyDetection
+  | CSSPropertyValueDetection;
+
+/** A descriptor mapped through the at-rule that defines its BCD namespace. */
+export interface CSSDescriptorDetection {
+  type: 'descriptor';
+  atRule: string;
+  bcdKey: string;
+  descriptor: string;
+  source: CSSFeatureSource;
+}
+
+/** Location where a CSS feature occurs. */
+export interface CSSFeatureSource {
+  file: string;
+  line: number;
+}
+
+/** A CSS property mapped to its candidate BCD key. */
+export interface CSSPropertyDetection {
+  type: 'property';
+  bcdKey: string;
+  property: string;
+  source: CSSFeatureSource;
+}
+
+/** A CSS property-value pair mapped to its candidate BCD key. */
+export interface CSSPropertyValueDetection {
+  type: 'property-value';
+  bcdKey: string;
+  property: string;
+  source: CSSFeatureSource;
+  value: string;
 export type JSONPrimitive = boolean | number | string | null;
 export type JSONValue =
   | JSONPrimitive
