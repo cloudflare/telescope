@@ -14,8 +14,18 @@ import { features } from 'web-features';
 import type {
   BaselineLookupResult,
   BaselineStatus,
+  BaselineSupport,
   Discouraged,
 } from './types.js';
+
+type WebFeature = (typeof features)[string];
+
+interface WebFeatureStatus {
+  baseline: BaselineStatus;
+  baseline_low_date?: string;
+  baseline_high_date?: string;
+  support: BaselineSupport;
+}
 
 /**
  * Reverse index from BCD key to its owning web-features feature ID.
@@ -50,19 +60,19 @@ export function lookupBaselineStatus(
     }
   }
 
-  const featureId = bcdKeyToFeatureId.get(bcdKey);
+  const featureId: string | undefined = bcdKeyToFeatureId.get(bcdKey);
   if (featureId === undefined) return null;
 
-  const feature = features[featureId];
+  const feature: WebFeature | undefined = features[featureId];
   if (feature === undefined || feature.kind !== 'feature') return null;
 
-  const status = feature.status.by_compat_key?.[bcdKey] ?? feature.status;
+  const status: WebFeatureStatus =
+    feature.status.by_compat_key?.[bcdKey] ?? feature.status;
 
   return {
     featureId,
     featureName: feature.name,
-    // web-features never emits `true`; narrow the wider boolean union here.
-    baseline: status.baseline as BaselineStatus,
+    baseline: status.baseline,
     baselineLowDate: status.baseline_low_date ?? null,
     baselineHighDate: status.baseline_high_date ?? null,
     support: { ...status.support },
