@@ -692,6 +692,8 @@ export interface BaselineDetectionPassOptions {
 /** Sources collected from the live page during the shared detection pass. */
 export interface BaselineDetectionPassResult {
   inlineCSSSources: CSSSource[];
+}
+
 /** A detected HTML BCD key and its number of live-DOM occurrences. */
 export interface HTMLFeatureCount {
   bcdKey: string;
