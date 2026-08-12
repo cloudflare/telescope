@@ -681,6 +681,8 @@ export interface CSSPropertyValueDetection {
   property: string;
   source: CSSFeatureSource;
   value: string;
+}
+
 export type JSONPrimitive = boolean | number | string | null;
 export type JSONValue =
   | JSONPrimitive
