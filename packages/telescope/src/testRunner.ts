@@ -57,6 +57,7 @@ import type {
 } from './types.js';
 import type { BrowserContext, Page, Route, Request } from 'playwright';
 import { delayUsingFulfill, delayUsingContinue } from './delay.js';
+import { runBaselinePipeline } from './baseline.js';
 
 const TELESCOPE_ID_HEADER = 'x-telescope-id';
 
@@ -763,6 +764,17 @@ class TestRunner {
       );
     } catch (err) {
       console.error('Error writing resources file ' + err);
+    }
+
+    if (this.options.baseline) {
+      try {
+        await runBaselinePipeline({
+          resultsPath: this.paths['results'],
+          url: this.testURL,
+        });
+      } catch (err) {
+        console.error('Baseline pipeline error: ' + err);
+      }
     }
 
     //create our filmstrip
