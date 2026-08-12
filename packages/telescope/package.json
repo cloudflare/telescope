@@ -31,6 +31,8 @@
     "coverage": "vitest run --coverage",
     "clean": "rm -rf node_modules results dist",
     "clean:results": "rm -rf results",
+    "check:baseline-html-bcd": "node scripts/generateBaselineHtmlBcd.mjs --check",
+    "generate:baseline-html-bcd": "node scripts/generateBaselineHtmlBcd.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prettier": "npx prettier --write .",
@@ -65,6 +67,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@mdn/browser-compat-data": "^8.0.10",
     "@playwright/test": "^1.61.1",
     "@types/ejs": "^3.1.5",
     "@types/node": "^25.2.1",
