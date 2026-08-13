@@ -645,6 +645,44 @@ export interface HarData {
 // Baseline Types
 // ============================================================================
 
+/** A CSS syntax occurrence that can be resolved against Baseline data. */
+export type CSSFeatureDetection =
+  | CSSDescriptorDetection
+  | CSSPropertyDetection
+  | CSSPropertyValueDetection;
+
+/** A descriptor mapped through the at-rule that defines its BCD namespace. */
+export interface CSSDescriptorDetection {
+  type: 'descriptor';
+  atRule: string;
+  bcdKey: string;
+  descriptor: string;
+  source: CSSFeatureSource;
+}
+
+/** Location where a CSS feature occurs. */
+export interface CSSFeatureSource {
+  file: string;
+  line: number;
+}
+
+/** A CSS property mapped to its candidate BCD key. */
+export interface CSSPropertyDetection {
+  type: 'property';
+  bcdKey: string;
+  property: string;
+  source: CSSFeatureSource;
+}
+
+/** A CSS property-value pair mapped to its candidate BCD key. */
+export interface CSSPropertyValueDetection {
+  type: 'property-value';
+  bcdKey: string;
+  property: string;
+  source: CSSFeatureSource;
+  value: string;
+}
+
 export type JSONPrimitive = boolean | number | string | null;
 export type JSONValue =
   | JSONPrimitive
@@ -692,6 +730,68 @@ export interface JSAPIRegistryEntry {
   readonly kind: JSAPIKind;
   readonly path: string;
 }
+
+/**
+ * Baseline status of a feature: Widely available (`'high'`), Newly available
+ * (`'low'`), or not a Baseline feature (`false`).
+ */
+export type BaselineStatus = 'high' | 'low' | false;
+
+/** Browsers represented in web-features Baseline support data. */
+export type BaselineBrowser =
+  | 'chrome'
+  | 'chrome_android'
+  | 'edge'
+  | 'firefox'
+  | 'firefox_android'
+  | 'safari'
+  | 'safari_ios';
+
+/** Browser versions that most-recently introduced a feature (browser -> version). */
+export type BaselineSupport = Partial<Record<BaselineBrowser, string>>;
+
+/**
+ * Metadata for features formally discouraged by their specification or
+ * implementers. Sourced from the web-features package.
+ */
+export interface Discouraged {
+  /** Brief, developer-focused explanation of why the feature is discouraged. */
+  reason: string;
+  /** Links to formal discouragement notices (spec text, intent-to-unship, etc.). */
+  according_to: string[];
+  /** web-features feature IDs that substitute some or all of this feature's utility. */
+  alternatives?: string[];
+  /** Expected or actual removal date, e.g. "2029-12-31". */
+  removal_date?: string;
+}
+
+/**
+ * Baseline status resolved for a single MDN Browser Compatibility Data key,
+ * looked up via the web-features package.
+ */
+export interface BaselineLookupResult {
+  /** web-features feature ID that owns the BCD key. */
+  featureId: string;
+  /** Human-readable feature name. */
+  featureName: string;
+  /** Baseline classification of the key. */
+  baseline: BaselineStatus;
+  /**
+   * Baseline low date as represented by web-features, possibly prefixed with
+   * `≤` when the exact date is uncertain.
+   */
+  baselineLowDate: string | null;
+  /**
+   * Baseline high date as represented by web-features, possibly prefixed with
+   * `≤` when the exact date is uncertain.
+   */
+  baselineHighDate: string | null;
+  /** Browser versions that most-recently introduced the feature. */
+  support: BaselineSupport;
+  /** Present only when the feature is formally discouraged. */
+  discouraged?: Discouraged;
+}
+
 /** A detected HTML BCD key and its number of live-DOM occurrences. */
 export interface HTMLFeatureCount {
   bcdKey: string;
