@@ -737,6 +737,8 @@ export interface BaselineLookupResult {
   support: BaselineSupport;
   /** Present only when the feature is formally discouraged. */
   discouraged?: Discouraged;
+}
+
 /** A detected HTML BCD key and its number of live-DOM occurrences. */
 export interface HTMLFeatureCount {
   bcdKey: string;
