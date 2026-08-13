@@ -42,7 +42,7 @@
     "playwright": "^1.61.1",
     "cross-env": "^10.1.0",
     "dotenv": "^17.2.4",
-    "prisma": "^7.9.0",
+    "prisma": "^7.9.1",
     "wrangler": "^4.114.0"
   },
   "engines": {
