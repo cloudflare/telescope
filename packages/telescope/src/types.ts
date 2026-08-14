@@ -716,6 +716,21 @@ export interface CSSSource {
   file: string;
 }
 
+/** How a JavaScript or Web API is exposed from the browser global object. */
+export type JSAPIKind =
+  | 'constructor'
+  | 'global_function'
+  | 'method'
+  | 'property'
+  | 'static_method';
+
+/** A browser-global API that can be correlated with Baseline compatibility. */
+export interface JSAPIRegistryEntry {
+  readonly bcdKey: string;
+  readonly kind: JSAPIKind;
+  readonly path: string;
+}
+
 /** Inputs required to collect live-DOM sources in a throwaway browser. */
 export interface BaselineDetectionPassOptions {
   auth?: HTTPCredentials | false;
