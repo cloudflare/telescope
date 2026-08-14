@@ -3,7 +3,7 @@
  * All shared types are defined here and exported for use across the codebase
  */
 
-import type { BrowserContext, HTTPCredentials } from 'playwright';
+import type { BrowserContext, HTTPCredentials, Page } from 'playwright';
 import type { DelayMethod } from './delay.js';
 
 // ============================================================================
@@ -729,6 +729,22 @@ export interface JSAPIRegistryEntry {
   readonly bcdKey: string;
   readonly kind: JSAPIKind;
   readonly path: string;
+}
+
+/** Inputs required to collect live-DOM sources in a throwaway browser. */
+export interface BaselineDetectionPassOptions {
+  auth?: HTTPCredentials | false;
+  browserConfig: BrowserConfigOptions;
+  cookies?: Cookie | Cookie[];
+  headers?: Record<string, string>;
+  preparePage: (page: Page) => Promise<void>;
+  timeout: number;
+  url: string;
+}
+
+/** Sources collected from the live page during the shared detection pass. */
+export interface BaselineDetectionPassResult {
+  inlineCSSSources: CSSSource[];
 }
 
 /**
