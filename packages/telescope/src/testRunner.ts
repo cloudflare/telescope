@@ -324,6 +324,44 @@ class TestRunner {
     await this.setupResponseDelays(page);
     await this.setupBlocking(page);
 
+    await this.setupPriorityCorrelation(page);
+  }
+
+  /**
+   * Whether the selected browser can report resource fetch priorities.
+   *
+   * Priorities are read from the Chrome DevTools Protocol, so only Chromium
+   * engines can produce them.
+   */
+  supportsFetchPriority(): boolean {
+    return this.browserConfig.engine === 'chromium';
+  }
+
+  /**
+   * Tag every request with a unique `x-telescope-id` header and collect the
+   * per-request timings keyed by that ID, so fetch priorities can later be
+   * matched to the right HAR entry.
+   *
+   * Only runs when the `priority` option is enabled and the selected browser
+   * can actually report priorities. The catch-all `page.route()` this needs
+   * disables the browser HTTP cache
+   * (see https://playwright.dev/docs/api/class-page#page-route), which changes
+   * what is being measured, so it must stay opt-in and must not run where
+   * nothing would come of it.
+   * See https://github.com/cloudflare/telescope/issues/327.
+   */
+  async setupPriorityCorrelation(page: Page): Promise<void> {
+    if (!this.options.priority) {
+      return;
+    }
+
+    if (!this.supportsFetchPriority()) {
+      console.warn(
+        `[testRunner] Ignoring --priority: fetch priorities are only reported by Chromium engines, and "${this.options.browser}" uses the ${this.browserConfig.engine} engine.`,
+      );
+      return;
+    }
+
     // Registered last so it runs first — injects a unique ID header into every
     // request, which Playwright records in the HAR.
     await page.route('**/*', async (route: Route, request: Request) => {

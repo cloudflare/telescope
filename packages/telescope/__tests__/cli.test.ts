@@ -124,7 +124,7 @@ describe.each(browsers)('Changed User Agent: %s', browser => {
   it('User Agent Changed', async () => {
     if (harJSON) {
       const htmlUserAgent = harJSON.log.entries[0].request.headers.find(
-        (hdr: HTTPHeader) => hdr.name === 'User-Agent',
+        (hdr: HTTPHeader) => hdr.name.toLowerCase() === 'user-agent',
       );
 
       if (htmlUserAgent) {
@@ -179,7 +179,7 @@ describe.each(browsers)('Add to User Agent: %s', browser => {
   it('Appended to User Agent', async () => {
     if (harJSON) {
       const htmlUserAgent = harJSON.log.entries[0].request.headers.find(
-        (hdr: HTTPHeader) => hdr.name === 'User-Agent',
+        (hdr: HTTPHeader) => hdr.name.toLowerCase() === 'user-agent',
       );
 
       if (htmlUserAgent) {
