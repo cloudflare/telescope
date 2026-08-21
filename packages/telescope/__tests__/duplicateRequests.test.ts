@@ -21,6 +21,18 @@ import { BrowserConfig } from '../src/browsers.js';
 
 const browsers: BrowserName[] = BrowserConfig.getBrowsers();
 
+// Per-entry timing enrichment is keyed off the x-telescope-id header, which is
+// only injected when --priority is enabled — and that only happens on Chromium
+// engines, since fetch priorities come from the Chrome DevTools Protocol.
+const priorityBrowsers: BrowserName[] = browsers.filter(
+  browser => BrowserConfig.browserConfigs[browser].engine === 'chromium',
+);
+
+// The whole suite is skipped when the browser matrix has no Chromium engine
+// (for example CI, which runs Firefox only).
+const describeWithPriority =
+  priorityBrowsers.length > 0 ? describe : describe.skip;
+
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
 function fixturesDir(name: string): string {
@@ -103,7 +115,7 @@ async function close(srv: Server): Promise<void> {
 // Duplicate request HAR entries
 // ---------------------------------------------------------------------------
 
-describe('Duplicate request HAR entries', () => {
+describeWithPriority('Duplicate request HAR entries', () => {
   let server: Server;
   let baseUrl: string;
 
@@ -119,9 +131,7 @@ describe('Duplicate request HAR entries', () => {
     await close(server);
   });
 
-  describe.each(browsers)('%s', (browser: BrowserName) => {
-    // Per-entry timing enrichment is keyed off the x-telescope-id header, which
-    // is only injected when priority collection is enabled.
+  describe.each(priorityBrowsers)('%s', (browser: BrowserName) => {
     test('each duplicate-URL HAR entry gets its own timing data', async () => {
       await withHAR(
         { url: `${baseUrl}/index.html`, browser, priority: true },

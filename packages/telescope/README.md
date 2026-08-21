@@ -71,7 +71,7 @@ Options:
   --openHtml                    Open HTML report in browser (requires --html) (default: false)
   --list                        Generate list of results in HTML (default: false)
   --overrideHost <object>       Override the hostname of a URI with another host (Expects: {"example.com": "example.org"})
-  --priority                    Collect resource fetch priorities (Chromium engines only). Tags every request with an x-telescope-id header, which disables the browser HTTP cache. (default: false)
+  --priority                    Collect resource fetch priorities. Chromium engines only; ignored elsewhere. Tags every request with an x-telescope-id header, which disables the browser HTTP cache. (default: false)
   --zip                         Zip the results of the test into the results directory. (default: false)
   --uploadUrl <string>          Upload zipped results to URL. Must be a valid URL if provided. (default: null)
   --dry                         Dry run (do not run test, just save config and cleanup) (default: false)
@@ -232,15 +232,15 @@ With the flag enabled, each entry in `pageload.har` gains two extension fields:
 - `_initialPriority` — the priority Chromium assigned when the request was created
 - `_priority` — the final priority, after any mid-flight change. Equal to `_initialPriority` when the priority was never changed.
 
-Priority data comes from the Chrome DevTools Protocol, so those two fields are only produced on Chromium engines (`chrome`, `chrome-beta`, `chromium`, `canary`, `edge`).
+Priority data comes from the Chrome DevTools Protocol, so the flag only applies to Chromium engines (`chrome`, `chrome-beta`, `chromium`, `canary`, `edge`). Passing `--priority` to Firefox or Safari prints a warning and is otherwise ignored — no header is injected and the HTTP cache is left alone, since there would be no priority data to show for it.
 
-The flag is not Chromium-only in its other effects, though. On every browser it turns on the request correlation described below, which additionally gives each HAR entry its own timing fields (`_dns_start`, `_connect_start`, `_request_start`, `_response_end`, `_resourceType`) — worth having when several requests share a URL, since those entries are otherwise indistinguishable. On Firefox and Safari you get that correlation, and pay the same cache cost, but no priority fields.
+On a Chromium engine the flag also turns on the request correlation described below, which gives each HAR entry its own timing fields (`_dns_start`, `_connect_start`, `_request_start`, `_response_end`, `_resourceType`) in addition to the priority fields. That matters when several requests share a URL, since those entries are otherwise indistinguishable. These fields are therefore Chromium-only as well.
 
 #### The `x-telescope-id` header
 
 Chromium reports priorities against its own internal request IDs, which do not appear in the HAR. To join the two, Telescope tags each outgoing request with a unique `x-telescope-id` header, then matches the CDP request ID and the HAR entry that carry the same value. This is what makes the priority fields land on the right entry even when several requests share a URL.
 
-Two consequences are worth knowing before you enable it:
+Three consequences are worth knowing before you enable it:
 
 - **The header is sent to the server.** It goes out with every request and is recorded in the saved HAR file.
 - **It disables the browser HTTP cache.** Injecting the header requires a catch-all Playwright route handler, and [registering one disables the HTTP cache](https://playwright.dev/docs/api/class-page#page-route). Cache-dependent behaviour therefore changes: notably, resources advertised in an Early Hints (`103`) response are re-requested instead of being reused.

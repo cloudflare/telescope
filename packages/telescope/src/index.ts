@@ -214,11 +214,12 @@ async function executeTest(
  * Public programmatic API that wraps executeTest with error handling.
  * Always returns a result object (never throws).
  *
- * Note: When `priority` is enabled, every outgoing request is tagged with an
- * `x-telescope-id` header so that fetch priority data can be correlated with
- * the correct HAR entry. That header is sent to the target server, is present
- * in the saved HAR file, and disables the browser HTTP cache. It is not sent
- * unless `priority` is enabled.
+ * Note: When `priority` is enabled on a Chromium engine, every outgoing request
+ * is tagged with an `x-telescope-id` header so that fetch priority data can be
+ * correlated with the correct HAR entry. That header is sent to the target
+ * server, is present in the saved HAR file, and disables the browser HTTP
+ * cache. It is not sent otherwise — on Firefox and Safari `priority` is
+ * ignored, since only Chromium reports fetch priorities.
  *
  * @param options - Test configuration (see CLI --help for available options)
  * @returns Result object: {success, testId, resultsPath} or {success, error}
@@ -412,7 +413,7 @@ export default function browserAgent(): void {
     .addOption(
       new Option(
         '--priority',
-        'Collect resource fetch priorities (Chromium engines only). Tags every request with an x-telescope-id header, which disables the browser HTTP cache.',
+        'Collect resource fetch priorities. Chromium engines only; ignored elsewhere. Tags every request with an x-telescope-id header, which disables the browser HTTP cache.',
       ).default(DEFAULT_OPTIONS.priority),
     )
     .addOption(

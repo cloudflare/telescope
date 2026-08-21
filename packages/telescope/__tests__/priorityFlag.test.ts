@@ -16,7 +16,12 @@ import {
 import { retrieveConfig } from './helpers.js';
 
 import type { Page } from 'playwright';
-import type { HarEntry, LaunchOptions, SavedConfig } from '../src/types.js';
+import type {
+  BrowserName,
+  HarEntry,
+  LaunchOptions,
+  SavedConfig,
+} from '../src/types.js';
 
 const TELESCOPE_ID_HEADER = 'x-telescope-id';
 
@@ -52,7 +57,10 @@ describe('setupPriorityCorrelation', () => {
     } as LaunchOptions;
     const runner = new TestRunner(
       launchOptions,
-      new BrowserConfig().getBrowserConfig('chrome', launchOptions),
+      new BrowserConfig().getBrowserConfig(
+        launchOptions.browser as BrowserName,
+        launchOptions,
+      ),
     );
     runners.push(runner);
     return runner;
@@ -99,6 +107,38 @@ describe('setupPriorityCorrelation', () => {
     expect(page.on).toHaveBeenCalledWith(
       'requestfinished',
       expect.any(Function),
+    );
+  });
+
+  // Fetch priorities come from the Chrome DevTools Protocol, so injecting the
+  // header on other engines would disable the HTTP cache for nothing.
+  describe('non-Chromium engines', () => {
+    test.each(['firefox', 'safari'] as const)(
+      'does not touch the page on %s even when priority is true',
+      async browser => {
+        const page = createMockPage();
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        const runner = buildRunner({ browser, priority: true });
+        expect(runner.supportsFetchPriority()).toBe(false);
+
+        await runner.setupPriorityCorrelation(asPage(page));
+
+        expect(page.route).not.toHaveBeenCalled();
+        expect(page.on).not.toHaveBeenCalled();
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('Ignoring --priority'),
+        );
+
+        warn.mockRestore();
+      },
+    );
+
+    test.each(['chrome', 'chromium', 'edge', 'canary'] as const)(
+      'reports %s as supporting fetch priority',
+      browser => {
+        expect(buildRunner({ browser }).supportsFetchPriority()).toBe(true);
+      },
     );
   });
 

@@ -32,7 +32,7 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   list: false,
   // Hosts to override
   overrideHost: {},
-  // Collect resource fetch priorities (Chromium only, disables the HTTP cache)
+  // Collect resource fetch priorities (Chromium engines only, disables the HTTP cache)
   priority: false,
   // Network throttling type (false = no throttling)
   connectionType: false,
