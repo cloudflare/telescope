@@ -1,9 +1,5 @@
-generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-  runtime  = "cloudflare"
-}
-
+// Prisma is a schema and migration authoring tool only. Application queries use
+// the runtime storage adapters in src/lib/runtime.
 datasource db {
   provider = "sqlite"
 }
@@ -18,8 +14,8 @@ model tests {
   test_date      Int
   browser        String
   content_rating String  @default("unknown")
-  created_at     Int?    @default(dbgenerated("(unixepoch())"))
-  updated_at     Int?    @default(dbgenerated("(unixepoch())"))
+  created_at     Int?    @default(dbgenerated("unixepoch()"))
+  updated_at     Int?    @default(dbgenerated("unixepoch()"))
 
   @@index([zip_key], map: "idx_tests_file_key")
   @@index([content_rating], map: "idx_tests_content_rating")

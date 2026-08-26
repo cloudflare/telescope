@@ -1,6 +1,4 @@
 ---
-import { env } from 'cloudflare:workers';
-
 import Page from '@/layouts/Page.astro';
 import MetricCard from '@/components/MetricCard.astro';
 import ScreenshotDisplay from '@/components/ScreenshotDisplay.astro';
@@ -14,9 +12,9 @@ import Console from '@/components/Console.astro';
 import Bottlenecks from '@/components/Bottlenecks.astro';
 import ConfigTab from '@/components/ConfigTab.astro';
 
-import { getPrismaClient } from '@/lib/prisma/client';
 import { getTestById } from '@/lib/repositories/testRepository';
 import { ContentRating } from '@/lib/types/tests';
+import { getRuntimeServices } from '@/lib/runtime/context';
 
 import type { MetricsJson } from '@/lib/types/metrics';
 import type { ResourceTiming } from '@/lib/types/resources';
@@ -39,10 +37,9 @@ if (!testId) {
   return Astro.redirect('/results');
 }
 
-const aiEnabled = env.ENABLE_AI_RATING === 'true';
-
-const prisma = getPrismaClient(Astro);
-const test = await getTestById(prisma, testId);
+const services = getRuntimeServices(Astro);
+const { aiEnabled } = services;
+const test = await getTestById(services.tests, testId);
 if (!test) {
   return Astro.redirect('/results');
 }
@@ -72,12 +69,13 @@ let durationMs = extractDuration(null);
 if (!isUnsafe && !isUnknown) {
   // --- Screenshot ---
   const screenshotKey = `${testId}/screenshot.png`;
-  const screenshotObj = await env.RESULTS_BUCKET.head(screenshotKey);
-  screenshotUrl = screenshotObj ? `/api/tests/${testId}/screenshot.png` : null;
+  screenshotUrl = (await services.results.has(screenshotKey))
+    ? `/api/tests/${testId}/screenshot.png`
+    : null;
 
   // --- HAR (browser version + existence check for Waterfall) ---
   try {
-    const harObj = await env.RESULTS_BUCKET.get(`${testId}/pageload.har`);
+    const harObj = await services.results.get(`${testId}/pageload.har`);
     if (harObj) {
       hasHar = true;
       har = await harObj.json<Har>();
@@ -90,7 +88,7 @@ if (!isUnsafe && !isUnknown) {
 
   // --- Metrics ---
   try {
-    const metricsObj = await env.RESULTS_BUCKET.get(`${testId}/metrics.json`);
+    const metricsObj = await services.results.get(`${testId}/metrics.json`);
     if (metricsObj) {
       metrics = await metricsObj.json<MetricsJson>();
     }
@@ -101,7 +99,7 @@ if (!isUnsafe && !isUnknown) {
 
   // --- Resources ---
   try {
-    const resourcesObj = await env.RESULTS_BUCKET.get(
+    const resourcesObj = await services.results.get(
       `${testId}/resources.json`,
     );
     if (resourcesObj) {
@@ -114,7 +112,7 @@ if (!isUnsafe && !isUnknown) {
 
   // --- Console Messages ---
   try {
-    const consoleObj = await env.RESULTS_BUCKET.get(`${testId}/console.json`);
+    const consoleObj = await services.results.get(`${testId}/console.json`);
     if (consoleObj) {
       consoleMessages = await consoleObj.json<ConsoleMessage[]>();
     }
@@ -125,7 +123,7 @@ if (!isUnsafe && !isUnknown) {
 
   // --- Config ---
   try {
-    const configObj = await env.RESULTS_BUCKET.get(`${testId}/config.json`);
+    const configObj = await services.results.get(`${testId}/config.json`);
     if (configObj) {
       config = await configObj.json<ConfigJson>();
     }

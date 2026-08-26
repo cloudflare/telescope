@@ -1,10 +1,10 @@
-import { env } from 'cloudflare:workers';
 import { zipSync } from 'fflate';
 
 import type { APIContext, APIRoute } from 'astro';
 import { ContentRating } from '@/lib/types/tests';
 import { checkTestRating } from '@/lib/utils/contentRatingCache';
 import { isValidTestId } from '@/lib/utils/security';
+import { getRuntimeServices } from '@/lib/runtime/context';
 
 export const GET: APIRoute = async (context: APIContext) => {
   const { testId } = context.params;
@@ -15,31 +15,28 @@ export const GET: APIRoute = async (context: APIContext) => {
   if (!isValidTestId(testId)) {
     return new Response('Invalid testId format', { status: 400 });
   }
-  const aiEnabled = env.ENABLE_AI_RATING === 'true';
+  const services = getRuntimeServices(context);
+  const { aiEnabled } = services;
   if (aiEnabled) {
     const rating = await checkTestRating(context, testId);
     if (rating !== ContentRating.SAFE) {
       return new Response('Test file not available', { status: 404 });
     }
   }
-  const bucket = env.RESULTS_BUCKET;
   const prefix = `${testId}/`;
   try {
-    // Use R2 list() function that matches the prefix: https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#r2listoptions
-    const listed = await bucket.list({ prefix });
-    if (!listed.objects || listed.objects.length === 0) {
+    const keys = await services.results.list(prefix);
+    if (keys.length === 0) {
       return new Response('No files found for this test', { status: 404 });
     }
-    const keys = listed.objects
-      .map(obj => obj.key)
-      .filter(key => key.slice(prefix.length)); // filter out empty paths upfront
     const files: Record<string, Uint8Array> = {};
-    // need for-loop for sequential downloads, doing parallel downloads could overwhelm Worker
+    // Sequential reads avoid excessive memory pressure for large archives.
     for (const key of keys) {
       const relativePath = key.slice(prefix.length);
-      const r2obj = await bucket.get(key);
-      if (r2obj) {
-        const arrayBuffer = await r2obj.arrayBuffer();
+      if (!relativePath) continue;
+      const object = await services.results.get(key);
+      if (object) {
+        const arrayBuffer = await object.arrayBuffer();
         files[relativePath] = new Uint8Array(arrayBuffer);
       }
     }

@@ -28,8 +28,8 @@ jobs:
 
       # Install from the repo root: this is an npm workspaces monorepo with a
       # single lockfile at the root, so `npm ci` cannot run inside a package.
-      # Later steps stay in ./packages/telescope-web because wrangler, prisma
-      # and astro need that directory's config files; npx resolves their
+      # Later steps stay in ./packages/telescope-web because Wrangler and
+      # Astro need that directory's config files; npx resolves their
       # binaries from the hoisted root node_modules/.bin.
       - name: install dependencies
         run: npm ci
@@ -40,13 +40,9 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-      - name: generate prisma client
-        working-directory: ./packages/telescope-web
-        run: npx prisma generate
-
       - name: build astro site
         working-directory: ./packages/telescope-web
-        run: CLOUDFLARE_ENV=production npx astro build
+        run: DEPLOY_TARGET=cloudflare CLOUDFLARE_ENV=production npx astro build
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 

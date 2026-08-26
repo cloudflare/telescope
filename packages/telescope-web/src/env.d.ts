@@ -1,9 +1,8 @@
-/// <reference types="@/generated/prisma/client" />
-
-type Runtime = import('@astrojs/cloudflare').Runtime<Env>;
+/// <reference path="../worker-configuration.d.ts" />
 
 declare namespace App {
-  interface Locals extends Runtime {
-    prisma: import('@/generated/prisma/client').PrismaClient | null;
+  interface Locals {
+    runtime?: import('@astrojs/cloudflare').Runtime<Env>;
+    services: import('@/lib/storage/types').RuntimeServices;
   }
 }

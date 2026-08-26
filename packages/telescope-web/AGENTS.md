@@ -2,13 +2,15 @@
 
 ## Package Overview
 
-`telescope-web` is an Astro + Cloudflare Workers web application that serves as the Telescope results UI. It is a fully independent project from the core `packages/telescope/` library — do not mix concerns between the two packages.
+`telescope-web` is an Astro application with local Node.js and Cloudflare Workers deployment targets. It is fully independent from the core `packages/telescope/` library — do not mix concerns between the two packages.
 
 Key subdirectories:
 
-- `src/` — Astro pages, React components, and Workers API routes
-- `scripts/` — Dev setup helpers
-- `migrations/` — D1 database migration files
+- `src/` — Astro pages, React components, API routes, and runtime storage adapters
+- `migrations/` — D1 database migrations for Cloudflare deployments
+- `prisma/` — declarative D1 schema used only for migration authoring
+- `scripts/create-d1-migration.js` — generates the next D1 migration from the Prisma schema
+- `.telescope-data/` — automatically created local SQLite database and artifacts (gitignored)
 
 ---
 
@@ -19,33 +21,34 @@ Commands below are run from `packages/telescope-web/`. To run from the repo root
 ### Dev
 
 ```bash
-npm run dev             # start local dev server (Cloudflare development env)
-npm run dev:setup       # run ./scripts/dev-setup.sh (first-time setup)
-npm run dev:clean       # rm -rf .wrangler .env dist node_modules
+npm run dev                 # local Node.js development (no Cloudflare required)
+npm run dev:cloudflare      # Cloudflare adapter and local binding emulation
 ```
 
 ### Build
 
 ```bash
-npm run build:development   # astro build for development env
-npm run build:staging       # astro build for staging env
-npm run preview             # astro preview
+npm run build               # standalone Node.js build
+npm run build:cloudflare    # Cloudflare Workers build
+npm run build:staging       # Cloudflare staging build
+npm run start               # run the standalone Node.js build
 ```
 
 ### Deploy
 
 ```bash
-npm run deploy:development  # build:development + wrangler deploy --env development
+npm run deploy:development  # build:cloudflare + wrangler deploy --env development
 npm run deploy:staging      # build:staging + wrangler deploy --env staging
 ```
 
-### Database (D1 + Prisma)
+### Cloudflare database
 
 ```bash
+npm run schema:validate       # validate prisma/schema.prisma
+npm run schema:check          # ensure Prisma schema matches D1 migration history
+npm run migration:create -- add_field  # generate the next D1 SQL migration
 npm run migrate:development  # apply D1 migrations locally (development)
 npm run migrate:staging      # apply D1 migrations remotely (staging)
-npm run generate             # prisma generate
-npm run studio               # prisma studio
 ```
 
 ### Types
@@ -66,5 +69,9 @@ npm test                     # vitest run
 
 - This package is **fully excluded** from `packages/telescope/` tooling configs and from root-level build/lint/test workspace scripts.
 - `node_modules` is hoisted to the repo root via npm workspaces — do not run `npm install` from within this directory expecting a local `node_modules`.
-- Environment-specific config is controlled via `CLOUDFLARE_ENV` (set by `cross-env` in npm scripts) and Wrangler environments.
-- D1 database bindings are configured in `wrangler.toml` per environment.
+- `DEPLOY_TARGET` selects the Astro adapter; Node is the default and Cloudflare builds set it to `cloudflare`.
+- Local storage uses SQLite and the filesystem under `.telescope-data/`, configurable with `TELESCOPE_DATA_DIR`.
+- Cloudflare storage uses D1 and R2 bindings from `wrangler.jsonc`; Workers AI remains optional and Cloudflare-only.
+- Prisma is a development-only schema and SQL generation tool. Do not add Prisma Client or its D1 adapter to application runtime code.
+- After editing `prisma/schema.prisma`, use `npm run migration:create -- <name>`, review the generated SQL, update the local Node SQLite adapter when applicable, and apply the migration with Wrangler.
+- Routes must use `context.locals.services`, never import Cloudflare bindings directly, so both targets stay portable.

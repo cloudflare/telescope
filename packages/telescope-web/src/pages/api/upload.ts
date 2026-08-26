@@ -1,5 +1,3 @@
-import { env } from 'cloudflare:workers';
-
 import type { APIContext, APIRoute } from 'astro';
 import type { Unzipped } from 'fflate';
 import type { TestConfig } from '@/lib/types/tests';
@@ -11,7 +9,7 @@ import { normalizeAndFilterZipFiles, toPosixPath } from '@/lib/utils/security';
 import { generateTestId } from '@/lib/utils/testId';
 
 import { TestSource, ContentRating } from '@/lib/types/tests';
-import { getPrismaClient } from '@/lib/prisma/client';
+import { getRuntimeServices } from '@/lib/runtime/context';
 import {
   createTest,
   findTestIdByZipKey,
@@ -54,12 +52,12 @@ export const POST: APIRoute = async (context: APIContext) => {
     const result = uploadSchema.safeParse({
       // safeParse() is explicit runtime type check: https://zod.dev/basics?id=handling-errors
       file: formData.get('file'),
-      name: formData.get('name'),
-      description: formData.get('description'),
+      name: formData.get('name') || undefined,
+      description: formData.get('description') || undefined,
       source: formData.get('source'),
     });
     if (!result.success) {
-      return new Response(JSON.stringify({ error: result.error.errors }), {
+      return new Response(JSON.stringify({ error: result.error.issues }), {
         // TODO: add custom error messaging
         status: 400,
       });
@@ -69,11 +67,10 @@ export const POST: APIRoute = async (context: APIContext) => {
     const buffer = await file.arrayBuffer();
     const unzipped = await getUnzipped(buffer);
     const files = Object.keys(unzipped);
-    // Generate hash for unique R2 storage key
+    // Generate a stable hash used to reject duplicate archives.
     const zipKey = await generateContentHash(buffer);
-    // Check if this exact content already exists in D1
-    const prisma = getPrismaClient(context);
-    const existing = await findTestIdByZipKey(prisma, zipKey);
+    const services = getRuntimeServices(context);
+    const existing = await findTestIdByZipKey(services.tests, zipKey);
     if (existing) {
       return new Response(
         JSON.stringify({
@@ -165,6 +162,7 @@ export const POST: APIRoute = async (context: APIContext) => {
       options: z
         .object({
           url: z.string(),
+          browser: z.string().optional(),
         })
         .passthrough(),
       browserConfig: z
@@ -213,7 +211,7 @@ export const POST: APIRoute = async (context: APIContext) => {
     };
     // Store test metadata in database
     try {
-      await createTest(prisma, testConfig);
+      await createTest(services.tests, testConfig);
     } catch (error) {
       return new Response(
         JSON.stringify({
@@ -223,9 +221,9 @@ export const POST: APIRoute = async (context: APIContext) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
-    // store all valid files in R2 with {testId}/{filename} format
+    // Store all valid files with {testId}/{filename} keys.
     for (const filename of validFiles) {
-      await env.RESULTS_BUCKET!.put(
+      await services.results.put(
         `${testId}/${filename}`,
         normalizedUnzipped[filename],
       );
@@ -243,18 +241,23 @@ export const POST: APIRoute = async (context: APIContext) => {
       },
     );
 
-    // Rate the URL content via Workers AI — fire-and-forget after response is built
-    if (env.ENABLE_AI_RATING === 'true' && env.AI) {
-      context.locals.cfContext.waitUntil(
+    // Cloudflare deployments can rate content after the response is built.
+    const { ai, waitUntil } = services;
+    if (services.aiEnabled && ai && waitUntil) {
+      waitUntil(
         (async () => {
-          await updateContentRating(prisma, testId, ContentRating.IN_PROGRESS);
+          await updateContentRating(
+            services.tests,
+            testId,
+            ContentRating.IN_PROGRESS,
+          );
           const rating = await rateUrlContent(
-            env.AI!,
+            ai,
             testConfig.url,
             normalizedUnzipped['metrics.json'],
             normalizedUnzipped['screenshot.png'],
           );
-          await updateContentRating(prisma, testId, rating);
+          await updateContentRating(services.tests, testId, rating);
         })(),
       );
     }

@@ -1,5 +1,3 @@
-import { env } from 'cloudflare:workers';
-
 import type { APIContext, APIRoute } from 'astro';
 import { ContentRating } from '@/lib/types/tests';
 import {
@@ -8,6 +6,7 @@ import {
   toPosixPath,
 } from '@/lib/utils/security';
 import { checkTestRating } from '@/lib/utils/contentRatingCache';
+import { getRuntimeServices } from '@/lib/runtime/context';
 
 /**
  * Serve files from R2 bucket
@@ -29,7 +28,8 @@ export const GET: APIRoute = async (context: APIContext) => {
   if (!isExpectedTelescopeFile(normalizedFilename)) {
     return new Response('Invalid file', { status: 400 });
   }
-  const aiEnabled = env.ENABLE_AI_RATING === 'true';
+  const services = getRuntimeServices(context);
+  const { aiEnabled } = services;
   if (aiEnabled) {
     const rating = await checkTestRating(context, testId);
     if (rating !== ContentRating.SAFE) {
@@ -39,7 +39,7 @@ export const GET: APIRoute = async (context: APIContext) => {
   const key = `${testId}/${normalizedFilename}`;
   try {
     const r2Start = Date.now();
-    const object = await env.RESULTS_BUCKET.get(key);
+    const object = await services.results.get(key);
     const r2Duration = Date.now() - r2Start;
     console.log(`[R2] Fetch took ${r2Duration}ms - key: ${key}`);
     if (!object) {

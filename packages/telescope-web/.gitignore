@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# local Node.js database and result artifacts
+.telescope-data/
+
 # macOS-specific files
 .DS_Store
 
@@ -29,12 +32,6 @@ pnpm-debug.log*
 !.dev.vars.example
 !.env.example
 
-# types 
-worker-configuration.d.ts
-
 # playwright
 playwright-report/
 test-results/
-
-# prisma 
-/generated

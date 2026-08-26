@@ -182,7 +182,11 @@ describe.each(browsers)('Generated list artifacts (%s)', browser => {
 describe.each(browsers)('Upload zip for browsers (%s)', browser => {
   describe.each([true, false])('Upload URL with zip: %s', zip => {
     const server = setupServer(
-      http.post('https://api.example.com/upload', () => {
+      http.post('https://api.example.com/upload', async ({ request }) => {
+        expect(request.headers.get('origin')).toBe('https://api.example.com');
+        const form = await request.formData();
+        expect(form.get('source')).toBe('cli');
+        expect(form.get('file')).toBeInstanceOf(File);
         console.log('Mock server received upload request');
         return HttpResponse.json({ url: 'https://mock-url.com/file' });
       }),

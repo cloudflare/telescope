@@ -12,7 +12,7 @@ Key subdirectories:
   - `tests/` — Static test fixtures (HTML, CSS, images) used by integration tests
   - `support/` — Browser support files (e.g., Firefox default `user.js` preferences)
   - `processors/` — Standalone post-processing report generator (included in main tsconfig)
-- `packages/telescope-web/` — Separate Astro + Cloudflare Workers web app (fully excluded from root tooling)
+- `packages/telescope-web/` — Separate Astro web app with Node.js and Cloudflare Workers targets (fully excluded from core tooling)
 
 ---
 
