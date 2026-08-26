@@ -45,6 +45,7 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
   }
   const config: LaunchOptions = {
     url: options.url,
+    baseline: options.baseline ?? DEFAULT_OPTIONS.baseline,
     browser: options.browser as BrowserName | undefined,
     width: options.width,
     height: options.height,

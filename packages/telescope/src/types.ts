@@ -3,7 +3,7 @@
  * All shared types are defined here and exported for use across the codebase
  */
 
-import type { BrowserContext, HTTPCredentials } from 'playwright';
+import type { BrowserContext, HTTPCredentials, Page } from 'playwright';
 import type { DelayMethod } from './delay.js';
 
 // ============================================================================
@@ -171,6 +171,7 @@ export type SimplifiedBrowserConfigOptions = Omit<
  */
 export interface LaunchOptions {
   url: string;
+  baseline?: boolean;
   browser?: BrowserName;
   headers?: Record<string, string>;
   cookies?: Cookie | Cookie[];
@@ -207,6 +208,7 @@ export interface LaunchOptions {
  * Default options type (subset of LaunchOptions that have defaults)
  */
 export interface DefaultOptions {
+  baseline: boolean;
   browser: BrowserName;
   width?: number;
   height?: number;
@@ -645,12 +647,173 @@ export interface HarData {
 // Baseline Types
 // ============================================================================
 
+/** A CSS syntax occurrence that can be resolved against Baseline data. */
+export type CSSFeatureDetection =
+  | CSSDescriptorDetection
+  | CSSPropertyDetection
+  | CSSPropertyValueDetection;
+
+/** A descriptor mapped through the at-rule that defines its BCD namespace. */
+export interface CSSDescriptorDetection {
+  type: 'descriptor';
+  atRule: string;
+  bcdKey: string;
+  descriptor: string;
+  source: CSSFeatureSource;
+}
+
+/** Location where a CSS feature occurs. */
+export interface CSSFeatureSource {
+  file: string;
+  line: number;
+}
+
+/** A CSS property mapped to its candidate BCD key. */
+export interface CSSPropertyDetection {
+  type: 'property';
+  bcdKey: string;
+  property: string;
+  source: CSSFeatureSource;
+}
+
+/** A CSS property-value pair mapped to its candidate BCD key. */
+export interface CSSPropertyValueDetection {
+  type: 'property-value';
+  bcdKey: string;
+  property: string;
+  source: CSSFeatureSource;
+  value: string;
+}
+
+export type JSONPrimitive = boolean | number | string | null;
+export type JSONValue =
+  | JSONPrimitive
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
 /**
- * A block of CSS extracted from a HAR, with its origin location.
+ * Inputs available to the post-performance Baseline pipeline.
+ */
+export interface BaselinePipelineOptions {
+  resultsPath: string;
+  url: string;
+}
+
+/**
+ * A block of CSS to analyse for Baseline feature detection, with its origin.
+ *
+ * Sources come from two places: external stylesheets recovered from the HAR
+ * (see `extractCSSFromHar`) and inline `<style>` blocks read from the live DOM
+ * (see `harvestInlineStyles`).
  */
 export interface CSSSource {
+  /** The CSS text to analyse. This — not {@link file} — is what gets parsed. */
   css: string;
+  /**
+   * Human-readable provenance for reporting where a feature was found. For
+   * external stylesheets this is the request URL; for inline blocks it is a
+   * label derived from the page URL. Treat it as a display string, not a URL to
+   * parse.
+   */
   file: string;
+}
+
+/** How a JavaScript or Web API is exposed from the browser global object. */
+export type JSAPIKind =
+  | 'constructor'
+  | 'global_function'
+  | 'method'
+  | 'property'
+  | 'static_method';
+
+/** A browser-global API that can be correlated with Baseline compatibility. */
+export interface JSAPIRegistryEntry {
+  readonly bcdKey: string;
+  readonly kind: JSAPIKind;
+  readonly path: string;
+}
+
+/** Inputs required to collect live-DOM sources in a throwaway browser. */
+export interface BaselineDetectionPassOptions {
+  auth?: HTTPCredentials | false;
+  browserConfig: BrowserConfigOptions;
+  cookies?: Cookie | Cookie[];
+  headers?: Record<string, string>;
+  preparePage: (page: Page) => Promise<void>;
+  timeout: number;
+  url: string;
+}
+
+/** Sources collected from the live page during the shared detection pass. */
+export interface BaselineDetectionPassResult {
+  inlineCSSSources: CSSSource[];
+}
+
+/**
+ * Baseline status of a feature: Widely available (`'high'`), Newly available
+ * (`'low'`), or not a Baseline feature (`false`).
+ */
+export type BaselineStatus = 'high' | 'low' | false;
+
+/** Browsers represented in web-features Baseline support data. */
+export type BaselineBrowser =
+  | 'chrome'
+  | 'chrome_android'
+  | 'edge'
+  | 'firefox'
+  | 'firefox_android'
+  | 'safari'
+  | 'safari_ios';
+
+/** Browser versions that most-recently introduced a feature (browser -> version). */
+export type BaselineSupport = Partial<Record<BaselineBrowser, string>>;
+
+/**
+ * Metadata for features formally discouraged by their specification or
+ * implementers. Sourced from the web-features package.
+ */
+export interface Discouraged {
+  /** Brief, developer-focused explanation of why the feature is discouraged. */
+  reason: string;
+  /** Links to formal discouragement notices (spec text, intent-to-unship, etc.). */
+  according_to: string[];
+  /** web-features feature IDs that substitute some or all of this feature's utility. */
+  alternatives?: string[];
+  /** Expected or actual removal date, e.g. "2029-12-31". */
+  removal_date?: string;
+}
+
+/**
+ * Baseline status resolved for a single MDN Browser Compatibility Data key,
+ * looked up via the web-features package.
+ */
+export interface BaselineLookupResult {
+  /** web-features feature ID that owns the BCD key. */
+  featureId: string;
+  /** Human-readable feature name. */
+  featureName: string;
+  /** Baseline classification of the key. */
+  baseline: BaselineStatus;
+  /**
+   * Baseline low date as represented by web-features, possibly prefixed with
+   * `≤` when the exact date is uncertain.
+   */
+  baselineLowDate: string | null;
+  /**
+   * Baseline high date as represented by web-features, possibly prefixed with
+   * `≤` when the exact date is uncertain.
+   */
+  baselineHighDate: string | null;
+  /** Browser versions that most-recently introduced the feature. */
+  support: BaselineSupport;
+  /** Present only when the feature is formally discouraged. */
+  discouraged?: Discouraged;
+}
+
+/** A detected HTML BCD key and its number of live-DOM occurrences. */
+export interface HTMLFeatureCount {
+  bcdKey: string;
+  count: number;
 }
 
 // ============================================================================
@@ -683,6 +846,7 @@ declare global {
  */
 export interface CLIOptions {
   url?: string;
+  baseline?: boolean;
   browser?: string;
   headers?: Record<string, string>;
   cookies?: Cookie | Cookie[];

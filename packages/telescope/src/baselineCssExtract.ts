@@ -1,3 +1,5 @@
+import type { Page } from 'playwright';
+
 import { BASE64 } from './types.js';
 import type { CSSSource, HarData, HARContentEncoding } from './types.js';
 
@@ -5,8 +7,8 @@ import type { CSSSource, HarData, HARContentEncoding } from './types.js';
  * Extract external stylesheets (`text/css` responses) shipped by a page from
  * its HAR.
  *
- * Inline `<style>` blocks in HTML documents are handled separately, in a
- * follow-up change that parses the HTML with a dedicated parser.
+ * Inline `<style>` blocks are handled separately by {@link harvestInlineStyles},
+ * which reads them from the live DOM.
  *
  * @param harData - Parsed HAR file contents.
  * @returns One {@link CSSSource} per stylesheet, in the order they appear in
@@ -28,6 +30,47 @@ export function extractCSSFromHar(harData: HarData): CSSSource[] {
   }
 
   return sources;
+}
+
+/**
+ * Harvest inline `<style>` blocks from the *live* DOM of a page.
+ *
+ * External stylesheets are recovered from the HAR by {@link extractCSSFromHar};
+ * inline CSS is read here from the rendered document so that `<style>` blocks
+ * injected at runtime (e.g. by JavaScript) are captured — something static HTML
+ * parsing would miss.
+ *
+ * The read is strictly read-only: it neither mutates the DOM nor triggers
+ * layout, so it can run in the shared Baseline detection pass without
+ * interfering with co-located instrumentation or page state.
+ *
+ * Only the text of `<style>` elements in the main document is read. CSS with
+ * no `<style>` text — rules added via `CSSStyleSheet.insertRule()` or
+ * constructable `adoptedStyleSheets` — is not included, nor are `<style>`
+ * elements inside shadow roots (`querySelectorAll` does not pierce shadow DOM)
+ * or `<template>` content.
+ *
+ * @param page - A Playwright page whose document has finished loading.
+ * @returns One {@link CSSSource} per non-empty `<style>` block, in document
+ *   order. `file` identifies the page and the block's position within it.
+ */
+export async function harvestInlineStyles(page: Page): Promise<CSSSource[]> {
+  const blocks = await page.evaluate(() =>
+    // `textContent` on an element is always a string; `?? ''` only satisfies
+    // its `string | null` type (null is unreachable for these nodes).
+    Array.from(
+      document.querySelectorAll('style'),
+      style => style.textContent ?? '',
+    ),
+  );
+
+  const pageUrl = page.url();
+  return blocks
+    .filter(css => css.trim().length > 0)
+    .map((css, index) => ({
+      css,
+      file: `${pageUrl} (inline style #${index + 1})`,
+    }));
 }
 
 /**

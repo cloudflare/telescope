@@ -29,8 +29,38 @@ describe('CLI: no arguments shows help', () => {
     expect(stdout).toContain('--url');
   });
 
+  it('lists the --baseline option in help', () => {
+    expect(stdout).toContain('--baseline');
+  });
+
   it('does not write anything to stderr', () => {
     expect(stderr).toBe('');
+  });
+});
+
+function readBaselineFromDryRun(baselineArgs: string[]): boolean | undefined {
+  let testId: string | undefined;
+  try {
+    const output = spawnSync('node', [
+      'dist/src/cli.js',
+      '--dry',
+      ...baselineArgs,
+      'https://www.example.com',
+    ]);
+    const match = output.stdout.toString().match(/Test ID:(.*)/);
+    if (match && match.length > 1) {
+      testId = match[1].trim();
+      return retrieveConfig(testId)?.options.baseline;
+    }
+  } finally {
+    cleanupTestDirectory(testId);
+  }
+}
+
+describe('CLI: baseline option', () => {
+  it('stores true when present and defaults to false when absent', () => {
+    expect(readBaselineFromDryRun(['--baseline'])).toBe(true);
+    expect(readBaselineFromDryRun([])).toBe(false);
   });
 });
 
