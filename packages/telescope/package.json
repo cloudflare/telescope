@@ -81,7 +81,7 @@
     "prettier-plugin-ejs": "^1.0.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@sitespeed.io/throttle": "^5.0.0",
