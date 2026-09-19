@@ -85,7 +85,7 @@
   },
   "dependencies": {
     "@sitespeed.io/throttle": "^5.0.0",
-    "adm-zip": "^0.6.0",
+    "adm-zip": "^0.6.1",
     "commander": "^10.0.0",
     "css-tree": "^3.2.1",
     "ejs": "^6.0.1",
