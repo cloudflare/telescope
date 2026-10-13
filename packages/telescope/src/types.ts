@@ -132,7 +132,7 @@ export interface BrowserConfigOptions {
   headless: boolean;
   viewport: { width: number; height: number };
   recordHar: { path: string };
-  recordVideo: { dir: string; size: { width: number; height: number } };
+  recordVideo?: { dir: string; size: { width: number; height: number } };
   args?: string[];
   ignoreDefaultArgs?: string[];
   firefoxUserPrefs?: Record<string, string | number | boolean>;
@@ -184,6 +184,11 @@ export interface LaunchOptions {
   width?: number;
   height?: number;
   frameRate?: number;
+  /**
+   * Record video, take a final screenshot, and generate a filmstrip.
+   * Defaults to true. Cannot be disabled when `uploadUrl` is set.
+   */
+  recording?: boolean;
   disableJS?: boolean;
   debug?: boolean;
   auth?: HTTPCredentials | false;
@@ -212,6 +217,7 @@ export interface DefaultOptions {
   width?: number;
   height?: number;
   frameRate: number;
+  recording: boolean;
   timeout: number;
   blockDomains: string[];
   block: string[];
@@ -857,6 +863,7 @@ export interface CLIOptions {
   width?: number;
   height?: number;
   frameRate?: number;
+  recording?: boolean;
   disableJS?: boolean;
   debug?: boolean;
   auth?: HTTPCredentials | false;

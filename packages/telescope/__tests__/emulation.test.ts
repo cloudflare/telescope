@@ -132,10 +132,10 @@ describe.each(browsers)(
           expect(config.viewport.height).toBe(3344);
         });
         it(`Setting device emulation sets recordVideo width to override value for browser: ${browser}`, () => {
-          expect(config.recordVideo.size.width).toBe(1122);
+          expect(config.recordVideo?.size.width).toBe(1122);
         });
         it(`Setting device emulation sets recordVideo height to override value for browser: ${browser}`, () => {
-          expect(config.recordVideo.size.height).toBe(3344);
+          expect(config.recordVideo?.size.height).toBe(3344);
         });
       },
     );

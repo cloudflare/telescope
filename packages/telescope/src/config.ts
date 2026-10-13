@@ -50,6 +50,7 @@ export function normalizeCLIConfig(options: CLIOptions): LaunchOptions {
     width: options.width,
     height: options.height,
     frameRate: options.frameRate ?? DEFAULT_OPTIONS.frameRate,
+    recording: options.recording ?? DEFAULT_OPTIONS.recording,
     timeout: options.timeout ?? DEFAULT_OPTIONS.timeout,
     blockDomains: options.blockDomains || DEFAULT_OPTIONS.blockDomains,
     block: options.block || DEFAULT_OPTIONS.block,

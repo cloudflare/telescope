@@ -66,8 +66,8 @@ describe.each(browsers)('Basic configuration tests: %s', browser => {
     };
     const config = new BrowserConfig().getBrowserConfig(browser, options);
     expect(config && typeof config === 'object').toBe(true);
-    expect(config.recordVideo.size.width === 500).toBe(true);
-    expect(config.recordVideo.size.height === 700).toBe(true);
+    expect(config.recordVideo?.size.width === 500).toBe(true);
+    expect(config.recordVideo?.size.height === 700).toBe(true);
   });
 
   test('Setting a viewport with a string throws an error', () => {

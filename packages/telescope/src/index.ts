@@ -120,7 +120,16 @@ async function executeTest(
     ...DEFAULT_OPTIONS,
     ...options,
     baseline: options.baseline ?? DEFAULT_OPTIONS.baseline,
+    recording: options.recording ?? DEFAULT_OPTIONS.recording,
   };
+
+  // Uploads rely on recording artifacts (screenshot, video, filmstrip),
+  // so uploading is not allowed when recording is disabled.
+  if (!config.recording && config.uploadUrl) {
+    throw new Error(
+      'Uploading results requires recording to be enabled (uploadUrl cannot be combined with recording: false / --no-recording)',
+    );
+  }
   const browserConfig = new BrowserConfig().getBrowserConfig(
     config.browser || 'chrome',
     config,
@@ -318,6 +327,12 @@ export default function browserAgent(): void {
       )
         .default(DEFAULT_OPTIONS.frameRate)
         .argParser(v => parseNumeric(PositiveIntSchema, v, '--frameRate')),
+    )
+    .addOption(
+      new Option(
+        '--no-recording',
+        'Disable video recording, final screenshot, and filmstrip (cannot be combined with --uploadUrl)',
+      ),
     )
     .addOption(
       new Option(

@@ -65,6 +65,7 @@ Options:
   --width <int>                 Viewport width, in pixels. If both width and device are provided, the width value will override device emulation viewport width.
   --height <int>                Viewport height, in pixels. If both height and device are provided, the height value will override device emulation viewport height.
   --frameRate <int>             Filmstrip frame rate, in frames per second (default: 1)
+  --no-recording                Disable video recording, final screenshot, and filmstrip (cannot be combined with --uploadUrl)
   --disableJS                   Disable JavaScript (default: false)
   --debug                       Output debug lines (default: false)
   --auth <object>               Basic HTTP authentication (Expects: {"username": "", "password": ""}) (default: false)
@@ -100,6 +101,18 @@ And supports the following browsers:
   - [Edge](https://www.microsoft.com/en-us/edge/) - `edge`
 - [Safari](https://www.apple.com/safari/)/[Webkit](https://webkit.org/) - `safari`
 - [Firefox](https://www.firefox.com/) - `firefox`
+
+### Disabling Recording
+
+By default, Telescope records a video of the page load, takes a final screenshot, and generates a filmstrip. Pass `--no-recording` (or `recording: false` programmatically) to skip all three. HAR, metrics, and other results are still collected. Recording is required for uploads, so `--uploadUrl` cannot be combined with `--no-recording`.
+
+```
+telescope -u https://www.example.com --no-recording
+```
+
+```ts
+await launchTest({ url: 'https://www.example.com', recording: false });
+```
 
 ### Custom Timeout
 
