@@ -12,6 +12,8 @@ export const DEFAULT_OPTIONS: DefaultOptions = {
   browser: 'chrome',
   // Filmstrip capture rate (frames per second)
   frameRate: 1,
+  // Record video, final screenshot, and filmstrip
+  recording: true,
   // Test timeout in milliseconds
   timeout: 30000,
   // Domains to block from loading (request blocking)

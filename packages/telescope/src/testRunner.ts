@@ -73,6 +73,7 @@ class TestRunner {
   requests: RequestData[] = [];
   telescopeIdToRequestId: Record<string, string> = {};
   resultAssets: ResultAssets = {
+    filmstrip: [],
     filmstripFiles: [],
     videoFile: null,
   };
@@ -101,7 +102,17 @@ class TestRunner {
 
     this.selectedBrowser.recordHar.path =
       this.paths['results'] + '/pageload.har';
-    this.selectedBrowser.recordVideo.dir = this.paths['results'];
+    if (this.selectedBrowser.recordVideo) {
+      this.selectedBrowser.recordVideo.dir = this.paths['results'];
+    }
+  }
+
+  /**
+   * Whether video recording, the final screenshot, and filmstrip are enabled.
+   * @returns true unless `recording` was explicitly set to false
+   */
+  get recordingEnabled(): boolean {
+    return this.options.recording !== false;
   }
 
   /**
@@ -411,9 +422,11 @@ class TestRunner {
       }
     }
     // grab our screenshot
-    await this.page.screenshot({
-      path: this.paths['results'] + '/screenshot.png',
-    });
+    if (this.recordingEnabled) {
+      await this.page.screenshot({
+        path: this.paths['results'] + '/screenshot.png',
+      });
+    }
 
     //grab the videoname
     const video = this.page.video();
@@ -778,7 +791,9 @@ class TestRunner {
     }
 
     //create our filmstrip
-    await this.createFilmStrip();
+    if (this.recordingEnabled) {
+      await this.createFilmStrip();
+    }
 
     if (this.options.html) {
       // Generate HTML report

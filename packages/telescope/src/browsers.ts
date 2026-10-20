@@ -285,8 +285,15 @@ class BrowserConfig {
 
     browserConfig.viewport.width = resolvedWidth;
     browserConfig.viewport.height = resolvedHeight;
-    browserConfig.recordVideo.size.width = resolvedWidth;
-    browserConfig.recordVideo.size.height = resolvedHeight;
+    if (options.recording === false) {
+      // Playwright records video whenever recordVideo is present
+      delete browserConfig.recordVideo;
+    } else {
+      browserConfig.recordVideo = {
+        dir: this.defaultBrowserOptions.recordVideo?.dir ?? './recordings',
+        size: { width: resolvedWidth, height: resolvedHeight },
+      };
+    }
 
     // collect device info and insert device emulation settings into browser config
     if (options.device) {
