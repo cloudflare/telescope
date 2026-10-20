@@ -12,6 +12,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./render": {
+      "types": "./dist/render.d.ts",
+      "import": "./dist/render.js",
+      "default": "./dist/render.js"
+    },
     "./waterfall.js": "./dist/waterfall.js",
     "./waterfall.css": "./dist/waterfall.css"
   },

@@ -24,7 +24,7 @@ JS bundle required.
 
 ```js
 // build script (Node.js)
-import { renderToHTML } from '@cloudflare/waterfall';
+import { renderToHTML } from '@cloudflare/waterfall/render';
 import har from './pageload.har' assert { type: 'json' };
 
 const html = renderToHTML(har);
@@ -219,6 +219,7 @@ npm test              # run Vitest + Playwright tests
 | File(s)                            | Audience                                                               |
 | ---------------------------------- | ---------------------------------------------------------------------- |
 | `index.js`, `*.js`, `*.d.ts`       | Bundler consumers (`import { … } from '@cloudflare/waterfall'`)        |
+| `render.js`, `render.d.ts`         | Node.js build scripts (`import … from '@cloudflare/waterfall/render'`) |
 | `waterfall.js`, `waterfall.js.map` | Drop-in consumers (`<script type="module" src="…/waterfall.js">`)      |
 | `waterfall.css`                    | Both — link directly or `import '@cloudflare/waterfall/waterfall.css'` |
 
