@@ -33,15 +33,15 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "vitest": "^4.1.8",
-    "zod": "^4.3.6"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "playwright": "^1.61.1",
     "cross-env": "^10.1.0",
     "dotenv": "^17.2.4",
+    "playwright": "^1.61.1",
     "prisma": "^7.9.1",
     "wrangler": "^4.123.0"
   },
